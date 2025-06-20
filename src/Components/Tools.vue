@@ -2,12 +2,8 @@
   <div class="setting_group">
     <h2 class="title">{{ title }}</h2>
 
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
+    <el-form :model="formData" ref="formRef" label-position="top" class="settings-form">
+      <CodeEditor></CodeEditor>
       <!-- 工具页面内容区域 - 留空 -->
       <div class="tools-content">
         <!-- 这里可以添加工具页面的具体内容 -->
@@ -18,6 +14,7 @@
 
 <script setup>
 import { ref, reactive } from "vue";
+import CodeEditor from "./CodeEditor.vue";
 
 const props = defineProps({
   title: {
