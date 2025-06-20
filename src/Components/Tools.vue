@@ -3,7 +3,7 @@
     <h2 class="title">{{ title }}</h2>
 
     <el-form :model="formData" ref="formRef" label-position="top" class="settings-form">
-      <CodeEditor></CodeEditor>
+      <CodeEditor v-model="codeContent"></CodeEditor>
       <!-- 工具页面内容区域 - 留空 -->
       <div class="tools-content">
         <!-- 这里可以添加工具页面的具体内容 -->
@@ -27,6 +27,9 @@ const formRef = ref();
 const formData = reactive({
   // 工具页面的数据
 });
+
+// CodeEditor 的内容
+const codeContent = ref('');
 
 // 工具页面的方法可以在这里添加
 </script>

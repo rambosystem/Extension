@@ -1,306 +1,159 @@
 <template>
-    <div class="code-editor-block">
-        <div class="editor-container">
-            <div v-for="(line, index) in lines" :key="index" class="editor-line">
-                <div class="line-number">{{ index + 1 }}</div>
-                <textarea :ref="el => setLineRef(el, index)" v-model="lines[index]" class="line-input"
-                    :placeholder="index === 0 && !lines[0] ? '请输入代码...' : ''" spellcheck="false" autocorrect="off"
-                    autocapitalize="off" translate="no" rows="1" @input="handleLineInput(index)"
-                    @keydown="handleKeydown($event, index)" @paste="handlePaste($event, index)">
-                </textarea>
-            </div>
-        </div>
-    </div>
+    <!-- CodeMirror 会把内部结构注入到此元素 -->
+    <div ref="host" class="cm-editor" style="height: 300px;"></div>
 </template>
 
-<script setup>
-import { ref, watch, onMounted, nextTick } from 'vue';
+<script setup lang="ts">
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { EditorState } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
+import { defaultKeymap } from '@codemirror/commands';
+import { javascript } from '@codemirror/lang-javascript';
 
-const props = defineProps({
-    modelValue: {
-        type: String,
-        default: '',
-    },
-});
+const props = defineProps<{ modelValue: string }>();
+const emit = defineEmits<{ 'update:modelValue': [string] }>();
 
-const emit = defineEmits(['update:modelValue']);
-
-const lines = ref(['']);
-const lineRefs = ref({});
-
-const setLineRef = (el, index) => {
-    if (el) {
-        lineRefs.value[index] = el;
-    }
-};
-
-const adjustTextareaHeight = (textarea) => {
-    if (textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-};
-
-const adjustAllTextareaHeights = () => {
-    nextTick(() => {
-        Object.values(lineRefs.value).forEach(adjustTextareaHeight);
-    });
-};
+const host = ref<HTMLElement | null>(null);
+let view: EditorView | null = null;
 
 onMounted(() => {
-    initializeFromModelValue();
+    view = new EditorView({
+        parent: host.value!,
+        state: EditorState.create({
+            doc: props.modelValue ?? '',
+            extensions: [
+                lineNumbers(),
+                highlightActiveLineGutter(),
+                keymap.of(defaultKeymap),
+                javascript(),
+                EditorView.updateListener.of(u => {
+                    if (u.docChanged)
+                        emit('update:modelValue', u.state.doc.toString());
+                })
+            ]
+        })
+    });
 });
 
-watch(
-    () => props.modelValue,
-    (newValue) => {
-        const currentValue = lines.value.join('\n');
-        if (newValue !== currentValue) {
-            initializeFromModelValue();
-        }
-    }
-);
+watch(() => props.modelValue, v => {
+    if (view && v !== view.state.doc.toString())
+        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: v } });
+});
 
-const initializeFromModelValue = () => {
-    lines.value = props.modelValue ? props.modelValue.split('\n') : [''];
-    adjustAllTextareaHeights();
-};
-
-const updateModelValue = () => {
-    const newValue = lines.value.join('\n');
-    emit('update:modelValue', newValue);
-};
-
-const handleLineInput = (index) => {
-    adjustTextareaHeight(lineRefs.value[index]);
-    updateModelValue();
-};
-
-const handleKeydown = (event, index) => {
-    const textarea = lineRefs.value[index];
-    if (!textarea) return;
-
-    const { key, shiftKey } = event;
-    const { selectionStart, selectionEnd, value } = textarea;
-
-    if (key === 'Enter' && !shiftKey) {
-        event.preventDefault();
-
-        const beforeCursor = value.slice(0, selectionStart);
-        const afterCursor = value.slice(selectionEnd);
-
-        lines.value[index] = beforeCursor;
-        lines.value.splice(index + 1, 0, afterCursor);
-
-        updateModelValue();
-
-        nextTick(() => {
-            const nextTextarea = lineRefs.value[index + 1];
-            if (nextTextarea) {
-                nextTextarea.focus();
-                nextTextarea.setSelectionRange(0, 0);
-                adjustTextareaHeight(textarea);
-                adjustTextareaHeight(nextTextarea);
-            }
-        });
-    }
-    else if (key === 'Backspace' && selectionStart === 0 && selectionEnd === 0 && index > 0) {
-        event.preventDefault();
-
-        const currentLine = lines.value[index];
-        const previousLine = lines.value[index - 1];
-        const newCursorPosition = previousLine.length;
-
-        lines.value[index - 1] = previousLine + currentLine;
-        lines.value.splice(index, 1);
-
-        updateModelValue();
-
-        nextTick(() => {
-            const prevTextarea = lineRefs.value[index - 1];
-            if (prevTextarea) {
-                prevTextarea.focus();
-                prevTextarea.setSelectionRange(newCursorPosition, newCursorPosition);
-                adjustTextareaHeight(prevTextarea);
-            }
-        });
-    }
-    else if (key === 'Delete' && selectionStart === value.length && selectionEnd === value.length && index < lines.value.length - 1) {
-        event.preventDefault();
-
-        const currentLine = lines.value[index];
-        const nextLine = lines.value[index + 1];
-
-        lines.value[index] = currentLine + nextLine;
-        lines.value.splice(index + 1, 1);
-
-        updateModelValue();
-
-        nextTick(() => {
-            textarea.setSelectionRange(currentLine.length, currentLine.length);
-            adjustTextareaHeight(textarea);
-        });
-    }
-    else if (key === 'Tab') {
-        event.preventDefault();
-
-        const beforeTab = value.slice(0, selectionStart);
-        const afterTab = value.slice(selectionEnd);
-        const newValue = beforeTab + '    ' + afterTab;
-        const newCursorPosition = selectionStart + 4;
-
-        lines.value[index] = newValue;
-        updateModelValue();
-
-        nextTick(() => {
-            textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-        });
-    }
-    else if (key === 'ArrowUp' && index > 0) {
-        event.preventDefault();
-        lineRefs.value[index - 1]?.focus();
-    }
-    else if (key === 'ArrowDown' && index < lines.value.length - 1) {
-        event.preventDefault();
-        lineRefs.value[index + 1]?.focus();
-    }
-};
-
-const handlePaste = (event, index) => {
-    event.preventDefault();
-
-    const clipboardData = event.clipboardData.getData('text');
-    if (!clipboardData) return;
-
-    const textarea = lineRefs.value[index];
-    if (!textarea) return;
-
-    const { selectionStart, selectionEnd, value } = textarea;
-    const beforePaste = value.slice(0, selectionStart);
-    const afterPaste = value.slice(selectionEnd);
-
-    const pasteLines = clipboardData.split('\n');
-
-    if (pasteLines.length === 1) {
-        lines.value[index] = beforePaste + pasteLines[0] + afterPaste;
-        updateModelValue();
-        nextTick(() => {
-            const newCursorPosition = selectionStart + pasteLines[0].length;
-            textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-            adjustTextareaHeight(textarea);
-        });
-    } else {
-        const firstPastedLine = pasteLines[0];
-        const lastPastedLine = pasteLines[pasteLines.length - 1];
-        const middlePastedLines = pasteLines.slice(1, -1);
-
-        lines.value[index] = beforePaste + firstPastedLine;
-
-        const newLines = middlePastedLines.concat(lastPastedLine + afterPaste);
-        lines.value.splice(index + 1, 0, ...newLines);
-
-        updateModelValue();
-
-        nextTick(() => {
-            const finalLineIndex = index + pasteLines.length - 1;
-            const finalCursorPosition = lastPastedLine.length;
-            const finalTextarea = lineRefs.value[finalLineIndex];
-
-            if (finalTextarea) {
-                finalTextarea.focus();
-                finalTextarea.setSelectionRange(finalCursorPosition, finalCursorPosition);
-            }
-            adjustAllTextareaHeights();
-        });
-    }
-};
+onUnmounted(() => view?.destroy());
 </script>
 
 <style scoped>
-.code-editor-block {
-    border: 1px solid var(--el-border-color-light);
-    border-radius: var(--el-border-radius-base, 4px);
+/* CodeMirror 编辑器主容器样式 */
+.cm-editor {
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
     overflow: hidden;
-    font-family: 'Cascadia Code', 'Fira Code', 'Source Code Pro', 'SF Mono', Consolas,
-        'Liberation Mono', Menlo, Monaco, 'Courier New', monospace;
+    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
-    background-color: var(--el-bg-color, #ffffff);
-}
-
-.editor-container {
-    display: flex;
-    flex-direction: column;
+    background-color: #f8f9fa;
     max-height: 500px;
-    /* Or any height you prefer */
+}
+
+/* 滚动容器 */
+.cm-scroller {
+    background-color: #f8f9fa;
+    max-height: 500px;
+    overflow-x: auto;
     overflow-y: auto;
+    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.editor-line {
-    display: flex;
-    align-items: flex-start;
-    /* Align to top for multi-line textareas */
-    position: relative;
-    padding: 8px 0;
-    /* Vertical padding on the line itself */
-    min-height: 38px;
-    /* 1 line-height + 16px padding */
-    box-sizing: border-box;
-}
-
-.line-number {
-    flex-shrink: 0;
-    width: 60px;
-    padding-right: 12px;
-    color: var(--el-text-color-secondary, #888888);
-    text-align: right;
-    user-select: none;
-    font-size: 13px;
-    line-height: 22px;
-    /* Match textarea line-height */
-    box-sizing: border-box;
-}
-
-.line-input {
-    flex: 1;
-    padding: 0 16px;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: var(--el-text-color-primary, #2c3e50);
-    font-family: inherit;
+/* 内容区域 */
+.cm-content {
+    background-color: #f8f9fa;
+    color: #212529;
+    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
-    line-height: 22px;
-    resize: none;
-    overflow: hidden;
-    /* Critical for auto-height */
-    box-sizing: border-box;
-    white-space: pre-wrap;
-    word-break: break-all;
+    font-weight: normal;
+    padding: 0;
+    margin: 0;
 }
 
-.line-input::placeholder {
-    color: var(--el-text-color-placeholder, #bbb);
-    font-style: italic;
+/* 每行样式 */
+.cm-line {
+    line-height: 24px;
+    height: 24px;
+    padding: 0 8px;
+    color: #212529;
+    background-color: #f8f9fa;
+    font-weight: normal;
+    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Remove selection highlight */
-.line-input::selection,
-.line-input::-moz-selection {
-    background-color: rgba(0, 120, 215, 0.2);
-    /* Subtle default selection */
+/* 左侧边栏（包含行号） */
+:deep(.cm-gutters) {
+    background-color: #E2E4E6;
+    border-right: none;
 }
 
-/* Scrollbar styles */
-.editor-container::-webkit-scrollbar {
-    width: 6px;
+/* 行号样式 */
+:deep(.cm-lineNumbers .cm-gutterElement) {
+    color: #6c757d;
+    font-size: 14px;
+    line-height: 24px;
+    text-align: center;
+    background-color: #E2E4E6;
+    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.editor-container::-webkit-scrollbar-track {
-    background: transparent;
+/* 选中文本样式 */
+.cm-selectionBackground {
+    background-color: rgba(13, 110, 253, 0.25) !important;
 }
 
-.editor-container::-webkit-scrollbar-thumb {
-    background: var(--el-border-color-darker, #d0d0d0);
-    border-radius: 3px;
+/* 光标样式 */
+.cm-cursor {
+    border-left: 1px solid #212529;
+}
+
+/* 聚焦状态 */
+.cm-focused {
+    outline: none;
+}
+
+/* 滚动条样式 */
+.cm-scroller::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.cm-scroller::-webkit-scrollbar-track {
+    background: #f1f3f4;
+}
+
+.cm-scroller::-webkit-scrollbar-thumb {
+    background: #c1c8cd;
+    border-radius: 4px;
+}
+
+.cm-scroller::-webkit-scrollbar-thumb:hover {
+    background: #a8b2ba;
+}
+
+.cm-scroller::-webkit-scrollbar-corner {
+    background: #f1f3f4;
+}
+
+/* 确保编辑器高度固定 */
+:deep(.cm-editor) {
+    height: 300px;
+    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+:deep(.cm-scroller) {
+    max-height: 300px;
+}
+
+/* 基本样式 */
+:deep(.cm-line) {
+    line-height: 24px;
+    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
 }
 </style>

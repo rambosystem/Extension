@@ -8,6 +8,10 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.37.2",
     "@element-plus/icons-vue": "^2.3.0",
     "element-plus": "^2.4.0",
     "sass": "^1.89.2",
