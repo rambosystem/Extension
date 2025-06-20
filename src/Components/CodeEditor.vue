@@ -1,6 +1,6 @@
 <template>
     <!-- CodeMirror 会把内部结构注入到此元素 -->
-    <div ref="host" class="cm-editor" style="height: 300px;"></div>
+    <div ref="host" class="cm-editor" style="height: auto; min-height: 24px;"></div>
 </template>
 
 <script setup lang="ts">
@@ -29,6 +29,11 @@ onMounted(() => {
                 EditorView.updateListener.of(u => {
                     if (u.docChanged)
                         emit('update:modelValue', u.state.doc.toString());
+                }),
+                EditorView.theme({
+                    '&': { height: 'auto' },
+                    '.cm-scroller': { overflow: 'visible' },
+                    '.cm-content': { minHeight: '24px' }
                 })
             ]
         })
@@ -49,18 +54,17 @@ onUnmounted(() => view?.destroy());
     border: 1px solid #e1e5e9;
     border-radius: 4px;
     overflow: hidden;
-    font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: "JetBrains Mono", ui-monospace, Menlo, "Segoe UI Mono", "Ubuntu Mono", monospace;
     font-size: 14px;
     background-color: #f8f9fa;
-    max-height: 500px;
+    min-height: 24px;
 }
 
 /* 滚动容器 */
 .cm-scroller {
     background-color: #f8f9fa;
-    max-height: 500px;
-    overflow-x: auto;
-    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-y: hidden;
     font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -96,6 +100,7 @@ onUnmounted(() => view?.destroy());
 :deep(.cm-lineNumbers .cm-gutterElement) {
     color: #6c757d;
     font-size: 14px;
+    min-width: 32px;
     line-height: 24px;
     text-align: center;
     background-color: #E2E4E6;
@@ -140,14 +145,14 @@ onUnmounted(() => view?.destroy());
     background: #f1f3f4;
 }
 
-/* 确保编辑器高度固定 */
+/* 编辑器自适应高度 */
 :deep(.cm-editor) {
-    height: 300px;
+    min-height: 24px;
     font-family: "Atlassian Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 :deep(.cm-scroller) {
-    max-height: 300px;
+    overflow-y: hidden;
 }
 
 /* 基本样式 */
