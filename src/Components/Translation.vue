@@ -2,13 +2,8 @@
   <div class="setting_group">
     <h2 class="title">{{ title }}</h2>
 
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
-      <!-- 国际化翻译页面内容区域 - 留空 -->
+    <el-form :model="formData" ref="formRef" label-position="top" class="settings-form">
+
       <div class="translation-content">
         <!-- 这里可以添加国际化翻译的具体功能 -->
       </div>
@@ -18,6 +13,7 @@
 
 <script setup>
 import { ref, reactive } from "vue";
+
 
 const props = defineProps({
   title: {
