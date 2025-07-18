@@ -44,6 +44,7 @@ const props = defineProps({
   .weight-item-title-text {
     font-size: 12px;
     color: #666666;
+    font-weight: 500;
   }
 }
 </style>

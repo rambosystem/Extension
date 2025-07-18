@@ -3,7 +3,7 @@
   "name": "Rambo Extension",
   "version": "1.0.0",
   "description": "Extension for Rambo",
-  "permissions": ["activeTab", "tabs"],
+  "permissions": ["activeTab", "tabs", "scripting"],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

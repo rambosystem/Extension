@@ -18,7 +18,7 @@
         <div class="main-content">
           <el-row :gutter="10">
             <el-col :span="6">
-              <div class="grid-content">
+              <div class="grid-content" @click="handleLokaliseClick">
                 <WeightItem title="Lokalise" url="/src/assets/lokalise.svg" />
               </div>
             </el-col>
@@ -41,6 +41,12 @@ import WeightItem from "./Components/Weight-Item.vue";
 
 const handleSettingClick = () => {
   chrome.runtime.openOptionsPage();
+};
+
+const handleLokaliseClick = () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(tabs[0].id, { action: "show-dialog" });
+  });
 };
 </script>
 
