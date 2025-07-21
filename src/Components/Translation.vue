@@ -71,6 +71,9 @@
         </el-form-item>
         <el-form-item>
           <div class="dialog-button-container">
+            <el-button type="primary" @click="exportCSVAndUpload"
+              >Export CSV & Upload</el-button
+            >
             <el-button type="primary" @click="exportCSV">Export CSV</el-button>
           </div>
         </el-form-item>
@@ -156,6 +159,16 @@ const exportCSV = () => {
   a.download = "translation_result.csv";
   a.click();
   URL.revokeObjectURL(url);
+};
+
+const exportCSVAndUpload = () => {
+  // 先导出CSV
+  exportCSV();
+
+  // 然后打开Lokalise上传页面
+  const uploadUrl =
+    "https://app.lokalise.com/upload/3011682966726acb3be9a6.76737850/";
+  window.open(uploadUrl, "_blank");
 };
 
 const showLastTranslation = () => {
@@ -324,6 +337,7 @@ const handleTranslate = async () => {
   width: 100%;
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
 }
 
 :deep(.el-form-item__label) {
