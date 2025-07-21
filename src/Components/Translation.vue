@@ -33,7 +33,7 @@
     <el-dialog v-model="dialogVisible" title="Translation Result" width="70%">
       <el-form label-position="top">
         <el-form-item>
-          <el-table :data="translationResult" style="width: 100%">
+          <el-table :data="translationResult" style="width: 100%" height="550">
             <el-table-column prop="en" label="EN">
               <template #default="{ row, $index }">
                 <!-- 如果row.editing_en为true，则显示el-input并聚焦，否则显示row.en -->
@@ -384,7 +384,7 @@ const handleTranslate = async () => {
 .en-content,
 .cn-content,
 .jp-content {
-  padding: 8px 12px;
+  padding: 8px 0px;
   cursor: pointer;
   border: 1px solid transparent;
   border-radius: 4px;
