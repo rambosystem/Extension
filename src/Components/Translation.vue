@@ -358,5 +358,61 @@ const handleTranslate = async () => {
   color: #303133;
 }
 
+/* 设置对话框内边距 */
+:deep(.el-dialog) {
+  --el-dialog-padding-primary: 20px;
+}
+
 /* 单元格样式已经移到 EditableCell 组件中 */
+
+/* 表格样式优化 */
+:deep(.el-table) {
+  border: none;
+}
+
+:deep(.el-table__border-top-patch) {
+  display: none;
+}
+
+:deep(.el-table__border-right-patch) {
+  display: none;
+}
+
+:deep(.el-table td) {
+  border: none;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0;
+  height: 50px;
+}
+
+:deep(.el-table th) {
+  border: none;
+  height: 50px;
+  padding-left: 12px;
+}
+
+:deep(.el-table__row) {
+  height: 50px;
+}
+
+:deep(.el-table__row:last-child td) {
+  border-bottom: none;
+}
+
+:deep(.el-table__cell) {
+  border: none;
+  padding: 0;
+}
+
+:deep(.el-table--border) {
+  border: none;
+}
+
+:deep(.el-table--border::after) {
+  display: none;
+}
+
+:deep(.el-table--border::before) {
+  display: none;
+}
 </style>

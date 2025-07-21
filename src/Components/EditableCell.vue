@@ -65,20 +65,24 @@ const handleBlur = () => {
   border: 1px solid transparent;
   border-radius: 4px;
   transition: all 0.2s;
-  min-height: 32px;
+  height: 50px;
   display: flex;
   align-items: center;
   font-size: 14px;
   line-height: 1.5;
+  box-sizing: border-box;
 }
 
 .cell-edit {
   width: 100%;
   padding: 0;
+  height: 30px;
+  box-sizing: border-box;
 }
 
 .cell-edit .el-input {
   width: 100%;
+  height: 30px;
 }
 
 .cell-edit .el-input__wrapper {
@@ -87,14 +91,16 @@ const handleBlur = () => {
   background-color: #ffffff;
   border-radius: 4px;
   padding: 0;
-  min-height: 32px;
+  height: 50px;
+  box-sizing: border-box;
 }
 
 .cell-edit .el-input__inner {
-  padding: 7px 11px;
+  padding: 0 11px;
   font-size: 14px;
-  line-height: 1.5;
+  height: 50px;
   border: none;
   outline: none;
+  box-sizing: border-box;
 }
 </style>
