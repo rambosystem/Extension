@@ -32,11 +32,9 @@
       <el-main class="main-content">
         <div class="content-placeholder">
           <component
-            v-for="item in menuConfig"
-            :key="item.index"
-            :is="item.component"
-            v-show="selectedMenu === item.index"
-            :title="item.title"
+            v-if="currentComponent"
+            :is="currentComponent"
+            :title="currentTitle"
           />
         </div>
       </el-main>
@@ -45,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import Settings from "./Components/Settings.vue";
 import Tools from "./Components/Tools.vue";
 import Translation from "./Components/Translation.vue";
@@ -89,6 +87,17 @@ const menuConfig = [
 
 // 当前选中的菜单项
 const selectedMenu = ref("1");
+
+// 计算当前应该显示的组件
+const currentComponent = computed(() => {
+  const item = menuConfig.find((item) => item.index === selectedMenu.value);
+  return item ? item.component : null;
+});
+
+const currentTitle = computed(() => {
+  const item = menuConfig.find((item) => item.index === selectedMenu.value);
+  return item ? item.title : "";
+});
 
 // 菜单选择事件处理
 const handleMenuSelect = (index) => {
