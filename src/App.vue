@@ -46,7 +46,10 @@ import { Setting } from "@element-plus/icons-vue";
 import WeightItem from "./Components/Weight-Item.vue";
 
 const handleSettingClick = () => {
-  chrome.runtime.openOptionsPage();
+  chrome.storage.local.set({ initialMenu: "3" }, () => {
+    chrome.runtime.openOptionsPage();
+  });
+  window.close();
 };
 
 const handleLokaliseClick = () => {
@@ -56,6 +59,9 @@ const handleLokaliseClick = () => {
     });
   });
   console.log("Lokalise action sent");
+  chrome.storage.local.set({ initialMenu: "2" }, () => {
+    chrome.runtime.openOptionsPage();
+  });
   window.close();
 };
 </script>

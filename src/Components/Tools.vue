@@ -1,13 +1,13 @@
 <template>
   <div class="setting_group">
     <h2 class="title">{{ title }}</h2>
-
-    <el-form :model="formData" ref="formRef" label-position="top" class="settings-form">
+    <el-form
+      :model="formData"
+      ref="formRef"
+      label-position="top"
+      class="settings-form"
+    >
       <CodeEditor v-model="codeContent"></CodeEditor>
-      <!-- 工具页面内容区域 - 留空 -->
-      <div class="tools-content">
-        <!-- 这里可以添加工具页面的具体内容 -->
-      </div>
     </el-form>
   </div>
 </template>
@@ -29,7 +29,7 @@ const formData = reactive({
 });
 
 // CodeEditor 的内容
-const codeContent = ref('');
+const codeContent = ref("");
 
 // 工具页面的方法可以在这里添加
 </script>

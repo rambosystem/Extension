@@ -1,11 +1,19 @@
 <template>
   <div class="setting_group">
     <h2 class="title">{{ title }}</h2>
-
-    <el-form :model="formData" ref="formRef" label-position="top" class="settings-form">
+    <el-form
+      :model="formData"
+      ref="formRef"
+      label-position="top"
+      class="settings-form"
+    >
       <el-form-item label="API Key" prop="apiKey">
         <div class="input_container">
-          <el-input type="text" v-model="formData.apiKey" placeholder="API Key for DeepSeek" />
+          <el-input
+            type="text"
+            v-model="formData.apiKey"
+            placeholder="API Key for DeepSeek"
+          />
         </div>
       </el-form-item>
       <el-form-item label="Prompt" prop="prompt">
@@ -20,7 +28,6 @@
           </el-button>
         </div>
       </el-form-item>
-
     </el-form>
   </div>
 </template>
@@ -28,7 +35,7 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import CodeEditor from './CodeEditor.vue'
+import CodeEditor from "./CodeEditor.vue";
 
 const props = defineProps({
   title: {
@@ -37,13 +44,13 @@ const props = defineProps({
   },
 });
 
-const codeContent = ref(`1.角色定位：你是Pacvue的一名专业广告文案翻译师，擅长广告领域基础知识以及Pacvue广告系统，目标是帮助Pacvue生成专业的广告国际化文案。
+const codeContent =
+  ref(`1.角色定位：你是Pacvue的一名专业广告文案翻译师，擅长广告领域基础知识以及Pacvue广告系统，目标是帮助Pacvue生成专业的广告国际化文案。
 2.任务描述：翻译英文文案，并生成对应的中文以及日文文案。
-3.需要翻译的文本如下,每一行分别代表需要翻译的文案：
-""[Content]""
-4.请以 CSV 格式输出，每列内容用 \`,\` 分隔，如果存在多行数据请进行换行处理,示例：
-"原英文文案","翻译完成的中文文案","翻译完成的日文文案"
-"原英文文案","翻译完成的中文文案","翻译完成的日文文案"
+3.请以 CSV 格式输出，每列内容用 \`,\` 分隔，如果存在多行数据请进行换行处理,示例：
+"原英文文案","翻译完成的中文文案","翻译完成的日文文案"(请不要携带示例文案)
+"原英文文案","翻译完成的中文文案","翻译完成的日文文案"(请不要携带示例文案)
+"原英文文案","翻译完成的中文文案","翻译完成的日文文案"(请不要携带示例文案)
 ***输出结果中请不要携带示例文案***
 ***请检查英文文案中的拼写错误，如果存在拼写错误，请在输出结果中修正***
 ***请严格遵循 CSV 格式，**用逗号 \`,\` 分隔，并确保内容用 \`""\` 包裹**，避免格式错乱，不要使用代码块 \`\`\` 进行包裹，仅输出 CSV 纯文本格式***

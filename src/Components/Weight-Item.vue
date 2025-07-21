@@ -1,7 +1,7 @@
 <template>
   <div class="weight-item">
     <div class="weight-item-icon">
-      <el-image :src="url" :fit="fill" />
+      <el-image :src="url" :fit="fill" draggable="false" />
     </div>
     <div class="weight-item-title">
       <span class="weight-item-title-text">

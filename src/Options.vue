@@ -45,12 +45,10 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import Settings from "./Components/Settings.vue";
 import Tools from "./Components/Tools.vue";
 import Translation from "./Components/Translation.vue";
-// 导入 Element Plus 图标，如果需要的话
-// import { Setting, HomeFilled, Star } from '@element-plus/icons-vue';
 
 // 菜单项配置
 const menuConfig = [
@@ -95,8 +93,17 @@ const selectedMenu = ref("1");
 // 菜单选择事件处理
 const handleMenuSelect = (index) => {
   selectedMenu.value = index;
-  console.log("菜单选中:", index);
 };
+
+onMounted(() => {
+  chrome.storage.local.get(["initialMenu"], (result) => {
+    if (result.initialMenu) {
+      selectedMenu.value = result.initialMenu;
+      // 读取后删除，避免刷新时重复选中
+      chrome.storage.local.remove("initialMenu");
+    }
+  });
+});
 </script>
 
 <style scoped>
