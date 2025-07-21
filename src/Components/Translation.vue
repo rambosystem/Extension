@@ -71,6 +71,7 @@
         </el-form-item>
         <el-form-item>
           <div class="dialog-button-container">
+            <el-button @click="dialogVisible = false">Cancel</el-button>
             <el-button type="primary" @click="exportCSVAndUpload"
               >Export CSV & Upload</el-button
             >
