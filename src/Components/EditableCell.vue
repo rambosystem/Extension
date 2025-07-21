@@ -9,7 +9,7 @@
         @focus="isEditing = true"
         @blur="handleBlur"
         @keydown.enter="handleEnter"
-        @keyup.esc.stop="handleCancel"
+        @keydown.esc="handleEscape"
         ref="inputRef"
         class="edit-input"
       />
@@ -86,6 +86,15 @@ const handleBlur = () => {
   if (!isSaving.value) {
     handleSave();
   }
+};
+
+const handleEscape = (event) => {
+  // 彻底阻止事件传播
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  handleCancel();
+  return false;
 };
 
 const handleCancel = () => {
