@@ -9,7 +9,7 @@
         @focus="isEditing = true"
         @blur="handleBlur"
         @keydown.enter="handleEnter"
-        @keyup.esc="handleEsc"
+        @keyup.esc.stop="handleCancel"
         ref="inputRef"
         class="edit-input"
       />
