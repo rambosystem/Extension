@@ -36,58 +36,35 @@
           <el-table :data="translationResult" style="width: 100%" height="550">
             <el-table-column prop="en" label="EN">
               <template #default="{ row, $index }">
-                <!-- 如果row.editing_en为true，则显示el-input并聚焦，否则显示row.en -->
-                <div
-                  class="en-content"
-                  v-if="!row.editing_en"
-                  @click="enterEditMode($index, 'en')"
-                >
-                  {{ row.en }}
-                </div>
-                <!--row.editing_en为true，则聚焦，失焦后更新row.en，并设置row.editing_en为false-->
-                <div class="en-edit" v-else>
-                  <el-input
-                    v-model="row.en"
-                    @blur="row.editing_en = false"
-                    @focus="row.editing_en = true"
-                  />
-                </div>
+                <EditableCell
+                  :value="row.en"
+                  :isEditing="row.editing_en"
+                  @enterEdit="enterEditMode($index, 'en')"
+                  @exitEdit="row.editing_en = false"
+                  @update:value="row.en = $event"
+                />
               </template>
             </el-table-column>
             <el-table-column prop="cn" label="CN">
               <template #default="{ row, $index }">
-                <div
-                  class="cn-content"
-                  v-if="!row.editing_cn"
-                  @click="enterEditMode($index, 'cn')"
-                >
-                  {{ row.cn }}
-                </div>
-                <div class="cn-edit" v-else>
-                  <el-input
-                    v-model="row.cn"
-                    @blur="row.editing_cn = false"
-                    @focus="row.editing_cn = true"
-                  />
-                </div>
+                <EditableCell
+                  :value="row.cn"
+                  :isEditing="row.editing_cn"
+                  @enterEdit="enterEditMode($index, 'cn')"
+                  @exitEdit="row.editing_cn = false"
+                  @update:value="row.cn = $event"
+                />
               </template>
             </el-table-column>
             <el-table-column prop="jp" label="JP">
               <template #default="{ row, $index }">
-                <div
-                  class="jp-content"
-                  v-if="!row.editing_jp"
-                  @click="enterEditMode($index, 'jp')"
-                >
-                  {{ row.jp }}
-                </div>
-                <div class="jp-edit" v-else>
-                  <el-input
-                    v-model="row.jp"
-                    @blur="row.editing_jp = false"
-                    @focus="row.editing_jp = true"
-                  />
-                </div>
+                <EditableCell
+                  :value="row.jp"
+                  :isEditing="row.editing_jp"
+                  @enterEdit="enterEditMode($index, 'jp')"
+                  @exitEdit="row.editing_jp = false"
+                  @update:value="row.jp = $event"
+                />
               </template>
             </el-table-column>
           </el-table>
@@ -105,6 +82,7 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import CodeEditor from "./CodeEditor.vue";
+import EditableCell from "./EditableCell.vue";
 import { translate } from "../requests/lokalise";
 import { ElMessage } from "element-plus";
 
@@ -380,44 +358,5 @@ const handleTranslate = async () => {
   color: #303133;
 }
 
-/* 表格单元格编辑样式 */
-.en-content,
-.cn-content,
-.jp-content {
-  padding: 8px 0px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  transition: all 0.2s;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-}
-
-.en-edit,
-.cn-edit,
-.jp-edit {
-  width: 100%;
-}
-
-.en-edit .el-input,
-.cn-edit .el-input,
-.jp-edit .el-input {
-  width: 100%;
-}
-
-.en-edit .el-input__wrapper,
-.cn-edit .el-input__wrapper,
-.jp-edit .el-input__wrapper {
-  box-shadow: none;
-  border: 1px solid #409eff;
-  background-color: #ffffff;
-}
-
-.en-edit .el-input__inner,
-.cn-edit .el-input__inner,
-.jp-edit .el-input__inner {
-  padding: 4px 8px;
-  font-size: 14px;
-}
+/* 单元格样式已经移到 EditableCell 组件中 */
 </style>
