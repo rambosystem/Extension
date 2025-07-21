@@ -30,13 +30,66 @@
     </el-form>
     <!-- 使用El-dialog展示翻译结果, 结果使用El-table展示-->
     <!-- 提供导出CSV功能-->
-    <el-dialog v-model="dialogVisible" title="Translation Result" width="50%">
+    <el-dialog v-model="dialogVisible" title="Translation Result" width="70%">
       <el-form label-position="top">
         <el-form-item>
           <el-table :data="translationResult" style="width: 100%">
-            <el-table-column prop="en" label="EN" />
-            <el-table-column prop="cn" label="CN" />
-            <el-table-column prop="jp" label="JP" />
+            <el-table-column prop="en" label="EN">
+              <template #default="{ row }">
+                <!-- 如果row.editing_en为true，则显示el-input并聚焦，否则显示row.en -->
+                <div
+                  class="en-content"
+                  v-if="!row.editing_en"
+                  @click="row.editing_en = true"
+                >
+                  {{ row.en }}
+                </div>
+                <!--row.editing_en为true，则聚焦，失焦后更新row.en，并设置row.editing_en为false-->
+                <div class="en-edit" v-else>
+                  <el-input
+                    v-model="row.en"
+                    @blur="row.editing_en = false"
+                    @focus="row.editing_en = true"
+                  />
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="cn" label="CN">
+              <template #default="{ row }">
+                <div
+                  class="cn-content"
+                  v-if="!row.editing_cn"
+                  @click="row.editing_cn = true"
+                >
+                  {{ row.cn }}
+                </div>
+                <div class="cn-edit" v-else>
+                  <el-input
+                    v-model="row.cn"
+                    @blur="row.editing_cn = false"
+                    @focus="row.editing_cn = true"
+                  />
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="jp" label="JP">
+              <template #default="{ row }">
+                <div
+                  class="jp-content"
+                  v-if="!row.editing_jp"
+                  @click="row.editing_jp = true"
+                >
+                  {{ row.jp }}
+                </div>
+                <div class="jp-edit" v-else>
+                  <el-input
+                    v-model="row.jp"
+                    @blur="row.editing_jp = false"
+                    @focus="row.editing_jp = true"
+                  />
+                </div>
+              </template>
+            </el-table-column>
           </el-table>
         </el-form-item>
         <el-form-item>
@@ -100,15 +153,15 @@ const saveTranslationToLocal = (data) => {
 
 const exportCSV = () => {
   // 将translationResult.value转换为CSV格式
-  // 第一行是标题，第二行开始是数据，标题为key,en,cn,jp. 其中key==en
-  const header = ["key", "en", "cn", "jp"];
+  // 第一行是标题，第二行开始是数据，标题为key,en,zh_CN,jp. 其中key==en
+  const header = ["key", "en", "zh_CN", "jp"];
   const csvContent = [
     header.join(","),
     ...translationResult.value.map((row) =>
       [
         row.en, // key == en
         row.en, // en
-        row.cn, // cn
+        row.cn, // zh_CN (使用 cn 字段)
         row.jp, // jp
       ].map((value) => `"${value.replace(/"/g, '""')}"`)
     ), // 正确处理引号转义
@@ -132,8 +185,9 @@ const showLastTranslation = () => {
     // 为加载的数据添加编辑状态属性
     const dataWithEditState = lastTranslation.value.map((row) => ({
       ...row,
-      editing: false,
-      editColumn: null,
+      editing_en: false,
+      editing_cn: false,
+      editing_jp: false,
     }));
     translationResult.value = dataWithEditState;
     dialogVisible.value = true;
@@ -174,7 +228,14 @@ const handleTranslate = async () => {
       if (matches) {
         const [, en, cn, jp] = matches;
         console.log(`Line ${index + 1}:`, { en, cn, jp });
-        return { en, cn, jp };
+        return {
+          en,
+          cn,
+          jp,
+          editing_en: false,
+          editing_cn: false,
+          editing_jp: false,
+        };
       } else {
         // 如果正则匹配失败，尝试简单的 split 方法
         const parts = line
@@ -185,6 +246,9 @@ const handleTranslate = async () => {
           en: parts[0] || "",
           cn: parts[1] || "",
           jp: parts[2] || "",
+          editing_en: false,
+          editing_cn: false,
+          editing_jp: false,
         };
       }
     });
@@ -296,5 +360,46 @@ const handleTranslate = async () => {
   font-weight: 600;
   font-size: 18px;
   color: #303133;
+}
+
+/* 表格单元格编辑样式 */
+.en-content,
+.cn-content,
+.jp-content {
+  padding: 8px 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: all 0.2s;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.en-edit,
+.cn-edit,
+.jp-edit {
+  width: 100%;
+}
+
+.en-edit .el-input,
+.cn-edit .el-input,
+.jp-edit .el-input {
+  width: 100%;
+}
+
+.en-edit .el-input__wrapper,
+.cn-edit .el-input__wrapper,
+.jp-edit .el-input__wrapper {
+  box-shadow: none;
+  border: 1px solid #409eff;
+  background-color: #ffffff;
+}
+
+.en-edit .el-input__inner,
+.cn-edit .el-input__inner,
+.jp-edit .el-input__inner {
+  padding: 4px 8px;
+  font-size: 14px;
 }
 </style>
