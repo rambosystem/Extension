@@ -6,10 +6,20 @@
     <div class="cell-edit" v-else>
       <el-input
         v-model="localValue"
-        @blur="handleBlur"
         @focus="isEditing = true"
+        @keyup.enter="handleSave"
+        @keyup.esc="handleCancel"
         ref="inputRef"
+        class="edit-input"
       />
+      <el-button
+        type="primary"
+        size="small"
+        @click="handleSave"
+        class="save-button"
+      >
+        Save
+      </el-button>
     </div>
   </div>
 </template>
@@ -52,8 +62,13 @@ watch(
   }
 );
 
-const handleBlur = () => {
+const handleSave = () => {
   emit("update:value", localValue.value);
+  emit("exitEdit");
+};
+
+const handleCancel = () => {
+  localValue.value = props.value; // 恢复原值
   emit("exitEdit");
 };
 </script>
@@ -78,27 +93,35 @@ const handleBlur = () => {
   padding: 0;
   height: 30px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.cell-edit .el-input {
-  width: 100%;
+.edit-input {
+  flex: 1;
   height: 30px;
 }
 
-.cell-edit .el-input__wrapper {
+.save-button {
+  flex-shrink: 0;
+  height: 30px;
+}
+
+.edit-input .el-input__wrapper {
   box-shadow: none;
   border: 1px solid #409eff;
   background-color: #ffffff;
   border-radius: 4px;
   padding: 0;
-  height: 50px;
+  height: 30px;
   box-sizing: border-box;
 }
 
-.cell-edit .el-input__inner {
+.edit-input .el-input__inner {
   padding: 0 11px;
   font-size: 14px;
-  height: 50px;
+  height: 30px;
   border: none;
   outline: none;
   box-sizing: border-box;
