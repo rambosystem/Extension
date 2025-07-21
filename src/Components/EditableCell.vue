@@ -7,6 +7,7 @@
       <el-input
         v-model="localValue"
         @focus="isEditing = true"
+        @blur="handleSave"
         @keyup.enter="handleSave"
         @keyup.esc="handleCancel"
         ref="inputRef"
@@ -19,6 +20,9 @@
         class="save-button"
       >
         Save
+      </el-button>
+      <el-button size="small" @click="handleCancel" class="cancel-button">
+        Cancel
       </el-button>
     </div>
   </div>
@@ -103,8 +107,10 @@ const handleCancel = () => {
   height: 30px;
 }
 
-.save-button {
+.save-button,
+.cancel-button {
   flex-shrink: 0;
+  margin-left: 0px;
   height: 30px;
 }
 
