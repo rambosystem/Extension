@@ -35,12 +35,12 @@
         <el-form-item>
           <el-table :data="translationResult" style="width: 100%">
             <el-table-column prop="en" label="EN">
-              <template #default="{ row }">
+              <template #default="{ row, $index }">
                 <!-- 如果row.editing_en为true，则显示el-input并聚焦，否则显示row.en -->
                 <div
                   class="en-content"
                   v-if="!row.editing_en"
-                  @click="row.editing_en = true"
+                  @click="enterEditMode($index, 'en')"
                 >
                   {{ row.en }}
                 </div>
@@ -55,11 +55,11 @@
               </template>
             </el-table-column>
             <el-table-column prop="cn" label="CN">
-              <template #default="{ row }">
+              <template #default="{ row, $index }">
                 <div
                   class="cn-content"
                   v-if="!row.editing_cn"
-                  @click="row.editing_cn = true"
+                  @click="enterEditMode($index, 'cn')"
                 >
                   {{ row.cn }}
                 </div>
@@ -73,11 +73,11 @@
               </template>
             </el-table-column>
             <el-table-column prop="jp" label="JP">
-              <template #default="{ row }">
+              <template #default="{ row, $index }">
                 <div
                   class="jp-content"
                   v-if="!row.editing_jp"
-                  @click="row.editing_jp = true"
+                  @click="enterEditMode($index, 'jp')"
                 >
                   {{ row.jp }}
                 </div>
@@ -194,6 +194,24 @@ const showLastTranslation = () => {
   } else {
     ElMessage.warning("No previous translation result found");
   }
+};
+
+// 进入编辑状态时，关闭其他所有单元格的编辑状态
+const enterEditMode = (rowIndex, columnType) => {
+  // 遍历所有行，关闭编辑状态
+  translationResult.value.forEach((row, index) => {
+    if (index === rowIndex) {
+      // 对于当前行，只开启指定列的编辑状态，关闭其他列
+      row.editing_en = columnType === "en";
+      row.editing_cn = columnType === "cn";
+      row.editing_jp = columnType === "jp";
+    } else {
+      // 对于其他行，关闭所有编辑状态
+      row.editing_en = false;
+      row.editing_cn = false;
+      row.editing_jp = false;
+    }
+  });
 };
 
 // 组件挂载时加载本地存储的翻译结果
