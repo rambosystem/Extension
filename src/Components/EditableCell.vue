@@ -7,9 +7,9 @@
       <el-input
         v-model="localValue"
         @focus="isEditing = true"
-        @blur="handleSave"
-        @keyup.enter="handleSave"
-        @keyup.esc="handleCancel"
+        @blur="handleBlur"
+        @keydown.enter="handleEnter"
+        @keyup.esc="handleEsc"
         ref="inputRef"
         class="edit-input"
       />
@@ -46,6 +46,7 @@ const emit = defineEmits(["enterEdit", "exitEdit", "update:value"]);
 
 const localValue = ref(props.value);
 const inputRef = ref();
+const isSaving = ref(false);
 
 // 监听props.value变化，同步到localValue
 watch(
@@ -67,8 +68,24 @@ watch(
 );
 
 const handleSave = () => {
+  if (isSaving.value) return; // 防止重复调用
+  isSaving.value = true;
   emit("update:value", localValue.value);
   emit("exitEdit");
+  setTimeout(() => {
+    isSaving.value = false;
+  }, 100);
+};
+
+const handleEnter = (event) => {
+  event.preventDefault(); // 阻止默认行为
+  handleSave();
+};
+
+const handleBlur = () => {
+  if (!isSaving.value) {
+    handleSave();
+  }
 };
 
 const handleCancel = () => {
