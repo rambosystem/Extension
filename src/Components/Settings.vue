@@ -16,6 +16,11 @@
           />
         </div>
       </el-form-item>
+      <el-form-item label="Lokalise Project Upload URL" prop="uploadUrl">
+        <div class="input_container">
+          <el-input type="text" v-model="formData.uploadUrl" />
+        </div>
+      </el-form-item>
       <el-form-item label="Prompt" prop="prompt">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
@@ -61,6 +66,7 @@ const loading = ref(false);
 
 const formData = reactive({
   apiKey: "",
+  uploadUrl: "",
 });
 
 const handleSave = async () => {
@@ -78,6 +84,7 @@ const handleSave = async () => {
     loading.value = true;
     localStorage.setItem("deepseek_api_key", formData.apiKey.trim());
     localStorage.setItem("deepseek_prompt", codeContent.value.trim());
+    localStorage.setItem("lokalise_upload_url", formData.uploadUrl.trim());
     ElMessage.success("Save success");
   } catch (error) {
     console.error("Save failed:", error);
@@ -96,6 +103,11 @@ onMounted(() => {
   const savedPrompt = localStorage.getItem("deepseek_prompt");
   if (savedPrompt) {
     codeContent.value = savedPrompt;
+  }
+
+  const savedUploadUrl = localStorage.getItem("lokalise_upload_url");
+  if (savedUploadUrl) {
+    formData.uploadUrl = savedUploadUrl;
   }
 });
 </script>

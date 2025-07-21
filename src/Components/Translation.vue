@@ -162,12 +162,20 @@ const exportCSV = () => {
 };
 
 const exportCSVAndUpload = () => {
-  // 先导出CSV
+  // 先检查是否配置了上传URL
+  const uploadUrl = localStorage.getItem("lokalise_upload_url");
+
+  if (!uploadUrl || !uploadUrl.trim()) {
+    ElMessage.warning(
+      "Upload URL is not configured, please configure Lokalise Project Upload URL in Settings first"
+    );
+    return;
+  }
+
+  // 导出CSV
   exportCSV();
 
   // 然后打开Lokalise上传页面
-  const uploadUrl =
-    "https://app.lokalise.com/upload/3011682966726acb3be9a6.76737850/";
   window.open(uploadUrl, "_blank");
 };
 
@@ -337,7 +345,7 @@ const handleTranslate = async () => {
   width: 100%;
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
 }
 
 :deep(.el-form-item__label) {
