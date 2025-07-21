@@ -17,14 +17,20 @@
         </el-header>
         <div class="main-content">
           <el-row :gutter="10">
-            <el-col :span="6">
-              <div class="grid-content" @click="handleLokaliseClick">
+            <el-col :span="6" @click="handleLokaliseClick">
+              <div class="grid-content">
                 <WeightItem title="Lokalise" url="/src/assets/lokalise.svg" />
               </div>
             </el-col>
-            <el-col :span="6"><div class="grid-content" /></el-col>
-            <el-col :span="6"><div class="grid-content" /></el-col>
-            <el-col :span="6"><div class="grid-content" /></el-col>
+            <el-col :span="6">
+              <div class="grid-content" />
+            </el-col>
+            <el-col :span="6">
+              <div class="grid-content" />
+            </el-col>
+            <el-col :span="6">
+              <div class="grid-content" />
+            </el-col>
           </el-row>
         </div>
       </el-main>
@@ -45,8 +51,12 @@ const handleSettingClick = () => {
 
 const handleLokaliseClick = () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.tabs.sendMessage(tabs[0].id, { action: "show-dialog" });
+    chrome.tabs.sendMessage(tabs[0].id, {
+      action: "lokalise",
+    });
   });
+  console.log("Lokalise action sent");
+  window.close();
 };
 </script>
 
@@ -62,11 +72,13 @@ const handleLokaliseClick = () => {
   padding: 0;
   height: 24px;
   display: flex;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   justify-content: space-between;
+
   .logo_icon {
     height: 24px;
   }
+
   .el-button {
     padding: 0;
     height: 24px;
@@ -80,6 +92,7 @@ const handleLokaliseClick = () => {
 .el-main {
   color: #ffffff;
   height: 400px;
+
   .main-content {
     padding: 10px 0;
     width: 100%;
@@ -91,17 +104,21 @@ const handleLokaliseClick = () => {
   height: 40px;
   display: flex;
   align-items: center;
+
   .footer_text {
     font-size: 14px;
     line-height: 18px;
   }
 }
+
 .el-row {
   margin-bottom: 20px;
 }
+
 .el-row:last-child {
   margin-bottom: 0;
 }
+
 .el-col {
   border-radius: 4px;
 }
@@ -111,6 +128,7 @@ const handleLokaliseClick = () => {
   border-radius: 10px;
   min-height: 72px;
 }
+
 .grid-content:hover {
   background-color: #eaeced;
 }
