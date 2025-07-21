@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import CodeEditor from "./CodeEditor.vue";
 import { translate } from "../requests/lokalise";
 import { ElMessage } from "element-plus";
@@ -71,6 +71,32 @@ const formRef = ref();
 const formData = reactive({
   // 国际化翻译页面的数据
 });
+
+// 从本地存储加载上次翻译结果
+const loadLastTranslation = () => {
+  const saved = localStorage.getItem("last_translation_result");
+  if (saved) {
+    try {
+      lastTranslation.value = JSON.parse(saved);
+    } catch (error) {
+      console.error(
+        "Failed to parse last translation from localStorage:",
+        error
+      );
+      lastTranslation.value = null;
+    }
+  }
+};
+
+// 保存翻译结果到本地存储
+const saveTranslationToLocal = (data) => {
+  try {
+    localStorage.setItem("last_translation_result", JSON.stringify(data));
+  } catch (error) {
+    console.error("Failed to save translation to localStorage:", error);
+    ElMessage.warning("Failed to save translation result to local storage");
+  }
+};
 
 const exportCSV = () => {
   // 将translationResult.value转换为CSV格式
@@ -103,10 +129,23 @@ const exportCSV = () => {
 
 const showLastTranslation = () => {
   if (lastTranslation.value) {
-    translationResult.value = [...lastTranslation.value];
+    // 为加载的数据添加编辑状态属性
+    const dataWithEditState = lastTranslation.value.map((row) => ({
+      ...row,
+      editing: false,
+      editColumn: null,
+    }));
+    translationResult.value = dataWithEditState;
     dialogVisible.value = true;
+  } else {
+    ElMessage.warning("No previous translation result found");
   }
 };
+
+// 组件挂载时加载本地存储的翻译结果
+onMounted(() => {
+  loadLastTranslation();
+});
 
 const handleTranslate = async () => {
   if (!codeContent.value) {
@@ -152,8 +191,14 @@ const handleTranslate = async () => {
 
     console.log("Final translation result:", translationResult.value);
 
-    // 保存当前翻译结果到 lastTranslation
-    lastTranslation.value = JSON.parse(JSON.stringify(translationResult.value));
+    // 保存当前翻译结果到 lastTranslation（只保存翻译数据，不包含编辑状态）
+    const translationData = translationResult.value.map((row) => ({
+      en: row.en,
+      cn: row.cn,
+      jp: row.jp,
+    }));
+    lastTranslation.value = translationData;
+    saveTranslationToLocal(translationData); // 保存到本地存储
   } catch (error) {
     console.error("Translation error:", error);
     ElMessage.error(
