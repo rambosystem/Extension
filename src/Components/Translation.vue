@@ -14,6 +14,14 @@
       </el-form-item>
       <el-form-item>
         <div class="button-container">
+          <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
+          <el-button
+            type="text"
+            @click="showLastTranslation"
+            v-if="lastTranslation"
+          >
+            Last Translation
+          </el-button>
           <el-button type="primary" @click="handleTranslate" :loading="loading">
             Translate
           </el-button>
@@ -58,6 +66,7 @@ const codeContent = ref("");
 const loading = ref(false);
 const dialogVisible = ref(false);
 const translationResult = ref([]);
+const lastTranslation = ref(null);
 const formRef = ref();
 const formData = reactive({
   // 国际化翻译页面的数据
@@ -90,6 +99,13 @@ const exportCSV = () => {
   a.download = "translation_result.csv";
   a.click();
   URL.revokeObjectURL(url);
+};
+
+const showLastTranslation = () => {
+  if (lastTranslation.value) {
+    translationResult.value = [...lastTranslation.value];
+    dialogVisible.value = true;
+  }
 };
 
 const handleTranslate = async () => {
@@ -135,6 +151,9 @@ const handleTranslate = async () => {
     });
 
     console.log("Final translation result:", translationResult.value);
+
+    // 保存当前翻译结果到 lastTranslation
+    lastTranslation.value = JSON.parse(JSON.stringify(translationResult.value));
   } catch (error) {
     console.error("Translation error:", error);
     ElMessage.error(
@@ -178,6 +197,22 @@ const handleTranslate = async () => {
   width: 100%;
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Last Translation 按钮样式 */
+.button-container .el-button--text {
+  color: #409eff;
+  font-size: 14px;
+  padding: 0;
+  height: auto;
+  line-height: 1.5;
+}
+
+.button-container .el-button--text:hover {
+  color: #66b1ff;
+  text-decoration: underline;
 }
 
 .dialog-button-container {
