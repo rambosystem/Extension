@@ -8,41 +8,22 @@
       class="settings-form"
     >
       <el-form-item label="API Key" prop="apiKey">
-        <div class="input_container">
-          <el-input
-            type="text"
-            v-model="formData.apiKey"
-            placeholder="API Key for DeepSeek"
-            @input="onApiKeyChange"
-            @blur="onApiKeyBlur"
-          />
-          <el-button
-            v-show="showApiKeySaveBtn"
-            type="primary"
-            @click="handleSaveAPIKey"
-            :loading="loading"
-          >
-            Save
-          </el-button>
-        </div>
+        <SaveableInput
+          v-model="formData.apiKey"
+          label="API Key for DeepSeek"
+          placeholder="API Key for DeepSeek"
+          @save="handleSaveAPIKey"
+          :loading="loading"
+        />
       </el-form-item>
       <el-form-item label="Lokalise Project Upload URL" prop="uploadUrl">
-        <div class="input_container">
-          <el-input
-            type="text"
-            v-model="formData.uploadUrl"
-            @input="onUrlChange"
-            @blur="onUrlBlur"
-          />
-          <el-button
-            v-show="showUrlSaveBtn"
-            type="primary"
-            @click="handleSaveLokaliseURL"
-            :loading="loading"
-          >
-            Save
-          </el-button>
-        </div>
+        <SaveableInput
+          v-model="formData.uploadUrl"
+          label="Lokalise Project Upload URL"
+          placeholder="Lokalise Project Upload URL"
+          @save="handleSaveLokaliseURL"
+          :loading="loading"
+        />
       </el-form-item>
       <el-form-item label="Prompt" prop="prompt">
         <div class="CodeEditor">
@@ -94,6 +75,7 @@ import { ref, reactive, onMounted } from "vue";
 import { ElMessage, ElDialog } from "element-plus";
 import CodeEditor from "./CodeEditor.vue";
 import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
+import SaveableInput from "./SaveableInput.vue";
 
 const props = defineProps({
   title: {
@@ -108,46 +90,10 @@ const formRef = ref();
 const loading = ref(false);
 const dialogVisible = ref(false);
 
-// 控制按钮可见性
-const showApiKeySaveBtn = ref(false);
-const showUrlSaveBtn = ref(false);
-
-// 存储原始值用于比较
-const originalApiKey = ref("");
-const originalUrl = ref("");
-
 const formData = reactive({
   apiKey: "",
   uploadUrl: "",
 });
-
-// 监听输入变化
-const onApiKeyChange = () => {
-  const currentValue = formData.apiKey.trim();
-  const hasChanged = currentValue !== originalApiKey.value;
-  showApiKeySaveBtn.value = hasChanged;
-};
-
-const onUrlChange = () => {
-  const currentValue = formData.uploadUrl.trim();
-  const hasChanged = currentValue !== originalUrl.value;
-  showUrlSaveBtn.value = hasChanged;
-};
-
-// 失焦退出编辑状态
-const onApiKeyBlur = () => {
-  // 恢复到原始值
-  formData.apiKey = originalApiKey.value;
-  // 隐藏保存按钮，退出编辑状态
-  showApiKeySaveBtn.value = false;
-};
-
-const onUrlBlur = () => {
-  // 恢复到原始值
-  formData.uploadUrl = originalUrl.value;
-  // 隐藏保存按钮，退出编辑状态
-  showUrlSaveBtn.value = false;
-};
 
 const handleClearLocalStorage = () => {
   dialogVisible.value = true;
@@ -159,43 +105,74 @@ const handleClearLocalStorageConfirm = () => {
   ElMessage.success("Clear Local Storage Success");
 };
 
-const handleSaveAPIKey = async () => {
-  if (!formData.apiKey?.trim()) {
+const handleSaveAPIKey = async (saveData) => {
+  const { value, onSuccess, onError } = saveData;
+
+  if (!value?.trim()) {
     ElMessage.error("Please enter API Key");
+    onError();
     return;
   }
-  // 检查apikey是否合法
-  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${formData.apiKey.trim()}`,
-    },
-    body: JSON.stringify({
-      model: "deepseek-chat",
-      messages: [{ role: "user", content: "Hello, world!" }],
-    }),
-  });
-  if (!response.ok) {
-    ElMessage.error("API Key is invalid");
-    return;
+
+  try {
+    loading.value = true;
+
+    // 检查apikey是否合法
+    const response = await fetch(
+      "https://api.deepseek.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${value.trim()}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [{ role: "user", content: "Hello, world!" }],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      ElMessage.error("API Key is invalid");
+      onError();
+      return;
+    }
+
+    deepseekApiKey.value = value.trim();
+    localStorage.setItem("deepseek_api_key", deepseekApiKey.value);
+    formData.apiKey = value.trim();
+    ElMessage.success("Save success");
+    onSuccess();
+  } catch (error) {
+    ElMessage.error("API Key validation failed");
+    onError();
+  } finally {
+    loading.value = false;
   }
-  deepseekApiKey.value = formData.apiKey.trim();
-  localStorage.setItem("deepseek_api_key", deepseekApiKey.value);
-  originalApiKey.value = formData.apiKey.trim();
-  showApiKeySaveBtn.value = false;
-  ElMessage.success("Save success");
 };
 
-const handleSaveLokaliseURL = async () => {
-  if (!formData.uploadUrl?.trim()) {
+const handleSaveLokaliseURL = async (saveData) => {
+  const { value, onSuccess, onError } = saveData;
+
+  if (!value?.trim()) {
     ElMessage.error("Please enter Lokalise Project Upload URL");
+    onError();
     return;
   }
-  localStorage.setItem("lokalise_upload_url", formData.uploadUrl.trim());
-  originalUrl.value = formData.uploadUrl.trim();
-  showUrlSaveBtn.value = false;
-  ElMessage.success("Save success");
+
+  try {
+    loading.value = true;
+    localStorage.setItem("lokalise_upload_url", value.trim());
+    formData.uploadUrl = value.trim();
+    ElMessage.success("Save success");
+    onSuccess();
+  } catch (error) {
+    ElMessage.error("Save failed");
+    onError();
+  } finally {
+    loading.value = false;
+  }
 };
 const handleSave = async () => {
   if (!codeContent.value?.trim()) {
@@ -220,7 +197,6 @@ onMounted(() => {
   if (savedApiKey) {
     deepseekApiKey.value = savedApiKey;
     formData.apiKey = savedApiKey; // 🔧 修复：同步到表单显示
-    originalApiKey.value = savedApiKey; // 初始化原始值
   }
 
   const savedPrompt = localStorage.getItem("deepseek_prompt");
@@ -231,7 +207,6 @@ onMounted(() => {
   const savedUploadUrl = localStorage.getItem("lokalise_upload_url");
   if (savedUploadUrl) {
     formData.uploadUrl = savedUploadUrl;
-    originalUrl.value = savedUploadUrl; // 初始化原始值
   }
 });
 </script>
@@ -250,17 +225,6 @@ onMounted(() => {
   width: 100%;
 }
 
-.input_container {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-
-  .el-input {
-    flex: 1;
-    min-width: 0;
-  }
-}
 .localStorageClear {
   display: flex;
   justify-content: flex-end;
