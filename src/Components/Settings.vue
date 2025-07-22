@@ -91,6 +91,7 @@
 import { ref, reactive, onMounted } from "vue";
 import { ElMessage, ElDialog } from "element-plus";
 import CodeEditor from "./CodeEditor.vue";
+import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
 
 const props = defineProps({
   title: {
@@ -100,18 +101,7 @@ const props = defineProps({
 });
 
 const deepseekApiKey = ref("");
-const codeContent =
-  ref(`1.角色定位：你是Pacvue的一名专业广告文案翻译师，擅长广告领域基础知识以及Pacvue广告系统，目标是帮助Pacvue生成专业的广告国际化文案。
-2.任务描述：翻译英文文案，并生成对应的中文以及日文文案。
-3.请以 CSV 格式输出，每列内容用 \`,\` 分隔，如果存在多行数据请进行换行处理,示例：
-"原英文文案","翻译完成的中文文案","翻译完成的日文文案"(请不要携带示例文案)
-"原英文文案","翻译完成的中文文案","翻译完成的日文文案"(请不要携带示例文案)
-"原英文文案","翻译完成的中文文案","翻译完成的日文文案"(请不要携带示例文案)
-***输出结果中请不要携带示例文案***
-***请检查英文文案中的拼写错误，如果存在拼写错误，请在输出结果中修正***
-***请严格遵循 CSV 格式，**用逗号 \`,\` 分隔，并确保内容用 \`""\` 包裹**，避免格式错乱，不要使用代码块 \`\`\` 进行包裹，仅输出 CSV 纯文本格式***
-***如果文案中存在特殊字符请保留原有格式，例如",",".","?","\\n","\\t","{0}","{1}"等等***
-***中文以及日文翻译中去除{n}占位符前后的空格***`);
+const codeContent = ref(DEFAULT_TRANSLATION_PROMPT);
 const formRef = ref();
 const loading = ref(false);
 const dialogVisible = ref(false);
