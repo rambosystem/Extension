@@ -148,10 +148,8 @@ export function useSettings() {
 
     if (success) {
       ElMessage.success("Clear Local Storage Success");
-      // 重置表单数据
-      formData.apiKey = "";
-      formData.uploadUrl = "";
-      codeContent.value = DEFAULT_TRANSLATION_PROMPT;
+      // 重新加载数据（此时应该加载默认值）
+      initializeSettings();
     } else {
       ElMessage.error("Failed to clear local storage");
     }
@@ -163,18 +161,16 @@ export function useSettings() {
   const initializeSettings = () => {
     const settings = loadSettings(STORAGE_KEYS);
 
-    if (settings.apiKey) {
-      formData.apiKey = settings.apiKey;
-    }
+    // 始终设置字段，即使为空也要更新
+    formData.apiKey = settings.apiKey || "";
+    formData.uploadUrl = settings.uploadUrl || "";
 
-    // 使用保存的prompt，如果为空则保持默认prompt
+    // 使用保存的prompt，如果为空则使用默认prompt
     if (settings.prompt && settings.prompt.trim()) {
       codeContent.value = settings.prompt;
-    }
-    // 如果没有保存的prompt或为空，codeContent已经初始化为DEFAULT_TRANSLATION_PROMPT
-
-    if (settings.uploadUrl) {
-      formData.uploadUrl = settings.uploadUrl;
+    } else {
+      // 如果没有保存的prompt或为空，使用默认prompt
+      codeContent.value = DEFAULT_TRANSLATION_PROMPT;
     }
   };
 

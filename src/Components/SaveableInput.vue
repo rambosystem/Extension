@@ -58,13 +58,21 @@ const showSaveButton = computed(() => {
   return hasChanged && !isSaving.value && userHasInteracted.value;
 });
 
-// 监听外部值变化，在用户未交互时更新原始值
+// 监听外部值变化，处理初始化和外部重置
 watch(
   () => props.modelValue,
-  (newValue) => {
-    // 如果用户还没有交互过，就更新原始值
+  (newValue, oldValue) => {
+    const newVal = newValue || "";
+    const oldVal = oldValue || "";
+
+    // 如果用户还没有交互过，就更新原始值（初始化场景）
     if (!userHasInteracted.value) {
-      originalValue.value = newValue || "";
+      originalValue.value = newVal;
+    }
+    // 检测外部重置：如果新值变成空字符串，且原始值不为空，说明可能是外部清空
+    else if (newVal === "" && originalValue.value !== "") {
+      originalValue.value = newVal;
+      userHasInteracted.value = false; // 重置交互状态
     }
   },
   { immediate: true }
