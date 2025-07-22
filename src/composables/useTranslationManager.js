@@ -1,4 +1,4 @@
-import { ref, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useTranslation } from "./useTranslation.js";
 import { useCSVExport } from "./useCSVExport.js";
@@ -12,6 +12,8 @@ export function useTranslationManager() {
   // 基础状态
   const codeContent = ref("");
   const dialogVisible = ref(false);
+  const formRef = ref();
+  const formData = reactive({});
 
   // 使用各个功能模块
   const translation = useTranslation();
@@ -88,6 +90,8 @@ export function useTranslationManager() {
     // 状态
     codeContent,
     dialogVisible,
+    formRef,
+    formData,
 
     // 翻译结果数据
     translationResult: editor.translationResult,

@@ -1,7 +1,12 @@
 <template>
   <div class="translation_group">
     <h2 class="title">{{ title }}</h2>
-    <el-form label-position="top" class="translation-form">
+    <el-form
+      :model="formData"
+      ref="formRef"
+      label-position="top"
+      class="translation-form"
+    >
       <el-form-item label="EN Copywriting" prop="content">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
@@ -94,6 +99,8 @@ const props = defineProps({
 const {
   codeContent,
   dialogVisible,
+  formRef,
+  formData,
   translationResult,
   loading,
   handleTranslate,

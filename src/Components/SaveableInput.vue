@@ -49,22 +49,22 @@ const emit = defineEmits(["update:modelValue", "save"]);
 // 内部状态
 const originalValue = ref(props.modelValue || "");
 const isSaving = ref(false);
-const isInitialized = ref(false);
+const userHasInteracted = ref(false); // 跟踪用户是否有过交互
 
 // 计算按钮是否显示
 const showSaveButton = computed(() => {
   const currentValue = props.modelValue || "";
   const hasChanged = currentValue.trim() !== originalValue.value.trim();
-  return hasChanged && !isSaving.value;
+  return hasChanged && !isSaving.value && userHasInteracted.value;
 });
 
-// 监听外部值变化，只在初始化时更新原始值
+// 监听外部值变化，在用户未交互时更新原始值
 watch(
   () => props.modelValue,
   (newValue) => {
-    if (!isInitialized.value) {
+    // 如果用户还没有交互过，就更新原始值
+    if (!userHasInteracted.value) {
       originalValue.value = newValue || "";
-      isInitialized.value = true;
     }
   },
   { immediate: true }
@@ -80,6 +80,7 @@ watch(
 
 const handleInput = (value) => {
   emit("update:modelValue", value);
+  userHasInteracted.value = true; // 用户有过交互
 };
 
 const handleBlur = () => {
@@ -91,6 +92,8 @@ const handleBlur = () => {
     if (showSaveButton.value && !isSaving.value) {
       // 恢复到原始值
       emit("update:modelValue", originalValue.value);
+      // 重置用户交互标志
+      userHasInteracted.value = false;
     }
   }, 200);
 };
@@ -100,7 +103,8 @@ const handleSaveClick = () => {
   emit("save", {
     value: props.modelValue,
     onSuccess: () => {
-      originalValue.value = props.modelValue; // 保存成功后更新原始值
+      originalValue.value = props.modelValue;
+      userHasInteracted.value = false; // 保存成功后重置交互标志
       isSaving.value = false;
     },
     onError: () => {
