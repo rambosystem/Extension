@@ -1,12 +1,7 @@
 <template>
   <div class="translation_group">
     <h2 class="title">{{ title }}</h2>
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="translation-form"
-    >
+    <el-form label-position="top" class="translation-form">
       <el-form-item label="EN Copywriting" prop="content">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
@@ -18,7 +13,7 @@
           <el-button
             type="text"
             @click="showLastTranslation"
-            v-if="lastTranslation"
+            v-if="hasLastTranslation()"
           >
             Last Translation
           </el-button>
@@ -84,11 +79,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
 import CodeEditor from "./CodeEditor.vue";
 import EditableCell from "./EditableCell.vue";
-import { translate } from "../requests/lokalise";
-import { ElMessage } from "element-plus";
+import { useTranslationManager } from "../composables/useTranslationManager.js";
 
 const props = defineProps({
   title: {
@@ -97,200 +90,19 @@ const props = defineProps({
   },
 });
 
-const codeContent = ref("");
-const loading = ref(false);
-const dialogVisible = ref(false);
-const translationResult = ref([]);
-const lastTranslation = ref(null);
-const formRef = ref();
-const formData = reactive({
-  // 国际化翻译页面的数据
-});
-
-// 从本地存储加载上次翻译结果
-const loadLastTranslation = () => {
-  const saved = localStorage.getItem("last_translation_result");
-  if (saved) {
-    try {
-      lastTranslation.value = JSON.parse(saved);
-    } catch (error) {
-      console.error(
-        "Failed to parse last translation from localStorage:",
-        error
-      );
-      lastTranslation.value = null;
-    }
-  }
-};
-
-// 保存翻译结果到本地存储
-const saveTranslationToLocal = (data) => {
-  try {
-    localStorage.setItem("last_translation_result", JSON.stringify(data));
-  } catch (error) {
-    console.error("Failed to save translation to localStorage:", error);
-    ElMessage.warning("Failed to save translation result to local storage");
-  }
-};
-
-const exportCSV = () => {
-  // 将translationResult.value转换为CSV格式
-  // 第一行是标题，第二行开始是数据，标题为key,en,zh_CN,jp. 其中key==en
-  const header = ["key", "en", "zh_CN", "jp"];
-  const csvContent = [
-    header.join(","),
-    ...translationResult.value.map((row) =>
-      [
-        row.en, // key == en
-        row.en, // en
-        row.cn, // zh_CN (使用 cn 字段)
-        row.jp, // jp
-      ].map((value) => `"${value.replace(/"/g, '""')}"`)
-    ), // 正确处理引号转义
-  ].join("\n");
-
-  // 添加 UTF-8 BOM 来解决中文乱码问题
-  const BOM = "\uFEFF";
-  const blob = new Blob([BOM + csvContent], {
-    type: "text/csv;charset=utf-8;",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "translation_result.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-const exportCSVAndUpload = () => {
-  // 先检查是否配置了上传URL
-  const uploadUrl = localStorage.getItem("lokalise_upload_url");
-
-  if (!uploadUrl || !uploadUrl.trim()) {
-    ElMessage.warning(
-      "Upload URL is not configured, please configure Lokalise Project Upload URL in Settings first"
-    );
-    return;
-  }
-
-  // 导出CSV
-  exportCSV();
-
-  // 然后打开Lokalise上传页面
-  window.open(uploadUrl, "_blank");
-};
-
-const showLastTranslation = () => {
-  if (lastTranslation.value) {
-    // 为加载的数据添加编辑状态属性
-    const dataWithEditState = lastTranslation.value.map((row) => ({
-      ...row,
-      editing_en: false,
-      editing_cn: false,
-      editing_jp: false,
-    }));
-    translationResult.value = dataWithEditState;
-    dialogVisible.value = true;
-  } else {
-    ElMessage.warning("No previous translation result found");
-  }
-};
-
-// 进入编辑状态时，关闭其他所有单元格的编辑状态
-const enterEditMode = (rowIndex, columnType) => {
-  // 遍历所有行，关闭编辑状态
-  translationResult.value.forEach((row, index) => {
-    if (index === rowIndex) {
-      // 对于当前行，只开启指定列的编辑状态，关闭其他列
-      row.editing_en = columnType === "en";
-      row.editing_cn = columnType === "cn";
-      row.editing_jp = columnType === "jp";
-    } else {
-      // 对于其他行，关闭所有编辑状态
-      row.editing_en = false;
-      row.editing_cn = false;
-      row.editing_jp = false;
-    }
-  });
-};
-
-// 组件挂载时加载本地存储的翻译结果
-onMounted(() => {
-  loadLastTranslation();
-});
-
-const handleTranslate = async () => {
-  if (!codeContent.value) {
-    ElMessage.error("Please Enter the EN Copywriting");
-    return;
-  }
-
-  loading.value = true;
-  try {
-    const data = await translate(codeContent.value);
-    console.log("Raw API response:", data);
-    ElMessage.success("Translation completed successfully");
-    dialogVisible.value = true;
-
-    //数据结果是"Dayparting Scheduler Template","时段排期模板","時間帯スケジューラーテンプレート"这种格式，需要将数据进行分割，并转换为数组
-    //分为三列EN,CN,JP
-    const lines = data
-      .trim()
-      .split("\n")
-      .filter((line) => line.trim());
-    console.log("Parsed lines:", lines);
-
-    translationResult.value = lines.map((line, index) => {
-      // 使用正则表达式来正确解析 CSV 格式，处理包含逗号的字段
-      const matches = line.match(/"([^"]*)","([^"]*)","([^"]*)"/);
-      if (matches) {
-        const [, en, cn, jp] = matches;
-        console.log(`Line ${index + 1}:`, { en, cn, jp });
-        return {
-          en,
-          cn,
-          jp,
-          editing_en: false,
-          editing_cn: false,
-          editing_jp: false,
-        };
-      } else {
-        // 如果正则匹配失败，尝试简单的 split 方法
-        const parts = line
-          .split(",")
-          .map((part) => part.replace(/"/g, "").trim());
-        console.log(`Line ${index + 1} (fallback):`, parts);
-        return {
-          en: parts[0] || "",
-          cn: parts[1] || "",
-          jp: parts[2] || "",
-          editing_en: false,
-          editing_cn: false,
-          editing_jp: false,
-        };
-      }
-    });
-
-    console.log("Final translation result:", translationResult.value);
-
-    // 保存当前翻译结果到 lastTranslation（只保存翻译数据，不包含编辑状态）
-    const translationData = translationResult.value.map((row) => ({
-      en: row.en,
-      cn: row.cn,
-      jp: row.jp,
-    }));
-    lastTranslation.value = translationData;
-    saveTranslationToLocal(translationData); // 保存到本地存储
-  } catch (error) {
-    console.error("Translation error:", error);
-    ElMessage.error(
-      error.message ||
-        "Translation failed. Please check your API key and settings."
-    );
-  } finally {
-    loading.value = false;
-  }
-}; // 国际化翻译页面的方法可以在这里添加
+// 使用翻译管理composable
+const {
+  codeContent,
+  dialogVisible,
+  translationResult,
+  loading,
+  handleTranslate,
+  showLastTranslation,
+  exportCSV,
+  exportCSVAndUpload,
+  enterEditMode,
+  hasLastTranslation,
+} = useTranslationManager();
 </script>
 
 <style lang="scss" scoped>

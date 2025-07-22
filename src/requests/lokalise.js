@@ -1,6 +1,8 @@
+import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
+
 export async function translate(content) {
   const apiKey = localStorage.getItem("deepseek_api_key");
-  const prompt = localStorage.getItem("deepseek_prompt");
+  let prompt = localStorage.getItem("deepseek_prompt");
 
   if (!apiKey) {
     throw new Error(
@@ -8,9 +10,11 @@ export async function translate(content) {
     );
   }
 
+  // 如果没有自定义prompt，使用默认prompt
   if (!prompt) {
-    throw new Error(
-      "Prompt not found. Please set your translation prompt in Settings."
+    prompt = DEFAULT_TRANSLATION_PROMPT;
+    console.log(
+      "Using default translation prompt. You can customize it in Settings."
     );
   }
 

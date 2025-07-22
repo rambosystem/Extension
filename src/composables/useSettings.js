@@ -167,9 +167,11 @@ export function useSettings() {
       formData.apiKey = settings.apiKey;
     }
 
-    if (settings.prompt) {
+    // 使用保存的prompt，如果为空则保持默认prompt
+    if (settings.prompt && settings.prompt.trim()) {
       codeContent.value = settings.prompt;
     }
+    // 如果没有保存的prompt或为空，codeContent已经初始化为DEFAULT_TRANSLATION_PROMPT
 
     if (settings.uploadUrl) {
       formData.uploadUrl = settings.uploadUrl;
