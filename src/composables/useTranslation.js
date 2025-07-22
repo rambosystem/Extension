@@ -1,12 +1,12 @@
 import { ElMessage } from "element-plus";
 import { translate } from "../requests/lokalise.js";
-import { useLoading } from "./useLoading.js";
+import { useState } from "./useState.js";
 
 /**
  * 翻译功能Hook
  */
 export function useTranslation() {
-  const { loadingStates, setLoading } = useLoading({
+  const { loadingStates, withState } = useState({
     translation: false,
   });
 
@@ -65,16 +65,19 @@ export function useTranslation() {
       throw new Error("Please Enter the EN Copywriting");
     }
 
-    setLoading("translation", true);
     try {
-      const data = await translate(content);
-      console.log("Raw API response:", data);
+      const result = await withState("translation", async () => {
+        const data = await translate(content);
+        console.log("Raw API response:", data);
 
-      const translationResult = parseTranslationResult(data);
-      console.log("Final translation result:", translationResult);
+        const translationResult = parseTranslationResult(data);
+        console.log("Final translation result:", translationResult);
 
-      ElMessage.success("Translation completed successfully");
-      return translationResult;
+        ElMessage.success("Translation completed successfully");
+        return translationResult;
+      });
+
+      return result;
     } catch (error) {
       console.error("Translation error:", error);
       const errorMessage =
@@ -82,8 +85,6 @@ export function useTranslation() {
         "Translation failed. Please check your API key and settings.";
       ElMessage.error(errorMessage);
       throw error;
-    } finally {
-      setLoading("translation", false);
     }
   };
 

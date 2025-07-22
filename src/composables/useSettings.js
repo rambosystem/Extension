@@ -1,6 +1,6 @@
-import { ref, reactive, onMounted, watch } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { useLoading } from "./useLoading.js";
+import { useState } from "./useState.js";
 import { useStorage } from "./useStorage.js";
 import { validateDeepSeekApiKey } from "../utils/apiValidation.js";
 import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
@@ -18,11 +18,24 @@ export function useSettings() {
   };
 
   // 初始化composables
-  const { loadingStates, setLoading } = useLoading({
+  const { 
+    loadingStates, 
+    booleanStates,
+    stringStates,
+    setState, 
+    setLoading,
+    withState 
+  } = useState({
+    // Loading 状态
     apiKey: false,
     url: false,
     prompt: false,
     translationPrompt: false,
+    // 布尔状态
+    isCodeEditing: false,
+    // 字符串状态
+    apiKey: "",
+    uploadUrl: "",
   });
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } =
@@ -31,14 +44,6 @@ export function useSettings() {
   // 状态管理
   const codeContent = ref(DEFAULT_TRANSLATION_PROMPT);
   const dialogVisible = ref(false);
-
-  const formData = reactive({
-    apiKey: "",
-    uploadUrl: "",
-  });
-
-  // CodeEditor 编辑状态管理
-  const isCodeEditing = ref(false);
   const originalCodeContent = ref(DEFAULT_TRANSLATION_PROMPT);
 
   /**
@@ -53,27 +58,24 @@ export function useSettings() {
     }
 
     try {
-      setLoading("apiKey", true);
+      await withState("apiKey", async () => {
+        const isValid = await validateDeepSeekApiKey(value);
+        if (!isValid) {
+          throw new Error("API Key is invalid");
+        }
 
-      const isValid = await validateDeepSeekApiKey(value);
-      if (!isValid) {
-        onError("API Key is invalid");
-        return;
-      }
+        const saved = saveToStorage(STORAGE_KEYS.apiKey, value);
+        if (!saved) {
+          throw new Error("Failed to save API Key");
+        }
 
-      const saved = saveToStorage(STORAGE_KEYS.apiKey, value);
-      if (!saved) {
-        onError("Failed to save API Key");
-        return;
-      }
+        setState("apiKey", value.trim(), "string");
+      });
 
-      formData.apiKey = value.trim();
       onSuccess();
     } catch (error) {
       console.error("API Key validation failed:", error);
-      onError("API Key validation failed");
-    } finally {
-      setLoading("apiKey", false);
+      onError(error.message || "API Key validation failed");
     }
   };
 
@@ -89,27 +91,24 @@ export function useSettings() {
     }
 
     try {
-      setLoading("url", true);
+      await withState("url", async () => {
+        // 检查是否为合法的URL
+        if (!isValidURL(value)) {
+          throw new Error("Invalid URL");
+        }
 
-      // 检查是否为合法的URL
-      if (!isValidURL(value)) {
-        onError("Invalid URL");
-        return;
-      }
+        const saved = saveToStorage(STORAGE_KEYS.uploadUrl, value);
+        if (!saved) {
+          throw new Error("Failed to save URL");
+        }
 
-      const saved = saveToStorage(STORAGE_KEYS.uploadUrl, value);
-      if (!saved) {
-        onError("Failed to save URL");
-        return;
-      }
+        setState("uploadUrl", value.trim(), "string");
+      });
 
-      formData.uploadUrl = value.trim();
       onSuccess();
     } catch (error) {
       console.error("Save failed:", error);
-      onError("Save failed");
-    } finally {
-      setLoading("url", false);
+      onError(error.message || "Save failed");
     }
   };
 
@@ -123,27 +122,24 @@ export function useSettings() {
     }
 
     try {
-      setLoading("prompt", true);
-
-      const saved = saveToStorage(STORAGE_KEYS.prompt, codeContent.value);
-      if (!saved) {
-        ElMessage.error("Failed to save prompt");
-        return;
-      }
+      await withState("prompt", async () => {
+        const saved = saveToStorage(STORAGE_KEYS.prompt, codeContent.value);
+        if (!saved) {
+          throw new Error("Failed to save prompt");
+        }
+      });
 
       ElMessage.success("Save successful");
       
       // 保存成功，更新原始值并退出编辑状态
       originalCodeContent.value = codeContent.value;
-      isCodeEditing.value = false;
+      setState("isCodeEditing", false, "boolean");
       
       return true; // 返回成功状态
     } catch (error) {
       console.error("Save failed:", error);
-      ElMessage.error("Save failed, please try again");
+      ElMessage.error(error.message || "Save failed, please try again");
       return false; // 返回失败状态
-    } finally {
-      setLoading("prompt", false);
     }
   };
 
@@ -174,8 +170,8 @@ export function useSettings() {
     const settings = loadSettings(STORAGE_KEYS);
 
     // 始终设置字段，即使为空也要更新
-    formData.apiKey = settings.apiKey || "";
-    formData.uploadUrl = settings.uploadUrl || "";
+    setState("apiKey", settings.apiKey || "", "string");
+    setState("uploadUrl", settings.uploadUrl || "", "string");
 
     // 使用保存的prompt，如果为空则使用默认prompt
     if (settings.prompt && settings.prompt.trim()) {
@@ -196,10 +192,10 @@ export function useSettings() {
       // 检查是否有实际变化
       const hasChanged = newValue.trim() !== originalCodeContent.value.trim();
       
-      if (hasChanged && !isCodeEditing.value) {
-        isCodeEditing.value = true;
-      } else if (!hasChanged && isCodeEditing.value) {
-        isCodeEditing.value = false;
+      if (hasChanged && !booleanStates.isCodeEditing) {
+        setState("isCodeEditing", true, "boolean");
+      } else if (!hasChanged && booleanStates.isCodeEditing) {
+        setState("isCodeEditing", false, "boolean");
       }
     }
   );
@@ -208,7 +204,7 @@ export function useSettings() {
   watch(
     () => codeContent.value,
     (newValue) => {
-      if (!isCodeEditing.value) {
+      if (!booleanStates.isCodeEditing) {
         originalCodeContent.value = newValue || "";
       }
     }
@@ -224,8 +220,8 @@ export function useSettings() {
     loadingStates,
     codeContent,
     dialogVisible,
-    formData,
-    isCodeEditing,
+    stringStates, // 替代 formData
+    booleanStates, // 包含 isCodeEditing
 
     // 方法
     handleSaveAPIKey,
