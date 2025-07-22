@@ -26,6 +26,9 @@ export function useTranslationManager() {
    */
   const handleTranslate = async () => {
     try {
+      // 显示结果对话框（在翻译开始时就显示）
+      dialogVisible.value = true;
+      
       const result = await translation.performTranslation(codeContent.value);
 
       // 设置表格数据
@@ -34,9 +37,6 @@ export function useTranslationManager() {
       // 提取纯数据并保存到存储
       const translationData = translation.extractTranslationData(result);
       storage.saveTranslationToLocal(translationData);
-
-      // 显示结果对话框
-      dialogVisible.value = true;
     } catch (error) {
       // 错误已在translation.performTranslation中处理
       console.error("Translation failed:", error);

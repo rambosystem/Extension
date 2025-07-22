@@ -13,7 +13,7 @@
           <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation()">
             Last Translation
           </el-button>
-          <el-button type="primary" @click="handleTranslate" :loading="loadingStates.translation">
+          <el-button type="primary" @click="handleTranslate">
             Translate
           </el-button>
         </div>
@@ -24,7 +24,8 @@
     <el-dialog v-model="dialogVisible" title="Translation Result" width="70%">
       <el-form label-position="top">
         <el-form-item>
-          <el-table :data="translationResult" style="width: 100%" height="450">
+          <el-table :data="translationResult" style="width: 100%" height="450" empty-text=''
+            v-loading="loadingStates.translation" element-loading-text="Translating...">
             <el-table-column prop="en" label="EN">
               <template #default="{ row, $index }">
                 <EditableCell :value="row.en" :isEditing="row.editing_en" @enterEdit="enterEditMode($index, 'en')"

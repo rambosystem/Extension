@@ -1,4 +1,3 @@
-import { ref } from "vue";
 import { ElMessage } from "element-plus";
 import { translate } from "../requests/lokalise.js";
 import { useLoading } from "./useLoading.js";
