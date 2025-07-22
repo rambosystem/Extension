@@ -14,6 +14,7 @@
             v-model="formData.apiKey"
             placeholder="API Key for DeepSeek"
             @input="onApiKeyChange"
+            @blur="onApiKeyBlur"
           />
           <el-button
             v-show="showApiKeySaveBtn"
@@ -31,6 +32,7 @@
             type="text"
             v-model="formData.uploadUrl"
             @input="onUrlChange"
+            @blur="onUrlBlur"
           />
           <el-button
             v-show="showUrlSaveBtn"
@@ -121,11 +123,30 @@ const formData = reactive({
 
 // 监听输入变化
 const onApiKeyChange = () => {
-  showApiKeySaveBtn.value = formData.apiKey.trim() !== originalApiKey.value;
+  const currentValue = formData.apiKey.trim();
+  const hasChanged = currentValue !== originalApiKey.value;
+  showApiKeySaveBtn.value = hasChanged;
 };
 
 const onUrlChange = () => {
-  showUrlSaveBtn.value = formData.uploadUrl.trim() !== originalUrl.value;
+  const currentValue = formData.uploadUrl.trim();
+  const hasChanged = currentValue !== originalUrl.value;
+  showUrlSaveBtn.value = hasChanged;
+};
+
+// 失焦退出编辑状态
+const onApiKeyBlur = () => {
+  // 恢复到原始值
+  formData.apiKey = originalApiKey.value;
+  // 隐藏保存按钮，退出编辑状态
+  showApiKeySaveBtn.value = false;
+};
+
+const onUrlBlur = () => {
+  // 恢复到原始值
+  formData.uploadUrl = originalUrl.value;
+  // 隐藏保存按钮，退出编辑状态
+  showUrlSaveBtn.value = false;
 };
 
 const handleClearLocalStorage = () => {
