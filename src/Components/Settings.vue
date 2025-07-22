@@ -23,7 +23,7 @@
       </el-form-item>
       <el-form-item v-if="formData.translationPrompt">
         <div class="button-container">
-          <el-button type="primary" @click="handleSavePrompt" :loading="loadingStates.prompt">
+          <el-button v-show="isCodeEditing" type="primary" @click="handleSavePrompt" :loading="loadingStates.prompt">
             Save
           </el-button>
         </div>
@@ -71,6 +71,7 @@ const {
   codeContent,
   dialogVisible,
   formData,
+  isCodeEditing,
   handleSaveAPIKey,
   handleSaveLokaliseURL,
   handleSavePrompt,

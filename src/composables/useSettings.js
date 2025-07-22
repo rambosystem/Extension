@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useLoading } from "./useLoading.js";
 import { useStorage } from "./useStorage.js";
@@ -14,6 +14,7 @@ export function useSettings() {
     apiKey: "deepseek_api_key",
     uploadUrl: "lokalise_upload_url",
     prompt: "deepseek_prompt",
+    translationPrompt: "translation_prompt",
   };
 
   // 初始化composables
@@ -21,6 +22,7 @@ export function useSettings() {
     apiKey: false,
     url: false,
     prompt: false,
+    translationPrompt: false,
   });
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } =
@@ -34,6 +36,10 @@ export function useSettings() {
     apiKey: "",
     uploadUrl: "",
   });
+
+  // CodeEditor 编辑状态管理
+  const isCodeEditing = ref(false);
+  const originalCodeContent = ref(DEFAULT_TRANSLATION_PROMPT);
 
   /**
    * 处理API Key保存
@@ -126,9 +132,16 @@ export function useSettings() {
       }
 
       ElMessage.success("Save successful");
+      
+      // 保存成功，更新原始值并退出编辑状态
+      originalCodeContent.value = codeContent.value;
+      isCodeEditing.value = false;
+      
+      return true; // 返回成功状态
     } catch (error) {
       console.error("Save failed:", error);
       ElMessage.error("Save failed, please try again");
+      return false; // 返回失败状态
     } finally {
       setLoading("prompt", false);
     }
@@ -171,7 +184,35 @@ export function useSettings() {
       // 如果没有保存的prompt或为空，使用默认prompt
       codeContent.value = DEFAULT_TRANSLATION_PROMPT;
     }
+
+    // 初始化原始值
+    originalCodeContent.value = codeContent.value;
   };
+
+  // 监听 codeContent 变化，管理编辑状态
+  watch(
+    () => codeContent.value,
+    (newValue) => {
+      // 检查是否有实际变化
+      const hasChanged = newValue.trim() !== originalCodeContent.value.trim();
+      
+      if (hasChanged && !isCodeEditing.value) {
+        isCodeEditing.value = true;
+      } else if (!hasChanged && isCodeEditing.value) {
+        isCodeEditing.value = false;
+      }
+    }
+  );
+
+  // 监听 codeContent 变化，更新原始值（仅在非编辑状态）
+  watch(
+    () => codeContent.value,
+    (newValue) => {
+      if (!isCodeEditing.value) {
+        originalCodeContent.value = newValue || "";
+      }
+    }
+  );
 
   // 组件挂载时初始化
   onMounted(() => {
@@ -184,6 +225,7 @@ export function useSettings() {
     codeContent,
     dialogVisible,
     formData,
+    isCodeEditing,
 
     // 方法
     handleSaveAPIKey,
