@@ -42,8 +42,7 @@ export function useSettings() {
     const { value, onSuccess, onError } = saveData;
 
     if (!value?.trim()) {
-      ElMessage.error("Please enter API Key");
-      onError();
+      onError("Please enter API Key");
       return;
     }
 
@@ -52,24 +51,21 @@ export function useSettings() {
 
       const isValid = await validateDeepSeekApiKey(value);
       if (!isValid) {
-        ElMessage.error("API Key is invalid");
-        onError();
+        onError("API Key is invalid");
         return;
       }
 
       const saved = saveToStorage(STORAGE_KEYS.apiKey, value);
       if (!saved) {
-        ElMessage.error("Failed to save API Key");
-        onError();
+        onError("Failed to save API Key");
         return;
       }
 
       formData.apiKey = value.trim();
-      ElMessage.success("Save success");
       onSuccess();
     } catch (error) {
-      ElMessage.error("API Key validation failed");
-      onError();
+      console.error("API Key validation failed:", error);
+      onError("API Key validation failed");
     } finally {
       setLoading("apiKey", false);
     }
@@ -82,8 +78,7 @@ export function useSettings() {
     const { value, onSuccess, onError } = saveData;
 
     if (!value?.trim()) {
-      ElMessage.error("Please enter Lokalise Project Upload URL");
-      onError();
+      onError("Please enter Lokalise Project Upload URL");
       return;
     }
 
@@ -92,17 +87,15 @@ export function useSettings() {
 
       const saved = saveToStorage(STORAGE_KEYS.uploadUrl, value);
       if (!saved) {
-        ElMessage.error("Failed to save URL");
-        onError();
+        onError("Failed to save URL");
         return;
       }
 
       formData.uploadUrl = value.trim();
-      ElMessage.success("Save success");
       onSuccess();
     } catch (error) {
-      ElMessage.error("Save failed");
-      onError();
+      console.error("Save failed:", error);
+      onError("Save failed");
     } finally {
       setLoading("url", false);
     }
@@ -126,7 +119,7 @@ export function useSettings() {
         return;
       }
 
-      ElMessage.success("Save success");
+      ElMessage.success("Save successful");
     } catch (error) {
       console.error("Save failed:", error);
       ElMessage.error("Save failed, please try again");
