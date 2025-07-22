@@ -1,18 +1,18 @@
 <template>
   <div class="setting_group">
-    <h2 class="title">Lokalise Settings</h2>
+    <h2 class="title">{{ t('settings.title') }}</h2>
     <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
-      <el-form-item label="API Key" prop="apiKey">
-        <SaveableInput v-model="stringStates.apiKey" label="API Key for DeepSeek" placeholder="API Key for DeepSeek"
-          @save="handleSaveAPIKey" :loading="loadingStates.apiKey" />
+      <el-form-item :label="t('settings.apiKey')" prop="apiKey">
+        <SaveableInput v-model="stringStates.apiKey" :label="t('settings.apiKeyForDeepSeek')"
+          :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey" :loading="loadingStates.apiKey" />
       </el-form-item>
-      <el-form-item label="Lokalise Project Upload URL" prop="uploadUrl">
-        <SaveableInput v-model="stringStates.uploadUrl" label="Lokalise Project Upload URL"
+      <el-form-item :label="t('settings.lokaliseProjectUploadURL')" prop="uploadUrl">
+        <SaveableInput v-model="stringStates.uploadUrl" :label="t('settings.lokaliseProjectUploadURL')"
           placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
           :loading="loadingStates.url" />
       </el-form-item>
       <div class="custom-translation-prompt">
-        <el-form-item label="Custom Translation Prompt" label-position="left">
+        <el-form-item :label="t('settings.customTranslationPrompt')" label-position="left">
         </el-form-item>
         <el-switch v-model="stringStates.translationPrompt" width="45px" />
       </div>
@@ -25,25 +25,33 @@
         <div class="button-container">
           <el-button v-show="booleanStates.isCodeEditing" type="primary" @click="handleSavePrompt"
             :loading="loadingStates.prompt">
-            Save
+            {{ t('common.save') }}
           </el-button>
         </div>
       </el-form-item>
     </el-form>
-    <h2 class="title">Advanced Settings</h2>
+    <h2 class="title">{{ t('settings.advancedSettings') }}</h2>
     <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
-      <el-form-item label="Clear Local Storage" label-position="left">
+      <el-form-item :label="t('settings.language')" label-position="left">
+        <div class="language-select">
+          <el-select v-model="stringStates.language" @change="handleLanguageChange" style="width: 160px">
+            <el-option label="English" value="en" />
+            <el-option label="中文" value="zh_CN" />
+          </el-select>
+        </div>
+      </el-form-item>
+      <el-form-item :label="t('settings.clearLocalStorage')" label-position="left">
         <div class="localStorageClear">
           <el-button type="primary" @click="handleClearLocalStorage">
-            Clear
+            {{ t('common.clear') }}
           </el-button>
         </div>
-        <el-dialog v-model="dialogVisible" title="Clear Local Storage" width="30%" align-center>
-          <span>Are you sure you want to clear local storage?</span>
+        <el-dialog v-model="dialogVisible" :title="t('settings.clearLocalStorage')" width="30%" align-center>
+          <span>{{ t('settings.clearLocalStorageConfirm') }}</span>
           <template #footer>
-            <el-button @click="dialogVisible = false">Cancel</el-button>
+            <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
-              Confirm
+              {{ t('common.confirm') }}
             </el-button>
           </template>
         </el-dialog>
@@ -58,6 +66,9 @@ import { ElDialog } from "element-plus";
 import CodeEditor from "./CodeEditor.vue";
 import SaveableInput from "./SaveableInput.vue";
 import { useSettings } from "../composables/useSettings.js";
+import { useI18n } from "../composables/useI18n.js";
+
+const { t } = useI18n();
 
 const props = defineProps({
   title: {
@@ -78,6 +89,7 @@ const {
   handleSavePrompt,
   handleClearLocalStorage,
   handleClearLocalStorageConfirm,
+  handleLanguageChange,
 } = useSettings();
 
 const formRef = ref();
@@ -138,5 +150,12 @@ const formRef = ref();
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.language-select {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
 }
 </style>

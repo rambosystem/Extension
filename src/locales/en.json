@@ -1,0 +1,64 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "clear": "Clear",
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning"
+  },
+  "menu": {
+    "tools": "Tools",
+    "translation": "Translation",
+    "settings": "Settings",
+    "about": "About"
+  },
+  "translation": {
+    "title": "Translation",
+    "enCopywriting": "EN Copywriting",
+    "translate": "Translate",
+    "lastTranslation": "Last Translation",
+    "translationResult": "Translation Result",
+    "translating": "Translating...",
+    "exportCSV": "Export CSV",
+    "exportCSVAndUpload": "Export CSV & Upload",
+    "noPreviousTranslation": "No previous translation result found",
+    "noTranslationData": "No translation data to export",
+    "translationCompleted": "Translation completed successfully",
+    "pleaseEnterContent": "Please Enter the Content to Translate",
+    "pleaseConfigureAPIKey": "Please Configure Your API Key in Settings to Use Translation Feature.",
+    "translationFailed": "Translation failed. Please check your API key and settings."
+  },
+  "settings": {
+    "title": "Lokalise Settings",
+    "apiKey": "API Key",
+    "apiKeyForDeepSeek": "API Key for DeepSeek",
+    "lokaliseProjectUploadURL": "Lokalise Project Upload URL",
+    "customTranslationPrompt": "Custom Translation Prompt",
+    "advancedSettings": "Advanced Settings",
+    "language": "Language",
+    "clearLocalStorage": "Clear Local Storage",
+    "clearLocalStorageConfirm": "Are you sure you want to clear local storage?",
+    "clearLocalStorageSuccess": "Clear Local Storage Success",
+    "clearLocalStorageFailed": "Failed to clear local storage",
+    "saveSuccessful": "Save successful",
+    "saveFailed": "Save failed, please try again",
+    "pleaseEnterPrompt": "Please enter Prompt",
+    "pleaseEnterValue": "Please enter value"
+  },
+  "csvExport": {
+    "csvDownloaded": "CSV file downloaded successfully",
+    "csvExportFailed": "Failed to export CSV file",
+    "lokaliseUploadFailed": "Failed to open Lokalise upload page"
+  },
+  "storage": {
+    "loadFailed": "Failed to load previous translation result",
+    "saveFailed": "Failed to save translation result to local storage"
+  },
+  "about": {
+    "title": "About",
+    "content": "About page content"
+  }
+} 

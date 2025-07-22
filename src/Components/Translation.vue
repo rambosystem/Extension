@@ -2,7 +2,7 @@
   <div class="translation_group">
     <h2 class="title">{{ title }}</h2>
     <el-form :model="formData" ref="formRef" label-position="top" class="translation-form">
-      <el-form-item label="EN Copywriting" prop="content">
+      <el-form-item :label="t('translation.enCopywriting')" prop="content">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
         </div>
@@ -11,21 +11,21 @@
         <div class="button-container">
           <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
           <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation()">
-            Last Translation
+            {{ t('translation.lastTranslation') }}
           </el-button>
           <el-button type="primary" @click="handleTranslate">
-            Translate
+            {{ t('translation.translate') }}
           </el-button>
         </div>
       </el-form-item>
     </el-form>
     <!-- 使用El-dialog展示翻译结果, 结果使用El-table展示-->
     <!-- 提供导出CSV功能-->
-    <el-dialog v-model="dialogVisible" title="Translation Result" width="70%">
+    <el-dialog v-model="dialogVisible" :title="t('translation.translationResult')" width="70%">
       <el-form label-position="top">
         <el-form-item>
           <el-table :data="translationResult" style="width: 100%" height="450" empty-text=''
-            v-loading="loadingStates.translation" element-loading-text="Translating...">
+            v-loading="loadingStates.translation" :element-loading-text="t('translation.translating')">
             <el-table-column prop="en" label="EN">
               <template #default="{ row, $index }">
                 <EditableCell :value="row.en" :isEditing="row.editing_en" @enterEdit="enterEditMode($index, 'en')"
@@ -48,9 +48,9 @@
         </el-form-item>
         <el-form-item>
           <div class="dialog-button-container">
-            <el-button @click="dialogVisible = false">Cancel</el-button>
-            <el-button type="primary" @click="exportCSVAndUpload">Export CSV & Upload</el-button>
-            <el-button type="primary" @click="exportCSV">Export CSV</el-button>
+            <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+            <el-button type="primary" @click="exportCSVAndUpload">{{ t('translation.exportCSVAndUpload') }}</el-button>
+            <el-button type="primary" @click="exportCSV">{{ t('translation.exportCSV') }}</el-button>
           </div>
         </el-form-item>
       </el-form>
@@ -62,6 +62,9 @@
 import CodeEditor from "./CodeEditor.vue";
 import EditableCell from "./EditableCell.vue";
 import { useTranslationManager } from "../composables/useTranslationManager.js";
+import { useI18n } from "../composables/useI18n.js";
+
+const { t } = useI18n();
 
 const props = defineProps({
   title: {

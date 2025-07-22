@@ -1,4 +1,7 @@
 import { ElMessage } from "element-plus";
+import { useI18n } from "./useI18n.js";
+
+const { t } = useI18n();
 
 /**
  * CSV导出功能Hook
@@ -51,17 +54,17 @@ export function useCSVExport() {
    */
   const exportCSV = (translationResult) => {
     if (!translationResult || translationResult.length === 0) {
-      ElMessage.warning("No translation data to export");
+      ElMessage.warning(t("translation.noTranslationData"));
       return;
     }
 
     try {
       const csvContent = formatToCSV(translationResult);
       downloadCSV(csvContent);
-      ElMessage.success("CSV file downloaded successfully");
+      ElMessage.success(t("csvExport.csvDownloaded"));
     } catch (error) {
       console.error("CSV export failed:", error);
-      ElMessage.error("Failed to export CSV file");
+      ElMessage.error(t("csvExport.csvExportFailed"));
     }
   };
 
@@ -97,7 +100,7 @@ export function useCSVExport() {
       window.open(uploadUrl, "_blank");
     } catch (error) {
       console.error("Failed to open upload URL:", error);
-      ElMessage.error("Failed to open Lokalise upload page");
+      ElMessage.error(t("csvExport.lokaliseUploadFailed"));
     }
   };
 

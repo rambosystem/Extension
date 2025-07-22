@@ -29,54 +29,58 @@ import Settings from "./Components/Settings.vue";
 import Tools from "./Components/Tools.vue";
 import Translation from "./Components/Translation.vue";
 
-// 菜单项配置
-const menuConfig = [
+import { useI18n } from "./composables/useI18n.js";
+
+const { t } = useI18n();
+
+// 菜单项配置 - 使用计算属性确保响应式
+const menuConfig = computed(() => [
   {
     index: "1",
-    label: "常用工具",
-    title: "常用工具",
+    label: t("menu.tools"),
+    title: t("menu.tools"),
     component: Tools,
   },
   {
     index: "2",
-    label: "国际化翻译",
-    title: "国际化翻译",
+    label: t("menu.translation"),
+    title: t("menu.translation"),
     component: Translation,
   },
   {
     index: "3",
-    label: "设置",
-    title: "设置",
+    label: t("menu.settings"),
+    title: t("menu.settings"),
     component: Settings,
   },
   {
     index: "4",
-    label: "关于",
-    title: "关于",
+    label: t("menu.about"),
+    title: t("menu.about"),
     component: {
       template: `
         <div class="setting_group">
-          <h2 class="title">关于</h2>
+          <h2 class="title">${t("about.title")}</h2>
           <div class="about-content">
-            <p>关于页面内容</p>
+            <p>${t("about.content")}</p>
           </div>
         </div>
       `,
     },
   },
-];
+]);
 
 // 当前选中的菜单项
 const selectedMenu = ref("1");
 
 // 计算当前应该显示的组件
 const currentComponent = computed(() => {
-  const item = menuConfig.find((item) => item.index === selectedMenu.value);
+  const item = menuConfig.value.find((item) => item.index === selectedMenu.value);
   return item ? item.component : null;
 });
 
 const currentTitle = computed(() => {
-  const item = menuConfig.find((item) => item.index === selectedMenu.value);
+  const item = menuConfig.value.find((item) => item.index === selectedMenu.value);
   return item ? item.title : "";
 });
 

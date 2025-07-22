@@ -1,5 +1,8 @@
 import { ref } from "vue";
 import { ElMessage } from "element-plus";
+import { useI18n } from "./useI18n.js";
+
+const { t } = useI18n();
 
 /**
  * 翻译结果存储管理Hook
@@ -29,7 +32,7 @@ export function useTranslationStorage() {
         error
       );
       lastTranslation.value = null;
-      ElMessage.warning("Failed to load previous translation result");
+      ElMessage.warning(t("storage.loadFailed"));
     }
   };
 
@@ -45,7 +48,7 @@ export function useTranslationStorage() {
       console.log("Saved translation to storage:", translationData);
     } catch (error) {
       console.error("Failed to save translation to localStorage:", error);
-      ElMessage.warning("Failed to save translation result to local storage");
+      ElMessage.warning(t("storage.saveFailed"));
     }
   };
 

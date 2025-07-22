@@ -4,6 +4,9 @@ import { useTranslation } from "./useTranslation.js";
 import { useCSVExport } from "./useCSVExport.js";
 import { useTranslationStorage } from "./useTranslationStorage.js";
 import { useTableEditor } from "./useTableEditor.js";
+import { useI18n } from "./useI18n.js";
+
+const { t } = useI18n();
 
 /**
  * 翻译管理主Hook - 整合所有翻译相关功能
@@ -30,13 +33,13 @@ export function useTranslationManager() {
     // 1. 检查 API Key 是否存在（优先检查）
     const apiKey = localStorage.getItem("deepseek_api_key");
     if (!apiKey) {
-      ElMessage.warning("Please Configure Your API Key in Settings to Use Translation Feature.");
+      ElMessage.warning(t("translation.pleaseConfigureAPIKey"));
       return;
     }
 
     // 2. 检查输入内容是否为空
     if (!codeContent.value?.trim()) {
-      ElMessage.warning("Please Enter the Content to Translate");
+      ElMessage.warning(t("translation.pleaseEnterContent"));
       return;
     }
 
@@ -75,7 +78,7 @@ export function useTranslationManager() {
       editor.setTranslationResult(dataWithEditState);
       dialogVisible.value = true;
     } else {
-      ElMessage.warning("No previous translation result found");
+      ElMessage.warning(t("translation.noPreviousTranslation"));
     }
   };
 
@@ -84,7 +87,7 @@ export function useTranslationManager() {
    */
   const exportCSV = () => {
     if (editor.isEmpty()) {
-      ElMessage.warning("No translation data to export");
+      ElMessage.warning(t("translation.noTranslationData"));
       return;
     }
     csvExport.exportCSV(editor.translationResult.value);
@@ -95,7 +98,7 @@ export function useTranslationManager() {
    */
   const exportCSVAndUpload = () => {
     if (editor.isEmpty()) {
-      ElMessage.warning("No translation data to export");
+      ElMessage.warning(t("translation.noTranslationData"));
       return;
     }
     csvExport.exportCSVAndUpload(editor.translationResult.value);

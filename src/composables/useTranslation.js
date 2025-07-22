@@ -1,6 +1,9 @@
 import { ElMessage } from "element-plus";
 import { translate } from "../requests/lokalise.js";
 import { useState } from "./useState.js";
+import { useI18n } from "./useI18n.js";
+
+const { t } = useI18n();
 
 /**
  * 翻译功能Hook
@@ -62,7 +65,7 @@ export function useTranslation() {
         const data = await translate(content);
         const translationResult = parseTranslationResult(data);
 
-        ElMessage.success("Translation completed successfully");
+        ElMessage.success(t("translation.translationCompleted"));
         return translationResult;
       });
 
@@ -71,7 +74,7 @@ export function useTranslation() {
       console.error("Translation error:", error);
       const errorMessage =
         error.message ||
-        "Translation failed. Please check your API key and settings.";
+        t("translation.translationFailed");
       ElMessage.error(errorMessage);
       throw error;
     }

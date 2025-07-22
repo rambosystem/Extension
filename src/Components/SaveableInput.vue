@@ -11,6 +11,9 @@
 <script setup>
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
+import { useI18n } from "../composables/useI18n.js";
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {
@@ -122,7 +125,7 @@ const handleSaveClick = () => {
 
   // 检查是否为空
   if (!currentValue.trim()) {
-    ElMessage.error(`Please enter ${props.label || "value"}`);
+    ElMessage.error(t("settings.pleaseEnterValue"));
     return;
   }
 
@@ -143,13 +146,13 @@ const handleSaveClick = () => {
       isEditing.value = false;
       isSaving.value = false;
       saveJustFailed.value = false;
-      ElMessage.success("Save successful");
+      ElMessage.success(t("settings.saveSuccessful"));
     },
     onError: (errorMessage) => {
       // 保存失败：保持编辑状态，显示错误信息，设置保存失败标志
       isSaving.value = false;
       saveJustFailed.value = true;
-      ElMessage.error(errorMessage || "Save failed, please try again");
+      ElMessage.error(errorMessage || t("settings.saveFailed"));
 
       // 3秒后自动重置保存失败标志，允许失焦退出编辑
       setTimeout(() => {

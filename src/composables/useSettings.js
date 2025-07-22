@@ -5,6 +5,10 @@ import { useStorage } from "./useStorage.js";
 import { validateDeepSeekApiKey } from "../utils/apiValidation.js";
 import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
 import { isValidURL } from "../utils/urlValidation.js";
+import { useI18n } from "./useI18n.js";
+
+const { t } = useI18n();
+
 /**
  * 设置管理Hook
  */
@@ -15,6 +19,7 @@ export function useSettings() {
     uploadUrl: "lokalise_upload_url",
     prompt: "deepseek_prompt",
     translationPrompt: "translation_prompt",
+    language: "app_language",
   };
 
   // 初始化composables
@@ -36,6 +41,7 @@ export function useSettings() {
     // 字符串状态
     apiKey: "",
     uploadUrl: "",
+    language: "en", // 默认英文
   });
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } =
@@ -117,7 +123,7 @@ export function useSettings() {
    */
   const handleSavePrompt = async () => {
     if (!codeContent.value?.trim()) {
-      ElMessage.error("Please enter Prompt");
+      ElMessage.error(t("settings.pleaseEnterPrompt"));
       return;
     }
 
@@ -129,7 +135,7 @@ export function useSettings() {
         }
       });
 
-      ElMessage.success("Save successful");
+      ElMessage.success(t("settings.saveSuccessful"));
       
       // 保存成功，更新原始值并退出编辑状态
       originalCodeContent.value = codeContent.value;
@@ -138,7 +144,7 @@ export function useSettings() {
       return true; // 返回成功状态
     } catch (error) {
       console.error("Save failed:", error);
-      ElMessage.error(error.message || "Save failed, please try again");
+      ElMessage.error(error.message || t("settings.saveFailed"));
       return false; // 返回失败状态
     }
   };
@@ -155,11 +161,39 @@ export function useSettings() {
     dialogVisible.value = false;
 
     if (success) {
-      ElMessage.success("Clear Local Storage Success");
+      ElMessage.success(t("settings.clearLocalStorageSuccess"));
       // 重新加载数据（此时应该加载默认值）
       initializeSettings();
     } else {
-      ElMessage.error("Failed to clear local storage");
+      ElMessage.error(t("settings.clearLocalStorageFailed"));
+    }
+  };
+
+  /**
+   * 处理语言切换
+   * @param {string} language - 语言代码
+   */
+  const handleLanguageChange = (language) => {
+    try {
+      // 保存到本地存储
+      const saved = saveToStorage(STORAGE_KEYS.language, language);
+      if (!saved) {
+        throw new Error("Failed to save language setting");
+      }
+
+      // 更新状态
+      setState("language", language, "string");
+      
+      // 直接更新localStorage，触发useI18n的响应式更新
+      localStorage.setItem('app_language', language);
+      
+      // 触发自定义事件，通知其他组件语言已变化
+      window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language } }));
+      
+      ElMessage.success(t("settings.saveSuccessful"));
+    } catch (error) {
+      console.error("Language change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
     }
   };
 
@@ -172,6 +206,7 @@ export function useSettings() {
     // 始终设置字段，即使为空也要更新
     setState("apiKey", settings.apiKey || "", "string");
     setState("uploadUrl", settings.uploadUrl || "", "string");
+    setState("language", settings.language || "en", "string");
 
     // 使用保存的prompt，如果为空则使用默认prompt
     if (settings.prompt && settings.prompt.trim()) {
@@ -229,6 +264,7 @@ export function useSettings() {
     handleSavePrompt,
     handleClearLocalStorage,
     handleClearLocalStorageConfirm,
+    handleLanguageChange,
     initializeSettings,
   };
 }
