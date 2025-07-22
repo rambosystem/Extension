@@ -1,19 +1,8 @@
 <template>
   <div class="input_container">
-    <el-input
-      type="text"
-      :model-value="modelValue"
-      :placeholder="placeholder"
-      @input="handleInput"
-      @blur="handleBlur"
-      @focus="handleFocus"
-    />
-    <el-button
-      v-show="isEditing"
-      type="primary"
-      @click="handleSaveClick"
-      :loading="loading"
-    >
+    <el-input type="text" :model-value="modelValue" :placeholder="placeholder" @input="handleInput" @blur="handleBlur"
+      @focus="handleFocus" />
+    <el-button v-show="isEditing" type="primary" @click="handleSaveClick" :loading="loading">
       {{ saveButtonText }}
     </el-button>
   </div>
@@ -185,7 +174,7 @@ const handleSaveClick = () => {
   }
 
   .el-button {
-    min-width: 80px;
+    min-width: 64px;
   }
 }
 </style>

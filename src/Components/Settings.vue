@@ -1,34 +1,20 @@
 <template>
   <div class="setting_group">
     <h2 class="title">Lokalise Settings</h2>
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
+    <el-form :model="formData" ref="formRef" label-position="top" class="settings-form">
       <el-form-item label="API Key" prop="apiKey">
-        <SaveableInput
-          v-model="formData.apiKey"
-          label="API Key for DeepSeek"
-          placeholder="API Key for DeepSeek"
-          @save="handleSaveAPIKey"
-          :loading="loadingStates.apiKey"
-        />
+        <SaveableInput v-model="formData.apiKey" label="API Key for DeepSeek" placeholder="API Key for DeepSeek"
+          @save="handleSaveAPIKey" :loading="loadingStates.apiKey" />
       </el-form-item>
       <el-form-item label="Lokalise Project Upload URL" prop="uploadUrl">
-        <SaveableInput
-          v-model="formData.uploadUrl"
-          label="Lokalise Project Upload URL"
-          placeholder="https://app.lokalise.com/upload/..."
-          @save="handleSaveLokaliseURL"
-          :loading="loadingStates.url"
-        />
+        <SaveableInput v-model="formData.uploadUrl" label="Lokalise Project Upload URL"
+          placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
+          :loading="loadingStates.url" />
       </el-form-item>
       <div class="custom-translation-prompt">
         <el-form-item label="Custom Translation Prompt" label-position="left">
         </el-form-item>
-        <el-switch v-model="formData.translationPrompt" />
+        <el-switch v-model="formData.translationPrompt" width="45px" />
       </div>
       <el-form-item v-if="formData.translationPrompt">
         <div class="CodeEditor">
@@ -37,35 +23,21 @@
       </el-form-item>
       <el-form-item v-if="formData.translationPrompt">
         <div class="button-container">
-          <el-button
-            type="primary"
-            @click="handleSavePrompt"
-            :loading="loadingStates.prompt"
-          >
+          <el-button type="primary" @click="handleSavePrompt" :loading="loadingStates.prompt">
             Save
           </el-button>
         </div>
       </el-form-item>
     </el-form>
     <h2 class="title">Advanced Settings</h2>
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
+    <el-form :model="formData" ref="formRef" label-position="top" class="settings-form">
       <el-form-item label="Clear Local Storage" label-position="left">
         <div class="localStorageClear">
           <el-button type="primary" @click="handleClearLocalStorage">
             Clear
           </el-button>
         </div>
-        <el-dialog
-          v-model="dialogVisible"
-          title="Clear Local Storage"
-          width="30%"
-          align-center
-        >
+        <el-dialog v-model="dialogVisible" title="Clear Local Storage" width="30%" align-center>
           <span>Are you sure you want to clear local storage?</span>
           <template #footer>
             <el-button @click="dialogVisible = false">Cancel</el-button>

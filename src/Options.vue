@@ -2,27 +2,12 @@
   <el-container class="common-layout">
     <el-aside width="240px" class="sidebar">
       <div class="sidebar-header">
-        <img
-          src="/src/assets/rambo.svg"
-          alt="Logo"
-          class="adguard-logo"
-          draggable="false"
-        />
+        <img src="/src/assets/rambo.svg" alt="Logo" class="adguard-logo" draggable="false" />
       </div>
 
-      <el-menu
-        :default-active="selectedMenu"
-        class="sidebar-menu"
-        @select="handleMenuSelect"
-        background-color="#f8f8f8"
-        text-color="#333"
-        active-text-color="#409EFF"
-      >
-        <el-menu-item
-          v-for="item in menuConfig"
-          :key="item.index"
-          :index="item.index"
-        >
+      <el-menu :default-active="selectedMenu" class="sidebar-menu" @select="handleMenuSelect" background-color="#f8f8f8"
+        text-color="#333" active-text-color="#409EFF">
+        <el-menu-item v-for="item in menuConfig" :key="item.index" :index="item.index">
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
@@ -31,11 +16,7 @@
     <el-container>
       <el-main class="main-content">
         <div class="content-placeholder">
-          <component
-            v-if="currentComponent"
-            :is="currentComponent"
-            :title="currentTitle"
-          />
+          <component v-if="currentComponent" :is="currentComponent" :title="currentTitle" />
         </div>
       </el-main>
     </el-container>
@@ -188,7 +169,7 @@ onMounted(() => {
 .content-placeholder {
   padding: 40px 0;
   min-height: 400px;
-  width: 672px;
+  width: 60%;
 }
 
 /* 关于页面样式 */

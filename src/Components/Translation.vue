@@ -1,12 +1,7 @@
 <template>
   <div class="translation_group">
     <h2 class="title">{{ title }}</h2>
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="translation-form"
-    >
+    <el-form :model="formData" ref="formRef" label-position="top" class="translation-form">
       <el-form-item label="EN Copywriting" prop="content">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
@@ -15,11 +10,7 @@
       <el-form-item>
         <div class="button-container">
           <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
-          <el-button
-            type="text"
-            @click="showLastTranslation"
-            v-if="hasLastTranslation()"
-          >
+          <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation()">
             Last Translation
           </el-button>
           <el-button type="primary" @click="handleTranslate" :loading="loading">
@@ -33,38 +24,23 @@
     <el-dialog v-model="dialogVisible" title="Translation Result" width="70%">
       <el-form label-position="top">
         <el-form-item>
-          <el-table :data="translationResult" style="width: 100%" height="550">
+          <el-table :data="translationResult" style="width: 100%" height="450">
             <el-table-column prop="en" label="EN">
               <template #default="{ row, $index }">
-                <EditableCell
-                  :value="row.en"
-                  :isEditing="row.editing_en"
-                  @enterEdit="enterEditMode($index, 'en')"
-                  @exitEdit="row.editing_en = false"
-                  @update:value="row.en = $event"
-                />
+                <EditableCell :value="row.en" :isEditing="row.editing_en" @enterEdit="enterEditMode($index, 'en')"
+                  @exitEdit="row.editing_en = false" @update:value="row.en = $event" />
               </template>
             </el-table-column>
             <el-table-column prop="cn" label="CN">
               <template #default="{ row, $index }">
-                <EditableCell
-                  :value="row.cn"
-                  :isEditing="row.editing_cn"
-                  @enterEdit="enterEditMode($index, 'cn')"
-                  @exitEdit="row.editing_cn = false"
-                  @update:value="row.cn = $event"
-                />
+                <EditableCell :value="row.cn" :isEditing="row.editing_cn" @enterEdit="enterEditMode($index, 'cn')"
+                  @exitEdit="row.editing_cn = false" @update:value="row.cn = $event" />
               </template>
             </el-table-column>
             <el-table-column prop="jp" label="JP">
               <template #default="{ row, $index }">
-                <EditableCell
-                  :value="row.jp"
-                  :isEditing="row.editing_jp"
-                  @enterEdit="enterEditMode($index, 'jp')"
-                  @exitEdit="row.editing_jp = false"
-                  @update:value="row.jp = $event"
-                />
+                <EditableCell :value="row.jp" :isEditing="row.editing_jp" @enterEdit="enterEditMode($index, 'jp')"
+                  @exitEdit="row.editing_jp = false" @update:value="row.jp = $event" />
               </template>
             </el-table-column>
           </el-table>
@@ -72,9 +48,7 @@
         <el-form-item>
           <div class="dialog-button-container">
             <el-button @click="dialogVisible = false">Cancel</el-button>
-            <el-button type="primary" @click="exportCSVAndUpload"
-              >Export CSV & Upload</el-button
-            >
+            <el-button type="primary" @click="exportCSVAndUpload">Export CSV & Upload</el-button>
             <el-button type="primary" @click="exportCSV">Export CSV</el-button>
           </div>
         </el-form-item>
