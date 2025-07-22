@@ -1,35 +1,16 @@
 <template>
   <div class="setting_group">
     <h2 class="title">{{ title }}</h2>
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
-      <CodeEditor v-model="codeContent"></CodeEditor>
-    </el-form>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
-import CodeEditor from "./CodeEditor.vue";
-
 const props = defineProps({
   title: {
     type: String,
     required: true,
   },
 });
-
-const formRef = ref();
-const formData = reactive({
-  // 工具页面的数据
-});
-
-// CodeEditor 的内容
-const codeContent = ref("");
 
 // 工具页面的方法可以在这里添加
 </script>
