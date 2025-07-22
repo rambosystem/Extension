@@ -1,12 +1,15 @@
 import { ref } from "vue";
 import { ElMessage } from "element-plus";
 import { translate } from "../requests/lokalise.js";
+import { useLoading } from "./useLoading.js";
 
 /**
  * 翻译功能Hook
  */
 export function useTranslation() {
-  const loading = ref(false);
+  const { loadingStates, setLoading } = useLoading({
+    translation: false,
+  });
 
   /**
    * 解析翻译结果文本为结构化数据
@@ -63,7 +66,7 @@ export function useTranslation() {
       throw new Error("Please Enter the EN Copywriting");
     }
 
-    loading.value = true;
+    setLoading("translation", true);
     try {
       const data = await translate(content);
       console.log("Raw API response:", data);
@@ -81,7 +84,7 @@ export function useTranslation() {
       ElMessage.error(errorMessage);
       throw error;
     } finally {
-      loading.value = false;
+      setLoading("translation", false);
     }
   };
 
@@ -99,7 +102,7 @@ export function useTranslation() {
   };
 
   return {
-    loading,
+    loadingStates,
     performTranslation,
     extractTranslationData,
   };

@@ -13,7 +13,7 @@
           <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation()">
             Last Translation
           </el-button>
-          <el-button type="primary" @click="handleTranslate" :loading="loading">
+          <el-button type="primary" @click="handleTranslate" :loading="loadingStates.translation">
             Translate
           </el-button>
         </div>
@@ -76,7 +76,7 @@ const {
   formRef,
   formData,
   translationResult,
-  loading,
+  loadingStates,
   handleTranslate,
   showLastTranslation,
   exportCSV,

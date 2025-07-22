@@ -97,7 +97,7 @@ export function useTranslationManager() {
     translationResult: editor.translationResult,
 
     // Loading状态
-    loading: translation.loading,
+    loadingStates: translation.loadingStates,
 
     // 主要操作方法
     handleTranslate,
