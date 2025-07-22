@@ -191,7 +191,8 @@ export function useState(initialStates = {}) {
   const withState = async (key, asyncFn, type = 'loading') => {
     try {
       setState(key, true, type);
-      await asyncFn();
+      const result = await asyncFn();
+      return result;
     } finally {
       setState(key, false, type);
     }

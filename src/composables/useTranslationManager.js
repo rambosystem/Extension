@@ -25,10 +25,28 @@ export function useTranslationManager() {
    * 执行翻译并处理结果
    */
   const handleTranslate = async () => {
+    // ===== 错误检查阶段 =====
+    
+    // 1. 检查 API Key 是否存在（优先检查）
+    const apiKey = localStorage.getItem("deepseek_api_key");
+    if (!apiKey) {
+      ElMessage.warning("Please Configure Your API Key in Settings to Use Translation Feature.");
+      return;
+    }
+
+    // 2. 检查输入内容是否为空
+    if (!codeContent.value?.trim()) {
+      ElMessage.warning("Please Enter the Content to Translate");
+      return;
+    }
+
+    // ===== 正常流程阶段 =====
+    
     try {
-      // 显示结果对话框（在翻译开始时就显示）
+      // 先弹出对话框，显示加载状态
       dialogVisible.value = true;
       
+      // 执行翻译
       const result = await translation.performTranslation(codeContent.value);
 
       // 设置表格数据
@@ -37,8 +55,10 @@ export function useTranslationManager() {
       // 提取纯数据并保存到存储
       const translationData = translation.extractTranslationData(result);
       storage.saveTranslationToLocal(translationData);
+      
     } catch (error) {
-      // 错误已在translation.performTranslation中处理
+      // 翻译失败时关闭对话框
+      dialogVisible.value = false;
       console.error("Translation failed:", error);
     }
   };

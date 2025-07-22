@@ -21,14 +21,11 @@ export function useTranslation() {
       .split("\n")
       .filter((line) => line.trim());
 
-    console.log("Parsed lines:", lines);
-
     return lines.map((line, index) => {
       // 使用正则表达式来正确解析 CSV 格式，处理包含逗号的字段
       const matches = line.match(/"([^"]*)","([^"]*)","([^"]*)"/);
       if (matches) {
         const [, en, cn, jp] = matches;
-        console.log(`Line ${index + 1}:`, { en, cn, jp });
         return {
           en,
           cn,
@@ -42,7 +39,6 @@ export function useTranslation() {
         const parts = line
           .split(",")
           .map((part) => part.replace(/"/g, "").trim());
-        console.log(`Line ${index + 1} (fallback):`, parts);
         return {
           en: parts[0] || "",
           cn: parts[1] || "",
@@ -61,17 +57,10 @@ export function useTranslation() {
    * @returns {Promise<Array>} 翻译结果数组
    */
   const performTranslation = async (content) => {
-    if (!content?.trim()) {
-      throw new Error("Please Enter the EN Copywriting");
-    }
-
     try {
       const result = await withState("translation", async () => {
         const data = await translate(content);
-        console.log("Raw API response:", data);
-
         const translationResult = parseTranslationResult(data);
-        console.log("Final translation result:", translationResult);
 
         ElMessage.success("Translation completed successfully");
         return translationResult;

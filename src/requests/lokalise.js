@@ -2,13 +2,7 @@ import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
 
 export async function translate(content) {
   const apiKey = localStorage.getItem("deepseek_api_key");
-  let prompt = localStorage.getItem("deepseek_prompt");
-
-  if (!apiKey) {
-    throw new Error(
-      "API Key not found. Please set your DeepSeek API key in Settings."
-    );
-  }
+  let prompt = localStorage.getItem("deepseek_prompt"); 
 
   // 如果没有自定义prompt，使用默认prompt
   if (!prompt) {
