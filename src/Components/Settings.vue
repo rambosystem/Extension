@@ -20,7 +20,7 @@
         <SaveableInput
           v-model="formData.uploadUrl"
           label="Lokalise Project Upload URL"
-          placeholder="Lokalise Project Upload URL"
+          placeholder="https://app.lokalise.com/upload/..."
           @save="handleSaveLokaliseURL"
           :loading="loadingStates.url"
         />

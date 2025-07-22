@@ -4,7 +4,7 @@ import { useLoading } from "./useLoading.js";
 import { useStorage } from "./useStorage.js";
 import { validateDeepSeekApiKey } from "../utils/apiValidation.js";
 import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
-
+import { isValidURL } from "../utils/urlValidation.js";
 /**
  * 设置管理Hook
  */
@@ -84,6 +84,12 @@ export function useSettings() {
 
     try {
       setLoading("url", true);
+
+      // 检查是否为合法的URL
+      if (!isValidURL(value)) {
+        onError("Invalid URL");
+        return;
+      }
 
       const saved = saveToStorage(STORAGE_KEYS.uploadUrl, value);
       if (!saved) {
