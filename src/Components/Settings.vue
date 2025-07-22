@@ -25,12 +25,17 @@
           :loading="loadingStates.url"
         />
       </el-form-item>
-      <el-form-item label="Prompt" prop="prompt">
+      <div class="custom-translation-prompt">
+        <el-form-item label="Custom Translation Prompt" label-position="left">
+        </el-form-item>
+        <el-switch v-model="formData.translationPrompt" />
+      </div>
+      <el-form-item v-if="formData.translationPrompt">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
         </div>
       </el-form-item>
-      <el-form-item>
+      <el-form-item v-if="formData.translationPrompt">
         <div class="button-container">
           <el-button
             type="primary"
@@ -153,5 +158,11 @@ const formRef = ref();
   font-weight: 600;
   font-size: 18px;
   color: #303133;
+}
+
+.custom-translation-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 </style>
