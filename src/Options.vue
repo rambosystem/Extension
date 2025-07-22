@@ -83,15 +83,25 @@ const currentTitle = computed(() => {
 // 菜单选择事件处理
 const handleMenuSelect = (index) => {
   selectedMenu.value = index;
+  // 保存当前选中的菜单到本地存储
+  chrome.storage.local.set({ currentMenu: index });
 };
 
 onMounted(() => {
-  chrome.storage.local.get(["initialMenu"], (result) => {
+  // 首先检查是否有从 popup 传递过来的菜单选择
+  chrome.storage.local.get(["initialMenu", "currentMenu"], (result) => {
     if (result.initialMenu) {
+      // 如果有从 popup 传递的菜单，优先使用
       selectedMenu.value = result.initialMenu;
       // 读取后删除，避免刷新时重复选中
       chrome.storage.local.remove("initialMenu");
+      // 同时保存到 currentMenu
+      chrome.storage.local.set({ currentMenu: result.initialMenu });
+    } else if (result.currentMenu) {
+      // 如果没有从 popup 传递的菜单，使用上次保存的菜单
+      selectedMenu.value = result.currentMenu;
     }
+    // 如果都没有，使用默认值 "1"
   });
 });
 </script>

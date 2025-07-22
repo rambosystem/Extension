@@ -7,12 +7,7 @@
             <img src="./assets/rambo.svg" class="logo_icon" draggable="false" />
           </div>
           <div class="header_button_group">
-            <el-button
-              :icon="Setting"
-              size="24"
-              @click="handleSettingClick"
-              circle
-            ></el-button>
+            <el-button :icon="Setting" size="24" @click="handleSettingClick" circle></el-button>
           </div>
         </el-header>
         <div class="main-content">
@@ -46,7 +41,7 @@ import { Setting } from "@element-plus/icons-vue";
 import WeightItem from "./Components/Weight-Item.vue";
 
 const handleSettingClick = () => {
-  chrome.storage.local.set({ initialMenu: "3" }, () => {
+  chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
     chrome.runtime.openOptionsPage();
   });
   window.close();
@@ -59,7 +54,7 @@ const handleLokaliseClick = () => {
     });
   });
   console.log("Lokalise action sent");
-  chrome.storage.local.set({ initialMenu: "2" }, () => {
+  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
     chrome.runtime.openOptionsPage();
   });
   window.close();
