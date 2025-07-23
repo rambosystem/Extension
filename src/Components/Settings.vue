@@ -16,7 +16,7 @@
           <span class="addTermsDict-text">{{ t('settings.addTermsDict') }}</span>
         </div>
       </el-form-item>
-      <div class="terms-grid">
+      <div :class="['terms-grid', { 'terms-grid-single': adTermsList.length === 1 }]">
         <TermsCard v-for="item in adTermsList" :key="item.id" :item="item"
           @update:status="(value) => updateTermStatus(item.id, value)" />
       </div>
@@ -192,6 +192,12 @@ const formRef = ref();
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.terms-grid-single {
+  grid-template-columns: 1fr;
   width: 100%;
   margin-bottom: 20px;
 }
