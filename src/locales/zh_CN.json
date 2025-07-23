@@ -46,7 +46,8 @@
     "saveSuccessful": "保存成功",
     "saveFailed": "保存失败，请重试",
     "pleaseEnterPrompt": "请输入提示",
-    "pleaseEnterValue": "请输入值"
+    "pleaseEnterValue": "请输入值",
+    "AdTerms": "广告术语"
   },
   "csvExport": {
     "csvDownloaded": "CSV文件下载成功",

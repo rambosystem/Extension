@@ -46,7 +46,8 @@
     "saveSuccessful": "Save successful",
     "saveFailed": "Save failed, please try again",
     "pleaseEnterPrompt": "Please enter Prompt",
-    "pleaseEnterValue": "Please enter value"
+    "pleaseEnterValue": "Please enter value",
+    "AdTerms": "Advertising Terms"
   },
   "csvExport": {
     "csvDownloaded": "CSV file downloaded successfully",

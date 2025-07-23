@@ -36,6 +36,7 @@ export function useSettings() {
     url: false,
     prompt: false,
     translationPrompt: false,
+    adTerms: false,
     // 布尔状态
     isCodeEditing: false,
     // 字符串状态

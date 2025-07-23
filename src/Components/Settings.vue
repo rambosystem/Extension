@@ -11,6 +11,29 @@
           placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
           :loading="loadingStates.url" />
       </el-form-item>
+      <el-form-item :label="t('settings.AdTerms')"></el-form-item>
+      <el-form-item>
+        <div class="adTerms" style="width: 100%;">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-card style="width: 100%;">
+                <div class="adTerms-content">
+                  <h3>Ad Terms</h3>
+                  <p>Ad Terms</p>
+                </div>
+              </el-card>
+            </el-col>
+            <el-col :span="12">
+              <el-card style="width: 100%;">
+                <div class="adTerms-content">
+                  <h3>Ad Terms</h3>
+                  <p>Ad Terms</p>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+        </div>
+      </el-form-item>
       <div class="custom-translation-prompt">
         <el-form-item :label="t('settings.customTranslationPrompt')" label-position="left">
         </el-form-item>
