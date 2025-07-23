@@ -47,7 +47,8 @@
     "saveFailed": "Save failed, please try again",
     "pleaseEnterPrompt": "Please enter Prompt",
     "pleaseEnterValue": "Please enter value",
-    "AdTerms": "Advertising Terms"
+    "AdTerms": "Advertising Terms",
+    "translationPrompt": "Translation Prompt"
   },
   "csvExport": {
     "csvDownloaded": "CSV file downloaded successfully",
@@ -61,5 +62,9 @@
   "about": {
     "title": "About",
     "content": "About page content"
+  },
+  "terms": {
+    "defaultTerms": "Default Terms",
+    "customTerms": "Custom Terms"
   }
 } 

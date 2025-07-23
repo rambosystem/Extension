@@ -7,11 +7,13 @@ export function useStorage() {
   /**
    * 保存数据到localStorage
    * @param {string} key - 存储键
-   * @param {string} value - 存储值
+   * @param {any} value - 存储值（字符串或对象）
    */
   const saveToStorage = (key, value) => {
     try {
-      localStorage.setItem(key, value.trim());
+      // 如果是对象，转换为JSON字符串
+      const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      localStorage.setItem(key, stringValue);
       return true;
     } catch (error) {
       console.error(`Failed to save ${key} to localStorage:`, error);
@@ -22,12 +24,22 @@ export function useStorage() {
   /**
    * 从localStorage获取数据
    * @param {string} key - 存储键
-   * @param {string} defaultValue - 默认值
-   * @returns {string} - 获取的值或默认值
+   * @param {any} defaultValue - 默认值
+   * @returns {any} - 获取的值或默认值
    */
   const getFromStorage = (key, defaultValue = "") => {
     try {
-      return localStorage.getItem(key) || defaultValue;
+      const value = localStorage.getItem(key);
+      if (value === null) {
+        return defaultValue;
+      }
+      
+      // 尝试解析JSON，如果失败则返回原始字符串
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
     } catch (error) {
       console.error(`Failed to get ${key} from localStorage:`, error);
       return defaultValue;

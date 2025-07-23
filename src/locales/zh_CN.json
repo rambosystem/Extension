@@ -47,7 +47,8 @@
     "saveFailed": "保存失败，请重试",
     "pleaseEnterPrompt": "请输入提示",
     "pleaseEnterValue": "请输入值",
-    "AdTerms": "广告术语"
+    "AdTerms": "广告术语",
+    "translationPrompt": "翻译提示"
   },
   "csvExport": {
     "csvDownloaded": "CSV文件下载成功",
@@ -61,5 +62,9 @@
   "about": {
     "title": "关于",
     "content": "关于页面内容"
+  },
+  "terms": {
+    "defaultTerms": "默认术语",
+    "customTerms": "自定义术语"
   }
 } 

@@ -7,8 +7,6 @@ import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
 import { isValidURL } from "../utils/urlValidation.js";
 import { useI18n } from "./useI18n.js";
 
-const { t } = useI18n();
-
 /**
  * 设置管理Hook
  */
@@ -18,9 +16,21 @@ export function useSettings() {
     apiKey: "deepseek_api_key",
     uploadUrl: "lokalise_upload_url",
     prompt: "deepseek_prompt",
-    translationPrompt: "translation_prompt",
+    translationPrompt: "translation_prompt_enabled",
     language: "app_language",
   };
+
+  const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } = useStorage();
+
+  // 状态管理
+  const codeContent = ref(DEFAULT_TRANSLATION_PROMPT);
+  const dialogVisible = ref(false);
+  const originalCodeContent = ref(DEFAULT_TRANSLATION_PROMPT);
+  const { t } = useI18n();
+
+  // 立即加载存储的翻译提示状态
+  const storedTranslationPrompt = getFromStorage(STORAGE_KEYS.translationPrompt);
+  const initialTranslationPrompt = storedTranslationPrompt === "true" || storedTranslationPrompt === true;
 
   // 初始化composables
   const { 
@@ -35,23 +45,15 @@ export function useSettings() {
     apiKey: false,
     url: false,
     prompt: false,
-    translationPrompt: false,
     adTerms: false,
     // 布尔状态
     isCodeEditing: false,
+    translationPrompt: initialTranslationPrompt, // 使用存储的值初始化
     // 字符串状态
     apiKey: "",
     uploadUrl: "",
-    language: "en", // 默认英文
+    language: "en",
   });
-
-  const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } =
-    useStorage();
-
-  // 状态管理
-  const codeContent = ref(DEFAULT_TRANSLATION_PROMPT);
-  const dialogVisible = ref(false);
-  const originalCodeContent = ref(DEFAULT_TRANSLATION_PROMPT);
 
   /**
    * 处理API Key保存
@@ -99,7 +101,6 @@ export function useSettings() {
 
     try {
       await withState("url", async () => {
-        // 检查是否为合法的URL
         if (!isValidURL(value)) {
           throw new Error("Invalid URL");
         }
@@ -138,15 +139,14 @@ export function useSettings() {
 
       ElMessage.success(t("settings.saveSuccessful"));
       
-      // 保存成功，更新原始值并退出编辑状态
       originalCodeContent.value = codeContent.value;
       setState("isCodeEditing", false, "boolean");
       
-      return true; // 返回成功状态
+      return true;
     } catch (error) {
       console.error("Save failed:", error);
       ElMessage.error(error.message || t("settings.saveFailed"));
-      return false; // 返回失败状态
+      return false;
     }
   };
 
@@ -163,7 +163,6 @@ export function useSettings() {
 
     if (success) {
       ElMessage.success(t("settings.clearLocalStorageSuccess"));
-      // 重新加载数据（此时应该加载默认值）
       initializeSettings();
     } else {
       ElMessage.error(t("settings.clearLocalStorageFailed"));
@@ -171,24 +170,35 @@ export function useSettings() {
   };
 
   /**
+   * 处理翻译Prompt开关状态变化
+   */
+  const handleTranslationPromptChange = (enabled) => {
+    try {
+      const saved = saveToStorage(STORAGE_KEYS.translationPrompt, enabled ? "true" : "false");
+      if (!saved) {
+        throw new Error("Failed to save translation prompt setting");
+      }
+
+      setState("translationPrompt", enabled, "boolean");
+    } catch (error) {
+      console.error("Translation prompt change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+    }
+  };
+
+  /**
    * 处理语言切换
-   * @param {string} language - 语言代码
    */
   const handleLanguageChange = (language) => {
     try {
-      // 保存到本地存储
       const saved = saveToStorage(STORAGE_KEYS.language, language);
       if (!saved) {
         throw new Error("Failed to save language setting");
       }
 
-      // 更新状态
       setState("language", language, "string");
       
-      // 直接更新localStorage，触发useI18n的响应式更新
       localStorage.setItem('app_language', language);
-      
-      // 触发自定义事件，通知其他组件语言已变化
       window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language } }));
       
       ElMessage.success(t("settings.saveSuccessful"));
@@ -204,20 +214,16 @@ export function useSettings() {
   const initializeSettings = () => {
     const settings = loadSettings(STORAGE_KEYS);
 
-    // 始终设置字段，即使为空也要更新
     setState("apiKey", settings.apiKey || "", "string");
     setState("uploadUrl", settings.uploadUrl || "", "string");
     setState("language", settings.language || "en", "string");
 
-    // 使用保存的prompt，如果为空则使用默认prompt
     if (settings.prompt && settings.prompt.trim()) {
       codeContent.value = settings.prompt;
     } else {
-      // 如果没有保存的prompt或为空，使用默认prompt
       codeContent.value = DEFAULT_TRANSLATION_PROMPT;
     }
 
-    // 初始化原始值
     originalCodeContent.value = codeContent.value;
   };
 
@@ -225,7 +231,6 @@ export function useSettings() {
   watch(
     () => codeContent.value,
     (newValue) => {
-      // 检查是否有实际变化
       const hasChanged = newValue.trim() !== originalCodeContent.value.trim();
       
       if (hasChanged && !booleanStates.isCodeEditing) {
@@ -252,19 +257,17 @@ export function useSettings() {
   });
 
   return {
-    // 状态
     loadingStates,
     codeContent,
     dialogVisible,
-    stringStates, // 替代 formData
-    booleanStates, // 包含 isCodeEditing
-
-    // 方法
+    stringStates,
+    booleanStates,
     handleSaveAPIKey,
     handleSaveLokaliseURL,
     handleSavePrompt,
     handleClearLocalStorage,
     handleClearLocalStorageConfirm,
+    handleTranslationPromptChange,
     handleLanguageChange,
     initializeSettings,
   };

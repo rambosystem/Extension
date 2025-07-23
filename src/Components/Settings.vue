@@ -11,40 +11,27 @@
           placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
           :loading="loadingStates.url" />
       </el-form-item>
-      <el-form-item :label="t('settings.AdTerms')"></el-form-item>
-      <el-form-item>
-        <div class="adTerms" style="width: 100%;">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-card style="width: 100%;">
-                <div class="adTerms-content">
-                  <h3>Ad Terms</h3>
-                  <p>Ad Terms</p>
-                </div>
-              </el-card>
-            </el-col>
-            <el-col :span="12">
-              <el-card style="width: 100%;">
-                <div class="adTerms-content">
-                  <h3>Ad Terms</h3>
-                  <p>Ad Terms</p>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
+      <el-form-item :label="t('settings.AdTerms')">
+        <div class="terms-grid">
+          <TermsCard v-for="item in adTermsList" :key="item.id" :item="item"
+            @update:status="(value) => updateTermStatus(item.id, value)" />
         </div>
       </el-form-item>
-      <div class="custom-translation-prompt">
-        <el-form-item :label="t('settings.customTranslationPrompt')" label-position="left">
-        </el-form-item>
-        <el-switch v-model="stringStates.translationPrompt" width="45px" />
-      </div>
-      <el-form-item v-if="stringStates.translationPrompt">
+      <el-form-item :label="t('settings.translationPrompt')" label-position="top">
+        <el-card shadow="never" style="width: 100%;" body-style="padding: 16px 20px;">
+          <div class="custom-translation-prompt">
+            <span class="custom-translation-prompt-text">{{ t('settings.customTranslationPrompt') }}</span>
+            <el-switch :model-value="booleanStates.translationPrompt"
+              @update:model-value="handleTranslationPromptChange" width="45px" />
+          </div>
+        </el-card>
+      </el-form-item>
+      <el-form-item v-if="booleanStates.translationPrompt">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
         </div>
       </el-form-item>
-      <el-form-item v-if="stringStates.translationPrompt">
+      <el-form-item v-if="booleanStates.translationPrompt">
         <div class="button-container">
           <el-button v-show="booleanStates.isCodeEditing" type="primary" @click="handleSavePrompt"
             :loading="loadingStates.prompt">
@@ -90,15 +77,11 @@ import CodeEditor from "./CodeEditor.vue";
 import SaveableInput from "./SaveableInput.vue";
 import { useSettings } from "../composables/useSettings.js";
 import { useI18n } from "../composables/useI18n.js";
+import TermsCard from "./TermsCard.vue";
+import { useTermsManager } from "../composables/useTermsManger.js";
 
 const { t } = useI18n();
-
-const props = defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-});
+const { adTermsList, updateTermStatus } = useTermsManager();
 
 // 使用设置管理composable
 const {
@@ -112,6 +95,7 @@ const {
   handleSavePrompt,
   handleClearLocalStorage,
   handleClearLocalStorageConfirm,
+  handleTranslationPromptChange,
   handleLanguageChange,
 } = useSettings();
 
@@ -175,10 +159,23 @@ const formRef = ref();
   justify-content: space-between;
 }
 
+.custom-translation-prompt-text {
+  font-weight: 500;
+  font-size: 16px;
+  color: #606266;
+}
+
 .language-select {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  width: 100%;
+}
+
+.terms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
   width: 100%;
 }
 </style>
