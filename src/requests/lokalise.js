@@ -2,14 +2,24 @@ import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
 
 export async function translate(content) {
   const apiKey = localStorage.getItem("deepseek_api_key");
+  const translationPromptEnabled = localStorage.getItem("translation_prompt_enabled");
   let prompt = localStorage.getItem("deepseek_prompt"); 
 
-  // 如果没有自定义prompt，使用默认prompt
-  if (!prompt) {
+  // 检查翻译提示开关状态
+  if (translationPromptEnabled === "true" || translationPromptEnabled === true) {
+    // 如果开关开启，使用自定义prompt，如果没有自定义prompt则使用默认prompt
+    if (!prompt) {
+      prompt = DEFAULT_TRANSLATION_PROMPT;
+      console.log(
+        "Translation prompt enabled but no custom prompt found. Using default translation prompt."
+      );
+    } else {
+      console.log("Using custom translation prompt.");
+    }
+  } else {
+    // 如果开关关闭，强制使用默认prompt
     prompt = DEFAULT_TRANSLATION_PROMPT;
-    console.log(
-      "Using default translation prompt. You can customize it in Settings."
-    );
+    console.log("Translation prompt disabled. Using default translation prompt.");
   }
 
   //调用deepseek的api
