@@ -11,18 +11,22 @@
           placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
           :loading="loadingStates.url" />
       </el-form-item>
-      <el-form-item :label="t('settings.AdTerms')">
-        <div class="terms-grid">
-          <TermsCard v-for="item in adTermsList" :key="item.id" :item="item"
-            @update:status="(value) => updateTermStatus(item.id, value)" />
+      <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
+        <div class="addTermsDict">
+          <span class="addTermsDict-text">{{ t('settings.addTermsDict') }}</span>
         </div>
       </el-form-item>
+      <div class="terms-grid">
+        <TermsCard v-for="item in adTermsList" :key="item.id" :item="item"
+          @update:status="(value) => updateTermStatus(item.id, value)" />
+      </div>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
-        <el-card shadow="never" style="width: 100%;" body-style="padding: 16px 20px;">
+        <el-card shadow="never" style="width: 100%;" body-style="padding: 16px 20px; cursor: pointer;"
+          @click="handleTranslationPromptClick">
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{ t('settings.customTranslationPrompt') }}</span>
             <el-switch :model-value="booleanStates.translationPrompt"
-              @update:model-value="handleTranslationPromptChange" width="45px" />
+              @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
         </el-card>
       </el-form-item>
@@ -99,6 +103,17 @@ const {
   handleLanguageChange,
 } = useSettings();
 
+// 处理翻译提示卡片的点击事件
+const handleTranslationPromptClick = (event) => {
+  // 如果点击的是开关本身，不处理
+  if (event.target.closest('.el-switch')) {
+    return;
+  }
+  // 切换开关状态
+  const newState = !booleanStates.translationPrompt;
+  handleTranslationPromptChange(newState);
+};
+
 const formRef = ref();
 </script>
 
@@ -116,7 +131,8 @@ const formRef = ref();
   width: 100%;
 }
 
-.localStorageClear {
+.localStorageClear,
+.addTermsDict {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -177,5 +193,20 @@ const formRef = ref();
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   width: 100%;
+  margin-bottom: 20px;
+}
+
+.addTermsDict-text {
+  font-size: 14px;
+  color: #409eff;
+  cursor: pointer;
+}
+
+.addTermsDict-text:hover {
+  text-decoration: underline;
+}
+
+.addTermsDict-container {
+  margin-bottom: 5px;
 }
 </style>

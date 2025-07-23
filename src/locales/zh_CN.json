@@ -48,7 +48,8 @@
     "pleaseEnterPrompt": "请输入提示",
     "pleaseEnterValue": "请输入值",
     "AdTerms": "广告术语",
-    "translationPrompt": "翻译提示"
+    "translationPrompt": "翻译提示",
+    "addTermsDict": "添加术语字典"
   },
   "csvExport": {
     "csvDownloaded": "CSV文件下载成功",
@@ -65,6 +66,7 @@
   },
   "terms": {
     "defaultTerms": "默认术语",
-    "customTerms": "自定义术语"
+    "customTerms": "自定义术语",
+    "totalTerms": "总术语： "
   }
 } 

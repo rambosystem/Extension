@@ -27,13 +27,7 @@ export function useTermsManager() {
             translations: TERMS_MAP.Default || [],
             status: savedStatus[1] !== undefined ? savedStatus[1] : true,
         },
-        {
-            id: 2,
-            title: t("terms.customTerms"),
-            content: t("terms.customTerms"),
-            translations: [],
-            status: savedStatus[2] !== undefined ? savedStatus[2] : false,
-        }];
+];
     };
     
     /**

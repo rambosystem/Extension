@@ -48,7 +48,8 @@
     "pleaseEnterPrompt": "Please enter Prompt",
     "pleaseEnterValue": "Please enter value",
     "AdTerms": "Advertising Terms",
-    "translationPrompt": "Translation Prompt"
+    "translationPrompt": "Translation Prompt",
+    "addTermsDict": "Add Terms Dictionary"
   },
   "csvExport": {
     "csvDownloaded": "CSV file downloaded successfully",
@@ -65,6 +66,7 @@
   },
   "terms": {
     "defaultTerms": "Default Terms",
-    "customTerms": "Custom Terms"
+    "customTerms": "Custom Terms",
+    "totalTerms": "Total Terms: "
   }
 } 
