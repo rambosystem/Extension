@@ -76,11 +76,23 @@ export function useTermsManager() {
     watch(() => t("terms.defaultTerms"), () => {
         initializeTermsList();
     });
+
+    const handleAddTermsDict = () => {
+        adTermsList.value.push({
+            id: adTermsList.value.length + 1,
+            title: t("terms.customTerms"),
+            content: t("terms.customTerms"),
+            translations: [],
+            status: false,
+        });
+        saveToStorage(STORAGE_KEY, adTermsList.value);
+    };
     
     return {
         adTermsList,
         updateTermStatus,
         getTermStatus,
         resetTermsStatus,
+        handleAddTermsDict,
     };
 }

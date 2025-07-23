@@ -13,7 +13,7 @@
       </el-form-item>
       <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
         <div class="addTermsDict">
-          <span class="addTermsDict-text">{{ t('settings.addTermsDict') }}</span>
+          <span class="addTermsDict-text" @click="handleAddTermsDict">{{ t('settings.addTermsDict') }}</span>
         </div>
       </el-form-item>
       <div :class="['terms-grid', { 'terms-grid-single': adTermsList.length === 1 }]">
@@ -85,7 +85,7 @@ import TermsCard from "./TermsCard.vue";
 import { useTermsManager } from "../composables/useTermsManger.js";
 
 const { t } = useI18n();
-const { adTermsList, updateTermStatus } = useTermsManager();
+const { adTermsList, updateTermStatus, handleAddTermsDict } = useTermsManager();
 
 // 使用设置管理composable
 const {
@@ -115,6 +115,7 @@ const handleTranslationPromptClick = (event) => {
 };
 
 const formRef = ref();
+
 </script>
 
 <style lang="scss" scoped>
@@ -206,6 +207,7 @@ const formRef = ref();
   font-size: 14px;
   color: #409eff;
   cursor: pointer;
+  margin-right: 5px;
 }
 
 .addTermsDict-text:hover {

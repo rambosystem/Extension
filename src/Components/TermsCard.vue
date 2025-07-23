@@ -33,7 +33,7 @@
 
 <script setup>
 import { useI18n } from "../composables/useI18n.js";
-import { Setting, Delete } from "@element-plus/icons-vue";
+import { Setting } from "@element-plus/icons-vue";
 import { ref } from "vue";
 
 const { t } = useI18n();
@@ -83,6 +83,7 @@ const handleSettingClick = (event) => {
 }
 
 .adTerms-title-text-icon-container {
+    margin-top: 3px;
     display: flex;
     align-items: center;
     gap: 8px;
