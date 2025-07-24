@@ -11,15 +11,12 @@
           placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
           :loading="loadingStates.url" />
       </el-form-item>
-      <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
-        <div class="addTermsDict">
-          <span class="addTermsDict-text" @click="handleAddTermsDict">{{ t('settings.addTermsDict') }}</span>
+      <el-form-item :label="t('settings.AdTerms')" label-position="top" class="addTermsDict-container">
+        <div class="terms-single">
+          <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms"
+            @update:status="updateTermStatus" />
         </div>
       </el-form-item>
-      <div :class="['terms-grid', { 'terms-grid-single': adTermsList.length === 1 }]">
-        <TermsCard v-for="item in adTermsList" :key="item.id" :item="item"
-          @update:status="(value) => updateTermStatus(item.id, value)" />
-      </div>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
         <el-card shadow="never" style="width: 100%;" body-style="padding: 16px 20px; cursor: pointer;"
           @click="handleTranslationPromptClick">
@@ -85,7 +82,10 @@ import TermsCard from "./TermsCard.vue";
 import { useTermsManager } from "../composables/useTermsManger.js";
 
 const { t } = useI18n();
-const { adTermsList, updateTermStatus, handleAddTermsDict } = useTermsManager();
+const { termsStatus, termsTitle, updateTermStatus, getTotalTerms } = useTermsManager();
+
+// 计算术语总数
+const totalTerms = getTotalTerms();
 
 // 使用设置管理composable
 const {
@@ -132,12 +132,16 @@ const formRef = ref();
   width: 100%;
 }
 
-.localStorageClear,
-.addTermsDict {
+.localStorageClear {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   width: 100%;
+}
+
+.terms-single {
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 :deep(.el-form-item__label) {
@@ -187,31 +191,6 @@ const formRef = ref();
   justify-content: flex-end;
   align-items: center;
   width: 100%;
-}
-
-.terms-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.terms-grid-single {
-  grid-template-columns: 1fr;
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.addTermsDict-text {
-  font-size: 14px;
-  color: #409eff;
-  cursor: pointer;
-  margin-right: 5px;
-}
-
-.addTermsDict-text:hover {
-  text-decoration: underline;
 }
 
 .addTermsDict-container {

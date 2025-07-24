@@ -4,20 +4,19 @@
         <div class="adTerms-content">
             <div class="adTerms-title-container">
                 <div class="adTerms-title-text-container">
-                    <span class="adTerms-title-text">{{ item.title }}</span>
+                    <span class="adTerms-title-text">{{ title }}</span>
                     <div class="adTerms-title-text-icon-container">
                         <el-icon class="adTerms-title-text-icon" @click.stop="handleSettingClick">
                             <Setting />
                         </el-icon>
                     </div>
                 </div>
-                <el-switch :model-value="item.status" @update:model-value="handleStatusChange" @click.stop
-                    width="45px" />
+                <el-switch :model-value="status" @update:model-value="handleStatusChange" @click.stop width="45px" />
             </div>
             <div class="adTerms-content-text">
                 <div class="total-terms-container">
                     <span class="total-terms">{{ t('terms.totalTerms') }}</span>
-                    <span class="total-value">{{ item.translations.length }}</span>
+                    <span class="total-value">{{ totalTerms }}</span>
                 </div>
             </div>
         </div>
@@ -39,14 +38,23 @@ import { ref } from "vue";
 const { t } = useI18n();
 
 const props = defineProps({
-    item: {
-        type: Object,
+    title: {
+        type: String,
+        required: true,
+    },
+    status: {
+        type: Boolean,
+        required: true,
+    },
+    totalTerms: {
+        type: Number,
         required: true,
     },
 });
 
 const emit = defineEmits(['update:status']);
 const dialogVisible = ref(false);
+
 const handleStatusChange = (value) => {
     emit('update:status', value);
 };
@@ -58,7 +66,7 @@ const handleCardClick = (event) => {
         return;
     }
     // 切换开关状态
-    const newState = !props.item.status;
+    const newState = !props.status;
     emit('update:status', newState);
 };
 

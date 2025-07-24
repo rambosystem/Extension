@@ -1,6 +1,6 @@
 // useTermsManager.js - 管理广告术语
 import { TERMS_MAP } from "../config/defaultTerms.js";
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
 
@@ -11,88 +11,70 @@ export function useTermsManager() {
     // 存储键
     const STORAGE_KEY = "ad_terms_status";
     
-    // 响应式状态
-    const adTermsList = ref([]);
+    // 响应式状态 - 单个术语字典
+    const termsStatus = ref(true); // 默认启用
+    const termsTitle = computed(() => t("terms.defaultTerms"));
+    const termsTranslations = ref(TERMS_MAP.Default || []);
     
     /**
-     * 初始化广告术语列表
+     * 初始化术语字典状态
      */
-    const initializeTermsList = () => {
-        const savedStatus = getFromStorage(STORAGE_KEY) || {};
-        
-        adTermsList.value = [{
-            id: 1,
-            title: t("terms.defaultTerms"),
-            content: t("terms.defaultTerms"),
-            translations: TERMS_MAP.Default || [],
-            status: savedStatus[1] !== undefined ? savedStatus[1] : true,
-        },
-];
+    const initializeTermsStatus = () => {
+        const savedStatus = getFromStorage(STORAGE_KEY);
+        termsStatus.value = savedStatus !== undefined ? savedStatus : true;
     };
     
     /**
      * 更新术语状态
-     * @param {number} id - 术语ID
      * @param {boolean} status - 新状态
      */
-    const updateTermStatus = (id, status) => {
-        const term = adTermsList.value.find(item => item.id === id);
-        if (term) {
-            term.status = status;
-            
-            // 保存到本地存储
-            const savedStatus = getFromStorage(STORAGE_KEY) || {};
-            savedStatus[id] = status;
-            saveToStorage(STORAGE_KEY, savedStatus);
-        }
+    const updateTermStatus = (status) => {
+        termsStatus.value = status;
+        saveToStorage(STORAGE_KEY, status);
     };
     
     /**
      * 获取术语状态
-     * @param {number} id - 术语ID
      * @returns {boolean} 术语状态
      */
-    const getTermStatus = (id) => {
-        const term = adTermsList.value.find(item => item.id === id);
-        return term ? term.status : false;
+    const getTermStatus = () => {
+        return termsStatus.value;
     };
     
     /**
-     * 重置所有状态为默认值
+     * 重置状态为默认值
      */
     const resetTermsStatus = () => {
-        adTermsList.value.forEach(term => {
-            term.status = term.id === 1 ? true : false;
-        });
-        
-        // 清除存储的状态
-        saveToStorage(STORAGE_KEY, {});
+        termsStatus.value = true;
+        saveToStorage(STORAGE_KEY, true);
     };
     
-    // 立即初始化，不等待 onMounted
-    initializeTermsList();
+    /**
+     * 获取术语总数
+     * @returns {number} 术语总数
+     */
+    const getTotalTerms = () => {
+        return termsTranslations.value.length;
+    };
     
-    // 监听国际化变化，重新初始化列表
+    // 立即初始化
+    initializeTermsStatus();
+    
+    // 监听国际化变化，重新初始化
     watch(() => t("terms.defaultTerms"), () => {
-        initializeTermsList();
+        // 标题会自动更新，因为使用了computed
     });
-
-    const handleAddTermsDict = () => {
-        adTermsList.value.push({
-            id: adTermsList.value.length + 1,
-            title: t("terms.customTerms"),
-            content: t("terms.customTerms"),
-            translations: [],
-            status: false,
-        });
-        saveToStorage(STORAGE_KEY, adTermsList.value);
-    };
     
     return {
-        adTermsList,
+        // 状态
+        termsStatus,
+        termsTitle,
+        termsTranslations,
+        
+        // 方法
         updateTermStatus,
         getTermStatus,
         resetTermsStatus,
-        handleAddTermsDict,
+        getTotalTerms,
     };
 }
