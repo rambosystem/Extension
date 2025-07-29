@@ -74,6 +74,13 @@
                             />
                         </template>
                     </el-table-column>
+                    <el-table-column fixed="right" :label="t('common.operation')" width="120">
+                        <template #default="{ row }">
+                            <div class="operation-container" style="padding-left: 12px;">
+                                <el-button type="text" @click.stop="handleDelete(row)">{{ t('common.delete') }}</el-button>
+                            </div>
+                        </template>
+                    </el-table-column>
                 </el-table>
             </el-form-item>
             <el-form-item>

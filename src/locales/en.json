@@ -10,7 +10,9 @@
     "warning": "Warning",
     "retry": "Retry",
     "refresh": "Refresh",
-    "submit": "Submit"
+    "submit": "Submit",
+    "operation": "Operation",
+    "delete": "Delete"
   },
   "menu": {
     "tools": "Tools",
