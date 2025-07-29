@@ -7,7 +7,8 @@
     "loading": "Loading...",
     "success": "Success",
     "error": "Error",
-    "warning": "Warning"
+    "warning": "Warning",
+    "retry": "Retry"
   },
   "menu": {
     "tools": "Tools",
@@ -67,6 +68,8 @@
   "terms": {
     "defaultTerms": "Default Terms",
     "customTerms": "Custom Terms",
-    "totalTerms": "Total Terms: "
+    "totalTerms": "Total Terms: ",
+    "fetchFailed": "Failed to fetch terms data",
+    "loadFailed": "Failed to load terms"
   }
 } 

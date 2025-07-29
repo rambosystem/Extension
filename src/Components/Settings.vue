@@ -13,8 +13,15 @@
       </el-form-item>
       <el-form-item :label="t('settings.AdTerms')" label-position="top" class="addTermsDict-container">
         <div class="terms-single">
-          <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms"
-            @update:status="updateTermStatus" />
+          <TermsCard 
+            :title="termsTitle" 
+            :status="termsStatus" 
+            :total-terms="totalTerms"
+            :loading="termsLoading"
+            :error="termsError"
+            @update:status="updateTermStatus"
+            @refresh="refreshTerms" 
+          />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
@@ -79,13 +86,18 @@ import SaveableInput from "./SaveableInput.vue";
 import { useSettings } from "../composables/useSettings.js";
 import { useI18n } from "../composables/useI18n.js";
 import TermsCard from "./TermsCard.vue";
-import { useTermsManager } from "../composables/useTermsManger.js";
+import { useTermsManager } from "../composables/useTermsManager.js";
 
 const { t } = useI18n();
-const { termsStatus, termsTitle, updateTermStatus, getTotalTerms } = useTermsManager();
-
-// 计算术语总数
-const totalTerms = getTotalTerms();
+const { 
+    termsStatus, 
+    termsTitle, 
+    totalTerms, 
+    loading: termsLoading, 
+    error: termsError,
+    updateTermStatus, 
+    refreshTerms 
+} = useTermsManager();
 
 // 使用设置管理composable
 const {

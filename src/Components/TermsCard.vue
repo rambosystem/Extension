@@ -16,7 +16,17 @@
             <div class="adTerms-content-text">
                 <div class="total-terms-container">
                     <span class="total-terms">{{ t('terms.totalTerms') }}</span>
-                    <span class="total-value">{{ totalTerms }}</span>
+                    <span v-if="loading" class="total-value loading">
+                        <el-icon class="is-loading"><Loading /></el-icon>
+                        {{ t('common.loading') }}
+                    </span>
+                    <span v-else-if="error" class="total-value error">
+                        {{ t('terms.loadFailed') }}
+                        <el-button type="text" size="small" @click.stop="handleRefresh">
+                            {{ t('common.retry') }}
+                        </el-button>
+                    </span>
+                    <span v-else class="total-value">{{ totalTerms }}</span>
                 </div>
             </div>
         </div>
@@ -32,7 +42,7 @@
 
 <script setup>
 import { useI18n } from "../composables/useI18n.js";
-import { Setting } from "@element-plus/icons-vue";
+import { Setting, Loading } from "@element-plus/icons-vue";
 import { ref } from "vue";
 
 const { t } = useI18n();
@@ -50,9 +60,17 @@ const props = defineProps({
         type: Number,
         required: true,
     },
+    loading: {
+        type: Boolean,
+        default: false,
+    },
+    error: {
+        type: String,
+        default: null,
+    },
 });
 
-const emit = defineEmits(['update:status']);
+const emit = defineEmits(['update:status', 'refresh']);
 const dialogVisible = ref(false);
 
 const handleStatusChange = (value) => {
@@ -72,6 +90,10 @@ const handleCardClick = (event) => {
 
 const handleSettingClick = (event) => {
     dialogVisible.value = true;
+};
+
+const handleRefresh = () => {
+    emit('refresh');
 };
 </script>
 
@@ -146,6 +168,20 @@ const handleSettingClick = (event) => {
         .total-value {
             font-size: 14px;
             color: #909399;
+            
+            &.loading {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                color: #409eff;
+            }
+            
+            &.error {
+                color: #f56c6c;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
         }
     }
 }
