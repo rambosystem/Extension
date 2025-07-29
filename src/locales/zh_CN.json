@@ -67,8 +67,7 @@
     "content": "关于页面内容"
   },
   "terms": {
-    "defaultTerms": "默认术语",
-    "customTerms": "自定义术语",
+    "defaultTerms": "公共术语",
     "totalTerms": "总术语： ",
     "fetchFailed": "获取术语数据失败",
     "loadFailed": "加载术语失败",

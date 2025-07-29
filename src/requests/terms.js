@@ -1,15 +1,16 @@
 // terms.js - Terms API 请求管理
 
 const API_BASE_URL = 'http://43.142.250.179:8000';
+const Public_Account_ID = '1'
 
 /**
  * 获取用户terms数据
  * @param {string} userId - 用户ID
  * @returns {Promise<Object>} terms数据
  */
-export async function fetchUserTerms(userId) {
+export async function fetchUserTerms() {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/${userId}/terms`, {
+    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +49,5 @@ export async function fetchUserTerms(userId) {
  * @returns {Promise<Object>} terms数据
  */
 export async function fetchCurrentUserTerms() {
-  // 从localStorage获取用户ID，如果没有则使用默认值
-  const userId = localStorage.getItem('user_id') || '1';
-  return fetchUserTerms(userId);
+  return fetchUserTerms();
 } 
