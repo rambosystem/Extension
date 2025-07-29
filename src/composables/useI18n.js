@@ -38,10 +38,11 @@ export function useI18n() {
   /**
    * 获取文案
    * @param {string} key - 文案键，支持点号分隔的嵌套键
-   * @param {string} defaultValue - 默认值
+   * @param {Object|string} params - 参数对象或默认值
+   * @param {string} defaultValue - 默认值（当params是对象时使用）
    * @returns {string} 文案内容
    */
-  const t = (key, defaultValue = '') => {
+  const t = (key, params = '', defaultValue = '') => {
     const keys = key.split('.');
     let value = currentMessages.value;
     
@@ -53,7 +54,18 @@ export function useI18n() {
       }
     }
     
-    return value || defaultValue || key;
+    // 如果params是对象，进行参数替换
+    if (typeof params === 'object' && params !== null) {
+      let result = value || defaultValue || key;
+      Object.keys(params).forEach(paramKey => {
+        const regex = new RegExp(`\\{${paramKey}\\}`, 'g');
+        result = result.replace(regex, params[paramKey]);
+      });
+      return result;
+    }
+    
+    // 如果params是字符串，作为默认值处理
+    return value || params || defaultValue || key;
   };
 
   /**

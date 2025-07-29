@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
-import { fetchCurrentUserTerms } from "../requests/terms.js";
+import { fetchCurrentUserTerms, addUserTerms } from "../requests/terms.js";
 
 export function useTermsManager() {
     const { t } = useI18n();
@@ -57,6 +57,39 @@ export function useTermsManager() {
      */
     const refreshTerms = () => {
         fetchTerms();
+    };
+    
+    /**
+     * 添加新的terms数据
+     * @param {Array} newTermsData - 新的terms数据数组
+     * @returns {Promise<Object>} 添加后的完整terms数据
+     */
+    const addTerms = async (newTermsData) => {
+        if (loading.value) return; // 防止重复请求
+        
+        loading.value = true;
+        error.value = null;
+        
+        try {
+            const data = await addUserTerms(newTermsData);
+            termsData.value = data.terms || [];
+            totalTerms.value = data.total_terms || 0;
+            
+            console.log('Terms added successfully:', data);
+            
+            // 显示成功提示，包含提交的terms数量
+            const addedCount = newTermsData.length;
+            ElMessage.success(t("terms.addSuccess", { count: addedCount }) || `成功提交${addedCount}个terms更新至数据库`);
+            
+            return data;
+        } catch (err) {
+            error.value = err.message;
+            console.error('Failed to add terms:', err);
+            ElMessage.error(t("terms.addFailed") || 'Failed to add terms data');
+            throw err;
+        } finally {
+            loading.value = false;
+        }
     };
     
     /**
@@ -154,6 +187,7 @@ export function useTermsManager() {
         getTermsData,
         fetchTerms,
         refreshTerms,
+        addTerms,
         hasError,
         getError,
         isLoading,

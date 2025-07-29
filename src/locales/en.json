@@ -71,6 +71,8 @@
     "totalTerms": "Total Terms: ",
     "fetchFailed": "Failed to fetch terms data",
     "loadFailed": "Failed to load terms",
-    "termsSettings": "Terms Settings"
+    "termsSettings": "Terms Settings",
+    "addFailed": "Failed to add terms data",
+    "addSuccess": "Successfully submitted {count} terms to database"
   }
 } 

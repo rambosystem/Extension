@@ -50,4 +50,61 @@ export async function fetchUserTerms() {
  */
 export async function fetchCurrentUserTerms() {
   return fetchUserTerms();
+}
+
+/**
+ * 添加新的terms数据
+ * @param {Array} termsData - terms数据数组，格式为 [{en: string, cn: string, jp: string}]
+ * @returns {Promise<Object>} 添加后的terms数据
+ */
+export async function addUserTerms(termsData) {
+  try {
+    // 验证输入数据格式
+    if (!Array.isArray(termsData)) {
+      throw new Error('Terms data must be an array');
+    }
+
+    // 验证每个term项的格式
+    for (const term of termsData) {
+      if (!term || typeof term !== 'object') {
+        throw new Error('Each term must be an object');
+      }
+      if (!term.en || !term.cn || !term.jp) {
+        throw new Error('Each term must have en, cn, and jp properties');
+      }
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(termsData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Add terms API request failed: ${response.status} ${response.statusText}. ${
+          errorData.error?.message || errorData.message || ''
+        }`
+      );
+    }
+
+    const data = await response.json();
+    
+    // 验证返回的数据格式
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from Add Terms API');
+    }
+
+    if (!Array.isArray(data.terms)) {
+      throw new Error('Terms data is not an array');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to add user terms:', error);
+    throw error;
+  }
 } 
