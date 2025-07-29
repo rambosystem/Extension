@@ -157,6 +157,40 @@ export function useTermsManager() {
         return loading.value;
     };
     
+    /**
+     * 检查是否有变动
+     * @param {Array} currentData - 当前数据
+     * @param {Array} originalData - 原始数据
+     * @returns {boolean} 是否有变动
+     */
+    const hasChanges = (currentData, originalData) => {
+        return JSON.stringify(currentData) !== JSON.stringify(originalData);
+    };
+    
+    /**
+     * 获取变动的terms数据
+     * @param {Array} currentData - 当前数据
+     * @param {Array} originalData - 原始数据
+     * @returns {Array} 变动的terms数据
+     */
+    const getChangedTerms = (currentData, originalData) => {
+        const changedTerms = [];
+        
+        for (let i = 0; i < currentData.length; i++) {
+            const current = currentData[i];
+            const original = originalData[i];
+            
+            if (!original || 
+                current.en !== original.en || 
+                current.cn !== original.cn || 
+                current.jp !== original.jp) {
+                changedTerms.push(current);
+            }
+        }
+        
+        return changedTerms;
+    };
+    
     // 立即初始化状态
     initializeTermsStatus();
     
@@ -188,6 +222,8 @@ export function useTermsManager() {
         fetchTerms,
         refreshTerms,
         addTerms,
+        hasChanges,
+        getChangedTerms,
         hasError,
         getError,
         isLoading,

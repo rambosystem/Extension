@@ -19,10 +19,10 @@
         @click="handleSave"
         class="save-button"
       >
-        Save
+        {{ t('common.save') }}
       </el-button>
       <el-button size="small" @click="handleCancel" class="cancel-button">
-        Cancel
+        {{ t('common.cancel') }}
       </el-button>
     </div>
   </div>
@@ -30,6 +30,9 @@
 
 <script setup>
 import { ref, watch, nextTick } from "vue";
+import { useI18n } from "../composables/useI18n.js";
+
+const { t } = useI18n();
 
 const props = defineProps({
   value: {

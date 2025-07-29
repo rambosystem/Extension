@@ -9,7 +9,8 @@
     "error": "Error",
     "warning": "Warning",
     "retry": "Retry",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "submit": "Submit"
   },
   "menu": {
     "tools": "Tools",
@@ -73,6 +74,7 @@
     "loadFailed": "Failed to load terms",
     "termsSettings": "Terms Settings",
     "addFailed": "Failed to add terms data",
-    "addSuccess": "Successfully submitted {count} terms to database"
+    "addSuccess": "Successfully submitted {count} terms to database",
+    "noChanges": "No terms updates to submit"
   }
 } 

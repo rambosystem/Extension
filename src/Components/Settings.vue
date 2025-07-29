@@ -19,9 +19,10 @@
             :total-terms="totalTerms"
             :loading="termsLoading"
             :error="termsError"
-            :terms-data="termsData"
+            :terms-data="editableTermsData"
             @update:status="updateTermStatus"
-            @refresh="refreshTerms" 
+            @refresh="refreshTerms"
+            @submit="handleSubmitTerms" 
           />
         </div>
       </el-form-item>
@@ -80,25 +81,29 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { ElDialog } from "element-plus";
+import { ref, watch } from "vue";
+import { ElDialog, ElMessage } from "element-plus";
 import CodeEditor from "./CodeEditor.vue";
 import SaveableInput from "./SaveableInput.vue";
 import { useSettings } from "../composables/useSettings.js";
 import { useI18n } from "../composables/useI18n.js";
 import TermsCard from "./TermsCard.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
+import { useTranslationStorage } from "../composables/useTranslationStorage.js";
 
 const { t } = useI18n();
 const { 
     termsStatus, 
     termsTitle, 
     totalTerms, 
-    termsData,
+    termsData: originalTermsData,
     loading: termsLoading, 
     error: termsError,
     updateTermStatus, 
-    refreshTerms 
+    refreshTerms,
+    addTerms,
+    hasChanges,
+    getChangedTerms
 } = useTermsManager();
 
 // 使用设置管理composable
@@ -129,6 +134,46 @@ const handleTranslationPromptClick = (event) => {
 };
 
 const formRef = ref();
+
+// 创建可编辑的terms数据
+const editableTermsData = ref([]);
+
+// 监听原始数据变化，同步到可编辑数据
+watch(originalTermsData, (newData) => {
+    // 深拷贝数据并添加编辑状态
+    const { addEditingStates } = useTranslationStorage();
+    editableTermsData.value = addEditingStates(JSON.parse(JSON.stringify(newData)));
+}, { deep: true });
+
+// 处理terms提交
+const handleSubmitTerms = async () => {
+    try {
+        // 比较可编辑数据与原始数据
+        const hasChanges = JSON.stringify(editableTermsData.value) !== JSON.stringify(originalTermsData.value);
+        
+        if (!hasChanges) {
+            ElMessage.warning(t("terms.noChanges"));
+            return;
+        }
+        
+        // 获取改动的terms数据
+        const changedTerms = getChangedTerms(editableTermsData.value, originalTermsData.value);
+        
+        if (changedTerms.length === 0) {
+            ElMessage.warning(t("terms.noChanges"));
+            return;
+        }
+        
+        // 只提交改动的terms数据（使用统一的addUserTerms接口）
+        await addTerms(changedTerms);
+        
+        // 更新原始数据
+        refreshTerms();
+        
+    } catch (error) {
+        console.error("Submit terms failed:", error);
+    }
+};
 
 </script>
 

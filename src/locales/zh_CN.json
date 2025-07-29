@@ -9,7 +9,8 @@
     "error": "错误",
     "warning": "警告",
     "retry": "重试",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "submit": "提交"
   },
   "menu": {
     "tools": "常用工具",
@@ -73,6 +74,7 @@
     "loadFailed": "加载术语失败",
     "termsSettings": "术语设置",
     "addFailed": "添加术语数据失败",
-    "addSuccess": "成功提交{count}个terms更新至数据库"
+    "addSuccess": "成功提交{count}个terms更新至数据库",
+    "noChanges": "没有术语更新提交"
   }
 } 

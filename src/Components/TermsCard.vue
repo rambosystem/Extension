@@ -42,18 +42,36 @@
                     v-loading="loading" 
                     :element-loading-text="t('common.loading')">
                     <el-table-column prop="en" label="EN">
-                        <template #default="{ row }">
-                            <span class="terms-cell">{{ row.en }}</span>
+                        <template #default="{ row, $index }">
+                            <EditableCell 
+                                :value="row.en" 
+                                :isEditing="row.editing_en" 
+                                @enterEdit="enterEditMode($index, 'en')"
+                                @exitEdit="row.editing_en = false" 
+                                @update:value="(value) => { row.en = value; handleTermsChange(); }"
+                            />
                         </template>
                     </el-table-column>
                     <el-table-column prop="cn" label="CN">
-                        <template #default="{ row }">
-                            <span class="terms-cell">{{ row.cn }}</span>
+                        <template #default="{ row, $index }">
+                            <EditableCell 
+                                :value="row.cn" 
+                                :isEditing="row.editing_cn" 
+                                @enterEdit="enterEditMode($index, 'cn')"
+                                @exitEdit="row.editing_cn = false" 
+                                @update:value="(value) => { row.cn = value; handleTermsChange(); }"
+                            />
                         </template>
                     </el-table-column>
                     <el-table-column prop="jp" label="JP">
-                        <template #default="{ row }">
-                            <span class="terms-cell">{{ row.jp }}</span>
+                        <template #default="{ row, $index }">
+                            <EditableCell 
+                                :value="row.jp" 
+                                :isEditing="row.editing_jp" 
+                                @enterEdit="enterEditMode($index, 'jp')"
+                                @exitEdit="row.editing_jp = false" 
+                                @update:value="(value) => { row.jp = value; handleTermsChange(); }"
+                            />
                         </template>
                     </el-table-column>
                 </el-table>
@@ -61,8 +79,8 @@
             <el-form-item>
                 <div class="dialog-button-container">
                     <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
-                    <el-button type="primary" @click="handleRefresh">
-                        {{ t('common.refresh') }}
+                    <el-button type="primary" @click="handleSubmit" :loading="submitting">
+                        {{ t('common.submit') }}
                     </el-button>
                 </div>
             </el-form-item>
@@ -74,6 +92,7 @@
 import { useI18n } from "../composables/useI18n.js";
 import { Setting, Loading } from "@element-plus/icons-vue";
 import { ref } from "vue";
+import EditableCell from "./EditableCell.vue";
 
 const { t } = useI18n();
 
@@ -104,8 +123,9 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:status', 'refresh']);
+const emit = defineEmits(['update:status', 'refresh', 'submit']);
 const dialogVisible = ref(false);
+const submitting = ref(false);
 
 const handleStatusChange = (value) => {
     emit('update:status', value);
@@ -128,8 +148,26 @@ const handleSettingClick = (event) => {
     emit('refresh');
 };
 
-const handleRefresh = () => {
-    emit('refresh');
+const handleSubmit = async () => {
+    submitting.value = true;
+    try {
+        await emit('submit');
+    } finally {
+        submitting.value = false;
+    }
+};
+
+const handleTermsChange = () => {
+    // 当terms数据发生变化时触发
+    // 这里可以添加额外的逻辑，比如实时检测变动状态
+};
+
+const enterEditMode = (index, field) => {
+    // 进入编辑模式
+    const row = props.termsData[index];
+    if (row) {
+        row[`editing_${field}`] = true;
+    }
 };
 </script>
 
