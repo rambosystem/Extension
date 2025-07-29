@@ -8,7 +8,8 @@
     "success": "成功",
     "error": "错误",
     "warning": "警告",
-    "retry": "重试"
+    "retry": "重试",
+    "refresh": "刷新"
   },
   "menu": {
     "tools": "常用工具",
@@ -70,6 +71,7 @@
     "customTerms": "自定义术语",
     "totalTerms": "总术语： ",
     "fetchFailed": "获取术语数据失败",
-    "loadFailed": "加载术语失败"
+    "loadFailed": "加载术语失败",
+    "termsSettings": "术语设置"
   }
 } 

@@ -31,12 +31,42 @@
             </div>
         </div>
     </el-card>
-    <el-dialog v-model="dialogVisible" title="设置" width="500px">
-        <div class="setting-content">
-            <div class="setting-item">
-                <span class="setting-item-text">设置</span>
-            </div>
-        </div>
+    <el-dialog v-model="dialogVisible" :title="t('terms.termsSettings')" width="70%">
+        <el-form label-position="top">
+            <el-form-item>
+                <el-table 
+                    :data="termsData" 
+                    style="width: 100%" 
+                    height="450" 
+                    empty-text=""
+                    v-loading="loading" 
+                    :element-loading-text="t('common.loading')">
+                    <el-table-column prop="en" label="EN">
+                        <template #default="{ row }">
+                            <span class="terms-cell">{{ row.en }}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="cn" label="CN">
+                        <template #default="{ row }">
+                            <span class="terms-cell">{{ row.cn }}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="jp" label="JP">
+                        <template #default="{ row }">
+                            <span class="terms-cell">{{ row.jp }}</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-form-item>
+            <el-form-item>
+                <div class="dialog-button-container">
+                    <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+                    <el-button type="primary" @click="handleRefresh">
+                        {{ t('common.refresh') }}
+                    </el-button>
+                </div>
+            </el-form-item>
+        </el-form>
     </el-dialog>
 </template>
 
@@ -68,6 +98,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    termsData: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const emit = defineEmits(['update:status', 'refresh']);
@@ -90,6 +124,8 @@ const handleCardClick = (event) => {
 
 const handleSettingClick = (event) => {
     dialogVisible.value = true;
+    // 打开设置对话框时自动刷新terms数据
+    emit('refresh');
 };
 
 const handleRefresh = () => {
@@ -191,5 +227,105 @@ const handleRefresh = () => {
     align-items: center;
     justify-content: center;
     width: 100%;
+}
+
+.dialog-button-container {
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0px;
+}
+
+.terms-cell {
+    padding: 0 12px;
+    line-height: 50px;
+    display: block;
+    color: #303133;
+}
+
+/* 对话框表单样式 */
+:deep(.el-dialog .el-form) {
+    margin: 0;
+}
+
+:deep(.el-dialog .el-form-item) {
+    margin-bottom: 20px;
+}
+
+:deep(.el-dialog .el-form-item:last-child) {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+:deep(.el-dialog .el-form-item__label) {
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+    margin-bottom: 8px;
+}
+
+/* 加粗对话框标题 */
+:deep(.el-dialog__title) {
+    font-weight: 600;
+    font-size: 18px;
+    color: #303133;
+}
+
+/* 设置对话框内边距 */
+:deep(.el-dialog) {
+    --el-dialog-padding-primary: 20px;
+}
+
+/* 表格样式优化 */
+:deep(.el-table) {
+    border: none;
+}
+
+:deep(.el-table__border-top-patch) {
+    display: none;
+}
+
+:deep(.el-table__border-right-patch) {
+    display: none;
+}
+
+:deep(.el-table td) {
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0;
+    height: 50px;
+}
+
+:deep(.el-table th) {
+    border: none;
+    height: 50px;
+    padding-left: 12px;
+}
+
+:deep(.el-table__row) {
+    height: 50px;
+}
+
+:deep(.el-table__row:last-child td) {
+    border-bottom: none;
+}
+
+:deep(.el-table__cell) {
+    border: none;
+    padding: 0;
+}
+
+:deep(.el-table--border) {
+    border: none;
+}
+
+:deep(.el-table--border::after) {
+    display: none;
+}
+
+:deep(.el-table--border::before) {
+    display: none;
 }
 </style>

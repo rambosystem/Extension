@@ -19,6 +19,7 @@
             :total-terms="totalTerms"
             :loading="termsLoading"
             :error="termsError"
+            :terms-data="termsData"
             @update:status="updateTermStatus"
             @refresh="refreshTerms" 
           />
@@ -93,6 +94,7 @@ const {
     termsStatus, 
     termsTitle, 
     totalTerms, 
+    termsData,
     loading: termsLoading, 
     error: termsError,
     updateTermStatus, 
