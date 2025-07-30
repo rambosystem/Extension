@@ -5,7 +5,8 @@
     </div>
     <div class="cell-edit" v-else>
       <el-input v-model="localValue" @focus="isEditing = true" @blur="handleBlur" @keydown.enter="handleEnter"
-        @keydown.esc="handleEscape" ref="inputRef" class="edit-input" />
+        @keydown.esc="handleEscape" @compositionstart="handleCompositionStart" @compositionend="handleCompositionEnd"
+        ref="inputRef" class="edit-input" />
       <el-button type="primary" size="small" @click="handleSave" class="save-button">
         {{ t('common.save') }}
       </el-button>
@@ -38,6 +39,7 @@ const emit = defineEmits(["enterEdit", "exitEdit", "update:value", "save"]);
 const localValue = ref(props.value);
 const inputRef = ref();
 const isSaving = ref(false);
+const isComposing = ref(false); // 跟踪输入法组合状态
 
 // 监听props.value变化，同步到localValue
 watch(
@@ -71,6 +73,12 @@ const handleSave = () => {
 
 const handleEnter = (event) => {
   event.preventDefault(); // 阻止默认行为
+
+  // 如果正在输入法组合中，不执行保存
+  if (isComposing.value) {
+    return;
+  }
+
   handleSave();
 };
 
@@ -92,6 +100,16 @@ const handleEscape = (event) => {
 const handleCancel = () => {
   localValue.value = props.value; // 恢复原值
   emit("exitEdit");
+};
+
+// 处理输入法组合开始
+const handleCompositionStart = () => {
+  isComposing.value = true;
+};
+
+// 处理输入法组合结束
+const handleCompositionEnd = () => {
+  isComposing.value = false;
 };
 </script>
 
