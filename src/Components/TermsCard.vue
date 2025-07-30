@@ -270,6 +270,22 @@ const handleCardClick = (event) => {
 
 const handleDelete = async (row) => {
     try {
+        // 如果是新添加的行（未保存），直接从本地数据中删除
+        if (row.isNew) {
+            const index = props.termsData.findIndex(term => term === row);
+            if (index !== -1) {
+                props.termsData.splice(index, 1);
+                // 如果有搜索条件，重新执行筛选
+                if (filter.value.trim()) {
+                    handleFilter();
+                } else {
+                    totalItems.value--;
+                }
+            }
+            return;
+        }
+
+        // 对于已保存的行，调用API删除
         await deleteTerm(row.en);
         // 删除成功后，删除en对应的当前行
         const index = props.termsData.findIndex(term => term.en === row.en);
@@ -320,28 +336,61 @@ const enterEditMode = (index, field) => {
 };
 
 const addNewTerm = () => {
-    // 添加新术语的逻辑
-    console.log('Add new term clicked');
-    // 这里可以添加具体的添加逻辑
+    // 创建新的空白术语行
+    const newTerm = {
+        en: '',
+        cn: '',
+        jp: '',
+        editing_en: false,
+        editing_cn: false,
+        editing_jp: false,
+        isNew: true // 标记为新添加的行
+    };
+
+    // 将新行添加到数据中
+    props.termsData.unshift(newTerm); // 添加到数组开头
+
+    // 如果有搜索条件，重新执行筛选
+    if (filter.value.trim()) {
+        handleFilter();
+    } else {
+        // 更新总数
+        totalItems.value = props.termsData.length;
+    }
+
+    // 重置到第一页
+    currentPage.value = 1;
+
+    // 自动进入第一行的编辑模式
+    setTimeout(() => {
+        if (props.termsData.length > 0) {
+            props.termsData[0].editing_en = true;
+        }
+    }, 100);
 };
 
 const handleSaveTerm = async (row) => {
     try {
-        // 验证数据完整性
-        if (!row.en || !row.cn || !row.jp) {
-            console.error('Missing required fields for term:', row);
+        // 只验证en字段是否填写
+        if (!row.en || !row.en.trim()) {
+            console.error('English field is required for term:', row);
             return;
         }
 
-        // 调用API保存术语
+        // 调用API保存术语，cn和jp可以为空
         const termsData = [{
-            en: row.en,
-            cn: row.cn,
-            jp: row.jp
+            en: row.en.trim(),
+            cn: row.cn || '',
+            jp: row.jp || ''
         }];
 
         await addUserTerms(termsData);
         console.log('Term saved successfully:', row);
+
+        // 如果是新添加的行，保存成功后移除isNew标记
+        if (row.isNew) {
+            delete row.isNew;
+        }
 
         // 可以在这里添加成功提示
         // ElMessage.success('Term saved successfully');
