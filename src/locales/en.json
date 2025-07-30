@@ -74,6 +74,7 @@
     "defaultTerms": "Public Terms Library",
     "totalTerms": "Total Terms: ",
     "fetchFailed": "Failed to fetch terms data",
+    "fetchStatusFailed": "Failed to fetch terms status",
     "loadFailed": "Failed to load terms",
     "termsSettings": "Terms Settings",
     "addFailed": "Failed to add terms data",

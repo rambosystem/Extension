@@ -32,8 +32,21 @@
       "cn": "string", 
       "jp": "string"
     }
-  ],
-  "total_terms": 0
+  ]
+}
+```
+
+### 获取用户Terms状态信息
+- **URL**: `http://43.142.250.179:8000/users/{user_id}/terms/status`
+- **Method**: `GET`
+- **Headers**: `Content-Type: application/json`
+
+### 状态响应格式
+```json
+{
+  "total_terms": 7,
+  "embedding_status": true,
+  "last_embedding_time": "2025-07-30 10:00:00"
 }
 ```
 
@@ -73,6 +86,8 @@ const {
     totalTerms, 
     loading: termsLoading, 
     error: termsError,
+    embeddingStatus,
+    lastEmbeddingTime,
     updateTermStatus, 
     refreshTerms 
 } = useTermsManager();
@@ -88,6 +103,8 @@ const {
     :total-terms="totalTerms"
     :loading="termsLoading"
     :error="termsError"
+    :embedding-status="embeddingStatus"
+    :last-embedding-time="lastEmbeddingTime"
     @update:status="updateTermStatus"
     @refresh="refreshTerms" 
   />

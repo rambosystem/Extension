@@ -4,6 +4,56 @@ const API_BASE_URL = 'http://43.142.250.179:8000';
 const Public_Account_ID = '1'
 
 /**
+ * 获取用户terms状态信息
+ * @param {string} userId - 用户ID
+ * @returns {Promise<Object>} terms状态数据，包含total_terms、embedding_status、last_embedding_time
+ */
+export async function fetchUserTermsStatus() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms/status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Terms Status API request failed: ${response.status} ${response.statusText}. ${
+          errorData.error?.message || errorData.message || ''
+        }`
+      );
+    }
+
+    const data = await response.json();
+    
+    // 验证返回的数据格式
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from Terms Status API');
+    }
+
+    // 验证必需的字段
+    if (typeof data.total_terms !== 'number') {
+      throw new Error('total_terms field is missing or invalid');
+    }
+
+    if (typeof data.embedding_status !== 'boolean') {
+      throw new Error('embedding_status field is missing or invalid');
+    }
+
+    if (typeof data.last_embedding_time !== 'string') {
+      throw new Error('last_embedding_time field is missing or invalid');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch user terms status:', error);
+    throw error;
+  }
+}
+
+/**
  * 获取用户terms数据
  * @param {string} userId - 用户ID
  * @returns {Promise<Object>} terms数据

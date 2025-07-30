@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
-import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm } from "../requests/terms.js";
+import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm, fetchUserTermsStatus } from "../requests/terms.js";
 
 export function useTermsManager() {
     const { t } = useI18n();
@@ -19,6 +19,8 @@ export function useTermsManager() {
     const totalTerms = ref(0); // terms总数
     const loading = ref(false); // 加载状态
     const error = ref(null); // 错误状态
+    const embeddingStatus = ref(false); // embedding状态
+    const lastEmbeddingTime = ref(''); // 最后embedding时间
     
     /**
      * 初始化术语字典状态
@@ -26,6 +28,31 @@ export function useTermsManager() {
     const initializeTermsStatus = () => {
         const savedStatus = getFromStorage(STORAGE_KEY);
         termsStatus.value = savedStatus !== undefined ? savedStatus : true;
+    };
+    
+    /**
+     * 从API获取terms状态信息
+     */
+    const fetchTermsStatus = async () => {
+        if (loading.value) return; // 防止重复请求
+        
+        loading.value = true;
+        error.value = null;
+        
+        try {
+            const statusData = await fetchUserTermsStatus();
+            totalTerms.value = statusData.total_terms || 0;
+            embeddingStatus.value = statusData.embedding_status || false;
+            lastEmbeddingTime.value = statusData.last_embedding_time || '';
+            
+            console.log('Terms status loaded successfully:', statusData);
+        } catch (err) {
+            error.value = err.message;
+            console.error('Failed to fetch terms status:', err);
+            ElMessage.error(t("terms.fetchStatusFailed") || 'Failed to fetch terms status');
+        } finally {
+            loading.value = false;
+        }
     };
     
     /**
@@ -40,7 +67,6 @@ export function useTermsManager() {
         try {
             const data = await fetchCurrentUserTerms();
             termsData.value = data.terms || [];
-            totalTerms.value = data.total_terms || 0;
             
             console.log('Terms data loaded successfully:', data);
         } catch (err) {
@@ -53,10 +79,14 @@ export function useTermsManager() {
     };
     
     /**
-     * 刷新terms数据
+     * 刷新terms数据和状态
      */
-    const refreshTerms = () => {
-        fetchTerms();
+    const refreshTerms = async () => {
+        // 同时获取状态信息和terms数据
+        await Promise.all([
+            fetchTermsStatus(),
+            fetchTerms()
+        ]);
     };
     
     /**
@@ -73,7 +103,9 @@ export function useTermsManager() {
         try {
             const data = await addUserTerms(newTermsData);
             termsData.value = data.terms || [];
-            totalTerms.value = data.total_terms || 0;
+            
+            // 添加成功后刷新状态信息
+            await fetchTermsStatus();
             
             console.log('Terms added successfully:', data);
             
@@ -110,8 +142,8 @@ export function useTermsManager() {
             if (data.success && data.message) {
                 console.log('Term deleted successfully:', data);
                 
-                // 删除成功后需要重新获取terms数据
-                await fetchTerms();
+                // 删除成功后需要重新获取terms数据和状态
+                await refreshTerms();
                 
                 // 显示成功提示
                 ElMessage.success(t("terms.deleteSuccess") || '术语删除成功');
@@ -122,7 +154,9 @@ export function useTermsManager() {
             // 如果返回了terms数组，直接更新数据
             if (Array.isArray(data.terms)) {
                 termsData.value = data.terms;
-                totalTerms.value = data.total_terms || 0;
+                
+                // 刷新状态信息
+                await fetchTermsStatus();
                 
                 console.log('Term deleted successfully, updated data:', data);
                 
@@ -183,6 +217,22 @@ export function useTermsManager() {
      */
     const getTermsData = () => {
         return termsData.value;
+    };
+    
+    /**
+     * 获取embedding状态
+     * @returns {boolean} embedding状态
+     */
+    const getEmbeddingStatus = () => {
+        return embeddingStatus.value;
+    };
+
+    /**
+     * 获取最后embedding时间
+     * @returns {string} 最后embedding时间
+     */
+    const getLastEmbeddingTime = () => {
+        return lastEmbeddingTime.value;
     };
     
     /**
@@ -253,7 +303,7 @@ export function useTermsManager() {
     
     // 组件挂载时自动获取数据
     onMounted(() => {
-        fetchTerms();
+        refreshTerms();
     });
     
     return {
@@ -264,6 +314,8 @@ export function useTermsManager() {
         totalTerms,
         loading,
         error,
+        embeddingStatus,
+        lastEmbeddingTime,
         
         // 方法
         updateTermStatus,
@@ -280,5 +332,7 @@ export function useTermsManager() {
         hasError,
         getError,
         isLoading,
+        getEmbeddingStatus,
+        getLastEmbeddingTime,
     };
 } 

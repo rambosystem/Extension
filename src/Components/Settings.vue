@@ -14,8 +14,8 @@
       <el-form-item :label="t('settings.AdTerms')" label-position="top" class="addTermsDict-container">
         <div class="terms-single">
           <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
-            :error="termsError" :terms-data="editableTermsData" @update:status="updateTermStatus"
-            @refresh="refreshTerms" />
+            :error="termsError" :terms-data="editableTermsData" :embedding-status="embeddingStatus"
+            :last-embedding-time="lastEmbeddingTime" @update:status="updateTermStatus" @refresh="refreshTerms" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
@@ -91,6 +91,8 @@ const {
   termsData: originalTermsData,
   loading: termsLoading,
   error: termsError,
+  embeddingStatus,
+  lastEmbeddingTime,
   updateTermStatus,
   refreshTerms,
   addTerms,

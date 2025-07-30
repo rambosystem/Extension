@@ -29,6 +29,13 @@
                         </el-button>
                     </span>
                     <span v-else class="total-value">{{ totalTerms }}</span>
+                    <div class="embedding-status-container">
+                        <span class="embedding-status">Embedding Status:</span>
+                        <span class="embedding-status-true" v-if="embeddingStatus">Embedded</span>
+                        <span class="embedding-status-false" v-else>Embedding</span>
+                        <span class="last-embedding-time-text">Last Embedding Time:</span>
+                        <span class="last-embedding-time">{{ lastEmbeddingTime }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,6 +162,14 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    embeddingStatus: {
+        type: Boolean,
+        default: false,
+    },
+    lastEmbeddingTime: {
+        type: String,
+        default: '',
+    },
 });
 
 const emit = defineEmits(['update:status', 'refresh']);
@@ -258,6 +273,11 @@ const currentPageInfo = computed(() => {
 
 const handleStatusChange = (value) => {
     emit('update:status', value);
+};
+
+// 处理刷新按钮点击
+const handleRefresh = () => {
+    emit('refresh');
 };
 
 // 处理卡片的点击事件
@@ -531,8 +551,32 @@ const handleTabNext = (tabInfo) => {
     gap: 20px;
 }
 
+.embedding-status-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #303133;
+    padding-left: 10px;
 
+    .embedding-status-true {
+        color: #409EFF;
+        font-weight: 500;
+    }
 
+    .embedding-status-false {
+        color: #e6a23b;
+        font-weight: 500;
+    }
+
+    .last-embedding-time-text {
+        color: #303133;
+    }
+
+    .last-embedding-time {
+        color: #909399;
+    }
+}
 
 .adTerms-title-text {
     font-weight: 600;
@@ -556,10 +600,10 @@ const handleTabNext = (tabInfo) => {
     .total-terms-container {
         display: flex;
         align-items: center;
+        color: #303133;
 
         .total-terms {
             font-size: 14px;
-            color: #909399;
             margin-right: 5px;
         }
 
