@@ -34,6 +34,18 @@
     <el-dialog v-model="dialogVisible" :title="t('terms.termsSettings')" width="70%">
         <el-form label-position="top">
             <el-form-item>
+                <div class="terms-filter-container">
+                    <el-input  v-model="filter" placeholder="Input Terms">
+                        <template #prefix>
+                            <div class="label-container">
+                                <span class="label-text">Terms</span>
+                            </div>
+                        </template>
+                    </el-input>
+                    <el-button type="primary" @click="handleFilter">Search</el-button>
+                </div>
+            </el-form-item>
+            <el-form-item>
                 <el-table 
                     :data="paginatedTermsData" 
                     style="width: 100%" 
@@ -85,26 +97,28 @@
             </el-form-item>
             <el-form-item>
                 <div class="pagination-container" v-if="totalItems > pageSize">
+                    <div class="pagination-total-container">
+                        <el-pagination
+                        v-model:current-page="currentPage"
+                        :total="totalItems"
+                        layout="total"
+                    ></el-pagination>
+                    <span class="pagination-total-text">Terms</span>
+                    </div>
+
+                    
                     <el-pagination
                         v-model:current-page="currentPage"
                         v-model:page-size="pageSize"
                         :page-sizes="[5, 10, 20, 50]"
                         :total="totalItems"
-                        layout="prev, pager, next"
+                        layout="prev, pager, next, jumper"
                         @current-change="handleCurrentChange"
                         @size-change="handleSizeChange"
                         background
                         :pager-count="7"
                         :hide-on-single-page="false"
                     />
-                </div>
-            </el-form-item>
-            <el-form-item>
-                <div class="dialog-button-container">
-                    <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
-                    <el-button type="primary" @click="handleSubmit" :loading="submitting">
-                        {{ t('common.submit') }}
-                    </el-button>
                 </div>
             </el-form-item>
         </el-form>
@@ -117,6 +131,8 @@ import { Setting, Loading } from "@element-plus/icons-vue";
 import { ref, computed, watch } from "vue";
 import EditableCell from "./EditableCell.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
+import { Search } from "@element-plus/icons-vue";
+
 
 const { t } = useI18n();
 const { deleteTerm } = useTermsManager();
@@ -148,9 +164,8 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:status', 'refresh', 'submit']);
+const emit = defineEmits(['update:status', 'refresh']);
 const dialogVisible = ref(false);
-const submitting = ref(false);
 
 // 分页相关状态
 const currentPage = ref(1);
@@ -230,14 +245,6 @@ const handleSettingClick = (event) => {
     emit('refresh');
 };
 
-const handleSubmit = async () => {
-    submitting.value = true;
-    try {
-        await emit('submit');
-    } finally {
-        submitting.value = false;
-    }
-};
 
 const handleTermsChange = () => {
     // 当terms数据发生变化时触发
@@ -278,6 +285,26 @@ const enterEditMode = (index, field) => {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.terms-filter-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+    margin-bottom: 5px;
+}
+
+.label-container {
+    color: #45464f;
+    font-weight: 500;
+    padding-right: 2px;
+    .label-text {
+        height: 20px;
+        padding-right: 5px;
+        border-right: 1px solid lightgray;
+    }
 }
 
 .adTerms-title-text-icon:hover {
@@ -371,17 +398,18 @@ const enterEditMode = (index, field) => {
     margin-top: 20px;
     width: 100%;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
 }
 
-
-.dialog-button-container {
-    margin-top: 20px;
-    width: 100%;
+.pagination-total-container {
+    padding-left: 22px;
     display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 0px;
+}
+
+.pagination-total-text {
+    font-size: 14px;
+    color: #606266;
+    padding-left: 4px;
 }
 
 .terms-cell {

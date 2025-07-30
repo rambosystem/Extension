@@ -22,7 +22,6 @@
             :terms-data="editableTermsData"
             @update:status="updateTermStatus"
             @refresh="refreshTerms"
-            @submit="handleSubmitTerms" 
           />
         </div>
       </el-form-item>
