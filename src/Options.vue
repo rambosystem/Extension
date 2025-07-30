@@ -106,6 +106,13 @@ onMounted(() => {
     }
     // 如果都没有，使用默认值 "1"
   });
+
+  // 监听存储变化，当popup设置新的菜单时立即响应
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local' && changes.currentMenu) {
+      selectedMenu.value = changes.currentMenu.newValue;
+    }
+  });
 });
 </script>
 

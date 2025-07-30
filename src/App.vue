@@ -41,8 +41,18 @@ import { Setting } from "@element-plus/icons-vue";
 import WeightItem from "./Components/Weight-Item.vue";
 
 const handleSettingClick = () => {
-  chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
-    chrome.runtime.openOptionsPage();
+  // 检查options页面是否已经打开
+  chrome.tabs.query({ url: chrome.runtime.getURL("options/options.html") }, (tabs) => {
+    if (tabs.length > 0) {
+      // options页面已经打开，激活该标签页并跳转到设置tab
+      chrome.tabs.update(tabs[0].id, { active: true });
+      chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" });
+    } else {
+      // options页面未打开，创建新标签页
+      chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
+        chrome.runtime.openOptionsPage();
+      });
+    }
   });
   window.close();
 };
@@ -54,8 +64,19 @@ const handleLokaliseClick = () => {
     });
   });
   console.log("Lokalise action sent");
-  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-    chrome.runtime.openOptionsPage();
+
+  // 检查options页面是否已经打开
+  chrome.tabs.query({ url: chrome.runtime.getURL("options/options.html") }, (tabs) => {
+    if (tabs.length > 0) {
+      // options页面已经打开，激活该标签页并跳转到翻译tab
+      chrome.tabs.update(tabs[0].id, { active: true });
+      chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" });
+    } else {
+      // options页面未打开，创建新标签页
+      chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+        chrome.runtime.openOptionsPage();
+      });
+    }
   });
   window.close();
 };
