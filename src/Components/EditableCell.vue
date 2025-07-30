@@ -5,8 +5,8 @@
     </div>
     <div class="cell-edit" v-else>
       <el-input v-model="localValue" @focus="isEditing = true" @blur="handleBlur" @keydown.enter="handleEnter"
-        @keydown.esc="handleEscape" @compositionstart="handleCompositionStart" @compositionend="handleCompositionEnd"
-        ref="inputRef" class="edit-input" />
+        @keydown.tab="handleTab" @keydown.esc="handleEscape" @compositionstart="handleCompositionStart"
+        @compositionend="handleCompositionEnd" ref="inputRef" class="edit-input" />
       <el-button type="primary" size="small" @click="handleSave" class="save-button">
         {{ t('common.save') }}
       </el-button>
@@ -32,9 +32,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  rowIndex: {
+    type: Number,
+    default: -1,
+  },
+  columnIndex: {
+    type: Number,
+    default: -1,
+  },
+  isLastCell: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["enterEdit", "exitEdit", "update:value", "save"]);
+const emit = defineEmits(["enterEdit", "exitEdit", "update:value", "save", "tabNext"]);
 
 const localValue = ref(props.value);
 const inputRef = ref();
@@ -110,6 +122,26 @@ const handleCompositionStart = () => {
 // 处理输入法组合结束
 const handleCompositionEnd = () => {
   isComposing.value = false;
+};
+
+// 处理Tab键
+const handleTab = (event) => {
+  event.preventDefault(); // 阻止默认的Tab行为
+
+  // 如果正在输入法组合中，不执行操作
+  if (isComposing.value) {
+    return;
+  }
+
+  // 先保存当前内容
+  handleSave();
+
+  // 发出tabNext事件，让父组件处理下一个单元格的聚焦
+  emit("tabNext", {
+    currentRow: props.rowIndex,
+    currentColumn: props.columnIndex,
+    isLastCell: props.isLastCell
+  });
 };
 </script>
 

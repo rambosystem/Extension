@@ -66,26 +66,29 @@
                     :element-loading-text="t('common.loading')">
                     <el-table-column prop="en" label="EN">
                         <template #default="{ row, $index }">
-                            <EditableCell :value="row.en" :isEditing="row.editing_en"
-                                @enterEdit="enterEditMode($index, 'en')" @exitEdit="row.editing_en = false"
+                            <EditableCell :value="row.en" :isEditing="row.editing_en" :rowIndex="$index"
+                                :columnIndex="0" :isLastCell="false" @enterEdit="enterEditMode($index, 'en')"
+                                @exitEdit="row.editing_en = false"
                                 @update:value="(value) => { row.en = value; handleTermsChange(); }"
-                                @save="() => handleSaveTerm(row)" />
+                                @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="cn" label="CN">
                         <template #default="{ row, $index }">
-                            <EditableCell :value="row.cn" :isEditing="row.editing_cn"
-                                @enterEdit="enterEditMode($index, 'cn')" @exitEdit="row.editing_cn = false"
+                            <EditableCell :value="row.cn" :isEditing="row.editing_cn" :rowIndex="$index"
+                                :columnIndex="1" :isLastCell="false" @enterEdit="enterEditMode($index, 'cn')"
+                                @exitEdit="row.editing_cn = false"
                                 @update:value="(value) => { row.cn = value; handleTermsChange(); }"
-                                @save="() => handleSaveTerm(row)" />
+                                @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="jp" label="JP">
                         <template #default="{ row, $index }">
-                            <EditableCell :value="row.jp" :isEditing="row.editing_jp"
-                                @enterEdit="enterEditMode($index, 'jp')" @exitEdit="row.editing_jp = false"
+                            <EditableCell :value="row.jp" :isEditing="row.editing_jp" :rowIndex="$index"
+                                :columnIndex="2" :isLastCell="false" @enterEdit="enterEditMode($index, 'jp')"
+                                @exitEdit="row.editing_jp = false"
                                 @update:value="(value) => { row.jp = value; handleTermsChange(); }"
-                                @save="() => handleSaveTerm(row)" />
+                                @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
                     <el-table-column fixed="right" :label="t('common.operation')" width="120">
@@ -399,6 +402,57 @@ const handleSaveTerm = async (row) => {
         console.error('Failed to save term:', error);
         // 可以在这里添加错误提示
         // ElMessage.error('Failed to save term: ' + error.message);
+    }
+};
+
+const handleTabNext = (tabInfo) => {
+    const { currentRow, currentColumn, isLastCell } = tabInfo;
+    const dataToUse = filter.value.trim() ? filteredTermsData.value : props.termsData;
+
+    // 计算下一个单元格的位置
+    let nextRow = currentRow;
+    let nextColumn = currentColumn + 1;
+
+    // 如果当前列是最后一列（JP列），跳转到下一行的第一列（EN列）
+    if (nextColumn >= 3) {
+        nextRow = currentRow + 1;
+        nextColumn = 0;
+    }
+
+    // 检查是否超出当前页的数据范围
+    const startIndex = (currentPage.value - 1) * pageSize.value;
+    const endIndex = startIndex + pageSize.value;
+    const currentPageData = dataToUse.slice(startIndex, endIndex);
+
+    if (nextRow >= currentPageData.length) {
+        // 如果超出当前页范围，检查是否有下一页
+        if (nextRow >= dataToUse.length) {
+            // 如果超出总数据范围，说明是最后一个单元格，只保存不跳转
+            console.log('Reached last cell, saving only');
+            return;
+        } else {
+            // 跳转到下一页
+            currentPage.value = Math.floor(nextRow / pageSize.value) + 1;
+            // 重新计算在当前页中的位置
+            nextRow = nextRow % pageSize.value;
+        }
+    }
+
+    // 获取下一个单元格的字段名
+    const fieldMap = ['en', 'cn', 'jp'];
+    const nextField = fieldMap[nextColumn];
+
+    // 退出当前编辑模式
+    const currentField = fieldMap[currentColumn];
+    const currentRowData = currentPageData[currentRow];
+    if (currentRowData) {
+        currentRowData[`editing_${currentField}`] = false;
+    }
+
+    // 进入下一个单元格的编辑模式
+    const nextRowData = currentPageData[nextRow];
+    if (nextRowData) {
+        nextRowData[`editing_${nextField}`] = true;
     }
 };
 </script>
