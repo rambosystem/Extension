@@ -12,7 +12,8 @@
     "refresh": "刷新",
     "submit": "提交",
     "operation": "操作",
-    "delete": "删除"
+    "delete": "删除",
+    "search": "搜索"
   },
   "menu": {
     "tools": "常用工具",
@@ -80,6 +81,8 @@
     "deleteSuccess": "术语删除成功",
     "deleteFailed": "删除术语失败",
     "deleteConfirm": "确定要删除术语 \"{term}\" 吗？",
-    "noChanges": "没有术语更新提交"
+    "noChanges": "没有术语更新提交",
+    "searchPlaceholder": "搜索英文、中文、日文术语...",
+    "searchResult": "找到 {count} 个结果"
   }
 } 

@@ -35,14 +35,17 @@
         <el-form label-position="top">
             <el-form-item>
                 <div class="terms-filter-container">
-                    <el-input  v-model="filter" placeholder="Input Terms">
+                    <el-input 
+                        v-model="filter" 
+                        :placeholder="t('terms.searchPlaceholder') || 'Search terms in EN, CN, JP...'" 
+                        @input="handleFilterInput"
+                        clearable
+                        @clear="clearFilter"
+                    >
                         <template #prefix>
-                            <div class="label-container">
-                                <span class="label-text">Terms</span>
-                            </div>
+                            <el-icon><Search /></el-icon>
                         </template>
                     </el-input>
-                    <el-button type="primary" @click="handleFilter">Search</el-button>
                 </div>
             </el-form-item>
             <el-form-item>
@@ -96,7 +99,7 @@
                 </el-table>
             </el-form-item>
             <el-form-item>
-                <div class="pagination-container" v-if="totalItems > pageSize">
+                <div class="pagination-container">
                     <div class="pagination-total-container">
                         <el-pagination
                         v-model:current-page="currentPage"
@@ -167,16 +170,62 @@ const props = defineProps({
 const emit = defineEmits(['update:status', 'refresh']);
 const dialogVisible = ref(false);
 
+// 搜索筛选相关状态
+const filter = ref('');
+const filteredTermsData = ref([]);
+const isSearching = ref(false);
+
 // 分页相关状态
 const currentPage = ref(1);
 const pageSize = ref(10);
 const totalItems = ref(0);
 
-// 计算当前页显示的数据
+// 搜索筛选逻辑
+const handleFilter = () => {
+    isSearching.value = true;
+    currentPage.value = 1; // 重置到第一页
+    
+    if (!filter.value.trim()) {
+        // 如果搜索词为空，显示所有数据
+        filteredTermsData.value = [...props.termsData];
+    } else {
+        // 执行搜索筛选
+        const searchTerm = filter.value.toLowerCase().trim();
+        filteredTermsData.value = props.termsData.filter(term => {
+            return (
+                term.en?.toLowerCase().includes(searchTerm) ||
+                term.cn?.toLowerCase().includes(searchTerm) ||
+                term.jp?.toLowerCase().includes(searchTerm)
+            );
+        });
+    }
+    
+    // 更新总数
+    totalItems.value = filteredTermsData.value.length;
+    isSearching.value = false;
+};
+
+// 清空搜索
+const clearFilter = () => {
+    filter.value = '';
+    handleFilter();
+};
+
+// 监听搜索输入变化，实现实时搜索
+const handleFilterInput = () => {
+    // 使用防抖，避免频繁搜索
+    clearTimeout(filter.value.timer);
+    filter.value.timer = setTimeout(() => {
+        handleFilter();
+    }, 300);
+};
+
+// 计算当前页显示的数据（基于筛选后的数据）
 const paginatedTermsData = computed(() => {
+    const dataToUse = filteredTermsData.value.length > 0 ? filteredTermsData.value : props.termsData;
     const start = (currentPage.value - 1) * pageSize.value;
     const end = start + pageSize.value;
-    return props.termsData.slice(start, end);
+    return dataToUse.slice(start, end);
 });
 
 // 处理页码变化
@@ -190,13 +239,19 @@ const handleSizeChange = (size) => {
     currentPage.value = 1; // 重置到第一页
 };
 
-// 监听termsData变化，更新总数
+// 监听termsData变化，更新总数和筛选数据
 watch(() => props.termsData, (newData) => {
-    totalItems.value = newData.length;
-    // 如果当前页超出范围，重置到第一页
-    const maxPage = Math.ceil(totalItems.value / pageSize.value);
-    if (currentPage.value > maxPage && maxPage > 0) {
-        currentPage.value = 1;
+    // 如果有搜索条件，重新执行筛选
+    if (filter.value.trim()) {
+        handleFilter();
+    } else {
+        // 没有搜索条件时，直接更新总数
+        totalItems.value = newData.length;
+        // 如果当前页超出范围，重置到第一页
+        const maxPage = Math.ceil(totalItems.value / pageSize.value);
+        if (currentPage.value > maxPage && maxPage > 0) {
+            currentPage.value = 1;
+        }
     }
 }, { immediate: true });
 
@@ -230,7 +285,12 @@ const handleDelete = async (row) => {
         const index = props.termsData.findIndex(term => term.en === row.en);
         if (index !== -1) {
             props.termsData.splice(index, 1);
-            totalItems.value--;
+            // 如果有搜索条件，重新执行筛选
+            if (filter.value.trim()) {
+                handleFilter();
+            } else {
+                totalItems.value--;
+            }
         }
     } catch (error) {
         console.error('Delete failed:', error);
@@ -239,8 +299,11 @@ const handleDelete = async (row) => {
 
 const handleSettingClick = (event) => {
     dialogVisible.value = true;
-    // 重置分页到第一页
+    // 重置搜索和分页状态
+    filter.value = '';
     currentPage.value = 1;
+    filteredTermsData.value = [];
+    isSearching.value = false;
     // 打开设置对话框时自动刷新terms数据
     emit('refresh');
 };
@@ -252,13 +315,15 @@ const handleTermsChange = () => {
 };
 
 const getActualIndex = (pageIndex) => {
-    // 计算在原始数据中的实际索引
+    // 计算在筛选数据中的实际索引
+    const dataToUse = filteredTermsData.value.length > 0 ? filteredTermsData.value : props.termsData;
     return (currentPage.value - 1) * pageSize.value + pageIndex;
 };
 
 const enterEditMode = (index, field) => {
     // 进入编辑模式
-    const row = props.termsData[getActualIndex(index)];
+    const dataToUse = filteredTermsData.value.length > 0 ? filteredTermsData.value : props.termsData;
+    const row = dataToUse[getActualIndex(index)];
     if (row) {
         row[`editing_${field}`] = true;
     }
@@ -295,6 +360,8 @@ const enterEditMode = (index, field) => {
     gap: 12px;
     margin-bottom: 5px;
 }
+
+
 
 .label-container {
     color: #45464f;

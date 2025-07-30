@@ -12,7 +12,8 @@
     "refresh": "Refresh",
     "submit": "Submit",
     "operation": "Operation",
-    "delete": "Delete"
+    "delete": "Delete",
+    "search": "Search"
   },
   "menu": {
     "tools": "Tools",
@@ -81,6 +82,8 @@
     "deleteFailed": "Failed to delete term",
     "deleteConfirm": "Are you sure you want to delete the term \"{term}\"?",
     "noChanges": "No terms updates to submit",
-    "termsFilter": "Terms Filter"
+    "termsFilter": "Terms Filter",
+    "searchPlaceholder": "Search terms in EN, CN, JP...",
+    "searchResult": "Found {count} results"
   }
 } 
