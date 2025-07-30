@@ -54,7 +54,7 @@ export async function fetchCurrentUserTerms() {
 
 /**
  * 添加新的terms数据
- * @param {Array} termsData - terms数据数组，格式为 [{en: string, cn: string, jp: string}]
+ * @param {Array} termsData - terms数据数组，格式为 [{en: string, cn?: string, jp?: string}]
  * @returns {Promise<Object>} 添加后的terms数据
  */
 export async function addUserTerms(termsData) {
@@ -69,8 +69,8 @@ export async function addUserTerms(termsData) {
       if (!term || typeof term !== 'object') {
         throw new Error('Each term must be an object');
       }
-      if (!term.en || !term.cn || !term.jp) {
-        throw new Error('Each term must have en, cn, and jp properties');
+      if (!term.en || !term.en.trim()) {
+        throw new Error('Each term must have a non-empty en property');
       }
     }
 
