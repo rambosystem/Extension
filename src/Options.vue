@@ -4,7 +4,6 @@
       <div class="sidebar-header">
         <img src="/src/assets/rambo.svg" alt="Logo" class="adguard-logo" draggable="false" />
       </div>
-
       <el-menu :default-active="selectedMenu" class="sidebar-menu" @select="handleMenuSelect" background-color="#f8f8f8"
         text-color="#333" active-text-color="#409EFF">
         <el-menu-item v-for="item in menuConfig" :key="item.index" :index="item.index">

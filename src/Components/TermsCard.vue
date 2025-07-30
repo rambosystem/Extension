@@ -17,7 +17,9 @@
                 <div class="total-terms-container">
                     <span class="total-terms">{{ t('terms.totalTerms') }}</span>
                     <span v-if="loading" class="total-value loading">
-                        <el-icon class="is-loading"><Loading /></el-icon>
+                        <el-icon class="is-loading">
+                            <Loading />
+                        </el-icon>
                         {{ t('common.loading') }}
                     </span>
                     <span v-else-if="error" class="total-value error">
@@ -34,66 +36,53 @@
     <el-dialog v-model="dialogVisible" :title="t('terms.termsSettings')" width="70%">
         <el-form label-position="top">
             <el-form-item>
-                <div class="terms-filter-container">
-                    <el-input 
-                        v-model="filter" 
-                        :placeholder="t('terms.searchPlaceholder') || 'Search terms in EN, CN, JP...'" 
-                        @input="handleFilterInput"
-                    >
-                        <template #prefix>
-                            <el-icon><Search /></el-icon>
-                        </template>
-                    </el-input>
-                    <el-button v-if="filter.trim()" @click="clearFilter" type="primary">
-                        {{ t('common.clear') || 'Clear' }}
-                    </el-button>
+                <div class="header-container">
+                    <div class="terms-filter-container">
+                        <el-input v-model="filter"
+                            :placeholder="t('terms.searchPlaceholder') || 'Search terms in EN, CN, JP...'"
+                            @input="handleFilterInput">
+                            <template #prefix>
+                                <el-icon>
+                                    <Search />
+                                </el-icon>
+                            </template>
+                        </el-input>
+                        <el-button v-if="filter.trim()" @click="clearFilter" type="primary">
+                            {{ t('common.clear') || 'Clear' }}
+                        </el-button>
+                    </div>
+                    <el-button type="primary" @click="addNewTerm">Add Public Terms</el-button>
+
                 </div>
             </el-form-item>
             <el-form-item>
-                <el-table 
-                    :data="paginatedTermsData" 
-                    style="width: 100%" 
-                    height="450" 
-                    empty-text=""
-                    v-loading="loading" 
+                <el-table :data="paginatedTermsData" style="width: 100%" height="450" empty-text="" v-loading="loading"
                     :element-loading-text="t('common.loading')">
                     <el-table-column prop="en" label="EN">
                         <template #default="{ row, $index }">
-                            <EditableCell 
-                                :value="row.en" 
-                                :isEditing="row.editing_en" 
-                                @enterEdit="enterEditMode($index, 'en')"
-                                @exitEdit="row.editing_en = false" 
-                                @update:value="(value) => { row.en = value; handleTermsChange(); }"
-                            />
+                            <EditableCell :value="row.en" :isEditing="row.editing_en"
+                                @enterEdit="enterEditMode($index, 'en')" @exitEdit="row.editing_en = false"
+                                @update:value="(value) => { row.en = value; handleTermsChange(); }" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="cn" label="CN">
                         <template #default="{ row, $index }">
-                            <EditableCell 
-                                :value="row.cn" 
-                                :isEditing="row.editing_cn" 
-                                @enterEdit="enterEditMode($index, 'cn')"
-                                @exitEdit="row.editing_cn = false" 
-                                @update:value="(value) => { row.cn = value; handleTermsChange(); }"
-                            />
+                            <EditableCell :value="row.cn" :isEditing="row.editing_cn"
+                                @enterEdit="enterEditMode($index, 'cn')" @exitEdit="row.editing_cn = false"
+                                @update:value="(value) => { row.cn = value; handleTermsChange(); }" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="jp" label="JP">
                         <template #default="{ row, $index }">
-                            <EditableCell 
-                                :value="row.jp" 
-                                :isEditing="row.editing_jp" 
-                                @enterEdit="enterEditMode($index, 'jp')"
-                                @exitEdit="row.editing_jp = false" 
-                                @update:value="(value) => { row.jp = value; handleTermsChange(); }"
-                            />
+                            <EditableCell :value="row.jp" :isEditing="row.editing_jp"
+                                @enterEdit="enterEditMode($index, 'jp')" @exitEdit="row.editing_jp = false"
+                                @update:value="(value) => { row.jp = value; handleTermsChange(); }" />
                         </template>
                     </el-table-column>
                     <el-table-column fixed="right" :label="t('common.operation')" width="120">
                         <template #default="{ row }">
                             <div class="operation-container" style="padding-left: 12px;">
-                                <el-button type="text" @click   ="handleDelete(row)">{{ t('common.delete') }}</el-button>
+                                <el-button type="text" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
                             </div>
                         </template>
                     </el-table-column>
@@ -102,27 +91,14 @@
             <el-form-item>
                 <div class="pagination-container">
                     <div class="pagination-total-container">
-                        <el-pagination
-                        v-model:current-page="currentPage"
-                        :total="totalItems"
-                        layout="total"
-                    ></el-pagination>
-                    <span class="pagination-total-text">Terms</span>
+                        <el-pagination v-model:current-page="currentPage" :total="totalItems"
+                            layout="total"></el-pagination>
+                        <span class="pagination-total-text">Terms</span>
                     </div>
-
-                    
-                    <el-pagination
-                        v-model:current-page="currentPage"
-                        v-model:page-size="pageSize"
-                        :page-sizes="[5, 10, 20, 50]"
-                        :total="totalItems"
-                        layout="prev, pager, next, jumper"
-                        @current-change="handleCurrentChange"
-                        @size-change="handleSizeChange"
-                        background
-                        :pager-count="7"
-                        :hide-on-single-page="false"
-                    />
+                    <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
+                        :page-sizes="[5, 10, 20, 50]" :total="totalItems" layout="prev, pager, next, jumper"
+                        @current-change="handleCurrentChange" @size-change="handleSizeChange" background
+                        :pager-count="7" :hide-on-single-page="false" />
                 </div>
             </el-form-item>
         </el-form>
@@ -185,7 +161,7 @@ const totalItems = ref(0);
 const handleFilter = () => {
     isSearching.value = true;
     currentPage.value = 1; // 重置到第一页
-    
+
     if (!filter.value.trim()) {
         // 如果搜索词为空，显示所有数据
         filteredTermsData.value = [...props.termsData];
@@ -200,7 +176,7 @@ const handleFilter = () => {
             );
         });
     }
-    
+
     // 更新总数
     totalItems.value = filteredTermsData.value.length;
     isSearching.value = false;
@@ -280,7 +256,7 @@ const handleCardClick = (event) => {
 };
 
 const handleDelete = async (row) => {
-    try {  
+    try {
         await deleteTerm(row.en);
         // 删除成功后，删除en对应的当前行
         const index = props.termsData.findIndex(term => term.en === row.en);
@@ -358,8 +334,7 @@ const enterEditMode = (index, field) => {
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 12px;
-    margin-bottom: 5px;
+    gap: 20px;
 }
 
 
@@ -368,6 +343,7 @@ const enterEditMode = (index, field) => {
     color: #45464f;
     font-weight: 500;
     padding-right: 2px;
+
     .label-text {
         height: 20px;
         padding-right: 5px;
@@ -390,6 +366,21 @@ const enterEditMode = (index, field) => {
     transition: all 0.2s ease;
 }
 
+
+.header-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    margin-bottom: 10px;
+    gap: 20px;
+}
+
+.add-terms-container {
+    display: flex;
+    align-items: center;
+}
 
 
 .adTerms-title-text {
@@ -424,14 +415,14 @@ const enterEditMode = (index, field) => {
         .total-value {
             font-size: 14px;
             color: #909399;
-            
+
             &.loading {
                 display: flex;
                 align-items: center;
                 gap: 5px;
                 color: #409eff;
             }
-            
+
             &.error {
                 color: #f56c6c;
                 display: flex;

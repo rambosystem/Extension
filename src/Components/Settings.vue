@@ -13,16 +13,9 @@
       </el-form-item>
       <el-form-item :label="t('settings.AdTerms')" label-position="top" class="addTermsDict-container">
         <div class="terms-single">
-          <TermsCard 
-            :title="termsTitle" 
-            :status="termsStatus" 
-            :total-terms="totalTerms"
-            :loading="termsLoading"
-            :error="termsError"
-            :terms-data="editableTermsData"
-            @update:status="updateTermStatus"
-            @refresh="refreshTerms"
-          />
+          <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
+            :error="termsError" :terms-data="editableTermsData" @update:status="updateTermStatus"
+            @refresh="refreshTerms" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
@@ -91,18 +84,18 @@ import { useTermsManager } from "../composables/useTermsManager.js";
 import { useTranslationStorage } from "../composables/useTranslationStorage.js";
 
 const { t } = useI18n();
-const { 
-    termsStatus, 
-    termsTitle, 
-    totalTerms, 
-    termsData: originalTermsData,
-    loading: termsLoading, 
-    error: termsError,
-    updateTermStatus, 
-    refreshTerms,
-    addTerms,
-    hasChanges,
-    getChangedTerms
+const {
+  termsStatus,
+  termsTitle,
+  totalTerms,
+  termsData: originalTermsData,
+  loading: termsLoading,
+  error: termsError,
+  updateTermStatus,
+  refreshTerms,
+  addTerms,
+  hasChanges,
+  getChangedTerms
 } = useTermsManager();
 
 // 使用设置管理composable
@@ -139,39 +132,39 @@ const editableTermsData = ref([]);
 
 // 监听原始数据变化，同步到可编辑数据
 watch(originalTermsData, (newData) => {
-    // 深拷贝数据并添加编辑状态
-    const { addEditingStates } = useTranslationStorage();
-    editableTermsData.value = addEditingStates(JSON.parse(JSON.stringify(newData)));
+  // 深拷贝数据并添加编辑状态
+  const { addEditingStates } = useTranslationStorage();
+  editableTermsData.value = addEditingStates(JSON.parse(JSON.stringify(newData)));
 }, { deep: true });
 
 // 处理terms提交
 const handleSubmitTerms = async () => {
-    try {
-        // 比较可编辑数据与原始数据
-        const hasChanges = JSON.stringify(editableTermsData.value) !== JSON.stringify(originalTermsData.value);
-        
-        if (!hasChanges) {
-            ElMessage.warning(t("terms.noChanges"));
-            return;
-        }
-        
-        // 获取改动的terms数据
-        const changedTerms = getChangedTerms(editableTermsData.value, originalTermsData.value);
-        
-        if (changedTerms.length === 0) {
-            ElMessage.warning(t("terms.noChanges"));
-            return;
-        }
-        
-        // 只提交改动的terms数据（使用统一的addUserTerms接口）
-        await addTerms(changedTerms);
-        
-        // 更新原始数据
-        refreshTerms();
-        
-    } catch (error) {
-        console.error("Submit terms failed:", error);
+  try {
+    // 比较可编辑数据与原始数据
+    const hasChanges = JSON.stringify(editableTermsData.value) !== JSON.stringify(originalTermsData.value);
+
+    if (!hasChanges) {
+      ElMessage.warning(t("terms.noChanges"));
+      return;
     }
+
+    // 获取改动的terms数据
+    const changedTerms = getChangedTerms(editableTermsData.value, originalTermsData.value);
+
+    if (changedTerms.length === 0) {
+      ElMessage.warning(t("terms.noChanges"));
+      return;
+    }
+
+    // 只提交改动的terms数据（使用统一的addUserTerms接口）
+    await addTerms(changedTerms);
+
+    // 更新原始数据
+    refreshTerms();
+
+  } catch (error) {
+    console.error("Submit terms failed:", error);
+  }
 };
 
 </script>
