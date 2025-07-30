@@ -68,21 +68,24 @@
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.en" :isEditing="row.editing_en"
                                 @enterEdit="enterEditMode($index, 'en')" @exitEdit="row.editing_en = false"
-                                @update:value="(value) => { row.en = value; handleTermsChange(); }" />
+                                @update:value="(value) => { row.en = value; handleTermsChange(); }"
+                                @save="() => handleSaveTerm(row)" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="cn" label="CN">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.cn" :isEditing="row.editing_cn"
                                 @enterEdit="enterEditMode($index, 'cn')" @exitEdit="row.editing_cn = false"
-                                @update:value="(value) => { row.cn = value; handleTermsChange(); }" />
+                                @update:value="(value) => { row.cn = value; handleTermsChange(); }"
+                                @save="() => handleSaveTerm(row)" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="jp" label="JP">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.jp" :isEditing="row.editing_jp"
                                 @enterEdit="enterEditMode($index, 'jp')" @exitEdit="row.editing_jp = false"
-                                @update:value="(value) => { row.jp = value; handleTermsChange(); }" />
+                                @update:value="(value) => { row.jp = value; handleTermsChange(); }"
+                                @save="() => handleSaveTerm(row)" />
                         </template>
                     </el-table-column>
                     <el-table-column fixed="right" :label="t('common.operation')" width="120">
@@ -118,6 +121,7 @@ import { ref, computed, watch } from "vue";
 import EditableCell from "./EditableCell.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
 import { Search } from "@element-plus/icons-vue";
+import { addUserTerms } from "../requests/terms.js";
 
 
 const { t } = useI18n();
@@ -319,6 +323,34 @@ const addNewTerm = () => {
     // 添加新术语的逻辑
     console.log('Add new term clicked');
     // 这里可以添加具体的添加逻辑
+};
+
+const handleSaveTerm = async (row) => {
+    try {
+        // 验证数据完整性
+        if (!row.en || !row.cn || !row.jp) {
+            console.error('Missing required fields for term:', row);
+            return;
+        }
+
+        // 调用API保存术语
+        const termsData = [{
+            en: row.en,
+            cn: row.cn,
+            jp: row.jp
+        }];
+
+        await addUserTerms(termsData);
+        console.log('Term saved successfully:', row);
+
+        // 可以在这里添加成功提示
+        // ElMessage.success('Term saved successfully');
+
+    } catch (error) {
+        console.error('Failed to save term:', error);
+        // 可以在这里添加错误提示
+        // ElMessage.error('Failed to save term: ' + error.message);
+    }
 };
 </script>
 

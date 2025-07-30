@@ -71,7 +71,7 @@
     "content": "About page content"
   },
   "terms": {
-    "defaultTerms": "Public Terms",
+    "defaultTerms": "Public Terms Library",
     "totalTerms": "Total Terms: ",
     "fetchFailed": "Failed to fetch terms data",
     "loadFailed": "Failed to load terms",

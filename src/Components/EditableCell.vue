@@ -4,21 +4,9 @@
       {{ value }}
     </div>
     <div class="cell-edit" v-else>
-      <el-input
-        v-model="localValue"
-        @focus="isEditing = true"
-        @blur="handleBlur"
-        @keydown.enter="handleEnter"
-        @keydown.esc="handleEscape"
-        ref="inputRef"
-        class="edit-input"
-      />
-      <el-button
-        type="primary"
-        size="small"
-        @click="handleSave"
-        class="save-button"
-      >
+      <el-input v-model="localValue" @focus="isEditing = true" @blur="handleBlur" @keydown.enter="handleEnter"
+        @keydown.esc="handleEscape" ref="inputRef" class="edit-input" />
+      <el-button type="primary" size="small" @click="handleSave" class="save-button">
         {{ t('common.save') }}
       </el-button>
       <el-button size="small" @click="handleCancel" class="cancel-button">
@@ -45,7 +33,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["enterEdit", "exitEdit", "update:value"]);
+const emit = defineEmits(["enterEdit", "exitEdit", "update:value", "save"]);
 
 const localValue = ref(props.value);
 const inputRef = ref();
@@ -74,6 +62,7 @@ const handleSave = () => {
   if (isSaving.value) return; // 防止重复调用
   isSaving.value = true;
   emit("update:value", localValue.value);
+  emit("save"); // 发出保存事件
   emit("exitEdit");
   setTimeout(() => {
     isSaving.value = false;
