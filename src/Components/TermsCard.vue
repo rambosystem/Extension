@@ -35,7 +35,7 @@
         <el-form label-position="top">
             <el-form-item>
                 <el-table 
-                    :data="termsData" 
+                    :data="paginatedTermsData" 
                     style="width: 100%" 
                     height="450" 
                     empty-text=""
@@ -77,11 +77,27 @@
                     <el-table-column fixed="right" :label="t('common.operation')" width="120">
                         <template #default="{ row }">
                             <div class="operation-container" style="padding-left: 12px;">
-                                <el-button type="text" @click.stop="handleDelete(row)">{{ t('common.delete') }}</el-button>
+                                <el-button type="text" @click   ="handleDelete(row)">{{ t('common.delete') }}</el-button>
                             </div>
                         </template>
                     </el-table-column>
                 </el-table>
+            </el-form-item>
+            <el-form-item>
+                <div class="pagination-container" v-if="totalItems > pageSize">
+                    <el-pagination
+                        v-model:current-page="currentPage"
+                        v-model:page-size="pageSize"
+                        :page-sizes="[5, 10, 20, 50]"
+                        :total="totalItems"
+                        layout="prev, pager, next"
+                        @current-change="handleCurrentChange"
+                        @size-change="handleSizeChange"
+                        background
+                        :pager-count="7"
+                        :hide-on-single-page="false"
+                    />
+                </div>
             </el-form-item>
             <el-form-item>
                 <div class="dialog-button-container">
@@ -98,10 +114,12 @@
 <script setup>
 import { useI18n } from "../composables/useI18n.js";
 import { Setting, Loading } from "@element-plus/icons-vue";
-import { ref } from "vue";
+import { ref, computed, watch } from "vue";
 import EditableCell from "./EditableCell.vue";
+import { useTermsManager } from "../composables/useTermsManager.js";
 
 const { t } = useI18n();
+const { deleteTerm } = useTermsManager();
 
 const props = defineProps({
     title: {
@@ -134,6 +152,47 @@ const emit = defineEmits(['update:status', 'refresh', 'submit']);
 const dialogVisible = ref(false);
 const submitting = ref(false);
 
+// 分页相关状态
+const currentPage = ref(1);
+const pageSize = ref(10);
+const totalItems = ref(0);
+
+// 计算当前页显示的数据
+const paginatedTermsData = computed(() => {
+    const start = (currentPage.value - 1) * pageSize.value;
+    const end = start + pageSize.value;
+    return props.termsData.slice(start, end);
+});
+
+// 处理页码变化
+const handleCurrentChange = (page) => {
+    currentPage.value = page;
+};
+
+// 处理每页条数变化
+const handleSizeChange = (size) => {
+    pageSize.value = size;
+    currentPage.value = 1; // 重置到第一页
+};
+
+// 监听termsData变化，更新总数
+watch(() => props.termsData, (newData) => {
+    totalItems.value = newData.length;
+    // 如果当前页超出范围，重置到第一页
+    const maxPage = Math.ceil(totalItems.value / pageSize.value);
+    if (currentPage.value > maxPage && maxPage > 0) {
+        currentPage.value = 1;
+    }
+}, { immediate: true });
+
+// 计算当前页信息
+const currentPageInfo = computed(() => {
+    if (totalItems.value === 0) return '';
+    const start = (currentPage.value - 1) * pageSize.value + 1;
+    const end = Math.min(currentPage.value * pageSize.value, totalItems.value);
+    return `${start}-${end} / ${totalItems.value}`;
+});
+
 const handleStatusChange = (value) => {
     emit('update:status', value);
 };
@@ -149,8 +208,24 @@ const handleCardClick = (event) => {
     emit('update:status', newState);
 };
 
+const handleDelete = async (row) => {
+    try {  
+        await deleteTerm(row.en);
+        // 删除成功后，删除en对应的当前行
+        const index = props.termsData.findIndex(term => term.en === row.en);
+        if (index !== -1) {
+            props.termsData.splice(index, 1);
+            totalItems.value--;
+        }
+    } catch (error) {
+        console.error('Delete failed:', error);
+    }
+};
+
 const handleSettingClick = (event) => {
     dialogVisible.value = true;
+    // 重置分页到第一页
+    currentPage.value = 1;
     // 打开设置对话框时自动刷新terms数据
     emit('refresh');
 };
@@ -169,9 +244,14 @@ const handleTermsChange = () => {
     // 这里可以添加额外的逻辑，比如实时检测变动状态
 };
 
+const getActualIndex = (pageIndex) => {
+    // 计算在原始数据中的实际索引
+    return (currentPage.value - 1) * pageSize.value + pageIndex;
+};
+
 const enterEditMode = (index, field) => {
     // 进入编辑模式
-    const row = props.termsData[index];
+    const row = props.termsData[getActualIndex(index)];
     if (row) {
         row[`editing_${field}`] = true;
     }
@@ -273,6 +353,27 @@ const enterEditMode = (index, field) => {
     justify-content: center;
     width: 100%;
 }
+
+.pagination-info {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.page-info-text {
+    font-size: 14px;
+    color: #606266;
+    font-weight: 500;
+}
+
+.pagination-container {
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
 
 .dialog-button-container {
     margin-top: 20px;

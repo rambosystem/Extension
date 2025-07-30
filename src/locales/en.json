@@ -77,6 +77,9 @@
     "termsSettings": "Terms Settings",
     "addFailed": "Failed to add terms data",
     "addSuccess": "Successfully submitted {count} terms to database",
+    "deleteSuccess": "Term deleted successfully",
+    "deleteFailed": "Failed to delete term",
+    "deleteConfirm": "Are you sure you want to delete the term \"{term}\"?",
     "noChanges": "No terms updates to submit"
   }
 } 

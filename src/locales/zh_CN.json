@@ -77,6 +77,9 @@
     "termsSettings": "术语设置",
     "addFailed": "添加术语数据失败",
     "addSuccess": "成功提交{count}个terms更新至数据库",
+    "deleteSuccess": "术语删除成功",
+    "deleteFailed": "删除术语失败",
+    "deleteConfirm": "确定要删除术语 \"{term}\" 吗？",
     "noChanges": "没有术语更新提交"
   }
 } 

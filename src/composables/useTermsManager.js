@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
-import { fetchCurrentUserTerms, addUserTerms } from "../requests/terms.js";
+import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm } from "../requests/terms.js";
 
 export function useTermsManager() {
     const { t } = useI18n();
@@ -86,6 +86,58 @@ export function useTermsManager() {
             error.value = err.message;
             console.error('Failed to add terms:', err);
             ElMessage.error(t("terms.addFailed") || 'Failed to add terms data');
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    };
+    
+    /**
+     * 删除单个term数据
+     * @param {string} enTerm - 要删除的英文term
+     * @returns {Promise<Object>} 删除后的完整terms数据
+     */
+    const deleteTerm = async (enTerm) => {
+        if (loading.value) return; // 防止重复请求
+        
+        loading.value = true;
+        error.value = null;
+        
+        try {
+            const data = await deleteUserTerm(enTerm);
+            
+            // 处理删除成功的情况
+            if (data.success && data.message) {
+                console.log('Term deleted successfully:', data);
+                
+                // 删除成功后需要重新获取terms数据
+                await fetchTerms();
+                
+                // 显示成功提示
+                ElMessage.success(t("terms.deleteSuccess") || '术语删除成功');
+                
+                return data;
+            }
+            
+            // 如果返回了terms数组，直接更新数据
+            if (Array.isArray(data.terms)) {
+                termsData.value = data.terms;
+                totalTerms.value = data.total_terms || 0;
+                
+                console.log('Term deleted successfully, updated data:', data);
+                
+                // 显示成功提示
+                ElMessage.success(t("terms.deleteSuccess") || '术语删除成功');
+                
+                return data;
+            }
+            
+            throw new Error('Unexpected response format from delete API');
+            
+        } catch (err) {
+            error.value = err.message;
+            console.error('Failed to delete term:', err);
+            ElMessage.error(t("terms.deleteFailed") || '删除术语失败');
             throw err;
         } finally {
             loading.value = false;
@@ -222,6 +274,7 @@ export function useTermsManager() {
         fetchTerms,
         refreshTerms,
         addTerms,
+        deleteTerm,
         hasChanges,
         getChangedTerms,
         hasError,
