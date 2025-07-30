@@ -41,20 +41,15 @@ import { Setting } from "@element-plus/icons-vue";
 import WeightItem from "./Components/Weight-Item.vue";
 
 const handleSettingClick = () => {
-  // 检查options页面是否已经打开
-  chrome.tabs.query({ url: chrome.runtime.getURL("options/options.html") }, (tabs) => {
-    if (tabs.length > 0) {
-      // options页面已经打开，激活该标签页并跳转到设置tab
-      chrome.tabs.update(tabs[0].id, { active: true });
-      chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" });
-    } else {
-      // options页面未打开，创建新标签页
-      chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
-        chrome.runtime.openOptionsPage();
-      });
-    }
+  console.log("Setting button clicked");
+
+  // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
+  chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
+    chrome.runtime.openOptionsPage(() => {
+      console.log("Options page opened");
+      window.close();
+    });
   });
-  window.close();
 };
 
 const handleLokaliseClick = () => {
@@ -65,20 +60,13 @@ const handleLokaliseClick = () => {
   });
   console.log("Lokalise action sent");
 
-  // 检查options页面是否已经打开
-  chrome.tabs.query({ url: chrome.runtime.getURL("options/options.html") }, (tabs) => {
-    if (tabs.length > 0) {
-      // options页面已经打开，激活该标签页并跳转到翻译tab
-      chrome.tabs.update(tabs[0].id, { active: true });
-      chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" });
-    } else {
-      // options页面未打开，创建新标签页
-      chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-        chrome.runtime.openOptionsPage();
-      });
-    }
+  // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
+  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+    chrome.runtime.openOptionsPage(() => {
+      console.log("Options page opened");
+      window.close();
+    });
   });
-  window.close();
 };
 </script>
 
