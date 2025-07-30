@@ -39,13 +39,14 @@
                         v-model="filter" 
                         :placeholder="t('terms.searchPlaceholder') || 'Search terms in EN, CN, JP...'" 
                         @input="handleFilterInput"
-                        clearable
-                        @clear="clearFilter"
                     >
                         <template #prefix>
                             <el-icon><Search /></el-icon>
                         </template>
                     </el-input>
+                    <el-button v-if="filter.trim()" @click="clearFilter" type="primary">
+                        {{ t('common.clear') || 'Clear' }}
+                    </el-button>
                 </div>
             </el-form-item>
             <el-form-item>
