@@ -205,7 +205,9 @@ const handleFilterInput = () => {
 
 // 计算当前页显示的数据（基于筛选后的数据）
 const paginatedTermsData = computed(() => {
-    const dataToUse = filteredTermsData.value.length > 0 ? filteredTermsData.value : props.termsData;
+    // 如果有搜索条件，使用筛选后的数据（即使为空）
+    // 如果没有搜索条件，使用原始数据
+    const dataToUse = filter.value.trim() ? filteredTermsData.value : props.termsData;
     const start = (currentPage.value - 1) * pageSize.value;
     const end = start + pageSize.value;
     return dataToUse.slice(start, end);
@@ -228,7 +230,8 @@ watch(() => props.termsData, (newData) => {
     if (filter.value.trim()) {
         handleFilter();
     } else {
-        // 没有搜索条件时，直接更新总数
+        // 没有搜索条件时，清空筛选数据并更新总数
+        filteredTermsData.value = [];
         totalItems.value = newData.length;
         // 如果当前页超出范围，重置到第一页
         const maxPage = Math.ceil(totalItems.value / pageSize.value);
@@ -299,13 +302,13 @@ const handleTermsChange = () => {
 
 const getActualIndex = (pageIndex) => {
     // 计算在筛选数据中的实际索引
-    const dataToUse = filteredTermsData.value.length > 0 ? filteredTermsData.value : props.termsData;
+    const dataToUse = filter.value.trim() ? filteredTermsData.value : props.termsData;
     return (currentPage.value - 1) * pageSize.value + pageIndex;
 };
 
 const enterEditMode = (index, field) => {
     // 进入编辑模式
-    const dataToUse = filteredTermsData.value.length > 0 ? filteredTermsData.value : props.termsData;
+    const dataToUse = filter.value.trim() ? filteredTermsData.value : props.termsData;
     const row = dataToUse[getActualIndex(index)];
     if (row) {
         row[`editing_${field}`] = true;
