@@ -33,29 +33,35 @@
             </div>
         </div>
     </el-card>
-    <el-dialog v-model="dialogVisible" :title="t('terms.termsSettings')" width="70%">
-        <el-form label-position="top">
-            <el-form-item>
-                <div class="header-container">
-                    <div class="terms-filter-container">
-                        <el-input v-model="filter"
-                            :placeholder="t('terms.searchPlaceholder') || 'Search terms in EN, CN, JP...'"
-                            @input="handleFilterInput">
-                            <template #prefix>
-                                <el-icon>
-                                    <Search />
-                                </el-icon>
-                            </template>
-                        </el-input>
-                        <el-button v-if="filter.trim()" @click="clearFilter" type="primary">
-                            {{ t('common.clear') || 'Clear' }}
-                        </el-button>
-                    </div>
-                    <el-button type="primary" @click="addNewTerm">Add Public Terms</el-button>
-
-                </div>
-            </el-form-item>
-            <el-form-item>
+    <el-dialog v-model="dialogVisible" :title="t('terms.termsSettings')" width="70%" top="10vh">
+        <div class="dialog-content">
+            <div class="filter-section">
+                <el-row :gutter="10">
+                    <el-col :span="20">
+                        <div class="terms-filter-container">
+                            <el-input v-model="filter"
+                                :placeholder="t('terms.searchPlaceholder') || 'Search terms in EN, CN, JP...'"
+                                @input="handleFilterInput">
+                                <template #prefix>
+                                    <el-icon>
+                                        <Search />
+                                    </el-icon>
+                                </template>
+                            </el-input>
+                            <el-button @click="clearFilter" type="default">
+                                {{ t('common.clear') || 'Clear' }}
+                            </el-button>
+                        </div>
+                    </el-col>
+                    <el-col :span="4">
+                        <div class="add-terms-container">
+                            <el-button type="primary" @click="addNewTerm" style="width: 100%;">Add Public
+                                Terms</el-button>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
+            <div class="table-section">
                 <el-table :data="paginatedTermsData" style="width: 100%" height="450" empty-text="" v-loading="loading"
                     :element-loading-text="t('common.loading')">
                     <el-table-column prop="en" label="EN">
@@ -87,8 +93,8 @@
                         </template>
                     </el-table-column>
                 </el-table>
-            </el-form-item>
-            <el-form-item>
+            </div>
+            <div class="pagination-section">
                 <div class="pagination-container">
                     <div class="pagination-total-container">
                         <el-pagination v-model:current-page="currentPage" :total="totalItems"
@@ -100,8 +106,8 @@
                         @current-change="handleCurrentChange" @size-change="handleSizeChange" background
                         :pager-count="7" :hide-on-single-page="false" />
                 </div>
-            </el-form-item>
-        </el-form>
+            </div>
+        </div>
     </el-dialog>
 </template>
 
@@ -305,6 +311,12 @@ const enterEditMode = (index, field) => {
         row[`editing_${field}`] = true;
     }
 };
+
+const addNewTerm = () => {
+    // 添加新术语的逻辑
+    console.log('Add new term clicked');
+    // 这里可以添加具体的添加逻辑
+};
 </script>
 
 <style lang="scss" scoped>
@@ -332,9 +344,7 @@ const enterEditMode = (index, field) => {
 .terms-filter-container {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 20px;
+    gap: 10px;
 }
 
 
@@ -366,6 +376,12 @@ const enterEditMode = (index, field) => {
     transition: all 0.2s ease;
 }
 
+.add-terms-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+}
 
 .header-container {
     display: flex;
@@ -377,10 +393,7 @@ const enterEditMode = (index, field) => {
     gap: 20px;
 }
 
-.add-terms-container {
-    display: flex;
-    align-items: center;
-}
+
 
 
 .adTerms-title-text {
@@ -478,25 +491,22 @@ const enterEditMode = (index, field) => {
     color: #303133;
 }
 
-/* 对话框表单样式 */
-:deep(.el-dialog .el-form) {
+/* 对话框内容样式 */
+.dialog-content {
     margin: 0;
 }
 
-:deep(.el-dialog .el-form-item) {
+.filter-section {
     margin-bottom: 20px;
 }
 
-:deep(.el-dialog .el-form-item:last-child) {
-    margin-bottom: 0;
-    padding-bottom: 0;
+.table-section {
+    margin-bottom: 20px;
 }
 
-:deep(.el-dialog .el-form-item__label) {
-    font-size: 16px;
-    font-weight: 500;
-    color: #303133;
-    margin-bottom: 8px;
+.pagination-section {
+    margin-bottom: 0;
+    padding-bottom: 0;
 }
 
 /* 加粗对话框标题 */
