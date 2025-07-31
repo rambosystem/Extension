@@ -10,7 +10,7 @@
       <el-button type="primary" size="small" @click="handleSave" class="save-button">
         {{ t('common.save') }}
       </el-button>
-      <el-button size="small" @click="handleCancel" class="cancel-button">
+      <el-button size="small" @click="handleCancel" @mousedown.prevent class="cancel-button">
         {{ t('common.cancel') }}
       </el-button>
     </div>
@@ -52,6 +52,7 @@ const localValue = ref(props.value);
 const inputRef = ref();
 const isSaving = ref(false);
 const isComposing = ref(false); // 跟踪输入法组合状态
+const isCancelling = ref(false); // 跟踪取消状态
 
 // 监听props.value变化，同步到localValue
 watch(
@@ -95,9 +96,17 @@ const handleEnter = (event) => {
 };
 
 const handleBlur = () => {
-  if (!isSaving.value) {
-    handleSave();
+  // 如果正在取消操作，不触发保存
+  if (isCancelling.value) {
+    return;
   }
+
+  // 添加延迟，避免与按钮点击事件冲突
+  setTimeout(() => {
+    if (!isSaving.value && !isComposing.value && !isCancelling.value) {
+      handleSave();
+    }
+  }, 100);
 };
 
 const handleEscape = (event) => {
@@ -110,8 +119,14 @@ const handleEscape = (event) => {
 };
 
 const handleCancel = () => {
+  isCancelling.value = true;
   localValue.value = props.value; // 恢复原值
   emit("exitEdit");
+
+  // 重置取消状态
+  setTimeout(() => {
+    isCancelling.value = false;
+  }, 200);
 };
 
 // 处理输入法组合开始
