@@ -113,16 +113,22 @@ ${content}`,
           }
         });
 
-        if (allMatchedTerms.length > 0) {
-          console.log("Adding matched terms to messages, count:", allMatchedTerms.length);
-          messages.push({
-            role: "user",
-            content: '这里提供可供参考的术语库，如果匹配到术语请根据术语库翻译文本，如果匹配不到术语请根据上下文翻译文本。',
-            adTerms: allMatchedTerms,
-          });
-        } else {
-          console.log("No matched terms found");
-        }
+                  if (allMatchedTerms.length > 0) {
+            console.log("Adding matched terms to messages, count:", allMatchedTerms.length);
+            
+            // 构建术语库文本
+            let termsText = '这里提供可供参考的术语库，如果匹配到术语请根据术语库翻译文本：\n';
+            allMatchedTerms.forEach(term => {
+              termsText += `- ${term.en} -> ${term.cn} (${term.jp})\n`;
+            });
+            
+            messages.push({
+              role: "system",
+              content: termsText,
+            });
+          } else {
+            console.log("No matched terms found");
+          }
       } else {
         console.log("No matched terms found");
       }
