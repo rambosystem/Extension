@@ -15,9 +15,19 @@
         <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
         </el-form-item>
         <div class="control-text">
-          <span @click="refreshTerms" class="refresh-terms">{{ t('terms.Refresh') }}</span>
-          <span @click="handleBuildTermsEmbedding" class="build-terms-embedding">{{ t('terms.BuildTermsEmbedding')
-          }}</span>
+          <div class="refresh-terms-container">
+            <el-icon v-if="refreshLoading" class="refresh-loading">
+              <Loading />
+            </el-icon>
+            <span @click="handleRefreshTerms" class="refresh-terms">{{ t('terms.Refresh') }}</span>
+          </div>
+          <div class="build-terms-embedding-container">
+            <el-icon v-if="rebuildLoading" class="build-loading">
+              <Loading />
+            </el-icon>
+            <span @click="handleBuildTermsEmbedding" class="build-terms-embedding">{{ t('terms.BuildTermsEmbedding')
+            }}</span>
+          </div>
         </div>
       </div>
       <div class="terms-single">
@@ -95,6 +105,7 @@ import { useI18n } from "../composables/useI18n.js";
 import TermsCard from "./TermsCard.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
 import { useTranslationStorage } from "../composables/useTranslationStorage.js";
+import { Loading } from "@element-plus/icons-vue";
 
 const { t } = useI18n();
 const {
@@ -150,6 +161,7 @@ const rebuildConfirmVisible = ref(false);
 
 // refresh loading状态
 const refreshLoading = ref(false);
+const rebuildLoading = ref(false);
 
 // 创建可编辑的terms数据
 const editableTermsData = ref([]);
@@ -198,10 +210,13 @@ const handleBuildTermsEmbedding = () => {
 
 // 处理重建确认
 const handleRebuildConfirm = async () => {
+  rebuildLoading.value = true;
   try {
     await rebuildEmbedding();
   } catch (error) {
     ElMessage.error(t("terms.rebuildEmbeddingFailed") || "Failed to rebuild embedding");
+  } finally {
+    rebuildLoading.value = false;
   }
 };
 
@@ -327,6 +342,38 @@ const handleRefreshTerms = async () => {
 
   .build-terms-embedding:hover {
     text-decoration: underline;
+  }
+}
+
+.refresh-terms-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  //旋转动画
+  .refresh-loading {
+    animation: rotate 1s linear infinite;
+  }
+}
+
+.build-terms-embedding-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  //旋转动画
+  .build-loading {
+    animation: rotate 1s linear infinite;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>
