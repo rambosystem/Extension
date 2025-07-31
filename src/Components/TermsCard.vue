@@ -575,7 +575,7 @@ const handleTabNext = (tabInfo) => {
     gap: 10px;
     font-size: 13px;
     color: #303133;
-    padding-left: 10px;
+    padding-left: 20px;
 
     .embedding-status-success {
         color: #67c23a;
@@ -598,6 +598,7 @@ const handleTabNext = (tabInfo) => {
     }
 
     .last-embedding-time-text {
+        padding-left: 15px;
         color: #303133;
     }
 
@@ -620,6 +621,7 @@ const handleTabNext = (tabInfo) => {
 }
 
 .adTerms-content-text {
+    margin-top: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;

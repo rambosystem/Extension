@@ -92,9 +92,30 @@
     "rebuildFailed": "Failed to rebuild embedding",
     "BuildTermsEmbedding": "Rebuild",
     "Refresh": "Refresh",
-    "refreshSuccess": "Terms refreshed successfully",
+    "refreshSuccess": "Terms Library Status refreshed successfully",
     "rebuildEmbeddingCheck": "Are you sure you want to rebuild the embedding?",
     "rebuildEmbeddingFailed": "Failed to rebuild embedding",
     "rebuildEmbeddingProcessing": "Embedding Processing, please try again later"
+  },
+  "termMatch": {
+    "title": "Term Matching",
+    "matchFailed": "Term matching failed",
+    "matchSuccess": "Term matching completed successfully",
+    "noResults": "No matches found",
+    "exportCSV": "Export to CSV",
+    "exportSuccess": "CSV exported successfully",
+    "exportFailed": "Failed to export CSV",
+    "similarityThreshold": "Similarity Threshold",
+    "topK": "Top K Results",
+    "maxNgram": "Max N-gram Length",
+    "matchOptions": "Match Options",
+    "inputTexts": "Input Texts",
+    "matchResults": "Match Results",
+    "stats": "Statistics",
+    "totalTexts": "Total Texts",
+    "totalMatches": "Total Matches",
+    "averageMatches": "Average Matches per Text",
+    "textsWithMatches": "Texts with Matches",
+    "textsWithoutMatches": "Texts without Matches"
   }
 } 

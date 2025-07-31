@@ -95,5 +95,26 @@
     "rebuildEmbeddingConfirm": "确定要重建embedding吗？",
     "rebuildEmbeddingFailed": "重建embedding失败",
     "rebuildEmbeddingProcessing": "Embedding处理中，请稍后再试"
+  },
+  "termMatch": {
+    "title": "术语匹配",
+    "matchFailed": "术语匹配失败",
+    "matchSuccess": "术语匹配完成",
+    "noResults": "未找到匹配结果",
+    "exportCSV": "导出CSV",
+    "exportSuccess": "CSV导出成功",
+    "exportFailed": "CSV导出失败",
+    "similarityThreshold": "相似度阈值",
+    "topK": "最大结果数",
+    "maxNgram": "最大N-gram长度",
+    "matchOptions": "匹配选项",
+    "inputTexts": "输入文本",
+    "matchResults": "匹配结果",
+    "stats": "统计信息",
+    "totalTexts": "总文本数",
+    "totalMatches": "总匹配数",
+    "averageMatches": "平均每文本匹配数",
+    "textsWithMatches": "有匹配的文本数",
+    "textsWithoutMatches": "无匹配的文本数"
   }
 } 
