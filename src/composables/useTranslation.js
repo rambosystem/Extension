@@ -2,6 +2,7 @@ import { ElMessage } from "element-plus";
 import { translate } from "../requests/lokalise.js";
 import { useState } from "./useState.js";
 import { useI18n } from "./useI18n.js";
+import { ref } from "vue";
 
 const { t } = useI18n();
 
@@ -12,6 +13,9 @@ export function useTranslation() {
   const { loadingStates, withState } = useState({
     translation: false,
   });
+
+  // 添加动态加载状态
+  const currentStatus = ref("idle"); // idle, matching_terms, translating
 
   /**
    * 解析翻译结果文本为结构化数据
@@ -55,6 +59,21 @@ export function useTranslation() {
   };
 
   /**
+   * 获取当前状态的显示文本
+   * @returns {string} 状态显示文本
+   */
+  const getStatusText = () => {
+    switch (currentStatus.value) {
+      case "matching_terms":
+        return t("translation.matchingTerms") || "匹配术语中...";
+      case "translating":
+        return t("translation.translating") || "翻译中...";
+      default:
+        return t("translation.translating") || "翻译中...";
+    }
+  };
+
+  /**
    * 执行翻译
    * @param {string} content - 需要翻译的内容
    * @returns {Promise<Array>} 翻译结果数组
@@ -62,7 +81,13 @@ export function useTranslation() {
   const performTranslation = async (content) => {
     try {
       const result = await withState("translation", async () => {
-        const data = await translate(content);
+        // 重置状态
+        currentStatus.value = "idle";
+        
+        const data = await translate(content, (status) => {
+          currentStatus.value = status;
+        });
+        
         const translationResult = parseTranslationResult(data);
 
         ElMessage.success(t("translation.translationCompleted"));
@@ -95,6 +120,8 @@ export function useTranslation() {
 
   return {
     loadingStates,
+    currentStatus,
+    getStatusText,
     performTranslation,
     extractTranslationData,
   };

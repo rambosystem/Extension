@@ -121,6 +121,10 @@ export function useTranslationManager() {
 
     // Loading状态
     loadingStates: translation.loadingStates,
+    
+    // 动态状态
+    currentStatus: translation.currentStatus,
+    getStatusText: translation.getStatusText,
 
     // 主要操作方法
     handleTranslate,

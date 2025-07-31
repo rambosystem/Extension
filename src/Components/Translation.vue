@@ -25,7 +25,7 @@
       <el-form label-position="top">
         <el-form-item>
           <el-table :data="translationResult" style="width: 100%" height="450" empty-text=''
-            v-loading="loadingStates.translation" :element-loading-text="t('translation.translating')">
+            v-loading="loadingStates.translation" :element-loading-text="getStatusText()">
             <el-table-column prop="en" label="EN">
               <template #default="{ row, $index }">
                 <EditableCell :value="row.en" :isEditing="row.editing_en" @enterEdit="enterEditMode($index, 'en')"
@@ -81,6 +81,8 @@ const {
   formData,
   translationResult,
   loadingStates,
+  currentStatus,
+  getStatusText,
   handleTranslate,
   showLastTranslation,
   exportCSV,

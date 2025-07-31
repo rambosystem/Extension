@@ -28,6 +28,7 @@
     "lastTranslation": "Last Translation",
     "translationResult": "Translation Result",
     "translating": "Translating...",
+    "matchingTerms": "Matching terms...",
     "exportCSV": "Export CSV",
     "exportCSVAndUpload": "Export CSV & Upload",
     "noPreviousTranslation": "No previous translation result found",

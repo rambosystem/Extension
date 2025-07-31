@@ -103,17 +103,18 @@ export async function matchTerms(texts, options = {}) {
           throw new Error(`Invalid term match format for text ${i}`);
         }
 
-        // 验证必需的字段
-        if (!match.term_id || typeof match.term_id !== 'number') {
-          throw new Error(`term_id field is missing or invalid for text ${i}`);
-        }
-
+        // 验证必需的字段（根据实际返回的数据格式）
         if (!match.en || typeof match.en !== 'string') {
           throw new Error(`en field is missing or invalid for text ${i}`);
         }
 
-        if (!match.user_id || typeof match.user_id !== 'number') {
-          throw new Error(`user_id field is missing or invalid for text ${i}`);
+        // 可选字段验证
+        if (match.cn && typeof match.cn !== 'string') {
+          throw new Error(`cn field must be a string for text ${i}`);
+        }
+
+        if (match.jp && typeof match.jp !== 'string') {
+          throw new Error(`jp field must be a string for text ${i}`);
         }
       }
     }
@@ -123,4 +124,4 @@ export async function matchTerms(texts, options = {}) {
     console.error('Failed to match terms:', error);
     throw error;
   }
-} 
+}

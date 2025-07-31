@@ -28,6 +28,7 @@
     "lastTranslation": "上次翻译",
     "translationResult": "翻译结果",
     "translating": "翻译中...",
+    "matchingTerms": "匹配术语中...",
     "exportCSV": "导出CSV",
     "exportCSVAndUpload": "导出CSV并上传",
     "noPreviousTranslation": "没有找到上次翻译结果",
