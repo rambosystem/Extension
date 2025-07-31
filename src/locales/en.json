@@ -107,7 +107,7 @@
     "exportFailed": "Failed to export CSV",
     "similarityThreshold": "Similarity Threshold",
     "topK": "Top K Results",
-    "maxNgram": "Max N-gram Length",
+    "maxNGram": "Max N-gram Length",
     "matchOptions": "Match Options",
     "inputTexts": "Input Texts",
     "matchResults": "Match Results",

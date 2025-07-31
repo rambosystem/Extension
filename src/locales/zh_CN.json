@@ -106,7 +106,7 @@
     "exportFailed": "CSV导出失败",
     "similarityThreshold": "相似度阈值",
     "topK": "最大结果数",
-    "maxNgram": "最大N-gram长度",
+    "maxNGram": "最大N-gram长度",
     "matchOptions": "匹配选项",
     "inputTexts": "输入文本",
     "matchResults": "匹配结果",

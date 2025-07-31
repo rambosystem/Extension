@@ -112,7 +112,7 @@ export function useTermMatch() {
 
   // 组件挂载时初始化
   onMounted(() => {
-    // 确保从 localStorage 加载最新的相似度阈值
+    // 确保从 localStorage 加载最新的设置
     const storedThreshold = getStoredSimilarityThreshold();
     if (storedThreshold !== matchOptions.value.similarity_threshold) {
       matchOptions.value.similarity_threshold = storedThreshold;
@@ -124,11 +124,37 @@ export function useTermMatch() {
       matchOptions.value.similarity_threshold = similarityThreshold;
     };
 
+    // 监听 top_k 变化事件
+    const handleTopKChanged = (event) => {
+      const { topK } = event.detail;
+      matchOptions.value.top_k = topK;
+    };
+
+    // 监听 max_ngram 变化事件
+    const handleMaxNGramChanged = (event) => {
+      const { maxNGram } = event.detail;
+      matchOptions.value.max_ngram = maxNGram;
+    };
+
+    // 监听清空缓存事件，重置匹配选项到默认值
+    const handleLocalStorageCleared = () => {
+      console.log('LocalStorage cleared, resetting term match options to defaults...');
+      matchOptions.value.similarity_threshold = 0.7;
+      matchOptions.value.top_k = 10;
+      matchOptions.value.max_ngram = 3;
+    };
+
     window.addEventListener('similarityThresholdChanged', handleSimilarityThresholdChanged);
+    window.addEventListener('topKChanged', handleTopKChanged);
+    window.addEventListener('maxNGramChanged', handleMaxNGramChanged);
+    window.addEventListener('localStorageCleared', handleLocalStorageCleared);
 
     // 清理事件监听器
     return () => {
       window.removeEventListener('similarityThresholdChanged', handleSimilarityThresholdChanged);
+      window.removeEventListener('topKChanged', handleTopKChanged);
+      window.removeEventListener('maxNGramChanged', handleMaxNGramChanged);
+      window.removeEventListener('localStorageCleared', handleLocalStorageCleared);
     };
   });
 

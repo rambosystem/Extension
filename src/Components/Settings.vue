@@ -54,8 +54,20 @@
     <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
         <div class="similarity-threshold">
-          <el-input-number controls-position="right" v-model="similarityThreshold" :step="0.1" :min="0.5" :max="1"
-            @change="handleSimilarityThresholdChange" />
+          <el-input-number controls-position="right" v-model="similarityThreshold" :step="0.01" :min="0.5" :max="1"
+            :precision="2" @change="handleSimilarityThresholdChange" />
+        </div>
+      </el-form-item>
+      <el-form-item :label="t('termMatch.topK')" label-position="left">
+        <div class="top-k">
+          <el-input-number controls-position="right" v-model="topK" :step="1" :min="1" :max="50" :precision="0"
+            @change="handleTopKChange" />
+        </div>
+      </el-form-item>
+      <el-form-item :label="t('termMatch.maxNGram')" label-position="left">
+        <div class="max-ngram">
+          <el-input-number controls-position="right" v-model="maxNGram" :step="1" :min="1" :max="5" :precision="0"
+            @change="handleMaxNGramChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.language')" label-position="left">
@@ -131,6 +143,8 @@ const {
   stringStates,
   booleanStates,
   similarityThreshold,
+  topK,
+  maxNGram,
   handleSaveAPIKey,
   handleSaveLokaliseURL,
   handleSavePrompt,
@@ -139,6 +153,8 @@ const {
   handleTranslationPromptChange,
   handleLanguageChange,
   handleSimilarityThresholdChange,
+  handleTopKChange,
+  handleMaxNGramChange,
 } = useSettings();
 
 // 处理翻译提示卡片的点击事件
@@ -306,11 +322,19 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
   color: #606266;
 }
 
-.language-select {
+.language-select,
+.similarity-threshold,
+.top-k,
+.max-ngram {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   width: 100%;
+
+  .el-input-number {
+    width: 160px;
+    color: #606266;
+  }
 }
 
 .addTermsDict-container {

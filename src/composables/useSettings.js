@@ -19,6 +19,8 @@ export function useSettings() {
     translationPrompt: "translation_prompt_enabled",
     language: "app_language",
     similarityThreshold: "termMatch_similarity_threshold",
+    topK: "termMatch_top_k",
+    maxNGram: "termMatch_max_ngram",
   };
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } = useStorage();
@@ -39,7 +41,33 @@ export function useSettings() {
     }
   };
 
+  // 立即加载存储的 top_k，默认为 10
+  const getStoredTopK = () => {
+    try {
+      const stored = getFromStorage(STORAGE_KEYS.topK);
+      const value = stored ? parseInt(stored) : 10;
+      return isNaN(value) ? 10 : Math.max(1, Math.min(50, value));
+    } catch (error) {
+      console.error('Failed to get top_k from storage:', error);
+      return 10;
+    }
+  };
+
+  // 立即加载存储的 max_ngram，默认为 3
+  const getStoredMaxNGram = () => {
+    try {
+      const stored = getFromStorage(STORAGE_KEYS.maxNGram);
+      const value = stored ? parseInt(stored) : 3;
+      return isNaN(value) ? 3 : Math.max(1, Math.min(5, value));
+    } catch (error) {
+      console.error('Failed to get max_ngram from storage:', error);
+      return 3;
+    }
+  };
+
   const similarityThreshold = ref(getStoredSimilarityThreshold());
+  const topK = ref(getStoredTopK());
+  const maxNGram = ref(getStoredMaxNGram());
   const { t } = useI18n();
 
   // 立即加载存储的翻译提示状态
@@ -179,6 +207,11 @@ export function useSettings() {
       ElMessage.success(t("settings.clearLocalStorageSuccess"));
       initializeSettings();
       
+      // 重置术语匹配参数到默认值
+      similarityThreshold.value = 0.7;
+      topK.value = 10;
+      maxNGram.value = 3;
+      
       // 触发清空缓存事件，通知其他组件重新初始化状态
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('localStorageCleared'));
@@ -227,13 +260,14 @@ export function useSettings() {
     }
   };
 
-  /**
+    /**
    * 处理相似度阈值变化
    */
   const handleSimilarityThresholdChange = (value) => {
     try {
-      // 验证值范围
-      const validValue = Math.max(0.5, Math.min(1.0, value));
+      // 验证值范围并向下取整到2位小数
+      const roundedValue = Math.floor(value * 100) / 100;
+      const validValue = Math.max(0.5, Math.min(1.0, roundedValue));
       
       const saved = saveToStorage(STORAGE_KEYS.similarityThreshold, validValue.toString());
       if (!saved) {
@@ -247,9 +281,60 @@ export function useSettings() {
         detail: { similarityThreshold: validValue } 
       }));
       
-      ElMessage.success(t("settings.saveSuccessful"));
     } catch (error) {
       console.error("Similarity threshold change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+    }
+  };
+
+  /**
+   * 处理 top_k 变化
+   */
+  const handleTopKChange = (value) => {
+    try {
+      // 验证值范围并取整
+      const validValue = Math.max(1, Math.min(50, Math.floor(value)));
+      
+      const saved = saveToStorage(STORAGE_KEYS.topK, validValue.toString());
+      if (!saved) {
+        throw new Error("Failed to save top_k setting");
+      }
+
+      topK.value = validValue;
+      
+      // 触发事件通知其他组件
+      window.dispatchEvent(new CustomEvent('topKChanged', { 
+        detail: { topK: validValue } 
+      }));
+      
+    } catch (error) {
+      console.error("Top K change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+    }
+  };
+
+  /**
+   * 处理 max_ngram 变化
+   */
+  const handleMaxNGramChange = (value) => {
+    try {
+      // 验证值范围并取整
+      const validValue = Math.max(1, Math.min(5, Math.floor(value)));
+      
+      const saved = saveToStorage(STORAGE_KEYS.maxNGram, validValue.toString());
+      if (!saved) {
+        throw new Error("Failed to save max_ngram setting");
+      }
+
+      maxNGram.value = validValue;
+      
+      // 触发事件通知其他组件
+      window.dispatchEvent(new CustomEvent('maxNGramChanged', { 
+        detail: { maxNGram: validValue } 
+      }));
+      
+    } catch (error) {
+      console.error("Max N-gram change failed:", error);
       ElMessage.error(error.message || t("settings.saveFailed"));
     }
   };
@@ -309,6 +394,8 @@ export function useSettings() {
     stringStates,
     booleanStates,
     similarityThreshold,
+    topK,
+    maxNGram,
     handleSaveAPIKey,
     handleSaveLokaliseURL,
     handleSavePrompt,
@@ -317,6 +404,8 @@ export function useSettings() {
     handleTranslationPromptChange,
     handleLanguageChange,
     handleSimilarityThresholdChange,
+    handleTopKChange,
+    handleMaxNGramChange,
     initializeSettings,
   };
 }
