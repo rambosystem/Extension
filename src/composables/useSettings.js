@@ -164,6 +164,11 @@ export function useSettings() {
     if (success) {
       ElMessage.success(t("settings.clearLocalStorageSuccess"));
       initializeSettings();
+      
+      // 触发清空缓存事件，通知其他组件重新初始化状态
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('localStorageCleared'));
+      }
     } else {
       ElMessage.error(t("settings.clearLocalStorageFailed"));
     }

@@ -34,7 +34,7 @@
                         <span class="embedding-status-true" v-if="embeddingStatus">Embedded</span>
                         <span class="embedding-status-false" v-else>Embedding</span>
                         <span class="last-embedding-time-text">Last Embedding Time:</span>
-                        <span class="last-embedding-time">{{ lastEmbeddingTime }}</span>
+                        <span class="last-embedding-time">{{ lastEmbeddingTime || t('terms.notAvailable') }}</span>
                     </div>
                 </div>
             </div>
@@ -172,7 +172,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:status', 'refresh']);
+const emit = defineEmits(['update:status', 'refresh', 'fetchTermsData']);
 const dialogVisible = ref(false);
 
 // 搜索筛选相关状态
@@ -333,8 +333,8 @@ const handleSettingClick = (event) => {
     currentPage.value = 1;
     filteredTermsData.value = [];
     isSearching.value = false;
-    // 打开设置对话框时自动刷新terms数据
-    emit('refresh');
+    // 打开设置对话框时获取terms数据
+    emit('fetchTermsData');
 };
 
 
@@ -414,6 +414,9 @@ const handleSaveTerm = async (row) => {
         if (row.isNew) {
             delete row.isNew;
         }
+
+        // 保存成功后刷新数据，确保显示最新数据
+        emit('refresh');
 
         // 可以在这里添加成功提示
         // ElMessage.success('Term saved successfully');
@@ -504,8 +507,6 @@ const handleTabNext = (tabInfo) => {
     align-items: center;
     gap: 10px;
 }
-
-
 
 .label-container {
     color: #45464f;

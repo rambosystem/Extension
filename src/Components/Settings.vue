@@ -15,7 +15,8 @@
         <div class="terms-single">
           <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
             :error="termsError" :terms-data="editableTermsData" :embedding-status="embeddingStatus"
-            :last-embedding-time="lastEmbeddingTime" @update:status="updateTermStatus" @refresh="refreshTerms" />
+            :last-embedding-time="lastEmbeddingTime" @update:status="updateTermStatus" @refresh="refreshTerms"
+            @fetchTermsData="fetchTermsData" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
@@ -95,9 +96,11 @@ const {
   lastEmbeddingTime,
   updateTermStatus,
   refreshTerms,
+  fetchTermsData,
   addTerms,
   hasChanges,
-  getChangedTerms
+  getChangedTerms,
+  reinitializeStatus
 } = useTermsManager();
 
 // 使用设置管理composable

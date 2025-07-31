@@ -42,8 +42,9 @@ export async function fetchUserTermsStatus() {
       throw new Error('embedding_status field is missing or invalid');
     }
 
-    if (typeof data.last_embedding_time !== 'string') {
-      throw new Error('last_embedding_time field is missing or invalid');
+    // last_embedding_time 可以为空或字符串
+    if (data.last_embedding_time !== null && data.last_embedding_time !== undefined && typeof data.last_embedding_time !== 'string') {
+      throw new Error('last_embedding_time field must be a string or null/undefined');
     }
 
     return data;

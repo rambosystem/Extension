@@ -50,10 +50,16 @@
 }
 ```
 
+**字段说明**：
+- `total_terms`: 术语总数（必需，数字类型）
+- `embedding_status`: embedding状态（必需，布尔类型）
+- `last_embedding_time`: 最后embedding时间（可选，字符串类型，可为null或空字符串）
+
 ## 功能特性
 
-### 1. 自动数据获取
-- 组件挂载时自动从API获取terms数据
+### 1. 按需数据获取
+- 组件挂载时只获取状态信息（total_terms, embedding_status, last_embedding_time）
+- terms数据只在需要时（如打开设置对话框）才获取
 - 支持手动刷新功能
 - 防止重复请求
 

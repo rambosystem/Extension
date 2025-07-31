@@ -85,6 +85,7 @@
     "noChanges": "No terms updates to submit",
     "termsFilter": "Terms Filter",
     "searchPlaceholder": "Search terms in EN, CN, JP...",
-    "searchResult": "Found {count} results"
+    "searchResult": "Found {count} results",
+    "notAvailable": "Not available"
   }
 } 

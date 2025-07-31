@@ -90,6 +90,13 @@ export function useTermsManager() {
     };
     
     /**
+     * 获取terms数据（用于打开设置对话框时）
+     */
+    const fetchTermsData = async () => {
+        await fetchTerms();
+    };
+    
+    /**
      * 添加新的terms数据
      * @param {Array} newTermsData - 新的terms数据数组
      * @returns {Promise<Object>} 添加后的完整terms数据
@@ -204,6 +211,13 @@ export function useTermsManager() {
     };
     
     /**
+     * 重新初始化状态（用于清空缓存后）
+     */
+    const reinitializeStatus = () => {
+        initializeTermsStatus();
+    };
+    
+    /**
      * 获取术语总数
      * @returns {number} 术语总数
      */
@@ -301,9 +315,22 @@ export function useTermsManager() {
         // 标题会自动更新，因为使用了computed
     });
     
-    // 组件挂载时自动获取数据
+    // 监听清空缓存事件，重新初始化状态
+    const handleLocalStorageCleared = () => {
+        console.log('LocalStorage cleared, reinitializing terms status...');
+        reinitializeStatus();
+    };
+    
+    // 添加事件监听
+    if (typeof window !== 'undefined') {
+        window.addEventListener('localStorageCleared', handleLocalStorageCleared);
+    }
+    
+    // 组件挂载时只初始化状态和获取状态信息，不获取terms数据
     onMounted(() => {
-        refreshTerms();
+        // 只获取状态信息（total_terms, embedding_status, last_embedding_time）
+        // terms数据将在需要时（如打开设置对话框）进行
+        fetchTermsStatus();
     });
     
     return {
@@ -321,9 +348,11 @@ export function useTermsManager() {
         updateTermStatus,
         getTermStatus,
         resetTermsStatus,
+        reinitializeStatus,
         getTotalTerms,
         getTermsData,
         fetchTerms,
+        fetchTermsData,
         refreshTerms,
         addTerms,
         deleteTerm,
