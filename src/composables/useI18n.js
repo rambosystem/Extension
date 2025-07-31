@@ -18,7 +18,22 @@ const messages = {
 };
 
 // 全局语言状态，确保所有组件共享同一个状态
-let globalLanguage = ref(localStorage.getItem('app_language') || DEFAULT_LANGUAGE);
+let globalLanguage = ref(DEFAULT_LANGUAGE);
+
+// 安全地获取存储的语言设置
+const getStoredLanguage = () => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem('app_language') || DEFAULT_LANGUAGE;
+    }
+  } catch (error) {
+    console.warn('Failed to access localStorage:', error);
+  }
+  return DEFAULT_LANGUAGE;
+};
+
+// 初始化全局语言状态
+globalLanguage.value = getStoredLanguage();
 
 export function useI18n() {
   // 当前语言包
@@ -31,7 +46,13 @@ export function useI18n() {
   const setLanguage = (language) => {
     if (SUPPORTED_LANGUAGES[language]) {
       globalLanguage.value = language;
-      localStorage.setItem('app_language', language);
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem('app_language', language);
+        }
+      } catch (error) {
+        console.warn('Failed to save language to localStorage:', error);
+      }
     }
   };
 

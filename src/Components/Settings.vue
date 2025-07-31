@@ -52,6 +52,12 @@
     </el-form>
     <h2 class="title">{{ t('settings.advancedSettings') }}</h2>
     <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
+      <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
+        <div class="similarity-threshold">
+          <el-input-number controls-position="right" v-model="similarityThreshold" :step="0.1" :min="0.5" :max="1"
+            @change="handleSimilarityThresholdChange" />
+        </div>
+      </el-form-item>
       <el-form-item :label="t('settings.language')" label-position="left">
         <div class="language-select">
           <el-select v-model="stringStates.language" @change="handleLanguageChange" style="width: 160px">
@@ -124,6 +130,7 @@ const {
   dialogVisible,
   stringStates,
   booleanStates,
+  similarityThreshold,
   handleSaveAPIKey,
   handleSaveLokaliseURL,
   handleSavePrompt,
@@ -131,6 +138,7 @@ const {
   handleClearLocalStorageConfirm,
   handleTranslationPromptChange,
   handleLanguageChange,
+  handleSimilarityThresholdChange,
 } = useSettings();
 
 // 处理翻译提示卡片的点击事件

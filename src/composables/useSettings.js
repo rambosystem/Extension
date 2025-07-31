@@ -18,6 +18,7 @@ export function useSettings() {
     prompt: "deepseek_prompt",
     translationPrompt: "translation_prompt_enabled",
     language: "app_language",
+    similarityThreshold: "termMatch_similarity_threshold",
   };
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } = useStorage();
@@ -26,6 +27,19 @@ export function useSettings() {
   const codeContent = ref(DEFAULT_TRANSLATION_PROMPT);
   const dialogVisible = ref(false);
   const originalCodeContent = ref(DEFAULT_TRANSLATION_PROMPT);
+  // 立即加载存储的相似度阈值，默认为 0.7
+  const getStoredSimilarityThreshold = () => {
+    try {
+      const stored = getFromStorage(STORAGE_KEYS.similarityThreshold);
+      const value = stored ? parseFloat(stored) : 0.7;
+      return isNaN(value) ? 0.7 : Math.max(0.5, Math.min(1.0, value));
+    } catch (error) {
+      console.error('Failed to get similarity threshold from storage:', error);
+      return 0.7;
+    }
+  };
+
+  const similarityThreshold = ref(getStoredSimilarityThreshold());
   const { t } = useI18n();
 
   // 立即加载存储的翻译提示状态
@@ -214,6 +228,33 @@ export function useSettings() {
   };
 
   /**
+   * 处理相似度阈值变化
+   */
+  const handleSimilarityThresholdChange = (value) => {
+    try {
+      // 验证值范围
+      const validValue = Math.max(0.5, Math.min(1.0, value));
+      
+      const saved = saveToStorage(STORAGE_KEYS.similarityThreshold, validValue.toString());
+      if (!saved) {
+        throw new Error("Failed to save similarity threshold setting");
+      }
+
+      similarityThreshold.value = validValue;
+      
+      // 触发事件通知其他组件
+      window.dispatchEvent(new CustomEvent('similarityThresholdChanged', { 
+        detail: { similarityThreshold: validValue } 
+      }));
+      
+      ElMessage.success(t("settings.saveSuccessful"));
+    } catch (error) {
+      console.error("Similarity threshold change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+    }
+  };
+
+  /**
    * 初始化设置数据
    */
   const initializeSettings = () => {
@@ -267,6 +308,7 @@ export function useSettings() {
     dialogVisible,
     stringStates,
     booleanStates,
+    similarityThreshold,
     handleSaveAPIKey,
     handleSaveLokaliseURL,
     handleSavePrompt,
@@ -274,6 +316,7 @@ export function useSettings() {
     handleClearLocalStorageConfirm,
     handleTranslationPromptChange,
     handleLanguageChange,
+    handleSimilarityThresholdChange,
     initializeSettings,
   };
 }

@@ -47,7 +47,7 @@ export function useTermsManager() {
         } catch (err) {
             error.value = err.message;
             console.error('Failed to fetch terms status:', err);
-            ElMessage.error(t("terms.fetchStatusFailed") || 'Failed to fetch terms status');
+            // 不显示错误消息，静默处理
         }
     };
     
@@ -80,13 +80,25 @@ export function useTermsManager() {
     const refreshTerms = async (showSuccessMessage = true) => {
         // 只获取状态信息，不获取terms数据
         try {
-            await Promise.all([
+            const results = await Promise.allSettled([
                 fetchTermsStatus(),
                 fetchEmbeddingStatus()
             ]);
-            if (showSuccessMessage) {
+            
+            // 检查是否有成功的请求
+            const hasSuccess = results.some(result => result.status === 'fulfilled');
+            
+            if (hasSuccess && showSuccessMessage) {
                 ElMessage.success(t("terms.refreshSuccess") || 'Terms refreshed successfully');
             }
+            
+            // 记录失败的请求
+            results.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                    const requestName = index === 0 ? 'Terms Status' : 'Embedding Status';
+                    console.warn(`${requestName} refresh failed:`, result.reason);
+                }
+            });
         } catch (err) {
             console.error('Failed to refresh terms:', err);
         }
@@ -382,10 +394,21 @@ export function useTermsManager() {
     onMounted(() => {
         // 获取状态信息（total_terms, embedding_status, last_embedding_time）
         // terms数据将在需要时（如打开设置对话框）进行
-        Promise.all([
+        // 使用 Promise.allSettled 确保即使某个请求失败，其他请求仍能继续
+        Promise.allSettled([
             fetchTermsStatus(),
             fetchEmbeddingStatus()
-        ]);
+        ]).then((results) => {
+            // 记录每个请求的结果
+            results.forEach((result, index) => {
+                const requestName = index === 0 ? 'Terms Status' : 'Embedding Status';
+                if (result.status === 'fulfilled') {
+                    console.log(`${requestName} loaded successfully`);
+                } else {
+                    console.warn(`${requestName} failed:`, result.reason);
+                }
+            });
+        });
     });
     
     return {
