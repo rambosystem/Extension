@@ -91,6 +91,7 @@
     "rebuildFailed": "重建embedding失败",
     "BuildTermsEmbedding": "重新构建",
     "Refresh": "刷新",
-    "refreshSuccess": "术语刷新成功"
+    "refreshSuccess": "术语刷新成功",
+    "rebuildEmbeddingConfirm": "确定要重建embedding吗？"
   }
 } 

@@ -82,7 +82,7 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import { ElDialog, ElMessage } from "element-plus";
+import { ElDialog, ElMessage, ElMessageBox } from "element-plus";
 import CodeEditor from "./CodeEditor.vue";
 import SaveableInput from "./SaveableInput.vue";
 import { useSettings } from "../composables/useSettings.js";
@@ -182,11 +182,18 @@ const handleSubmitTerms = async () => {
 
 // 处理重建embedding
 const handleBuildTermsEmbedding = async () => {
-  try {
-    await rebuildEmbedding();
-  } catch (error) {
-    console.error("Rebuild embedding failed:", error);
-  }
+  //confirm
+  ElMessageBox.confirm(t("terms.rebuildEmbeddingConfirm"), t("terms.rebuildEmbedding"), {
+    confirmButtonText: t("common.confirm"),
+    cancelButtonText: t("common.cancel"),
+    type: "warning",
+  }).then(async () => {
+    try {
+      await rebuildEmbedding();
+    } catch (error) {
+      ElMessage.error(t("terms.rebuildEmbeddingFailed") || "Failed to rebuild embedding");
+    }
+  });
 };
 
 </script>
