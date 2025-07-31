@@ -27,6 +27,7 @@ export function useTermsManager() {
      */
     const initializeTermsStatus = () => {
         const savedStatus = getFromStorage(STORAGE_KEY);
+        // 如果存储中没有值，使用默认值true（启用）
         termsStatus.value = savedStatus !== undefined ? savedStatus : true;
     };
     
@@ -270,7 +271,7 @@ export function useTermsManager() {
      * 重置状态为默认值
      */
     const resetTermsStatus = () => {
-        termsStatus.value = true;
+        termsStatus.value = true; // 默认启用
         saveToStorage(STORAGE_KEY, true);
     };
     
@@ -382,6 +383,9 @@ export function useTermsManager() {
     // 监听清空缓存事件，重新初始化状态
     const handleLocalStorageCleared = () => {
         console.log('LocalStorage cleared, reinitializing terms status...');
+        // 重置为默认状态（启用）
+        termsStatus.value = true;
+        // 重新初始化状态
         reinitializeStatus();
     };
     

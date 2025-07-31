@@ -21,6 +21,17 @@ export function useSettings() {
     similarityThreshold: "termMatch_similarity_threshold",
     topK: "termMatch_top_k",
     maxNGram: "termMatch_max_ngram",
+    adTerms: "ad_terms_status",
+  };
+
+  // 默认值常量
+  const DEFAULT_VALUES = {
+    similarityThreshold: 0.7,
+    topK: 10,
+    maxNGram: 3,
+    translationPrompt: true,
+    language: "en",
+    adTerms: true,
   };
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } = useStorage();
@@ -33,11 +44,11 @@ export function useSettings() {
   const getStoredSimilarityThreshold = () => {
     try {
       const stored = getFromStorage(STORAGE_KEYS.similarityThreshold);
-      const value = stored ? parseFloat(stored) : 0.7;
-      return isNaN(value) ? 0.7 : Math.max(0.5, Math.min(1.0, value));
+      const value = stored ? parseFloat(stored) : DEFAULT_VALUES.similarityThreshold;
+      return isNaN(value) ? DEFAULT_VALUES.similarityThreshold : Math.max(0.5, Math.min(1.0, value));
     } catch (error) {
       console.error('Failed to get similarity threshold from storage:', error);
-      return 0.7;
+      return DEFAULT_VALUES.similarityThreshold;
     }
   };
 
@@ -45,11 +56,11 @@ export function useSettings() {
   const getStoredTopK = () => {
     try {
       const stored = getFromStorage(STORAGE_KEYS.topK);
-      const value = stored ? parseInt(stored) : 10;
-      return isNaN(value) ? 10 : Math.max(1, Math.min(50, value));
+      const value = stored ? parseInt(stored) : DEFAULT_VALUES.topK;
+      return isNaN(value) ? DEFAULT_VALUES.topK : Math.max(1, Math.min(50, value));
     } catch (error) {
       console.error('Failed to get top_k from storage:', error);
-      return 10;
+      return DEFAULT_VALUES.topK;
     }
   };
 
@@ -57,11 +68,11 @@ export function useSettings() {
   const getStoredMaxNGram = () => {
     try {
       const stored = getFromStorage(STORAGE_KEYS.maxNGram);
-      const value = stored ? parseInt(stored) : 3;
-      return isNaN(value) ? 3 : Math.max(1, Math.min(5, value));
+      const value = stored ? parseInt(stored) : DEFAULT_VALUES.maxNGram;
+      return isNaN(value) ? DEFAULT_VALUES.maxNGram : Math.max(1, Math.min(5, value));
     } catch (error) {
       console.error('Failed to get max_ngram from storage:', error);
-      return 3;
+      return DEFAULT_VALUES.maxNGram;
     }
   };
 
@@ -72,7 +83,7 @@ export function useSettings() {
 
   // 立即加载存储的翻译提示状态
   const storedTranslationPrompt = getFromStorage(STORAGE_KEYS.translationPrompt);
-  const initialTranslationPrompt = storedTranslationPrompt === "true" || storedTranslationPrompt === true;
+  const initialTranslationPrompt = storedTranslationPrompt !== undefined ? (storedTranslationPrompt === "true" || storedTranslationPrompt === true) : DEFAULT_VALUES.translationPrompt;
 
   // 初始化composables
   const { 
@@ -87,14 +98,14 @@ export function useSettings() {
     apiKey: false,
     url: false,
     prompt: false,
-    adTerms: false,
     // 布尔状态
     isCodeEditing: false,
     translationPrompt: initialTranslationPrompt, // 使用存储的值初始化
+    adTerms: DEFAULT_VALUES.adTerms, // Public Terms Library状态
     // 字符串状态
     apiKey: "",
     uploadUrl: "",
-    language: "en",
+    language: DEFAULT_VALUES.language,
   });
 
   /**
@@ -205,12 +216,17 @@ export function useSettings() {
 
     if (success) {
       ElMessage.success(t("settings.clearLocalStorageSuccess"));
+      
+      // 重新初始化所有设置（包括重置到默认值）
       initializeSettings();
       
       // 重置术语匹配参数到默认值
-      similarityThreshold.value = 0.7;
-      topK.value = 10;
-      maxNGram.value = 3;
+      similarityThreshold.value = DEFAULT_VALUES.similarityThreshold;
+      topK.value = DEFAULT_VALUES.topK;
+      maxNGram.value = DEFAULT_VALUES.maxNGram;
+      
+      // 确保Translation Prompt状态重置为默认值
+      setState("translationPrompt", DEFAULT_VALUES.translationPrompt, "boolean");
       
       // 触发清空缓存事件，通知其他组件重新初始化状态
       if (typeof window !== 'undefined') {
@@ -340,6 +356,27 @@ export function useSettings() {
   };
 
   /**
+   * 处理Public Terms Library状态变化
+   */
+  const handleAdTermsChange = (enabled) => {
+    try {
+      const saved = saveToStorage(STORAGE_KEYS.adTerms, enabled);
+      if (!saved) {
+        throw new Error("Failed to save ad terms setting");
+      }
+
+      // 触发事件通知其他组件
+      window.dispatchEvent(new CustomEvent('adTermsChanged', { 
+        detail: { adTerms: enabled } 
+      }));
+      
+    } catch (error) {
+      console.error("Ad terms change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+    }
+  };
+
+  /**
    * 初始化设置数据
    */
   const initializeSettings = () => {
@@ -347,7 +384,17 @@ export function useSettings() {
 
     setState("apiKey", settings.apiKey || "", "string");
     setState("uploadUrl", settings.uploadUrl || "", "string");
-    setState("language", settings.language || "en", "string");
+    setState("language", settings.language || DEFAULT_VALUES.language, "string");
+
+    // 处理翻译提示开关状态
+    const storedTranslationPrompt = settings.translationPrompt;
+    const translationPromptEnabled = storedTranslationPrompt !== undefined ? (storedTranslationPrompt === "true" || storedTranslationPrompt === true) : DEFAULT_VALUES.translationPrompt;
+    setState("translationPrompt", translationPromptEnabled, "boolean");
+
+    // 处理Public Terms Library开关状态
+    const storedAdTerms = settings.adTerms;
+    const adTermsEnabled = storedAdTerms !== undefined ? storedAdTerms : DEFAULT_VALUES.adTerms;
+    setState("adTerms", adTermsEnabled, "boolean");
 
     if (settings.prompt && settings.prompt.trim()) {
       codeContent.value = settings.prompt;
@@ -406,6 +453,7 @@ export function useSettings() {
     handleSimilarityThresholdChange,
     handleTopKChange,
     handleMaxNGramChange,
+    handleAdTermsChange,
     initializeSettings,
   };
 }
