@@ -38,15 +38,6 @@ export async function fetchUserTermsStatus() {
       throw new Error('total_terms field is missing or invalid');
     }
 
-    if (typeof data.embedding_status !== 'boolean') {
-      throw new Error('embedding_status field is missing or invalid');
-    }
-
-    // last_embedding_time 可以为空或字符串
-    if (data.last_embedding_time !== null && data.last_embedding_time !== undefined && typeof data.last_embedding_time !== 'string') {
-      throw new Error('last_embedding_time field must be a string or null/undefined');
-    }
-
     return data;
   } catch (error) {
     console.error('Failed to fetch user terms status:', error);
@@ -156,6 +147,56 @@ export async function addUserTerms(termsData) {
     return data;
   } catch (error) {
     console.error('Failed to add user terms:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取用户embedding状态
+ * @param {string} userId - 用户ID
+ * @returns {Promise<Object>} embedding状态数据
+ */
+export async function fetchUserEmbeddingStatus() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/embedding/status/${Public_Account_ID}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Embedding Status API request failed: ${response.status} ${response.statusText}. ${
+          errorData.error?.message || errorData.message || ''
+        }`
+      );
+    }
+
+    const data = await response.json();
+    
+    // 验证返回的数据格式
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from Embedding Status API');
+    }
+
+    // 验证必需的字段
+    if (!data.user_id || typeof data.user_id !== 'number') {
+      throw new Error('user_id field is missing or invalid');
+    }
+
+    if (!data.embedding_status || typeof data.embedding_status !== 'string') {
+      throw new Error('embedding_status field is missing or invalid');
+    }
+
+    if (data.last_embedding_time !== null && data.last_embedding_time !== undefined && typeof data.last_embedding_time !== 'string') {
+      throw new Error('last_embedding_time field must be a string or null/undefined');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch user embedding status:', error);
     throw error;
   }
 }

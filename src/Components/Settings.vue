@@ -287,5 +287,13 @@ const handleBuildTermsEmbedding = async () => {
   font-size: 14px;
   margin-right: 5px;
   gap: 20px;
+
+  .refresh-terms:hover {
+    text-decoration: underline;
+  }
+
+  .build-terms-embedding:hover {
+    text-decoration: underline;
+  }
 }
 </style>

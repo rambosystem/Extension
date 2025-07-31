@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
-import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm, fetchUserTermsStatus, rebuildUserEmbedding } from "../requests/terms.js";
+import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm, fetchUserTermsStatus, rebuildUserEmbedding, fetchUserEmbeddingStatus } from "../requests/terms.js";
 
 export function useTermsManager() {
     const { t } = useI18n();
@@ -19,7 +19,7 @@ export function useTermsManager() {
     const totalTerms = ref(0); // terms总数
     const loading = ref(false); // 加载状态
     const error = ref(null); // 错误状态
-    const embeddingStatus = ref(false); // embedding状态
+    const embeddingStatus = ref('pending'); // embedding状态：building, completed, failed, pending
     const lastEmbeddingTime = ref(''); // 最后embedding时间
     
     /**
@@ -41,12 +41,9 @@ export function useTermsManager() {
             console.log('Fetching terms status...');
             const statusData = await fetchUserTermsStatus();
             totalTerms.value = statusData.total_terms || 0;
-            embeddingStatus.value = statusData.embedding_status || false;
-            lastEmbeddingTime.value = statusData.last_embedding_time || '';
             
             console.log('Terms status loaded successfully:', statusData);
-            console.log('Updated embedding status:', embeddingStatus.value);
-            console.log('Updated last embedding time:', lastEmbeddingTime.value);
+            console.log('Updated total terms:', totalTerms.value);
         } catch (err) {
             error.value = err.message;
             console.error('Failed to fetch terms status:', err);
@@ -81,11 +78,16 @@ export function useTermsManager() {
      * 刷新terms数据和状态
      */
     const refreshTerms = async () => {
-        // 同时获取状态信息和terms数据
-        await Promise.all([
-            fetchTermsStatus(),
-            fetchTerms()
-        ]);
+        // 只获取状态信息，不获取terms数据
+        try {
+            await Promise.all([
+                fetchTermsStatus(),
+                fetchEmbeddingStatus()
+            ]);
+            ElMessage.success(t("terms.refreshSuccess") || 'Terms refreshed successfully');
+        } catch (err) {
+            console.error('Failed to refresh terms:', err);
+        }
     };
     
     /**
@@ -96,28 +98,41 @@ export function useTermsManager() {
     };
     
     /**
+     * 获取embedding状态
+     */
+    const fetchEmbeddingStatus = async () => {
+        try {
+            console.log('Fetching embedding status...');
+            const statusData = await fetchUserEmbeddingStatus();
+            embeddingStatus.value = statusData.embedding_status || 'pending';
+            lastEmbeddingTime.value = statusData.last_embedding_time || '';
+            
+            console.log('Embedding status loaded successfully:', statusData);
+            console.log('Updated embedding status:', embeddingStatus.value);
+            console.log('Updated last embedding time:', lastEmbeddingTime.value);
+        } catch (err) {
+            console.error('Failed to fetch embedding status:', err);
+            // 不显示错误提示，因为embedding状态不是核心功能
+        }
+    };
+    
+    /**
      * 重建用户embedding
      */
     const rebuildEmbedding = async () => {
-        // 不检查 loading 状态，确保可以调用
-        error.value = null;
-        
         try {
             console.log('Starting rebuild embedding...');
             const data = await rebuildUserEmbedding();
             console.log('Embedding rebuild started successfully:', data);
             
-            // 重建开始后，刷新embedding状态
-            console.log('Refreshing embedding status...');
-            await fetchTermsStatus();
-            console.log('Embedding status refreshed successfully');
+            // 刷新embedding状态
+            await fetchEmbeddingStatus();
             
             // 显示成功提示
             ElMessage.success(t("terms.rebuildStarted") || 'Embedding rebuild started successfully');
             
             return data;
         } catch (err) {
-            error.value = err.message;
             console.error('Failed to rebuild embedding:', err);
             ElMessage.error(t("terms.rebuildFailed") || 'Failed to rebuild embedding');
             throw err;
@@ -356,9 +371,12 @@ export function useTermsManager() {
     
     // 组件挂载时只初始化状态和获取状态信息，不获取terms数据
     onMounted(() => {
-        // 只获取状态信息（total_terms, embedding_status, last_embedding_time）
+        // 获取状态信息（total_terms, embedding_status, last_embedding_time）
         // terms数据将在需要时（如打开设置对话框）进行
-        fetchTermsStatus();
+        Promise.all([
+            fetchTermsStatus(),
+            fetchEmbeddingStatus()
+        ]);
     });
     
     return {
@@ -381,6 +399,7 @@ export function useTermsManager() {
         getTermsData,
         fetchTerms,
         fetchTermsData,
+        fetchEmbeddingStatus,
         refreshTerms,
         addTerms,
         deleteTerm,

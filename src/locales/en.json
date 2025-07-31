@@ -91,6 +91,7 @@
     "rebuildStarted": "Embedding rebuild started successfully",
     "rebuildFailed": "Failed to rebuild embedding",
     "BuildTermsEmbedding": "Rebuild",
-    "Refresh": "Refresh"
+    "Refresh": "Refresh",
+    "refreshSuccess": "Terms refreshed successfully"
   }
 } 

@@ -31,8 +31,11 @@
                     <span v-else class="total-value">{{ totalTerms }}</span>
                     <div class="embedding-status-container">
                         <span class="embedding-status">Embedding Status:</span>
-                        <span class="embedding-status-true" v-if="embeddingStatus">Embedded</span>
-                        <span class="embedding-status-false" v-else>Embedding</span>
+                        <span class="embedding-status-success" v-if="embeddingStatus === 'completed'">Completed</span>
+                        <span class="embedding-status-building"
+                            v-else-if="embeddingStatus === 'building'">Building</span>
+                        <span class="embedding-status-failed" v-else-if="embeddingStatus === 'failed'">Failed</span>
+                        <span class="embedding-status-pending" v-else>Pending</span>
                         <span class="last-embedding-time-text">Last Embedding Time:</span>
                         <span class="last-embedding-time">{{ formatEmbeddingTime(lastEmbeddingTime) ||
                             t('terms.notAvailable') }}</span>
@@ -164,8 +167,8 @@ const props = defineProps({
         default: () => [],
     },
     embeddingStatus: {
-        type: Boolean,
-        default: false,
+        type: String,
+        default: 'pending',
     },
     lastEmbeddingTime: {
         type: String,
@@ -570,12 +573,22 @@ const handleTabNext = (tabInfo) => {
     color: #303133;
     padding-left: 10px;
 
-    .embedding-status-true {
+    .embedding-status-success {
+        color: #67c23a;
+        font-weight: 500;
+    }
+
+    .embedding-status-building {
         color: #409EFF;
         font-weight: 500;
     }
 
-    .embedding-status-false {
+    .embedding-status-failed {
+        color: #f56c6c;
+        font-weight: 500;
+    }
+
+    .embedding-status-pending {
         color: #e6a23b;
         font-weight: 500;
     }
@@ -669,6 +682,7 @@ const handleTabNext = (tabInfo) => {
 .pagination-total-container {
     padding-left: 22px;
     display: flex;
+    align-items: center;
 }
 
 .pagination-total-text {

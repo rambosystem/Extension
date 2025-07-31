@@ -44,16 +44,31 @@
 ### 状态响应格式
 ```json
 {
-  "total_terms": 7,
-  "embedding_status": true,
-  "last_embedding_time": "2025-07-30 10:00:00"
+  "total_terms": 7
 }
 ```
 
 **字段说明**：
 - `total_terms`: 术语总数（必需，数字类型）
-- `embedding_status`: embedding状态（必需，布尔类型）
-- `last_embedding_time`: 最后embedding时间（可选，字符串类型，可为null或空字符串）
+
+### 获取用户Embedding状态
+- **URL**: `http://43.142.250.179:8000/embedding/status/{user_id}`
+- **Method**: `GET`
+- **Headers**: `Content-Type: application/json`
+
+### Embedding状态响应格式
+```json
+{
+  "user_id": 1,
+  "embedding_status": "success",
+  "last_embedding_time": "2025-07-31T10:44:54"
+}
+```
+
+**字段说明**：
+- `user_id`: 用户ID（必需，数字类型）
+- `embedding_status`: embedding状态（必需，字符串类型，可能值：building-构建中, completed-已完成, failed-失败, pending-待处理）
+- `last_embedding_time`: 最后embedding时间（可选，字符串类型，ISO 8601格式）
 
 ### 重建用户Embedding
 - **URL**: `http://43.142.250.179:8000/embedding/build/user/{user_id}`
