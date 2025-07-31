@@ -17,7 +17,7 @@
         <div class="control-text">
           <span @click="refreshTerms" class="refresh-terms">{{ t('terms.Refresh') }}</span>
           <span @click="handleBuildTermsEmbedding" class="build-terms-embedding">{{ t('terms.BuildTermsEmbedding')
-            }}</span>
+          }}</span>
         </div>
       </div>
       <div class="terms-single">
@@ -77,14 +77,19 @@
         </el-dialog>
       </el-form-item>
     </el-form>
+
+    <!-- 重建embedding确认框 -->
+    <ConfirmDialog v-model="rebuildConfirmVisible" :title="t('terms.rebuildEmbedding')"
+      :message="t('terms.rebuildEmbeddingCheck')" @confirm="handleRebuildConfirm" @cancel="handleRebuildCancel" />
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from "vue";
-import { ElDialog, ElMessage, ElMessageBox } from "element-plus";
+import { ElDialog, ElMessage } from "element-plus";
 import CodeEditor from "./CodeEditor.vue";
 import SaveableInput from "./SaveableInput.vue";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import { useSettings } from "../composables/useSettings.js";
 import { useI18n } from "../composables/useI18n.js";
 import TermsCard from "./TermsCard.vue";
@@ -140,6 +145,9 @@ const handleTranslationPromptClick = (event) => {
 
 const formRef = ref();
 
+// 重建embedding确认框状态
+const rebuildConfirmVisible = ref(false);
+
 // 创建可编辑的terms数据
 const editableTermsData = ref([]);
 
@@ -181,22 +189,22 @@ const handleSubmitTerms = async () => {
 };
 
 // 处理重建embedding
-const handleBuildTermsEmbedding = async () => {
-  //confirm
-  ElMessageBox.confirm("Are you sure you want to rebuild the embedding?", "Rebuild Terms Embedding", {
-    confirmButtonText: "Confirm",
-    cancelButtonText: "Cancel",
-    type: "warning",
-    customClass: 'rebuild-embedding-confirm'
-  }).then(async () => {
-    try {
-      await rebuildEmbedding();
-    } catch (error) {
-      ElMessage.error(t("terms.rebuildEmbeddingFailed") || "Failed to rebuild embedding");
-    }
-  }).catch(() => {
-    // 用户取消操作，不需要处理
-  });
+const handleBuildTermsEmbedding = () => {
+  rebuildConfirmVisible.value = true;
+};
+
+// 处理重建确认
+const handleRebuildConfirm = async () => {
+  try {
+    await rebuildEmbedding();
+  } catch (error) {
+    ElMessage.error(t("terms.rebuildEmbeddingFailed") || "Failed to rebuild embedding");
+  }
+};
+
+// 处理重建取消
+const handleRebuildCancel = () => {
+  // 用户取消操作，不需要处理
 };
 
 </script>
