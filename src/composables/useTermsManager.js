@@ -77,14 +77,16 @@ export function useTermsManager() {
     /**
      * 刷新terms数据和状态
      */
-    const refreshTerms = async () => {
+    const refreshTerms = async (showSuccessMessage = true) => {
         // 只获取状态信息，不获取terms数据
         try {
             await Promise.all([
                 fetchTermsStatus(),
                 fetchEmbeddingStatus()
             ]);
-            ElMessage.success(t("terms.refreshSuccess") || 'Terms refreshed successfully');
+            if (showSuccessMessage) {
+                ElMessage.success(t("terms.refreshSuccess") || 'Terms refreshed successfully');
+            }
         } catch (err) {
             console.error('Failed to refresh terms:', err);
         }
@@ -199,8 +201,8 @@ export function useTermsManager() {
             if (data.success && data.message) {
                 console.log('Term deleted successfully:', data);
                 
-                // 删除成功后需要重新获取terms数据和状态
-                await refreshTerms();
+                // 删除成功后需要重新获取terms数据和状态（静默刷新）
+                await refreshTerms(false);
                 
                 // 显示成功提示
                 ElMessage.success(t("terms.deleteSuccess") || '术语删除成功');

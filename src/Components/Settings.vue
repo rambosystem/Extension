@@ -217,10 +217,10 @@ const handleRebuildCancel = () => {
 };
 
 // 处理refresh，添加loading状态
-const handleRefreshTerms = async () => {
+const handleRefreshTerms = async (showSuccessMessage = true) => {
   refreshLoading.value = true;
   try {
-    await refreshTerms();
+    await refreshTerms(showSuccessMessage);
   } catch (error) {
     console.error('Refresh terms failed:', error);
   } finally {

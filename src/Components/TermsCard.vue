@@ -432,8 +432,8 @@ const handleSaveTerm = async (row) => {
             delete row.isNew;
         }
 
-        // 保存成功后刷新数据，确保显示最新数据
-        emit('refresh');
+        // 保存成功后静默刷新数据，确保显示最新数据
+        emit('refresh', false);
 
         // 可以在这里添加成功提示
         // ElMessage.success('Term saved successfully');
