@@ -15,19 +15,9 @@
         <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
         </el-form-item>
         <div class="control-text">
-          <div class="refresh-terms-container">
-            <el-icon v-if="refreshLoading" class="refresh-loading">
-              <Loading />
-            </el-icon>
-            <span @click="handleRefreshTerms" class="refresh-terms">{{ t('terms.Refresh') }}</span>
-          </div>
-          <div class="build-terms-embedding-container">
-            <el-icon v-if="rebuildLoading" class="build-loading">
-              <Loading />
-            </el-icon>
-            <span @click="handleBuildTermsEmbedding" class="build-terms-embedding">{{ t('terms.BuildTermsEmbedding')
-            }}</span>
-          </div>
+          <LoadingButton :loading="refreshLoading" :text="t('terms.Refresh')" @click="handleRefreshTerms" />
+          <LoadingButton :loading="rebuildLoading" :text="t('terms.BuildTermsEmbedding')"
+            @click="handleBuildTermsEmbedding" />
         </div>
       </div>
       <div class="terms-single">
@@ -100,12 +90,12 @@ import { ElDialog, ElMessage } from "element-plus";
 import CodeEditor from "./CodeEditor.vue";
 import SaveableInput from "./SaveableInput.vue";
 import ConfirmDialog from "./ConfirmDialog.vue";
+import LoadingButton from "./LoadingButton.vue";
 import { useSettings } from "../composables/useSettings.js";
 import { useI18n } from "../composables/useI18n.js";
 import TermsCard from "./TermsCard.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
 import { useTranslationStorage } from "../composables/useTranslationStorage.js";
-import { Loading } from "@element-plus/icons-vue";
 
 const { t } = useI18n();
 const {
@@ -336,44 +326,7 @@ const handleRefreshTerms = async () => {
   margin-right: 5px;
   gap: 20px;
 
-  .refresh-terms:hover {
-    text-decoration: underline;
-  }
-
-  .build-terms-embedding:hover {
-    text-decoration: underline;
-  }
+  // 按钮样式现在由 LoadingButton 组件处理
 }
 
-.refresh-terms-container {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-
-  //旋转动画
-  .refresh-loading {
-    animation: rotate 1s linear infinite;
-  }
-}
-
-.build-terms-embedding-container {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-
-  //旋转动画
-  .build-loading {
-    animation: rotate 1s linear infinite;
-  }
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>
+// Loading 按钮样式现在由 LoadingButton 组件处理</style>
