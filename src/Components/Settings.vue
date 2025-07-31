@@ -183,16 +183,19 @@ const handleSubmitTerms = async () => {
 // 处理重建embedding
 const handleBuildTermsEmbedding = async () => {
   //confirm
-  ElMessageBox.confirm(t("terms.rebuildEmbeddingConfirm"), t("terms.rebuildEmbedding"), {
-    confirmButtonText: t("common.confirm"),
-    cancelButtonText: t("common.cancel"),
+  ElMessageBox.confirm("Are you sure you want to rebuild the embedding?", "Rebuild Terms Embedding", {
+    confirmButtonText: "Confirm",
+    cancelButtonText: "Cancel",
     type: "warning",
+    customClass: 'rebuild-embedding-confirm'
   }).then(async () => {
     try {
       await rebuildEmbedding();
     } catch (error) {
       ElMessage.error(t("terms.rebuildEmbeddingFailed") || "Failed to rebuild embedding");
     }
+  }).catch(() => {
+    // 用户取消操作，不需要处理
   });
 };
 
