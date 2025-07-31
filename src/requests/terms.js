@@ -216,6 +216,11 @@ export async function rebuildUserEmbedding() {
     });
 
     if (!response.ok) {
+      // 特殊处理 409 状态码
+      if (response.status === 409) {
+        throw new Error('Embedding Processing, please try again later');
+      }
+      
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         `Rebuild embedding API request failed: ${response.status} ${response.statusText}. ${

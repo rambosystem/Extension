@@ -94,6 +94,7 @@
     "Refresh": "Refresh",
     "refreshSuccess": "Terms refreshed successfully",
     "rebuildEmbeddingCheck": "Are you sure you want to rebuild the embedding?",
-    "rebuildEmbeddingFailed": "Failed to rebuild embedding"
+    "rebuildEmbeddingFailed": "Failed to rebuild embedding",
+    "rebuildEmbeddingProcessing": "Embedding Processing, please try again later"
   }
 } 

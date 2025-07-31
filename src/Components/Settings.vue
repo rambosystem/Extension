@@ -204,7 +204,8 @@ const handleRebuildConfirm = async () => {
   try {
     await rebuildEmbedding();
   } catch (error) {
-    ElMessage.error(t("terms.rebuildEmbeddingFailed") || "Failed to rebuild embedding");
+    // 错误消息已经在 rebuildEmbedding 方法中处理了，这里只需要记录日志
+    console.error('Rebuild embedding failed:', error);
   } finally {
     rebuildLoading.value = false;
   }

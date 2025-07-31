@@ -134,7 +134,14 @@ export function useTermsManager() {
             return data;
         } catch (err) {
             console.error('Failed to rebuild embedding:', err);
-            ElMessage.error(t("terms.rebuildFailed") || 'Failed to rebuild embedding');
+            
+            // 特殊处理 409 错误
+            if (err.message.includes('Embedding Processing')) {
+                ElMessage.warning(t("terms.rebuildEmbeddingProcessing") || 'Embedding Processing, please try again later');
+            } else {
+                ElMessage.error(t("terms.rebuildFailed") || 'Failed to rebuild embedding');
+            }
+            
             throw err;
         }
     };
