@@ -24,7 +24,7 @@
                     </span>
                     <span v-else-if="error" class="total-value error">
                         {{ t('terms.loadFailed') }}
-                        <el-button type="text" size="small" @click.stop="handleRefresh">
+                        <el-button type="text" size="small" @click.stop="handleRefresh" :loading="refreshLoading">
                             {{ t('common.retry') }}
                         </el-button>
                     </span>
@@ -173,6 +173,10 @@ const props = defineProps({
     lastEmbeddingTime: {
         type: String,
         default: '',
+    },
+    refreshLoading: {
+        type: Boolean,
+        default: false,
     },
 });
 

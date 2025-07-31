@@ -87,7 +87,7 @@
     "searchPlaceholder": "Search terms in EN, CN, JP...",
     "searchResult": "Found {count} results",
     "notAvailable": "Not available",
-    "rebuildEmbedding": "Rebuild",
+    "rebuildEmbedding": "Rebuild Terms Embedding",
     "rebuildStarted": "Embedding rebuild started successfully",
     "rebuildFailed": "Failed to rebuild embedding",
     "BuildTermsEmbedding": "Rebuild",

@@ -23,8 +23,8 @@
       <div class="terms-single">
         <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
           :error="termsError" :terms-data="editableTermsData" :embedding-status="embeddingStatus"
-          :last-embedding-time="lastEmbeddingTime" @update:status="updateTermStatus" @refresh="refreshTerms"
-          @fetchTermsData="fetchTermsData" />
+          :last-embedding-time="lastEmbeddingTime" :refresh-loading="refreshLoading" @update:status="updateTermStatus"
+          @refresh="handleRefreshTerms" @fetchTermsData="fetchTermsData" />
       </div>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
         <el-card shadow="never" style="width: 100%;" body-style="padding: 16px 20px; cursor: pointer;"
@@ -148,6 +148,9 @@ const formRef = ref();
 // 重建embedding确认框状态
 const rebuildConfirmVisible = ref(false);
 
+// refresh loading状态
+const refreshLoading = ref(false);
+
 // 创建可编辑的terms数据
 const editableTermsData = ref([]);
 
@@ -205,6 +208,18 @@ const handleRebuildConfirm = async () => {
 // 处理重建取消
 const handleRebuildCancel = () => {
   // 用户取消操作，不需要处理
+};
+
+// 处理refresh，添加loading状态
+const handleRefreshTerms = async () => {
+  refreshLoading.value = true;
+  try {
+    await refreshTerms();
+  } catch (error) {
+    console.error('Refresh terms failed:', error);
+  } finally {
+    refreshLoading.value = false;
+  }
 };
 
 </script>

@@ -1,5 +1,5 @@
 <template>
-    <el-dialog v-model="visible" :title="title" width="30%" align-center>
+    <el-dialog v-model="visible" :title="title" width="30%" top="30vh">
         <span>{{ message }}</span>
         <template #footer>
             <el-button @click="handleCancel">{{ t('common.cancel') }}</el-button>
