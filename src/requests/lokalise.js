@@ -9,7 +9,7 @@ export async function translate(content, onStatusUpdate = null) {
   let prompt = localStorage.getItem("deepseek_prompt");
 
   // 如果 ad_terms_status 不存在，默认开启术语匹配
-  const isAdTermsEnabled = adTermsEnabled === null ? true : (adTermsEnabled === "true" || adTermsEnabled === true); 
+  const isAdTermsEnabled = adTermsEnabled === null ? true : (adTermsEnabled === "true" || adTermsEnabled === true);
 
   // 检查翻译提示开关状态
   if (translationPromptEnabled === "true" || translationPromptEnabled === true) {
@@ -30,8 +30,7 @@ export async function translate(content, onStatusUpdate = null) {
     },
     {
       role: "user",
-      content: `需要翻译的文本如下,每一行分别代表需要翻译的文案：
-${content}`,
+      content: `需要翻译的文本如下,每一行分别代表需要翻译的文案：\n${content}`,
     }
   ];
 
@@ -105,30 +104,18 @@ ${content}`,
 
       // 如果有匹配成功的术语，添加到消息中
       if (matchedTerms && matchedTerms.length > 0) {
-        // 提取所有匹配的术语（API 已去重）
-        const allMatchedTerms = [];
-        matchedTerms.forEach(textMatches => {
-          if (textMatches && textMatches.length > 0) {
-            allMatchedTerms.push(...textMatches);
-          }
+        console.log("Adding matched terms to messages, count:", matchedTerms.length);
+        
+        // 构建术语库文本
+        let termsText = '这里提供可供参考的术语库，如果匹配到术语请根据术语库翻译文本：\n';
+        matchedTerms.forEach(term => {
+          termsText += `- ${term.en} -> ${term.cn} (${term.jp})\n`;
         });
-
-                  if (allMatchedTerms.length > 0) {
-            console.log("Adding matched terms to messages, count:", allMatchedTerms.length);
-            
-            // 构建术语库文本
-            let termsText = '这里提供可供参考的术语库，如果匹配到术语请根据术语库翻译文本：\n';
-            allMatchedTerms.forEach(term => {
-              termsText += `- ${term.en} -> ${term.cn} (${term.jp})\n`;
-            });
-            
-            messages.push({
-              role: "system",
-              content: termsText,
-            });
-          } else {
-            console.log("No matched terms found");
-          }
+        
+        messages.push({
+          role: "system",
+          content: termsText,
+        });
       } else {
         console.log("No matched terms found");
       }

@@ -87,35 +87,28 @@ export async function matchTerms(texts, options = {}) {
     
     // 验证返回的数据格式
     if (!Array.isArray(data)) {
-      throw new Error('Invalid response format from Term Match API');
+      throw new Error('Invalid response format from Term Match API - expected array');
     }
 
-    // 验证每个匹配结果
+    // 验证每个术语对象
     for (let i = 0; i < data.length; i++) {
-      const textMatches = data[i];
-      if (!Array.isArray(textMatches)) {
-        throw new Error(`Invalid match result format for text ${i}`);
+      const term = data[i];
+      if (!term || typeof term !== 'object') {
+        throw new Error(`Invalid term format at index ${i} - expected object`);
       }
 
-      // 验证每个匹配的术语
-      for (const match of textMatches) {
-        if (!match || typeof match !== 'object') {
-          throw new Error(`Invalid term match format for text ${i}`);
-        }
+      // 验证必需的字段
+      if (!term.en || typeof term.en !== 'string') {
+        throw new Error(`en field is missing or invalid at index ${i}`);
+      }
 
-        // 验证必需的字段（根据实际返回的数据格式）
-        if (!match.en || typeof match.en !== 'string') {
-          throw new Error(`en field is missing or invalid for text ${i}`);
-        }
+      // 验证可选字段（如果存在）
+      if (term.cn !== undefined && typeof term.cn !== 'string') {
+        throw new Error(`cn field must be a string at index ${i}`);
+      }
 
-        // 可选字段验证
-        if (match.cn && typeof match.cn !== 'string') {
-          throw new Error(`cn field must be a string for text ${i}`);
-        }
-
-        if (match.jp && typeof match.jp !== 'string') {
-          throw new Error(`jp field must be a string for text ${i}`);
-        }
+      if (term.jp !== undefined && typeof term.jp !== 'string') {
+        throw new Error(`jp field must be a string at index ${i}`);
       }
     }
 
