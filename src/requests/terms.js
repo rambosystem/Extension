@@ -161,6 +161,56 @@ export async function addUserTerms(termsData) {
 }
 
 /**
+ * 重建用户embedding
+ * @param {string} userId - 用户ID
+ * @returns {Promise<Object>} 重建任务响应
+ */
+export async function rebuildUserEmbedding() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/embedding/build/user/${Public_Account_ID}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Rebuild embedding API request failed: ${response.status} ${response.statusText}. ${
+          errorData.error?.message || errorData.message || ''
+        }`
+      );
+    }
+
+    const data = await response.json();
+    
+    // 验证返回的数据格式
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from Rebuild Embedding API');
+    }
+
+    // 验证必需的字段
+    if (!data.message || typeof data.message !== 'string') {
+      throw new Error('message field is missing or invalid');
+    }
+
+    if (!data.user_id || typeof data.user_id !== 'number') {
+      throw new Error('user_id field is missing or invalid');
+    }
+
+    if (!data.status || typeof data.status !== 'string') {
+      throw new Error('status field is missing or invalid');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to rebuild user embedding:', error);
+    throw error;
+  }
+}
+
+/**
  * 删除单个term数据
  * @param {string} enTerm - 要删除的英文term
  * @returns {Promise<Object>} 删除后的terms数据

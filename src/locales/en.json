@@ -86,6 +86,11 @@
     "termsFilter": "Terms Filter",
     "searchPlaceholder": "Search terms in EN, CN, JP...",
     "searchResult": "Found {count} results",
-    "notAvailable": "Not available"
+    "notAvailable": "Not available",
+    "rebuildEmbedding": "Rebuild",
+    "rebuildStarted": "Embedding rebuild started successfully",
+    "rebuildFailed": "Failed to rebuild embedding",
+    "BuildTermsEmbedding": "Rebuild",
+    "Refresh": "Refresh"
   }
 } 

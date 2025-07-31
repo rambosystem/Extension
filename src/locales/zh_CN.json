@@ -58,7 +58,7 @@
     "addTermsDict": "添加术语字典"
   },
   "csvExport": {
-    "csvDownloaded": "CSV文件下载成功",
+    "csvDownloaded": "CSV文件下载成功", 
     "csvExportFailed": "导出CSV文件失败",
     "lokaliseUploadFailed": "打开Lokalise上传页面失败"
   },
@@ -85,6 +85,11 @@
     "noChanges": "没有术语更新提交",
     "searchPlaceholder": "搜索英文、中文、日文术语...",
     "searchResult": "找到 {count} 个结果",
-    "notAvailable": "暂无数据"
+    "notAvailable": "暂无数据",
+    "rebuildEmbedding": "重建",
+    "rebuildStarted": "Embedding重建已开始",
+    "rebuildFailed": "重建embedding失败",
+    "BuildTermsEmbedding": "重新构建",
+    "Refresh": "刷新"
   }
 } 

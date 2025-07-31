@@ -55,6 +55,25 @@
 - `embedding_status`: embedding状态（必需，布尔类型）
 - `last_embedding_time`: 最后embedding时间（可选，字符串类型，可为null或空字符串）
 
+### 重建用户Embedding
+- **URL**: `http://43.142.250.179:8000/embedding/build/user/{user_id}`
+- **Method**: `POST`
+- **Headers**: `Content-Type: application/json`
+
+### 重建响应格式
+```json
+{
+  "message": "Embedding build task started",
+  "user_id": 1,
+  "status": "building"
+}
+```
+
+**字段说明**：
+- `message`: 响应消息（必需，字符串类型）
+- `user_id`: 用户ID（必需，数字类型）
+- `status`: 任务状态（必需，字符串类型）
+
 ## 功能特性
 
 ### 1. 按需数据获取

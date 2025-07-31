@@ -11,14 +11,21 @@
           placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
           :loading="loadingStates.url" />
       </el-form-item>
-      <el-form-item :label="t('settings.AdTerms')" label-position="top" class="addTermsDict-container">
-        <div class="terms-single">
-          <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
-            :error="termsError" :terms-data="editableTermsData" :embedding-status="embeddingStatus"
-            :last-embedding-time="lastEmbeddingTime" @update:status="updateTermStatus" @refresh="refreshTerms"
-            @fetchTermsData="fetchTermsData" />
+      <div class="embedding-control">
+        <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
+        </el-form-item>
+        <div class="control-text">
+          <span @click="refreshTerms" class="refresh-terms">{{ t('terms.Refresh') }}</span>
+          <span @click="handleBuildTermsEmbedding" class="build-terms-embedding">{{ t('terms.BuildTermsEmbedding')
+            }}</span>
         </div>
-      </el-form-item>
+      </div>
+      <div class="terms-single">
+        <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
+          :error="termsError" :terms-data="editableTermsData" :embedding-status="embeddingStatus"
+          :last-embedding-time="lastEmbeddingTime" @update:status="updateTermStatus" @refresh="refreshTerms"
+          @fetchTermsData="fetchTermsData" />
+      </div>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
         <el-card shadow="never" style="width: 100%;" body-style="padding: 16px 20px; cursor: pointer;"
           @click="handleTranslationPromptClick">
@@ -98,6 +105,7 @@ const {
   refreshTerms,
   fetchTermsData,
   addTerms,
+  rebuildEmbedding,
   hasChanges,
   getChangedTerms,
   reinitializeStatus
@@ -169,6 +177,15 @@ const handleSubmitTerms = async () => {
 
   } catch (error) {
     console.error("Submit terms failed:", error);
+  }
+};
+
+// 处理重建embedding
+const handleBuildTermsEmbedding = async () => {
+  try {
+    await rebuildEmbedding();
+  } catch (error) {
+    console.error("Rebuild embedding failed:", error);
   }
 };
 
@@ -251,5 +268,24 @@ const handleSubmitTerms = async () => {
 
 .addTermsDict-container {
   margin-bottom: 5px;
+  width: 100%;
+}
+
+.embedding-control {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+}
+
+.control-text {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  color: #409EFF;
+  font-size: 14px;
+  margin-right: 5px;
+  gap: 20px;
 }
 </style>

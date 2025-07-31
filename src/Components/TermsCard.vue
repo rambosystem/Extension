@@ -34,7 +34,8 @@
                         <span class="embedding-status-true" v-if="embeddingStatus">Embedded</span>
                         <span class="embedding-status-false" v-else>Embedding</span>
                         <span class="last-embedding-time-text">Last Embedding Time:</span>
-                        <span class="last-embedding-time">{{ lastEmbeddingTime || t('terms.notAvailable') }}</span>
+                        <span class="last-embedding-time">{{ formatEmbeddingTime(lastEmbeddingTime) ||
+                            t('terms.notAvailable') }}</span>
                     </div>
                 </div>
             </div>
@@ -278,6 +279,15 @@ const handleStatusChange = (value) => {
 // 处理刷新按钮点击
 const handleRefresh = () => {
     emit('refresh');
+};
+
+// 格式化embedding时间，去掉ISO 8601格式中的T分隔符
+const formatEmbeddingTime = (timeString) => {
+    if (!timeString || typeof timeString !== 'string') {
+        return '';
+    }
+    // 将ISO 8601格式的 "2025-07-30T10:00:00" 转换为 "2025-07-30 10:00:00"
+    return timeString.replace('T', ' ');
 };
 
 // 处理卡片的点击事件
