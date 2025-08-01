@@ -25,7 +25,6 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import Settings from "./Components/Settings.vue";
-import Tools from "./Components/Tools.vue";
 import Translation from "./Components/Translation.vue";
 
 import { useI18n } from "./composables/useI18n.js";
@@ -36,24 +35,18 @@ const { t } = useI18n();
 const menuConfig = computed(() => [
   {
     index: "1",
-    label: t("menu.tools"),
-    title: t("menu.tools"),
-    component: Tools,
-  },
-  {
-    index: "2",
     label: t("menu.translation"),
     title: t("menu.translation"),
     component: Translation,
   },
   {
-    index: "3",
+    index: "2",
     label: t("menu.settings"),
     title: t("menu.settings"),
     component: Settings,
   },
   {
-    index: "4",
+    index: "3",
     label: t("menu.about"),
     title: t("menu.about"),
     component: {
@@ -70,7 +63,7 @@ const menuConfig = computed(() => [
 ]);
 
 // 当前选中的菜单项
-const selectedMenu = ref("1");
+const selectedMenu = ref("1"); // 默认选中Translation菜单
 
 // 计算当前应该显示的组件
 const currentComponent = computed(() => {
@@ -95,16 +88,20 @@ onMounted(() => {
   chrome.storage.local.get(["initialMenu", "currentMenu"], (result) => {
     if (result.initialMenu) {
       // 如果有从 popup 传递的菜单，优先使用
-      selectedMenu.value = result.initialMenu;
+      // 如果传递的是Tools菜单（index: "1"），则跳转到Translation菜单
+      const menuIndex = result.initialMenu === "1" ? "1" : result.initialMenu;
+      selectedMenu.value = menuIndex;
       // 读取后删除，避免刷新时重复选中
       chrome.storage.local.remove("initialMenu");
       // 同时保存到 currentMenu
-      chrome.storage.local.set({ currentMenu: result.initialMenu });
+      chrome.storage.local.set({ currentMenu: menuIndex });
     } else if (result.currentMenu) {
       // 如果没有从 popup 传递的菜单，使用上次保存的菜单
-      selectedMenu.value = result.currentMenu;
+      // 如果保存的是Tools菜单（index: "1"），则跳转到Translation菜单
+      const menuIndex = result.currentMenu === "1" ? "1" : result.currentMenu;
+      selectedMenu.value = menuIndex;
     }
-    // 如果都没有，使用默认值 "1"
+    // 如果都没有，使用默认值 "1"（Translation菜单）
   });
 
   // 监听存储变化，当popup设置新的菜单时立即响应

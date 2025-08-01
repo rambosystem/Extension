@@ -1,8 +1,9 @@
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useTranslation } from "./useTranslation.js";
 import { useCSVExport } from "./useCSVExport.js";
 import { useTranslationStorage } from "./useTranslationStorage.js";
+import { useTranslationCache } from "./useTranslationCache.js";
 import { useTableEditor } from "./useTableEditor.js";
 import { useI18n } from "./useI18n.js";
 
@@ -22,10 +23,35 @@ export function useTranslationManager() {
   const translation = useTranslation();
   const csvExport = useCSVExport();
   const storage = useTranslationStorage();
+  const cache = useTranslationCache();
   const editor = useTableEditor();
 
-  // 翻译文本缓存
-  const translationCache = ref([]);
+  // 监听输入内容变化，自动保存到缓存
+  watch(codeContent, (newValue) => {
+    if (newValue?.trim()) {
+      cache.saveToCache(newValue);
+    }
+  }, { debounce: 1000 }); // 防抖1秒，减少频繁保存
+
+  /**
+   * 从缓存恢复待翻译文本（静默加载）
+   */
+  const restoreFromCache = () => {
+    const cachedText = cache.getCachedText();
+    // 只有在输入框为空且有缓存内容时才恢复
+    if (cachedText && !codeContent.value?.trim()) {
+      codeContent.value = cachedText;
+      console.log("Silently restored text from cache:", cachedText.substring(0, 50) + "...");
+    }
+  };
+
+  /**
+   * 清空缓存
+   */
+  const clearCache = () => {
+    cache.clearCache();
+    console.log("Cache cleared by user action");
+  };
 
   /**
    * 执行翻译并处理结果
@@ -61,8 +87,7 @@ export function useTranslationManager() {
       // 提取纯数据并保存到存储
       const translationData = translation.extractTranslationData(result);
       storage.saveTranslationToLocal(translationData);
-      // 将翻译数据保存到缓存
-      translationCache.value = translationData;
+      
     } catch (error) {
       // 翻译失败时关闭对话框
       dialogVisible.value = false;
@@ -111,6 +136,8 @@ export function useTranslationManager() {
   // 组件挂载时初始化
   onMounted(() => {
     storage.loadLastTranslation();
+    // 尝试从缓存恢复待翻译文本
+    restoreFromCache();
   });
 
   return {
@@ -125,10 +152,7 @@ export function useTranslationManager() {
 
     // Loading状态
     loadingStates: translation.loadingStates,
-
-    // 翻译缓存
-    translationCache,
-
+    
     // 动态状态
     currentStatus: translation.currentStatus,
     getStatusText: translation.getStatusText,
@@ -141,6 +165,10 @@ export function useTranslationManager() {
 
     // 编辑相关方法
     enterEditMode: editor.enterEditMode,
+
+    // 缓存相关方法（静默）
+    restoreFromCache,
+    clearCache,
 
     // 工具方法
     hasLastTranslation: storage.hasLastTranslation,

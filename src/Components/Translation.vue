@@ -10,8 +10,12 @@
       <el-form-item>
         <div class="button-container">
           <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
-          <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation()">
+          <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation">
             {{ t('translation.lastTranslation') }}
+          </el-button>
+          <!-- Clear按钮，固定显示 -->
+          <el-button type="primary" style="width: 90px" @click="handleClear">
+            {{ t('common.clear') }}
           </el-button>
           <el-button type="primary" @click="handleTranslate">
             {{ t('translation.translate') }}
@@ -30,7 +34,7 @@
       <el-form-item v-show="csvBaselineKeyEditing">
         <div class="csv-key-setting-button-container">
           <el-button type="primary" @click="handleCsvBaselineKeySave" style="width: 90px">{{ t('common.save')
-            }}</el-button>
+          }}</el-button>
         </div>
       </el-form-item>
     </el-form>
@@ -113,6 +117,15 @@ const handleCsvBaselineKeyCancel = () => {
   csvBaselineKey.value = "";
 };
 
+/**
+ * 清除编辑器内容
+ */
+const handleClear = () => {
+  codeContent.value = "";
+  // 清空缓存
+  clearCache();
+};
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -138,6 +151,7 @@ const {
   exportCSVAndUpload,
   enterEditMode,
   hasLastTranslation,
+  clearCache,
 } = useTranslationManager();
 </script>
 
@@ -172,7 +186,7 @@ const {
   width: 100%;
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -299,7 +313,7 @@ const {
   width: 100%;
 
   .input-container {
-    width: 210px;
+    width: 200px;
   }
 }
 

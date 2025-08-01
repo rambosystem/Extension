@@ -44,7 +44,7 @@ const handleSettingClick = () => {
   console.log("Setting button clicked");
 
   // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
-  chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
+  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
     chrome.runtime.openOptionsPage(() => {
       console.log("Options page opened");
       window.close();
@@ -61,7 +61,7 @@ const handleLokaliseClick = () => {
   console.log("Lokalise action sent");
 
   // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
-  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+  chrome.storage.local.set({ initialMenu: "1", currentMenu: "1" }, () => {
     chrome.runtime.openOptionsPage(() => {
       console.log("Options page opened");
       window.close();

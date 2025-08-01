@@ -41,7 +41,7 @@
     "csvKeySettingPlaceholder": "基准键",
     "exportSetting": "导出设置",
     "csvBaselineKeySaveSuccess": "CSV基准键保存成功",
-    "csvBaselineKeySaveWarning": "CSV基准键应为Key+数字的格式"
+    "csvBaselineKeySaveWarning": "CSV 基准键应为Key+数字的格式"  
   },
   "settings": {
     "title": "Lokalise设置",

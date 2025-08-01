@@ -42,7 +42,6 @@
     "exportSetting": "Export Setting",
     "csvBaselineKeySaveSuccess": "CSV Baseline Key saved successfully",
     "csvBaselineKeySaveWarning": "CSV Baseline Key should be in the format of Key + Number"
-
   },
   "settings": {
     "title": "Lokalise Settings",
