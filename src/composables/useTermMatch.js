@@ -64,11 +64,11 @@ export function useTermMatch() {
       // 合并选项
       const finalOptions = { ...matchOptions.value, ...options };
       
-      console.log('Starting term matching with options:', finalOptions);
+      // console.log('Starting term matching with options:', finalOptions);
       const results = await matchTerms(texts, finalOptions);
       
       matchResults.value = results;
-      console.log('Term matching completed:', results);
+      // console.log('Term matching completed:', results);
       
       return results;
     } catch (error) {
@@ -138,7 +138,7 @@ export function useTermMatch() {
 
     // 监听清空缓存事件，重置匹配选项到默认值
     const handleLocalStorageCleared = () => {
-      console.log('LocalStorage cleared, resetting term match options to defaults...');
+              // console.log('LocalStorage cleared, resetting term match options to defaults...');
       matchOptions.value.similarity_threshold = 0.7;
       matchOptions.value.top_k = 10;
       matchOptions.value.max_ngram = 3;

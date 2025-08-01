@@ -19,10 +19,10 @@ export function useTranslationStorage() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         lastTranslation.value = JSON.parse(saved);
-        console.log(
-          "Loaded last translation from storage:",
-          lastTranslation.value
-        );
+        // console.log(
+        //   "Loaded last translation from storage:",
+        //   lastTranslation.value
+        // );
       } else {
         lastTranslation.value = null;
       }
@@ -45,7 +45,7 @@ export function useTranslationStorage() {
       const dataToSave = JSON.stringify(translationData);
       localStorage.setItem(STORAGE_KEY, dataToSave);
       lastTranslation.value = translationData;
-      console.log("Saved translation to storage:", translationData);
+      // console.log("Saved translation to storage:", translationData);
     } catch (error) {
       console.error("Failed to save translation to localStorage:", error);
       ElMessage.warning(t("storage.saveFailed"));

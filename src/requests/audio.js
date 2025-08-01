@@ -5,7 +5,7 @@ export function playAudio(word) {
   )}&type=2`;
   const audio = new Audio(audioUrl);
   return audio.play().catch((error) => {
-    console.log(error);
+    // console.log(error);
     throw error; // 重新抛出错误，让调用层处理
   });
 }

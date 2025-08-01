@@ -90,7 +90,7 @@ export function useCSVExport() {
   const clearBaselineKey = () => {
     try {
       saveToStorage("csv_baseline_key", "");
-      console.log("Baseline key cleared after export");
+      // console.log("Baseline key cleared after export");
       
       // 触发事件通知其他组件baseline key已被清空
       if (typeof window !== 'undefined') {

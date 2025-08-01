@@ -41,7 +41,7 @@ export function useTranslationManager() {
     // 只有在输入框为空且有缓存内容时才恢复
     if (cachedText && !codeContent.value?.trim()) {
       codeContent.value = cachedText;
-      console.log("Silently restored text from cache:", cachedText.substring(0, 50) + "...");
+      // console.log("Silently restored text from cache:", cachedText.substring(0, 50) + "...");
     }
   };
 
@@ -50,7 +50,7 @@ export function useTranslationManager() {
    */
   const clearCache = () => {
     cache.clearCache();
-    console.log("Cache cleared by user action");
+    // console.log("Cache cleared by user action");
   };
 
   /**

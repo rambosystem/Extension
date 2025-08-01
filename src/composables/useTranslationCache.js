@@ -45,7 +45,7 @@ export function useTranslationCache() {
       cachedText.value = text.trim();
       cacheTimestamp.value = Date.now();
       
-      console.log("Saved text to cache:", text.trim().substring(0, 50) + "...");
+      // console.log("Saved text to cache:", text.trim().substring(0, 50) + "...");
     } catch (error) {
       console.error("Failed to save text to cache:", error);
     }
@@ -79,7 +79,7 @@ export function useTranslationCache() {
       cachedText.value = cacheData.text;
       cacheTimestamp.value = cacheData.timestamp;
       
-      console.log("Loaded text from cache:", cacheData.text.substring(0, 50) + "...");
+      // console.log("Loaded text from cache:", cacheData.text.substring(0, 50) + "...");
       return cacheData.text;
     } catch (error) {
       console.error("Failed to load text from cache:", error);
@@ -96,7 +96,7 @@ export function useTranslationCache() {
       sessionStorage.removeItem(CACHE_KEY);
       cachedText.value = "";
       cacheTimestamp.value = null;
-      console.log("Cache cleared");
+      // console.log("Cache cleared");
     } catch (error) {
       console.error("Failed to clear cache:", error);
     }

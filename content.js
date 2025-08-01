@@ -1,10 +1,10 @@
 // Content script
-console.log("Extension content script loaded");
+// console.log("Extension content script loaded");
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "lokalise") {
-    console.log("Lokalise action received");
+    // console.log("Lokalise action received");
     
   }
 });

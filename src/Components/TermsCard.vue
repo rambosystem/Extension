@@ -425,7 +425,7 @@ const handleSaveTerm = async (row) => {
         }];
 
         await addUserTerms(termsData);
-        console.log('Term saved successfully:', row);
+        // console.log('Term saved successfully:', row);
 
         // 如果是新添加的行，保存成功后移除isNew标记
         if (row.isNew) {
@@ -468,7 +468,7 @@ const handleTabNext = (tabInfo) => {
         // 如果超出当前页范围，检查是否有下一页
         if (nextRow >= dataToUse.length) {
             // 如果超出总数据范围，说明是最后一个单元格，只保存不跳转
-            console.log('Reached last cell, saving only');
+            // console.log('Reached last cell, saving only');
             return;
         } else {
             // 跳转到下一页

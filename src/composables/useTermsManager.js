@@ -39,12 +39,12 @@ export function useTermsManager() {
         error.value = null;
         
         try {
-            console.log('Fetching terms status...');
+            // console.log('Fetching terms status...');
             const statusData = await fetchUserTermsStatus();
             totalTerms.value = statusData.total_terms || 0;
             
-            console.log('Terms status loaded successfully:', statusData);
-            console.log('Updated total terms:', totalTerms.value);
+            // console.log('Terms status loaded successfully:', statusData);
+            // console.log('Updated total terms:', totalTerms.value);
         } catch (err) {
             error.value = err.message;
             console.error('Failed to fetch terms status:', err);
@@ -65,7 +65,7 @@ export function useTermsManager() {
             const data = await fetchCurrentUserTerms();
             termsData.value = data.terms || [];
             
-            console.log('Terms data loaded successfully:', data);
+            // console.log('Terms data loaded successfully:', data);
         } catch (err) {
             error.value = err.message;
             console.error('Failed to fetch terms:', err);
@@ -117,14 +117,14 @@ export function useTermsManager() {
      */
     const fetchEmbeddingStatus = async () => {
         try {
-            console.log('Fetching embedding status...');
+            // console.log('Fetching embedding status...');
             const statusData = await fetchUserEmbeddingStatus();
             embeddingStatus.value = statusData.embedding_status || 'pending';
             lastEmbeddingTime.value = statusData.last_embedding_time || '';
             
-            console.log('Embedding status loaded successfully:', statusData);
-            console.log('Updated embedding status:', embeddingStatus.value);
-            console.log('Updated last embedding time:', lastEmbeddingTime.value);
+            // console.log('Embedding status loaded successfully:', statusData);
+            // console.log('Updated embedding status:', embeddingStatus.value);
+            // console.log('Updated last embedding time:', lastEmbeddingTime.value);
         } catch (err) {
             console.error('Failed to fetch embedding status:', err);
             // 不显示错误提示，因为embedding状态不是核心功能
@@ -136,9 +136,9 @@ export function useTermsManager() {
      */
     const rebuildEmbedding = async () => {
         try {
-            console.log('Starting rebuild embedding...');
+            // console.log('Starting rebuild embedding...');
             const data = await rebuildUserEmbedding();
-            console.log('Embedding rebuild started successfully:', data);
+                          // console.log('Embedding rebuild started successfully:', data);
             
             // 刷新embedding状态
             await fetchEmbeddingStatus();
@@ -179,7 +179,7 @@ export function useTermsManager() {
             // 添加成功后刷新状态信息
             await fetchTermsStatus();
             
-            console.log('Terms added successfully:', data);
+            // console.log('Terms added successfully:', data);
             
             // 显示成功提示，包含提交的terms数量
             const addedCount = newTermsData.length;
@@ -212,7 +212,7 @@ export function useTermsManager() {
             
             // 处理删除成功的情况
             if (data.success && data.message) {
-                console.log('Term deleted successfully:', data);
+                // console.log('Term deleted successfully:', data);
                 
                 // 删除成功后需要重新获取terms数据和状态（静默刷新）
                 await refreshTerms(false);
@@ -230,7 +230,7 @@ export function useTermsManager() {
                 // 刷新状态信息
                 await fetchTermsStatus();
                 
-                console.log('Term deleted successfully, updated data:', data);
+                // console.log('Term deleted successfully, updated data:', data);
                 
                 // 显示成功提示
                 ElMessage.success(t("terms.deleteSuccess") || '术语删除成功');
@@ -382,7 +382,7 @@ export function useTermsManager() {
     
     // 监听清空缓存事件，重新初始化状态
     const handleLocalStorageCleared = () => {
-        console.log('LocalStorage cleared, reinitializing terms status...');
+        // console.log('LocalStorage cleared, reinitializing terms status...');
         // 重置为默认状态（启用）
         termsStatus.value = true;
         // 重新初始化状态
@@ -407,7 +407,7 @@ export function useTermsManager() {
             results.forEach((result, index) => {
                 const requestName = index === 0 ? 'Terms Status' : 'Embedding Status';
                 if (result.status === 'fulfilled') {
-                    console.log(`${requestName} loaded successfully`);
+                    // console.log(`${requestName} loaded successfully`);
                 } else {
                     console.warn(`${requestName} failed:`, result.reason);
                 }
