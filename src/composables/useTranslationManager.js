@@ -18,6 +18,7 @@ export function useTranslationManager() {
   const dialogVisible = ref(false);
   const formRef = ref();
   const formData = reactive({});
+  const isTranslating = ref(false); // 防重复翻译标志
 
   // 使用各个功能模块
   const translation = useTranslation();
@@ -57,6 +58,12 @@ export function useTranslationManager() {
    * 执行翻译并处理结果
    */
   const handleTranslate = async () => {
+    // ===== 防重复请求检查 =====
+    if (isTranslating.value) {
+      console.log("Translation already in progress, ignoring duplicate request");
+      return;
+    }
+
     // ===== 错误检查阶段 =====
     
     // 1. 检查 API Key 是否存在（优先检查）
@@ -73,6 +80,8 @@ export function useTranslationManager() {
     }
 
     // ===== 正常流程阶段 =====
+    
+    isTranslating.value = true; // 设置翻译中标志
     
     try {
       // 先弹出对话框，显示加载状态
@@ -92,6 +101,8 @@ export function useTranslationManager() {
       // 翻译失败时关闭对话框
       dialogVisible.value = false;
       console.error("Translation failed:", error);
+    } finally {
+      isTranslating.value = false; // 重置翻译中标志
     }
   };
 

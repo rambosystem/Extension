@@ -10,6 +10,7 @@ export async function translate(content, onStatusUpdate = null) {
 
   // 如果 ad_terms_status 不存在，默认开启术语匹配
   const isAdTermsEnabled = adTermsEnabled === null ? true : (adTermsEnabled === "true" || adTermsEnabled === true);
+  console.log("Term matching enabled:", isAdTermsEnabled, "adTermsEnabled value:", adTermsEnabled);
 
   // 检查翻译提示开关状态
   if (translationPromptEnabled === "true" || translationPromptEnabled === true) {
@@ -86,8 +87,9 @@ export async function translate(content, onStatusUpdate = null) {
 
       let matchedTerms;
       try {
+        console.log("Starting term matching...");
         matchedTerms = await matchTerms(textLines, matchOptions);
-        // console.log("Matched terms:", matchedTerms);
+        console.log("Term matching completed, found terms:", matchedTerms ? matchedTerms.length : 0);
       } catch (error) {
         console.error("Term matching error in lokalise.js:", error);
         // 如果术语匹配失败，继续翻译但不使用术语
@@ -104,7 +106,7 @@ export async function translate(content, onStatusUpdate = null) {
 
       // 如果有匹配成功的术语，添加到消息中
       if (matchedTerms && matchedTerms.length > 0) {
-        // console.log("Adding matched terms to messages, count:", matchedTerms.length);
+        console.log("Adding matched terms to messages, count:", matchedTerms.length);
         
         // 构建术语库文本
         let termsText = '这里提供可供参考的术语库，如果匹配到术语请根据术语库翻译文本：\n';
@@ -117,7 +119,7 @@ export async function translate(content, onStatusUpdate = null) {
           content: termsText,
         });
       } else {
-        // console.log("No matched terms found");
+        console.log("No matched terms found");
       }
     } catch (error) {
       // 术语匹配失败，继续翻译但不使用术语

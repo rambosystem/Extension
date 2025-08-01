@@ -135,11 +135,11 @@ import { ref, computed, watch } from "vue";
 import EditableCell from "./EditableCell.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
 import { Search } from "@element-plus/icons-vue";
-import { addUserTerms, deleteTermIndex } from "../requests/terms.js";
+import { deleteTermIndex } from "../requests/terms.js";
 
 
 const { t } = useI18n();
-const { deleteTerm } = useTermsManager();
+const { deleteTerm, addTerms } = useTermsManager();
 
 const props = defineProps({
     title: {
@@ -187,6 +187,7 @@ const dialogVisible = ref(false);
 const filter = ref('');
 const filteredTermsData = ref([]);
 const isSearching = ref(false);
+const filterTimer = ref(null);
 
 // 分页相关状态
 const currentPage = ref(1);
@@ -227,8 +228,8 @@ const clearFilter = () => {
 // 监听搜索输入变化，实现实时搜索
 const handleFilterInput = () => {
     // 使用防抖，避免频繁搜索
-    clearTimeout(filter.value.timer);
-    filter.value.timer = setTimeout(() => {
+    clearTimeout(filterTimer.value);
+    filterTimer.value = setTimeout(() => {
         handleFilter();
     }, 300);
 };
@@ -418,14 +419,14 @@ const handleSaveTerm = async (row) => {
             return;
         }
 
-        // 调用API保存术语，cn和jp可以为空
+        // 调用useTermsManager中的addTerms函数，它会自动处理索引更新
         const termsData = [{
             en: row.en.trim(),
             cn: row.cn || '',
             jp: row.jp || ''
         }];
 
-        const result = await addUserTerms(termsData);
+        const result = await addTerms(termsData);
         // console.log('Term saved successfully:', row);
 
         // 如果是新添加的行，保存成功后移除isNew标记并更新term_id
