@@ -22,6 +22,7 @@ export function useSettings() {
     topK: "termMatch_top_k",
     maxNGram: "termMatch_max_ngram",
     adTerms: "ad_terms_status",
+    csvBaselineKey: "csv_baseline_key",
   };
 
   // 默认值常量
@@ -32,6 +33,7 @@ export function useSettings() {
     translationPrompt: true,
     language: "en",
     adTerms: true,
+    csvBaselineKey: "",
   };
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } = useStorage();
@@ -79,6 +81,19 @@ export function useSettings() {
   const similarityThreshold = ref(getStoredSimilarityThreshold());
   const topK = ref(getStoredTopK());
   const maxNGram = ref(getStoredMaxNGram());
+  
+  // 立即加载存储的baseline key
+  const getStoredCsvBaselineKey = () => {
+    try {
+      const stored = getFromStorage(STORAGE_KEYS.csvBaselineKey);
+      return stored || DEFAULT_VALUES.csvBaselineKey;
+    } catch (error) {
+      console.error('Failed to get csv baseline key from storage:', error);
+      return DEFAULT_VALUES.csvBaselineKey;
+    }
+  };
+  
+  const csvBaselineKey = ref(getStoredCsvBaselineKey());
   const { t } = useI18n();
 
   // 立即加载存储的翻译提示状态
@@ -227,6 +242,9 @@ export function useSettings() {
       
       // 确保Translation Prompt状态重置为默认值
       setState("translationPrompt", DEFAULT_VALUES.translationPrompt, "boolean");
+      
+      // 重置CSV Baseline Key到默认值
+      csvBaselineKey.value = DEFAULT_VALUES.csvBaselineKey;
       
       // 触发清空缓存事件，通知其他组件重新初始化状态
       if (typeof window !== 'undefined') {
@@ -377,6 +395,37 @@ export function useSettings() {
   };
 
   /**
+   * 处理CSV Baseline Key保存
+   */
+  const handleSaveCsvBaselineKey = (value) => {
+    if (!value?.trim()) {
+      ElMessage.warning(t("translation.csvBaselineKeySaveWarning"));
+      return false;
+    }
+
+    // 验证格式：key+数字
+    if (!value.match(/^[a-zA-Z]+[0-9]+$/)) {
+      ElMessage.warning(t("translation.csvBaselineKeySaveWarning"));
+      return false;
+    }
+
+    try {
+      const saved = saveToStorage(STORAGE_KEYS.csvBaselineKey, value.trim());
+      if (!saved) {
+        throw new Error("Failed to save CSV baseline key");
+      }
+      
+      csvBaselineKey.value = value.trim();
+      ElMessage.success(t("translation.csvBaselineKeySaveSuccess"));
+      return true;
+    } catch (error) {
+      console.error("Save failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+      return false;
+    }
+  };
+
+  /**
    * 初始化设置数据
    */
   const initializeSettings = () => {
@@ -395,6 +444,11 @@ export function useSettings() {
     const storedAdTerms = settings.adTerms;
     const adTermsEnabled = storedAdTerms !== undefined ? storedAdTerms : DEFAULT_VALUES.adTerms;
     setState("adTerms", adTermsEnabled, "boolean");
+
+    // 处理CSV Baseline Key
+    if (settings.csvBaselineKey) {
+      csvBaselineKey.value = settings.csvBaselineKey;
+    }
 
     if (settings.prompt && settings.prompt.trim()) {
       codeContent.value = settings.prompt;
@@ -443,6 +497,7 @@ export function useSettings() {
     similarityThreshold,
     topK,
     maxNGram,
+    csvBaselineKey,
     handleSaveAPIKey,
     handleSaveLokaliseURL,
     handleSavePrompt,
@@ -454,6 +509,7 @@ export function useSettings() {
     handleTopKChange,
     handleMaxNGramChange,
     handleAdTermsChange,
+    handleSaveCsvBaselineKey,
     initializeSettings,
   };
 }

@@ -35,7 +35,7 @@
         <div class="csv-key-setting-button-container">
           <el-button @click="handleCsvBaselineKeyClear" style="width: 90px">{{ t('common.clear') }}</el-button>
           <el-button type="primary" @click="handleCsvBaselineKeySave" style="width: 90px">{{ t('common.save')
-          }}</el-button>
+            }}</el-button>
         </div>
       </el-form-item>
     </el-form>
@@ -83,13 +83,16 @@ import CodeEditor from "./CodeEditor.vue";
 import EditableCell from "./EditableCell.vue";
 import { useTranslationManager } from "../composables/useTranslationManager.js";
 import { useI18n } from "../composables/useI18n.js";
+import { useSettings } from "../composables/useSettings.js";
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 
 const { t } = useI18n();
 
+// 使用设置管理
+const { csvBaselineKey, handleSaveCsvBaselineKey } = useSettings();
+
 const csvBaselineKeyEditing = ref(false);
-const csvBaselineKey = ref("");
 
 
 //csvBaselineKey变动时，设置csvBaselineKeyEditing为true，空值时设置为false
@@ -106,13 +109,9 @@ watch(
 );
 
 const handleCsvBaselineKeySave = () => {
-  //判断csvBaselineKey是否为str+int，如果是则保存，否则提示
-  if (csvBaselineKey.value && csvBaselineKey.value.match(/^[a-zA-Z]+[0-9]+$/)) {
+  const success = handleSaveCsvBaselineKey(csvBaselineKey.value);
+  if (success) {
     csvBaselineKeyEditing.value = false;
-    ElMessage.success(t('translation.csvBaselineKeySaveSuccess'));
-  } else {
-    ElMessage.warning(t('translation.csvBaselineKeySaveWarning'));
-    csvBaselineKey.value = "";
   }
 };
 
@@ -131,6 +130,8 @@ const handleCsvBaselineKeyCancel = () => {
 const handleCsvBaselineKeyClear = () => {
   csvBaselineKey.value = "";
   csvBaselineKeyEditing.value = false;
+  // 清空存储
+  handleSaveCsvBaselineKey("");
 };
 
 /**
