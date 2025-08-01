@@ -135,7 +135,7 @@ import { ref, computed, watch } from "vue";
 import EditableCell from "./EditableCell.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
 import { Search } from "@element-plus/icons-vue";
-import { addUserTerms, updateIndex } from "../requests/terms.js";
+import { addUserTerms, deleteTermIndex } from "../requests/terms.js";
 
 
 const { t } = useI18n();
@@ -325,8 +325,9 @@ const handleDelete = async (row) => {
             return;
         }
 
-        // 对于已保存的行，调用API删除
+        // 对于已保存的行，调用API删除（内部已包含删除索引的逻辑）
         await deleteTerm(row.term_id);
+
         // 删除成功后，删除term_id对应的当前行
         const index = props.termsData.findIndex(term => term.term_id === row.term_id);
         if (index !== -1) {
@@ -424,21 +425,18 @@ const handleSaveTerm = async (row) => {
             jp: row.jp || ''
         }];
 
-        await addUserTerms(termsData);
+        const result = await addUserTerms(termsData);
         // console.log('Term saved successfully:', row);
 
-        // 如果是新添加的行，保存成功后移除isNew标记
+        // 如果是新添加的行，保存成功后移除isNew标记并更新term_id
         if (row.isNew) {
             delete row.isNew;
-        }
-
-        // 调用增量索引更新
-        try {
-            await updateIndex();
-            console.log('Index updated successfully after saving term');
-        } catch (indexError) {
-            console.warn('Failed to update index after saving term:', indexError);
-            // 不抛出错误，因为索引更新失败不应该影响term保存的成功
+            // 从返回结果中获取term_id并更新到本地数据
+            if (result.terms && result.terms.length > 0) {
+                const savedTerm = result.terms[0];
+                row.term_id = savedTerm.term_id;
+                console.log('Term ID updated after creation:', row.term_id);
+            }
         }
 
         // 保存成功后静默刷新数据，确保显示最新数据

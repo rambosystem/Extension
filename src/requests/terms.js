@@ -373,7 +373,7 @@ export async function deleteTermIndex(termIds) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ term_ids: termIds }),
+      body: JSON.stringify(termIds),
     });
 
     if (!response.ok) {
