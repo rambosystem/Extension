@@ -398,9 +398,21 @@ export function useSettings() {
    * 处理CSV Baseline Key保存
    */
   const handleSaveCsvBaselineKey = (value) => {
+    // 如果是清空操作（空值），直接保存空值
     if (!value?.trim()) {
-      ElMessage.warning(t("translation.csvBaselineKeySaveWarning"));
-      return false;
+      try {
+        const saved = saveToStorage(STORAGE_KEYS.csvBaselineKey, "");
+        if (!saved) {
+          throw new Error("Failed to clear CSV baseline key");
+        }
+        
+        csvBaselineKey.value = "";
+        return true;
+      } catch (error) {
+        console.error("Clear failed:", error);
+        ElMessage.error(error.message || t("settings.saveFailed"));
+        return false;
+      }
     }
 
     // 验证格式：key+数字

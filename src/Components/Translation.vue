@@ -35,7 +35,7 @@
         <div class="csv-key-setting-button-container">
           <el-button @click="handleCsvBaselineKeyClear" style="width: 90px">{{ t('common.clear') }}</el-button>
           <el-button type="primary" @click="handleCsvBaselineKeySave" style="width: 90px">{{ t('common.save')
-            }}</el-button>
+          }}</el-button>
         </div>
       </el-form-item>
     </el-form>
@@ -93,7 +93,7 @@ const { t } = useI18n();
 const { csvBaselineKey, handleSaveCsvBaselineKey } = useSettings();
 
 const csvBaselineKeyEditing = ref(false);
-
+const isSaving = ref(false);
 
 //csvBaselineKey变动时，设置csvBaselineKeyEditing为true，空值时设置为false
 watch(
@@ -109,10 +109,24 @@ watch(
 );
 
 const handleCsvBaselineKeySave = () => {
-  const success = handleSaveCsvBaselineKey(csvBaselineKey.value);
+  if (!csvBaselineKeyEditing.value) return;
+
+  const currentValue = csvBaselineKey.value || "";
+
+  // 检查是否为空
+  if (!currentValue.trim()) {
+    ElMessage.warning(t('translation.csvBaselineKeySaveWarning'));
+    return;
+  }
+
+  isSaving.value = true;
+
+  const success = handleSaveCsvBaselineKey(currentValue);
   if (success) {
     csvBaselineKeyEditing.value = false;
   }
+
+  isSaving.value = false;
 };
 
 const handleCsvBaselineKeyFocus = () => {
@@ -120,11 +134,17 @@ const handleCsvBaselineKeyFocus = () => {
 };
 
 const handleCsvBaselineKeyCancel = () => {
-  // 只有在没有有效值时才隐藏按钮和清空输入
-  if (!csvBaselineKey.value || !csvBaselineKey.value.trim()) {
-    csvBaselineKeyEditing.value = false;
-    csvBaselineKey.value = "";
-  }
+  // 如果正在保存，不处理失焦
+  if (isSaving.value) return;
+
+  // 延迟处理，给用户时间点击保存按钮
+  setTimeout(() => {
+    if (csvBaselineKeyEditing.value && !isSaving.value) {
+      // 失焦时清空值并隐藏按钮
+      csvBaselineKey.value = "";
+      csvBaselineKeyEditing.value = false;
+    }
+  }, 200);
 };
 
 const handleCsvBaselineKeyClear = () => {
