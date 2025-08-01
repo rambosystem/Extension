@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
-import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm, fetchUserTermsStatus, rebuildUserEmbedding, fetchUserEmbeddingStatus } from "../requests/terms.js";
+import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm, fetchUserTermsStatus, rebuildUserEmbedding, fetchUserEmbeddingStatus, updateIndex } from "../requests/terms.js";
 
 export function useTermsManager() {
     const { t } = useI18n();
@@ -178,6 +178,15 @@ export function useTermsManager() {
             
             // 添加成功后刷新状态信息
             await fetchTermsStatus();
+            
+            // 调用增量索引更新
+            try {
+                await updateIndex();
+                console.log('Index updated successfully after adding terms');
+            } catch (indexError) {
+                console.warn('Failed to update index after adding terms:', indexError);
+                // 不抛出错误，因为索引更新失败不应该影响terms添加的成功
+            }
             
             // console.log('Terms added successfully:', data);
             

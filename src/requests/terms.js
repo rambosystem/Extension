@@ -10,6 +10,7 @@ const Public_Account_ID = '1'
  */
 export async function fetchUserTermsStatus() {
   try {
+    console.log('fetchUserTermsStatus');
     const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms/status`, {
       method: 'GET',
       headers: {
@@ -143,7 +144,6 @@ export async function addUserTerms(termsData) {
     if (!Array.isArray(data.terms)) {
       throw new Error('Terms data is not an array');
     }
-
     return data;
   } catch (error) {
     console.error('Failed to add user terms:', error);
@@ -158,6 +158,7 @@ export async function addUserTerms(termsData) {
  */
 export async function fetchUserEmbeddingStatus() {
   try {
+    console.log('fetchUserEmbeddingStatus');
     const response = await fetch(`${API_BASE_URL}/term-match/status/${Public_Account_ID}`, {
       method: 'GET',
       headers: {
@@ -214,6 +215,7 @@ export async function fetchUserEmbeddingStatus() {
  */
 export async function rebuildUserEmbedding() {
   try {
+    console.log('rebuildUserEmbedding');
     const response = await fetch(`${API_BASE_URL}/term-match/build/user/${Public_Account_ID}`, {
       method: 'POST',
       headers: {
@@ -258,6 +260,42 @@ export async function rebuildUserEmbedding() {
     return data;
   } catch (error) {
     console.error('Failed to rebuild user embedding:', error);
+    throw error;
+  }
+}
+
+/**
+ * 更新增量索引
+ * @returns {Promise<Object>} 更新索引响应
+ */
+export async function updateIndex() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/term-match/update-index`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Update Index API request failed: ${response.status} ${response.statusText}. ${
+          errorData.error?.message || errorData.message || ''
+        }`
+      );
+    }
+
+    const data = await response.json();
+    
+    // 验证返回的数据格式
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from Update Index API');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to update index:', error);
     throw error;
   }
 }

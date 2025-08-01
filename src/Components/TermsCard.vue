@@ -135,7 +135,7 @@ import { ref, computed, watch } from "vue";
 import EditableCell from "./EditableCell.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
 import { Search } from "@element-plus/icons-vue";
-import { addUserTerms } from "../requests/terms.js";
+import { addUserTerms, updateIndex } from "../requests/terms.js";
 
 
 const { t } = useI18n();
@@ -430,6 +430,15 @@ const handleSaveTerm = async (row) => {
         // 如果是新添加的行，保存成功后移除isNew标记
         if (row.isNew) {
             delete row.isNew;
+        }
+
+        // 调用增量索引更新
+        try {
+            await updateIndex();
+            console.log('Index updated successfully after saving term');
+        } catch (indexError) {
+            console.warn('Failed to update index after saving term:', indexError);
+            // 不抛出错误，因为索引更新失败不应该影响term保存的成功
         }
 
         // 保存成功后静默刷新数据，确保显示最新数据
