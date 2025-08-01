@@ -84,7 +84,7 @@ import EditableCell from "./EditableCell.vue";
 import { useTranslationManager } from "../composables/useTranslationManager.js";
 import { useI18n } from "../composables/useI18n.js";
 import { useSettings } from "../composables/useSettings.js";
-import { ref, watch } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
 
 const { t } = useI18n();
@@ -153,6 +153,22 @@ const handleCsvBaselineKeyClear = () => {
   // 清空存储
   handleSaveCsvBaselineKey("");
 };
+
+// 监听baseline key清空事件
+const handleBaselineKeyCleared = () => {
+  csvBaselineKey.value = "";
+  csvBaselineKeyEditing.value = false;
+};
+
+// 组件挂载时添加事件监听
+onMounted(() => {
+  window.addEventListener('baselineKeyCleared', handleBaselineKeyCleared);
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('baselineKeyCleared', handleBaselineKeyCleared);
+});
 
 /**
  * 清除编辑器内容

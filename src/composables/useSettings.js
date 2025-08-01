@@ -1,4 +1,4 @@
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useState } from "./useState.js";
 import { useStorage } from "./useStorage.js";
@@ -495,9 +495,22 @@ export function useSettings() {
     }
   );
 
+  // 监听baseline key清空事件
+  const handleBaselineKeyCleared = () => {
+    csvBaselineKey.value = "";
+  };
+
   // 组件挂载时初始化
   onMounted(() => {
     initializeSettings();
+    
+    // 添加baseline key清空事件监听
+    window.addEventListener('baselineKeyCleared', handleBaselineKeyCleared);
+  });
+
+  // 组件卸载时移除事件监听
+  onUnmounted(() => {
+    window.removeEventListener('baselineKeyCleared', handleBaselineKeyCleared);
   });
 
   return {
