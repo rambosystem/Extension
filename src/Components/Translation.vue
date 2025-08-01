@@ -18,6 +18,21 @@
           </el-button>
         </div>
       </el-form-item>
+      <h2 class="title">{{ t('translation.exportSetting') }}</h2>
+      <el-form-item :label="t('translation.csvKeySetting')" label-position="left">
+        <div class="csv-key-setting">
+          <div class="input-container">
+            <el-input v-model="csvBaselineKey" :placeholder="t('translation.csvKeySettingPlaceholder')"
+              @blur="handleCsvBaselineKeyCancel" @focus="csvBaselineKeyEditing = true" />
+          </div>
+        </div>
+      </el-form-item>
+      <el-form-item v-show="csvBaselineKeyEditing">
+        <div class="csv-key-setting-button-container">
+          <el-button type="primary" @click="handleCsvBaselineKeySave" style="width: 90px">{{ t('common.save')
+            }}</el-button>
+        </div>
+      </el-form-item>
     </el-form>
     <!-- 使用El-dialog展示翻译结果, 结果使用El-table展示-->
     <!-- 提供导出CSV功能-->
@@ -63,6 +78,40 @@ import CodeEditor from "./CodeEditor.vue";
 import EditableCell from "./EditableCell.vue";
 import { useTranslationManager } from "../composables/useTranslationManager.js";
 import { useI18n } from "../composables/useI18n.js";
+import { ref, watch } from "vue";
+import { ElMessage } from "element-plus";
+
+const csvBaselineKeyEditing = ref(false);
+const csvBaselineKey = ref("");
+
+
+//csvBaselineKey变动时，设置csvBaselineKeyEditing为true，空值时设置为false
+watch(
+  () => csvBaselineKey.value,
+  () => {
+    if (csvBaselineKey.value) {
+      csvBaselineKeyEditing.value = true;
+    } else {
+      csvBaselineKeyEditing.value = false;
+    }
+  }
+);
+
+const handleCsvBaselineKeySave = () => {
+  //判断csvBaselineKey是否为str+int，如果是则保存，否则提示
+  if (csvBaselineKey.value.match(/^[a-zA-Z]+[0-9]+$/)) {
+    csvBaselineKeyEditing.value = false;
+    ElMessage.success(t('translation.csvBaselineKeySaveSuccess'));
+  } else {
+    ElMessage.warning(t('translation.csvBaselineKeySaveWarning'));
+    csvBaselineKey.value = "";
+  }
+};
+
+const handleCsvBaselineKeyCancel = () => {
+  csvBaselineKeyEditing.value = false;
+  csvBaselineKey.value = "";
+};
 
 const { t } = useI18n();
 
@@ -180,6 +229,11 @@ const {
   color: #303133;
 }
 
+.title {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
 /* 设置对话框内边距 */
 :deep(.el-dialog) {
   --el-dialog-padding-primary: 20px;
@@ -236,5 +290,23 @@ const {
 
 :deep(.el-table--border::before) {
   display: none;
+}
+
+.csv-key-setting {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+
+  .input-container {
+    width: 210px;
+  }
+}
+
+.csv-key-setting-button-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
 }
 </style>

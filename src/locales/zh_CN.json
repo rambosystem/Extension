@@ -28,7 +28,7 @@
     "lastTranslation": "上次翻译",
     "translationResult": "翻译结果",
     "translating": "翻译中...",
-    "matchingTerms": "匹配术语中...",
+    "matchingTerms": "匹配术语并翻译...",
     "exportCSV": "导出CSV",
     "exportCSVAndUpload": "导出CSV并上传",
     "noPreviousTranslation": "没有找到上次翻译结果",
@@ -36,7 +36,12 @@
     "translationCompleted": "翻译完成",
     "pleaseEnterContent": "请输入要翻译的内容",
     "pleaseConfigureAPIKey": "请在设置中配置您的API密钥以使用翻译功能。",
-    "translationFailed": "翻译失败，请检查您的API密钥和设置。"
+    "translationFailed": "翻译失败，请检查您的API密钥和设置。",
+    "csvKeySetting": "CSV基准键",
+    "csvKeySettingPlaceholder": "基准键",
+    "exportSetting": "导出设置",
+    "csvBaselineKeySaveSuccess": "CSV基准键保存成功",
+    "csvBaselineKeySaveWarning": "CSV基准键应为Key+数字的格式"
   },
   "settings": {
     "title": "Lokalise设置",

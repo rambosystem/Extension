@@ -24,6 +24,9 @@ export function useTranslationManager() {
   const storage = useTranslationStorage();
   const editor = useTableEditor();
 
+  // 翻译文本缓存
+  const translationCache = ref([]);
+
   /**
    * 执行翻译并处理结果
    */
@@ -58,7 +61,8 @@ export function useTranslationManager() {
       // 提取纯数据并保存到存储
       const translationData = translation.extractTranslationData(result);
       storage.saveTranslationToLocal(translationData);
-      
+      // 将翻译数据保存到缓存
+      translationCache.value = translationData;
     } catch (error) {
       // 翻译失败时关闭对话框
       dialogVisible.value = false;
@@ -121,7 +125,10 @@ export function useTranslationManager() {
 
     // Loading状态
     loadingStates: translation.loadingStates,
-    
+
+    // 翻译缓存
+    translationCache,
+
     // 动态状态
     currentStatus: translation.currentStatus,
     getStatusText: translation.getStatusText,

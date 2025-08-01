@@ -28,7 +28,7 @@
     "lastTranslation": "Last Translation",
     "translationResult": "Translation Result",
     "translating": "Translating...",
-    "matchingTerms": "Matching terms...",
+    "matchingTerms": "Matching Terms and Translating...",
     "exportCSV": "Export CSV",
     "exportCSVAndUpload": "Export CSV & Upload",
     "noPreviousTranslation": "No previous translation result found",
@@ -36,7 +36,13 @@
     "translationCompleted": "Translation completed successfully",
     "pleaseEnterContent": "Please Enter the Content to Translate",
     "pleaseConfigureAPIKey": "Please Configure Your API Key in Settings to Use Translation Feature.",
-    "translationFailed": "Translation failed. Please check your API key and settings."
+    "translationFailed": "Translation failed. Please check your API key and settings.",
+    "csvKeySetting": "CSV Baseline Key",
+    "csvKeySettingPlaceholder": "Baseline Key",
+    "exportSetting": "Export Setting",
+    "csvBaselineKeySaveSuccess": "CSV Baseline Key saved successfully",
+    "csvBaselineKeySaveWarning": "CSV Baseline Key should be in the format of Key + Number"
+
   },
   "settings": {
     "title": "Lokalise Settings",
