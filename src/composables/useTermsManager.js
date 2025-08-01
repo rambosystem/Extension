@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
-import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm, fetchUserTermsStatus, rebuildUserEmbedding, fetchUserEmbeddingStatus, updateIndex } from "../requests/terms.js";
+import { fetchCurrentUserTerms, addUserTerms, deleteUserTerm, deleteTermIndex, fetchUserTermsStatus, rebuildUserEmbedding, fetchUserEmbeddingStatus, updateIndex } from "../requests/terms.js";
 
 export function useTermsManager() {
     const { t } = useI18n();
@@ -207,17 +207,26 @@ export function useTermsManager() {
     
     /**
      * 删除单个term数据
-     * @param {string} enTerm - 要删除的英文term
+     * @param {number} termId - 要删除的term ID
      * @returns {Promise<Object>} 删除后的完整terms数据
      */
-    const deleteTerm = async (enTerm) => {
+    const deleteTerm = async (termId) => {
         if (loading.value) return; // 防止重复请求
         
         loading.value = true;
         error.value = null;
         
         try {
-            const data = await deleteUserTerm(enTerm);
+            const data = await deleteUserTerm(termId);
+            
+            // 调用删除term索引
+            try {
+                await deleteTermIndex([termId]);
+                console.log('Term index deleted successfully');
+            } catch (indexError) {
+                console.warn('Failed to delete term index:', indexError);
+                // 不抛出错误，因为索引删除失败不应该影响term删除的成功
+            }
             
             // 处理删除成功的情况
             if (data.success && data.message) {

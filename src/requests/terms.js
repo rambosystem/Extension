@@ -80,6 +80,30 @@ export async function fetchUserTerms() {
       throw new Error('Terms data is not an array');
     }
 
+    // 验证每个term对象的格式
+    for (let i = 0; i < data.terms.length; i++) {
+      const term = data.terms[i];
+      if (!term || typeof term !== 'object') {
+        throw new Error(`Term at index ${i} is not an object`);
+      }
+      
+      // 验证必需的字段
+      if (typeof term.term_id !== 'number') {
+        throw new Error(`term_id field is missing or invalid at index ${i}`);
+      }
+      if (!term.en || typeof term.en !== 'string') {
+        throw new Error(`en field is missing or invalid at index ${i}`);
+      }
+      
+      // 验证可选字段（如果存在）
+      if (term.cn !== undefined && typeof term.cn !== 'string') {
+        throw new Error(`cn field must be a string at index ${i}`);
+      }
+      if (term.jp !== undefined && typeof term.jp !== 'string') {
+        throw new Error(`jp field must be a string at index ${i}`);
+      }
+    }
+
     return data;
   } catch (error) {
     console.error('Failed to fetch user terms:', error);
@@ -144,6 +168,31 @@ export async function addUserTerms(termsData) {
     if (!Array.isArray(data.terms)) {
       throw new Error('Terms data is not an array');
     }
+
+    // 验证每个term对象的格式
+    for (let i = 0; i < data.terms.length; i++) {
+      const term = data.terms[i];
+      if (!term || typeof term !== 'object') {
+        throw new Error(`Term at index ${i} is not an object`);
+      }
+      
+      // 验证必需的字段
+      if (typeof term.term_id !== 'number') {
+        throw new Error(`term_id field is missing or invalid at index ${i}`);
+      }
+      if (!term.en || typeof term.en !== 'string') {
+        throw new Error(`en field is missing or invalid at index ${i}`);
+      }
+      
+      // 验证可选字段（如果存在）
+      if (term.cn !== undefined && typeof term.cn !== 'string') {
+        throw new Error(`cn field must be a string at index ${i}`);
+      }
+      if (term.jp !== undefined && typeof term.jp !== 'string') {
+        throw new Error(`jp field must be a string at index ${i}`);
+      }
+    }
+
     return data;
   } catch (error) {
     console.error('Failed to add user terms:', error);
@@ -301,21 +350,68 @@ export async function updateIndex() {
 }
 
 /**
- * 删除单个term数据
- * @param {string} enTerm - 要删除的英文term
- * @returns {Promise<Object>} 删除后的terms数据
+ * 删除term索引
+ * @param {Array<number>} termIds - 要删除的term ID列表
+ * @returns {Promise<Object>} 删除索引响应
  */
-export async function deleteUserTerm(enTerm) {
+export async function deleteTermIndex(termIds) {
   try {
     // 验证输入参数
-    if (!enTerm || typeof enTerm !== 'string' || !enTerm.trim()) {
-      throw new Error('English term must be a non-empty string');
+    if (!Array.isArray(termIds)) {
+      throw new Error('Term IDs must be an array');
     }
 
-    // URL编码英文term，防止特殊字符问题
-    const encodedEnTerm = encodeURIComponent(enTerm.trim());
+    // 验证每个term ID
+    for (let i = 0; i < termIds.length; i++) {
+      if (typeof termIds[i] !== 'number' || termIds[i] <= 0) {
+        throw new Error(`Term ID at index ${i} must be a positive number`);
+      }
+    }
 
-    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms/${encodedEnTerm}`, {
+    const response = await fetch(`${API_BASE_URL}/term-match/terms`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ term_ids: termIds }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Delete Term Index API request failed: ${response.status} ${response.statusText}. ${
+          errorData.error?.message || errorData.message || ''
+        }`
+      );
+    }
+
+    const data = await response.json();
+    
+    // 验证返回的数据格式
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from Delete Term Index API');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to delete term index:', error);
+    throw error;
+  }
+}
+
+/**
+ * 删除单个term数据
+ * @param {number} termId - 要删除的term ID
+ * @returns {Promise<Object>} 删除后的terms数据
+ */
+export async function deleteUserTerm(termId) {
+  try {
+    // 验证输入参数
+    if (typeof termId !== 'number' || termId <= 0) {
+      throw new Error('Term ID must be a positive number');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms/${termId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

@@ -326,9 +326,9 @@ const handleDelete = async (row) => {
         }
 
         // 对于已保存的行，调用API删除
-        await deleteTerm(row.en);
-        // 删除成功后，删除en对应的当前行
-        const index = props.termsData.findIndex(term => term.en === row.en);
+        await deleteTerm(row.term_id);
+        // 删除成功后，删除term_id对应的当前行
+        const index = props.termsData.findIndex(term => term.term_id === row.term_id);
         if (index !== -1) {
             props.termsData.splice(index, 1);
             // 如果有搜索条件，重新执行筛选
