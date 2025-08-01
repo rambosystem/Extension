@@ -93,15 +93,15 @@
     "searchPlaceholder": "Search terms in EN, CN, JP...",
     "searchResult": "Found {count} results",
     "notAvailable": "Not available",
-    "rebuildEmbedding": "Rebuild Terms Embedding",
-    "rebuildStarted": "Embedding rebuild started successfully",
-    "rebuildFailed": "Failed to rebuild embedding",
+    "rebuildEmbedding": "Rebuild Terms Index",
+    "rebuildStarted": "Index rebuild started successfully",
+    "rebuildFailed": "Failed to rebuild index",
     "BuildTermsEmbedding": "Rebuild",
     "Refresh": "Refresh",
     "refreshSuccess": "Terms Library Status refreshed successfully",
-    "rebuildEmbeddingCheck": "Are you sure you want to rebuild the embedding?",
-    "rebuildEmbeddingFailed": "Failed to rebuild embedding",
-    "rebuildEmbeddingProcessing": "Embedding Processing, please try again later"
+    "rebuildEmbeddingCheck": "Are you sure you want to rebuild the index?",
+    "rebuildEmbeddingFailed": "Failed to rebuild index",
+    "rebuildEmbeddingProcessing": "Index Processing, please try again later"
   },
   "termMatch": {
     "title": "Term Matching",

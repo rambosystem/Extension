@@ -151,10 +151,10 @@ export function useTermsManager() {
             console.error('Failed to rebuild embedding:', err);
             
             // 特殊处理 409 错误
-            if (err.message.includes('Embedding Processing')) {
-                ElMessage.warning(t("terms.rebuildEmbeddingProcessing") || 'Embedding Processing, please try again later');
+            if (err.message.includes('Index Processing')) {
+                ElMessage.warning(t("terms.rebuildEmbeddingProcessing") || 'Index Processing, please try again later');
             } else {
-                ElMessage.error(t("terms.rebuildFailed") || 'Failed to rebuild embedding');
+                ElMessage.error(t("terms.rebuildFailed") || 'Failed to rebuild index');
             }
             
             throw err;

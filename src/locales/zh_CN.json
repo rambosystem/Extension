@@ -93,14 +93,14 @@
     "searchResult": "找到 {count} 个结果",
     "notAvailable": "暂无数据",
     "rebuildEmbedding": "重建",
-    "rebuildStarted": "Embedding重建已开始",
-    "rebuildFailed": "重建embedding失败",
+    "rebuildStarted": "索引重建已开始",
+    "rebuildFailed": "重建索引失败",
     "BuildTermsEmbedding": "重新构建",
     "Refresh": "刷新",
     "refreshSuccess": "术语库状态刷新成功",
-    "rebuildEmbeddingConfirm": "确定要重建embedding吗？",
-    "rebuildEmbeddingFailed": "重建embedding失败",
-    "rebuildEmbeddingProcessing": "Embedding处理中，请稍后再试"
+    "rebuildEmbeddingConfirm": "确定要重建索引吗？",
+    "rebuildEmbeddingFailed": "重建索引失败",
+    "rebuildEmbeddingProcessing": "索引处理中，请稍后再试"
   },
   "termMatch": {
     "title": "术语匹配",

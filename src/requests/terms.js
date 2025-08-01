@@ -6,7 +6,7 @@ const Public_Account_ID = '1'
 /**
  * 获取用户terms状态信息
  * @param {string} userId - 用户ID
- * @returns {Promise<Object>} terms状态数据，包含total_terms、embedding_status、last_embedding_time
+ * @returns {Promise<Object>} terms状态数据，包含total_terms、index_status、last_build_time
  */
 export async function fetchUserTermsStatus() {
   try {
@@ -152,13 +152,13 @@ export async function addUserTerms(termsData) {
 }
 
 /**
- * 获取用户embedding状态
+ * 获取用户索引状态
  * @param {string} userId - 用户ID
- * @returns {Promise<Object>} embedding状态数据
+ * @returns {Promise<Object>} 索引状态数据
  */
 export async function fetchUserEmbeddingStatus() {
   try {
-    const response = await fetch(`${API_BASE_URL}/embedding/status/${Public_Account_ID}`, {
+    const response = await fetch(`${API_BASE_URL}/term-match/status/${Public_Account_ID}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ export async function fetchUserEmbeddingStatus() {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Embedding Status API request failed: ${response.status} ${response.statusText}. ${
+        `Term-match Status API request failed: ${response.status} ${response.statusText}. ${
           errorData.error?.message || errorData.message || ''
         }`
       );
@@ -178,7 +178,7 @@ export async function fetchUserEmbeddingStatus() {
     
     // 验证返回的数据格式
     if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Embedding Status API');
+      throw new Error('Invalid response format from Term-match Status API');
     }
 
     // 验证必需的字段
@@ -186,15 +186,21 @@ export async function fetchUserEmbeddingStatus() {
       throw new Error('user_id field is missing or invalid');
     }
 
-    if (!data.embedding_status || typeof data.embedding_status !== 'string') {
-      throw new Error('embedding_status field is missing or invalid');
+    // 新API使用index_status而不是embedding_status
+    if (!data.index_status || typeof data.index_status !== 'string') {
+      throw new Error('index_status field is missing or invalid');
     }
 
-    if (data.last_embedding_time !== null && data.last_embedding_time !== undefined && typeof data.last_embedding_time !== 'string') {
-      throw new Error('last_embedding_time field must be a string or null/undefined');
+    if (data.last_build_time !== null && data.last_build_time !== undefined && typeof data.last_build_time !== 'string') {
+      throw new Error('last_build_time field must be a string or null/undefined');
     }
 
-    return data;
+    // 为了保持向后兼容，将index_status映射为embedding_status
+    return {
+      user_id: data.user_id,
+      embedding_status: data.index_status,
+      last_embedding_time: data.last_build_time
+    };
   } catch (error) {
     console.error('Failed to fetch user embedding status:', error);
     throw error;
@@ -202,13 +208,13 @@ export async function fetchUserEmbeddingStatus() {
 }
 
 /**
- * 重建用户embedding
+ * 重建用户索引
  * @param {string} userId - 用户ID
  * @returns {Promise<Object>} 重建任务响应
  */
 export async function rebuildUserEmbedding() {
   try {
-    const response = await fetch(`${API_BASE_URL}/embedding/build/user/${Public_Account_ID}`, {
+    const response = await fetch(`${API_BASE_URL}/term-match/build/user/${Public_Account_ID}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -218,12 +224,12 @@ export async function rebuildUserEmbedding() {
     if (!response.ok) {
       // 特殊处理 409 状态码
       if (response.status === 409) {
-        throw new Error('Embedding Processing, please try again later');
+        throw new Error('Index Processing, please try again later');
       }
       
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Rebuild embedding API request failed: ${response.status} ${response.statusText}. ${
+        `Rebuild term-match index API request failed: ${response.status} ${response.statusText}. ${
           errorData.error?.message || errorData.message || ''
         }`
       );
@@ -233,7 +239,7 @@ export async function rebuildUserEmbedding() {
     
     // 验证返回的数据格式
     if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Rebuild Embedding API');
+      throw new Error('Invalid response format from Rebuild Term-match Index API');
     }
 
     // 验证必需的字段
