@@ -14,7 +14,7 @@
             {{ t('translation.lastTranslation') }}
           </el-button>
           <!-- Clear按钮，固定显示 -->
-          <el-button type="primary" style="width: 90px" @click="handleClear">
+          <el-button style="width: 90px" @click="handleClear">
             {{ t('common.clear') }}
           </el-button>
           <el-button type="primary" @click="handleTranslate">
@@ -27,12 +27,13 @@
         <div class="csv-key-setting">
           <div class="input-container">
             <el-input v-model="csvBaselineKey" :placeholder="t('translation.csvKeySettingPlaceholder')"
-              @blur="handleCsvBaselineKeyCancel" @focus="csvBaselineKeyEditing = true" />
+              @blur="handleCsvBaselineKeyCancel" @focus="handleCsvBaselineKeyFocus" />
           </div>
         </div>
       </el-form-item>
       <el-form-item v-show="csvBaselineKeyEditing">
         <div class="csv-key-setting-button-container">
+          <el-button @click="handleCsvBaselineKeyClear" style="width: 90px">{{ t('common.clear') }}</el-button>
           <el-button type="primary" @click="handleCsvBaselineKeySave" style="width: 90px">{{ t('common.save')
           }}</el-button>
         </div>
@@ -85,6 +86,8 @@ import { useI18n } from "../composables/useI18n.js";
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 
+const { t } = useI18n();
+
 const csvBaselineKeyEditing = ref(false);
 const csvBaselineKey = ref("");
 
@@ -92,8 +95,9 @@ const csvBaselineKey = ref("");
 //csvBaselineKey变动时，设置csvBaselineKeyEditing为true，空值时设置为false
 watch(
   () => csvBaselineKey.value,
-  () => {
-    if (csvBaselineKey.value) {
+  (newValue) => {
+    // 有值时显示按钮，空值时隐藏按钮
+    if (newValue && newValue.trim()) {
       csvBaselineKeyEditing.value = true;
     } else {
       csvBaselineKeyEditing.value = false;
@@ -103,7 +107,7 @@ watch(
 
 const handleCsvBaselineKeySave = () => {
   //判断csvBaselineKey是否为str+int，如果是则保存，否则提示
-  if (csvBaselineKey.value.match(/^[a-zA-Z]+[0-9]+$/)) {
+  if (csvBaselineKey.value && csvBaselineKey.value.match(/^[a-zA-Z]+[0-9]+$/)) {
     csvBaselineKeyEditing.value = false;
     ElMessage.success(t('translation.csvBaselineKeySaveSuccess'));
   } else {
@@ -112,9 +116,21 @@ const handleCsvBaselineKeySave = () => {
   }
 };
 
+const handleCsvBaselineKeyFocus = () => {
+  csvBaselineKeyEditing.value = true;
+};
+
 const handleCsvBaselineKeyCancel = () => {
-  csvBaselineKeyEditing.value = false;
+  // 只有在没有有效值时才隐藏按钮和清空输入
+  if (!csvBaselineKey.value || !csvBaselineKey.value.trim()) {
+    csvBaselineKeyEditing.value = false;
+    csvBaselineKey.value = "";
+  }
+};
+
+const handleCsvBaselineKeyClear = () => {
   csvBaselineKey.value = "";
+  csvBaselineKeyEditing.value = false;
 };
 
 /**
@@ -125,15 +141,6 @@ const handleClear = () => {
   // 清空缓存
   clearCache();
 };
-
-const { t } = useI18n();
-
-const props = defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-});
 
 // 使用翻译管理composable
 const {
@@ -153,6 +160,13 @@ const {
   hasLastTranslation,
   clearCache,
 } = useTranslationManager();
+
+const props = defineProps({
+  title: {
+    type: String,
+    required: true,
+  },
+});
 </script>
 
 <style lang="scss" scoped>
