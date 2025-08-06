@@ -10,7 +10,6 @@ export async function translate(content, onStatusUpdate = null) {
 
   // 如果 ad_terms_status 不存在，默认开启术语匹配
   const isAdTermsEnabled = adTermsEnabled === null ? true : (adTermsEnabled === "true" || adTermsEnabled === true);
-  console.log("Term matching enabled:", isAdTermsEnabled, "adTermsEnabled value:", adTermsEnabled);
 
   // 检查翻译提示开关状态
   if (translationPromptEnabled === "true" || translationPromptEnabled === true) {
@@ -134,8 +133,17 @@ export async function translate(content, onStatusUpdate = null) {
     }
   }
 
-  // 在控制台输出完整的消息数组（在术语匹配完成后）
-  console.log("DeepSeek Messages:", JSON.stringify(messages, null, 2));
+  // 构建完整的请求体
+  const requestBody = {
+    model: "deepseek-chat",
+    messages: messages,
+    temperature: 0.1,
+    response_format: { type: "text" },
+  };
+
+  // // 输出完整的DeepSeek请求信息
+  console.log("=== DeepSeek API Request Details ===");
+  console.log("Request Body:", JSON.stringify(requestBody, null, 2));
 
   //调用deepseek的api
   const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -144,12 +152,7 @@ export async function translate(content, onStatusUpdate = null) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: "deepseek-chat",
-      messages: messages,
-      temperature: 0.1,
-      response_format: { type: "text" },
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -162,6 +165,13 @@ export async function translate(content, onStatusUpdate = null) {
   }
 
   const data = await response.json();
+
+  // // 输出DeepSeek响应信息
+  // console.log("=== DeepSeek API Response Details ===");
+  // console.log("Response Status:", response.status, response.statusText);
+  // console.log("Response Headers:", Object.fromEntries(response.headers.entries()));
+  // console.log("Response Data:", JSON.stringify(data, null, 2));
+  // console.log("=====================================");
 
   if (!data.choices || !data.choices[0] || !data.choices[0].message) {
     throw new Error("Invalid response format from API");
