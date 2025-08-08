@@ -24,11 +24,15 @@
       </el-form-item>
       <h2 class="title">{{ t('translation.exportSetting') }}</h2>
       <el-form-item :label="t('translation.excelKeySetting')" label-position="left">
-        <el-input v-model="excelBaselineKey" :placeholder="t('translation.excelKeySettingPlaceholder')"
-          @blur="handleExcelBaselineKeyCancel" @focus="handleExcelBaselineKeyFocus" />
+        <div class="excel-key-setting">
+          <div class="input-container">
+            <el-input v-model="excelBaselineKey" :placeholder="t('translation.excelKeySettingPlaceholder')"
+              @blur="handleExcelBaselineKeyCancel" @focus="handleExcelBaselineKeyFocus" />
+          </div>
+        </div>
       </el-form-item>
       <el-form-item v-show="excelBaselineKeyEditing">
-        <div class="button-container">
+        <div class="excel-key-setting-button-container">
           <el-button @click="handleExcelBaselineKeyClear" style="width: 90px">{{ t('common.clear') }}</el-button>
           <el-button type="primary" @click="handleExcelBaselineKeySave" style="width: 90px">{{ t('common.save')
           }}</el-button>
