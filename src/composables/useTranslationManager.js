@@ -1,7 +1,7 @@
 import { ref, reactive, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useTranslation } from "./useTranslation.js";
-import { useCSVExport } from "./useCSVExport.js";
+import { useExcelExport } from "./useExcelExport.js";
 import { useTranslationStorage } from "./useTranslationStorage.js";
 import { useTranslationCache } from "./useTranslationCache.js";
 import { useTableEditor } from "./useTableEditor.js";
@@ -22,7 +22,7 @@ export function useTranslationManager() {
 
   // 使用各个功能模块
   const translation = useTranslation();
-  const csvExport = useCSVExport();
+  const excelExport = useExcelExport();
   const storage = useTranslationStorage();
   const cache = useTranslationCache();
   const editor = useTableEditor();
@@ -123,25 +123,25 @@ export function useTranslationManager() {
   };
 
   /**
-   * 导出CSV文件
+   * 导出Excel文件
    */
-  const exportCSV = () => {
+  const exportExcel = () => {
     if (editor.isEmpty()) {
       ElMessage.warning(t("translation.noTranslationData"));
       return;
     }
-    csvExport.exportCSV(editor.translationResult.value);
+    excelExport.exportExcel(editor.translationResult.value);
   };
 
   /**
-   * 导出CSV并上传到Lokalise
+   * 导出Excel并上传到Lokalise
    */
-  const exportCSVAndUpload = () => {
+  const exportExcelAndUpload = () => {
     if (editor.isEmpty()) {
       ElMessage.warning(t("translation.noTranslationData"));
       return;
     }
-    csvExport.exportCSVAndUpload(editor.translationResult.value);
+    excelExport.exportExcelAndUpload(editor.translationResult.value);
   };
 
   // 组件挂载时初始化
@@ -171,8 +171,8 @@ export function useTranslationManager() {
     // 主要操作方法
     handleTranslate,
     showLastTranslation,
-    exportCSV,
-    exportCSVAndUpload,
+    exportExcel,
+    exportExcelAndUpload,
 
     // 编辑相关方法
     enterEditMode: editor.enterEditMode,

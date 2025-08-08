@@ -23,24 +23,20 @@
         </div>
       </el-form-item>
       <h2 class="title">{{ t('translation.exportSetting') }}</h2>
-      <el-form-item :label="t('translation.csvKeySetting')" label-position="left">
-        <div class="csv-key-setting">
-          <div class="input-container">
-            <el-input v-model="csvBaselineKey" :placeholder="t('translation.csvKeySettingPlaceholder')"
-              @blur="handleCsvBaselineKeyCancel" @focus="handleCsvBaselineKeyFocus" />
-          </div>
-        </div>
+      <el-form-item :label="t('translation.excelKeySetting')" label-position="left">
+        <el-input v-model="excelBaselineKey" :placeholder="t('translation.excelKeySettingPlaceholder')"
+          @blur="handleExcelBaselineKeyCancel" @focus="handleExcelBaselineKeyFocus" />
       </el-form-item>
-      <el-form-item v-show="csvBaselineKeyEditing">
-        <div class="csv-key-setting-button-container">
-          <el-button @click="handleCsvBaselineKeyClear" style="width: 90px">{{ t('common.clear') }}</el-button>
-          <el-button type="primary" @click="handleCsvBaselineKeySave" style="width: 90px">{{ t('common.save')
+      <el-form-item v-show="excelBaselineKeyEditing">
+        <div class="button-container">
+          <el-button @click="handleExcelBaselineKeyClear" style="width: 90px">{{ t('common.clear') }}</el-button>
+          <el-button type="primary" @click="handleExcelBaselineKeySave" style="width: 90px">{{ t('common.save')
           }}</el-button>
         </div>
       </el-form-item>
     </el-form>
     <!-- 使用El-dialog展示翻译结果, 结果使用El-table展示-->
-    <!-- 提供导出CSV功能-->
+    <!-- 提供导出Excel功能-->
     <el-dialog v-model="dialogVisible" :title="t('translation.translationResult')" width="70%">
       <el-form label-position="top">
         <el-form-item>
@@ -69,8 +65,9 @@
         <el-form-item>
           <div class="dialog-button-container">
             <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
-            <el-button type="primary" @click="exportCSVAndUpload">{{ t('translation.exportCSVAndUpload') }}</el-button>
-            <el-button type="primary" @click="exportCSV">{{ t('translation.exportCSV') }}</el-button>
+            <el-button type="primary" @click="exportExcelAndUpload">{{ t('translation.exportExcelAndUpload')
+            }}</el-button>
+            <el-button type="primary" @click="exportExcel">{{ t('translation.exportExcel') }}</el-button>
           </div>
         </el-form-item>
       </el-form>
@@ -90,74 +87,74 @@ import { ElMessage } from "element-plus";
 const { t } = useI18n();
 
 // 使用设置管理
-const { csvBaselineKey, handleSaveCsvBaselineKey } = useSettings();
+const { excelBaselineKey, handleSaveExcelBaselineKey } = useSettings();
 
-const csvBaselineKeyEditing = ref(false);
+const excelBaselineKeyEditing = ref(false);
 const isSaving = ref(false);
 
-//csvBaselineKey变动时，设置csvBaselineKeyEditing为true，空值时设置为false
+//excelBaselineKey变动时，设置excelBaselineKeyEditing为true，空值时设置为false
 watch(
-  () => csvBaselineKey.value,
+  () => excelBaselineKey.value,
   (newValue) => {
     // 有值时显示按钮，空值时隐藏按钮
     if (newValue && newValue.trim()) {
-      csvBaselineKeyEditing.value = true;
+      excelBaselineKeyEditing.value = true;
     } else {
-      csvBaselineKeyEditing.value = false;
+      excelBaselineKeyEditing.value = false;
     }
   }
 );
 
-const handleCsvBaselineKeySave = () => {
-  if (!csvBaselineKeyEditing.value) return;
+const handleExcelBaselineKeySave = () => {
+  if (!excelBaselineKeyEditing.value) return;
 
-  const currentValue = csvBaselineKey.value || "";
+  const currentValue = excelBaselineKey.value || "";
 
   // 检查是否为空
   if (!currentValue.trim()) {
-    ElMessage.warning(t('translation.csvBaselineKeySaveWarning'));
+    ElMessage.warning(t('translation.excelBaselineKeySaveWarning'));
     return;
   }
 
   isSaving.value = true;
 
-  const success = handleSaveCsvBaselineKey(currentValue);
+  const success = handleSaveExcelBaselineKey(currentValue);
   if (success) {
-    csvBaselineKeyEditing.value = false;
+    excelBaselineKeyEditing.value = false;
   }
 
   isSaving.value = false;
 };
 
-const handleCsvBaselineKeyFocus = () => {
-  csvBaselineKeyEditing.value = true;
+const handleExcelBaselineKeyFocus = () => {
+  excelBaselineKeyEditing.value = true;
 };
 
-const handleCsvBaselineKeyCancel = () => {
+const handleExcelBaselineKeyCancel = () => {
   // 如果正在保存，不处理失焦
   if (isSaving.value) return;
 
   // 延迟处理，给用户时间点击保存按钮
   setTimeout(() => {
-    if (csvBaselineKeyEditing.value && !isSaving.value) {
+    if (excelBaselineKeyEditing.value && !isSaving.value) {
       // 失焦时清空值并隐藏按钮
-      csvBaselineKey.value = "";
-      csvBaselineKeyEditing.value = false;
+      excelBaselineKey.value = "";
+      excelBaselineKeyEditing.value = false;
     }
   }, 200);
 };
 
-const handleCsvBaselineKeyClear = () => {
-  csvBaselineKey.value = "";
-  csvBaselineKeyEditing.value = false;
+const handleExcelBaselineKeyClear = () => {
+  excelBaselineKey.value = "";
+  excelBaselineKeyEditing.value = false;
   // 清空存储
-  handleSaveCsvBaselineKey("");
+  handleSaveExcelBaselineKey("");
 };
 
 // 监听baseline key清空事件
 const handleBaselineKeyCleared = () => {
-  csvBaselineKey.value = "";
-  csvBaselineKeyEditing.value = false;
+  excelBaselineKey.value = "";
+  excelBaselineKeyEditing.value = false;
 };
 
 // 组件挂载时添加事件监听
@@ -191,8 +188,8 @@ const {
   getStatusText,
   handleTranslate,
   showLastTranslation,
-  exportCSV,
-  exportCSVAndUpload,
+  exportExcel,
+  exportExcelAndUpload,
   enterEditMode,
   hasLastTranslation,
   clearCache,
@@ -357,7 +354,7 @@ const props = defineProps({
   display: none;
 }
 
-.csv-key-setting {
+.excel-key-setting {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -368,7 +365,7 @@ const props = defineProps({
   }
 }
 
-.csv-key-setting-button-container {
+.excel-key-setting-button-container {
   display: flex;
   justify-content: flex-end;
   align-items: center;

@@ -29,19 +29,19 @@
     "translationResult": "Translation Result",
     "translating": "Translating...",
     "matchingTerms": "Matching Terms and Translating...",
-    "exportCSV": "Export CSV",
-    "exportCSVAndUpload": "Export CSV & Upload",
+    "exportExcel": "Export Excel",
+    "exportExcelAndUpload": "Export Excel & Upload",
     "noPreviousTranslation": "No previous translation result found",
     "noTranslationData": "No translation data to export",
     "translationCompleted": "Translation completed successfully",
     "pleaseEnterContent": "Please Enter the Content to Translate",
     "pleaseConfigureAPIKey": "Please Configure Your API Key in Settings to Use Translation Feature.",
     "translationFailed": "Translation failed. Please check your API key and settings.",
-    "csvKeySetting": "CSV Baseline Key",
-    "csvKeySettingPlaceholder": "Baseline Key",
+    "excelKeySetting": "Excel Baseline Key",
+    "excelKeySettingPlaceholder": "Baseline Key",
     "exportSetting": "Export Setting",
-    "csvBaselineKeySaveSuccess": "CSV Baseline Key saved successfully",
-    "csvBaselineKeySaveWarning": "CSV Baseline Key should be in the format of Key + Number"
+    "excelBaselineKeySaveSuccess": "Excel Baseline Key saved successfully",
+    "excelBaselineKeySaveWarning": "Excel Baseline Key should be in the format of Key + Number"
   },
   "settings": {
     "title": "Lokalise Settings",
@@ -63,9 +63,9 @@
     "translationPrompt": "Translation Prompt",
     "addTermsDict": "Add Terms Dictionary"
   },
-  "csvExport": {
-    "csvDownloaded": "CSV file downloaded successfully",
-    "csvExportFailed": "Failed to export CSV file",
+  "excelExport": {
+    "excelDownloaded": "Excel file downloaded successfully",
+    "excelExportFailed": "Failed to export Excel file",
     "lokaliseUploadFailed": "Failed to open Lokalise upload page"
   },
   "storage": {
@@ -108,9 +108,9 @@
     "matchFailed": "Term matching failed",
     "matchSuccess": "Term matching completed successfully",
     "noResults": "No matches found",
-    "exportCSV": "Export to CSV",
-    "exportSuccess": "CSV exported successfully",
-    "exportFailed": "Failed to export CSV",
+    "exportExcel": "Export to Excel",
+    "exportSuccess": "Excel exported successfully",
+    "exportFailed": "Failed to export Excel",
     "similarityThreshold": "Similarity Threshold",
     "topK": "Top K Results",
     "maxNGram": "Max N-gram Length",

@@ -15,14 +15,14 @@ export function useSettings() {
   const STORAGE_KEYS = {
     apiKey: "deepseek_api_key",
     uploadUrl: "lokalise_upload_url",
-    prompt: "deepseek_prompt",
+    prompt: "custom_translation_prompt",
     translationPrompt: "translation_prompt_enabled",
     language: "app_language",
     similarityThreshold: "termMatch_similarity_threshold",
     topK: "termMatch_top_k",
     maxNGram: "termMatch_max_ngram",
     adTerms: "ad_terms_status",
-    csvBaselineKey: "csv_baseline_key",
+    excelBaselineKey: "excel_baseline_key",
   };
 
   // 默认值常量
@@ -33,7 +33,7 @@ export function useSettings() {
     translationPrompt: true,
     language: "en",
     adTerms: true,
-    csvBaselineKey: "",
+    excelBaselineKey: "",
   };
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } = useStorage();
@@ -83,17 +83,17 @@ export function useSettings() {
   const maxNGram = ref(getStoredMaxNGram());
   
   // 立即加载存储的baseline key
-  const getStoredCsvBaselineKey = () => {
+  const getStoredExcelBaselineKey = () => {
     try {
-      const stored = getFromStorage(STORAGE_KEYS.csvBaselineKey);
-      return stored || DEFAULT_VALUES.csvBaselineKey;
+      const stored = getFromStorage(STORAGE_KEYS.excelBaselineKey);
+      return stored || DEFAULT_VALUES.excelBaselineKey;
     } catch (error) {
-      console.error('Failed to get csv baseline key from storage:', error);
-      return DEFAULT_VALUES.csvBaselineKey;
+      console.error('Failed to get excel baseline key from storage:', error);
+      return DEFAULT_VALUES.excelBaselineKey;
     }
   };
   
-  const csvBaselineKey = ref(getStoredCsvBaselineKey());
+  const excelBaselineKey = ref(getStoredExcelBaselineKey());
   const { t } = useI18n();
 
   // 立即加载存储的翻译提示状态
@@ -243,8 +243,8 @@ export function useSettings() {
       // 确保Translation Prompt状态重置为默认值
       setState("translationPrompt", DEFAULT_VALUES.translationPrompt, "boolean");
       
-      // 重置CSV Baseline Key到默认值
-      csvBaselineKey.value = DEFAULT_VALUES.csvBaselineKey;
+      // 重置Excel Baseline Key到默认值
+      excelBaselineKey.value = DEFAULT_VALUES.excelBaselineKey;
       
       // 触发清空缓存事件，通知其他组件重新初始化状态
       if (typeof window !== 'undefined') {
@@ -395,18 +395,18 @@ export function useSettings() {
   };
 
   /**
-   * 处理CSV Baseline Key保存
+   * 处理Excel Baseline Key保存
    */
-  const handleSaveCsvBaselineKey = (value) => {
+  const handleSaveExcelBaselineKey = (value) => {
     // 如果是清空操作（空值），直接保存空值
     if (!value?.trim()) {
       try {
-        const saved = saveToStorage(STORAGE_KEYS.csvBaselineKey, "");
+        const saved = saveToStorage(STORAGE_KEYS.excelBaselineKey, "");
         if (!saved) {
-          throw new Error("Failed to clear CSV baseline key");
+          throw new Error("Failed to clear Excel baseline key");
         }
         
-        csvBaselineKey.value = "";
+        excelBaselineKey.value = "";
         return true;
       } catch (error) {
         console.error("Clear failed:", error);
@@ -417,18 +417,18 @@ export function useSettings() {
 
     // 验证格式：key+数字
     if (!value.match(/^[a-zA-Z]+[0-9]+$/)) {
-      ElMessage.warning(t("translation.csvBaselineKeySaveWarning"));
+      ElMessage.warning(t("translation.excelBaselineKeySaveWarning"));
       return false;
     }
 
     try {
-      const saved = saveToStorage(STORAGE_KEYS.csvBaselineKey, value.trim());
+      const saved = saveToStorage(STORAGE_KEYS.excelBaselineKey, value.trim());
       if (!saved) {
-        throw new Error("Failed to save CSV baseline key");
+        throw new Error("Failed to save Excel baseline key");
       }
       
-      csvBaselineKey.value = value.trim();
-      ElMessage.success(t("translation.csvBaselineKeySaveSuccess"));
+      excelBaselineKey.value = value.trim();
+      ElMessage.success(t("translation.excelBaselineKeySaveSuccess"));
       return true;
     } catch (error) {
       console.error("Save failed:", error);
@@ -457,9 +457,9 @@ export function useSettings() {
     const adTermsEnabled = storedAdTerms !== undefined ? storedAdTerms : DEFAULT_VALUES.adTerms;
     setState("adTerms", adTermsEnabled, "boolean");
 
-    // 处理CSV Baseline Key
-    if (settings.csvBaselineKey) {
-      csvBaselineKey.value = settings.csvBaselineKey;
+    // 处理Excel Baseline Key
+    if (settings.excelBaselineKey) {
+      excelBaselineKey.value = settings.excelBaselineKey;
     }
 
     if (settings.prompt && settings.prompt.trim()) {
@@ -497,7 +497,7 @@ export function useSettings() {
 
   // 监听baseline key清空事件
   const handleBaselineKeyCleared = () => {
-    csvBaselineKey.value = "";
+    excelBaselineKey.value = "";
   };
 
   // 组件挂载时初始化
@@ -522,7 +522,7 @@ export function useSettings() {
     similarityThreshold,
     topK,
     maxNGram,
-    csvBaselineKey,
+    excelBaselineKey,
     handleSaveAPIKey,
     handleSaveLokaliseURL,
     handleSavePrompt,
@@ -534,7 +534,7 @@ export function useSettings() {
     handleTopKChange,
     handleMaxNGramChange,
     handleAdTermsChange,
-    handleSaveCsvBaselineKey,
+    handleSaveExcelBaselineKey,
     initializeSettings,
   };
 }

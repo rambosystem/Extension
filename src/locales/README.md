@@ -87,8 +87,8 @@ const { t } = useI18n();
 - `lastTranslation`: 上次翻译按钮
 - `translationResult`: 翻译结果对话框标题
 - `translating`: 翻译中提示
-- `exportCSV`: 导出 CSV 按钮
-- `exportCSVAndUpload`: 导出 CSV 并上传按钮
+- `exportExcel`: 导出 Excel 按钮
+- `exportExcelAndUpload`: 导出 Excel 并上传按钮
 - `noPreviousTranslation`: 没有找到上次翻译结果
 - `noTranslationData`: 没有翻译数据可导出
 - `translationCompleted`: 翻译完成提示
@@ -114,10 +114,10 @@ const { t } = useI18n();
 - `pleaseEnterPrompt`: 请输入提示
 - `pleaseEnterValue`: 请输入值
 
-### CSV 导出文案 (csvExport)
+### Excel 导出文案 (excelExport)
 
-- `csvDownloaded`: CSV 文件下载成功
-- `csvExportFailed`: 导出 CSV 文件失败
+- `excelDownloaded`: Excel 文件下载成功
+- `excelExportFailed`: 导出 Excel 文件失败
 - `lokaliseUploadFailed`: 打开 Lokalise 上传页面失败
 
 ### 存储功能文案 (storage)
