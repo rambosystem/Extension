@@ -41,7 +41,8 @@
     "excelKeySettingPlaceholder": "基准键",
     "exportSetting": "导出设置",
     "excelBaselineKeySaveSuccess": "Excel基准键保存成功",
-    "excelBaselineKeySaveWarning": "Excel 基准键应为Key+数字的格式"
+    "excelBaselineKeySaveWarning": "Excel 基准键应为Key+数字的格式",
+    "deleteSuccess": "行删除成功"
   },
   "settings": {
     "title": "Lokalise设置",
@@ -64,7 +65,7 @@
     "addTermsDict": "添加术语字典"
   },
   "excelExport": {
-    "excelDownloaded": "Excel文件下载成功", 
+    "excelDownloaded": "Excel文件下载成功",
     "excelExportFailed": "导出Excel文件失败",
     "lokaliseUploadFailed": "打开Lokalise上传页面失败"
   },
@@ -123,4 +124,4 @@
     "textsWithMatches": "有匹配的文本数",
     "textsWithoutMatches": "无匹配的文本数"
   }
-} 
+}

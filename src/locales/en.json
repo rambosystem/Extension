@@ -41,7 +41,8 @@
     "excelKeySettingPlaceholder": "Baseline Key",
     "exportSetting": "Export Setting",
     "excelBaselineKeySaveSuccess": "Excel Baseline Key saved successfully",
-    "excelBaselineKeySaveWarning": "Excel Baseline Key should be in the format of Key + Number"
+    "excelBaselineKeySaveWarning": "Excel Baseline Key should be in the format of Key + Number",
+    "deleteSuccess": "Row deleted successfully"
   },
   "settings": {
     "title": "Lokalise Settings",
@@ -124,4 +125,4 @@
     "textsWithMatches": "Texts with Matches",
     "textsWithoutMatches": "Texts without Matches"
   }
-} 
+}

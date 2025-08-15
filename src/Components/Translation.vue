@@ -1,7 +1,12 @@
 <template>
   <div class="translation_group">
     <h2 class="title">{{ title }}</h2>
-    <el-form :model="formData" ref="formRef" label-position="top" class="translation-form">
+    <el-form
+      :model="formData"
+      ref="formRef"
+      label-position="top"
+      class="translation-form"
+    >
       <el-form-item :label="t('translation.enCopywriting')" prop="content">
         <div class="CodeEditor">
           <CodeEditor v-model="codeContent"></CodeEditor>
@@ -10,68 +15,154 @@
       <el-form-item>
         <div class="button-container">
           <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
-          <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation">
-            {{ t('translation.lastTranslation') }}
+          <el-button
+            type="text"
+            @click="showLastTranslation"
+            v-if="hasLastTranslation"
+          >
+            {{ t("translation.lastTranslation") }}
           </el-button>
           <!-- Clear按钮，固定显示 -->
           <el-button style="width: 90px" @click="handleClear">
-            {{ t('common.clear') }}
+            {{ t("common.clear") }}
           </el-button>
           <el-button type="primary" @click="handleTranslate">
-            {{ t('translation.translate') }}
+            {{ t("translation.translate") }}
           </el-button>
         </div>
       </el-form-item>
-      <h2 class="title">{{ t('translation.exportSetting') }}</h2>
-      <el-form-item :label="t('translation.excelKeySetting')" label-position="left">
+      <h2 class="title">{{ t("translation.exportSetting") }}</h2>
+      <el-form-item
+        :label="t('translation.excelKeySetting')"
+        label-position="left"
+      >
         <div class="excel-key-setting">
           <div class="input-container">
-            <el-input v-model="excelBaselineKey" :placeholder="t('translation.excelKeySettingPlaceholder')"
-              @blur="handleExcelBaselineKeyCancel" @focus="handleExcelBaselineKeyFocus" />
+            <el-input
+              v-model="excelBaselineKey"
+              :placeholder="t('translation.excelKeySettingPlaceholder')"
+              @blur="handleExcelBaselineKeyCancel"
+              @focus="handleExcelBaselineKeyFocus"
+            />
           </div>
         </div>
       </el-form-item>
       <el-form-item v-show="excelBaselineKeyEditing">
         <div class="excel-key-setting-button-container">
-          <el-button @click="handleExcelBaselineKeyClear" style="width: 90px">{{ t('common.clear') }}</el-button>
-          <el-button type="primary" @click="handleExcelBaselineKeySave" style="width: 90px">{{ t('common.save')
+          <el-button @click="handleExcelBaselineKeyClear" style="width: 90px">{{
+            t("common.clear")
           }}</el-button>
+          <el-button
+            type="primary"
+            @click="handleExcelBaselineKeySave"
+            style="width: 90px"
+            >{{ t("common.save") }}</el-button
+          >
         </div>
       </el-form-item>
     </el-form>
     <!-- 使用El-dialog展示翻译结果, 结果使用El-table展示-->
     <!-- 提供导出Excel功能-->
-    <el-dialog v-model="dialogVisible" :title="t('translation.translationResult')" width="70%">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="t('translation.translationResult')"
+      width="70%"
+    >
       <el-form label-position="top">
         <el-form-item>
-          <el-table :data="translationResult" style="width: 100%" height="450" empty-text=''
-            v-loading="loadingStates.translation" :element-loading-text="getStatusText()">
+          <el-table
+            :data="translationResult"
+            style="width: 100%"
+            height="450"
+            empty-text=""
+            v-loading="loadingStates.translation"
+            :element-loading-text="getStatusText()"
+          >
             <el-table-column prop="en" label="EN">
               <template #default="{ row, $index }">
-                <EditableCell :value="row.en" :isEditing="row.editing_en" @enterEdit="enterEditMode($index, 'en')"
-                  @exitEdit="row.editing_en = false" @update:value="row.en = $event" />
+                <EditableCell
+                  :value="row.en"
+                  :isEditing="row.editing_en"
+                  @enterEdit="enterEditMode($index, 'en')"
+                  @exitEdit="row.editing_en = false"
+                  @update:value="row.en = $event"
+                />
               </template>
             </el-table-column>
             <el-table-column prop="cn" label="CN">
               <template #default="{ row, $index }">
-                <EditableCell :value="row.cn" :isEditing="row.editing_cn" @enterEdit="enterEditMode($index, 'cn')"
-                  @exitEdit="row.editing_cn = false" @update:value="row.cn = $event" />
+                <EditableCell
+                  :value="row.cn"
+                  :isEditing="row.editing_cn"
+                  @enterEdit="enterEditMode($index, 'cn')"
+                  @exitEdit="row.editing_cn = false"
+                  @update:value="row.cn = $event"
+                />
               </template>
             </el-table-column>
             <el-table-column prop="jp" label="JP">
               <template #default="{ row, $index }">
-                <EditableCell :value="row.jp" :isEditing="row.editing_jp" @enterEdit="enterEditMode($index, 'jp')"
-                  @exitEdit="row.editing_jp = false" @update:value="row.jp = $event" />
+                <EditableCell
+                  :value="row.jp"
+                  :isEditing="row.editing_jp"
+                  @enterEdit="enterEditMode($index, 'jp')"
+                  @exitEdit="row.editing_jp = false"
+                  @update:value="row.jp = $event"
+                />
+              </template>
+            </el-table-column>
+            <el-table-column
+              fixed="right"
+              :label="t('common.operation')"
+              width="120"
+            >
+              <template #default="{ row }">
+                <el-popover
+                  trigger="hover"
+                  placement="right-start"
+                  :show-arrow="false"
+                  :offset="5"
+                  width="auto"
+                  popper-style="padding: 8px 0"
+                >
+                  <template #reference>
+                    <div class="operation-container">
+                      <el-icon><MoreFilled /></el-icon>
+                    </div>
+                  </template>
+                  <div class="operation-list">
+                    <div class="operation-list-item" @click="handleDelete(row)">
+                      Delete
+                    </div>
+                    <div
+                      class="operation-list-item"
+                      @click="handleRetranslation(row)"
+                    >
+                      Re-translation
+                    </div>
+                    <div
+                      class="operation-list-item"
+                      @click="handleRetranslationAndModify(row)"
+                    >
+                      Re-translation and how to modify
+                    </div>
+                  </div>
+                </el-popover>
               </template>
             </el-table-column>
           </el-table>
         </el-form-item>
         <el-form-item>
           <div class="dialog-button-container">
-            <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
-            <el-button type="primary" @click="exportExcelAndUpload">{{ t('translation.exportExcelAndUpload')
+            <el-button @click="dialogVisible = false">{{
+              t("common.cancel")
             }}</el-button>
-            <el-button type="primary" @click="exportExcel">{{ t('translation.exportExcel') }}</el-button>
+            <el-button type="primary" @click="exportExcelAndUpload">{{
+              t("translation.exportExcelAndUpload")
+            }}</el-button>
+            <el-button type="primary" @click="exportExcel">{{
+              t("translation.exportExcel")
+            }}</el-button>
           </div>
         </el-form-item>
       </el-form>
@@ -87,8 +178,15 @@ import { useI18n } from "../composables/useI18n.js";
 import { useSettings } from "../composables/useSettings.js";
 import { ref, watch, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
+import { MoreFilled } from "@element-plus/icons-vue";
 
 const { t } = useI18n();
+
+// 删除行
+const handleDelete = (row) => {
+  console.log(row);
+  ElMessage.success(t("translation.deleteSuccess"));
+};
 
 // 使用设置管理
 const { excelBaselineKey, handleSaveExcelBaselineKey } = useSettings();
@@ -116,7 +214,7 @@ const handleExcelBaselineKeySave = () => {
 
   // 检查是否为空
   if (!currentValue.trim()) {
-    ElMessage.warning(t('translation.excelBaselineKeySaveWarning'));
+    ElMessage.warning(t("translation.excelBaselineKeySaveWarning"));
     return;
   }
 
@@ -163,12 +261,12 @@ const handleBaselineKeyCleared = () => {
 
 // 组件挂载时添加事件监听
 onMounted(() => {
-  window.addEventListener('baselineKeyCleared', handleBaselineKeyCleared);
+  window.addEventListener("baselineKeyCleared", handleBaselineKeyCleared);
 });
 
 // 组件卸载时移除事件监听
 onUnmounted(() => {
-  window.removeEventListener('baselineKeyCleared', handleBaselineKeyCleared);
+  window.removeEventListener("baselineKeyCleared", handleBaselineKeyCleared);
 });
 
 /**
@@ -208,6 +306,31 @@ const props = defineProps({
 </script>
 
 <style lang="scss" scoped>
+.operation-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  padding-right: 20px;
+  cursor: pointer;
+  .el-icon {
+    transform: rotate(90deg);
+  }
+}
+
+.operation-list {
+  display: flex;
+  flex-direction: column;
+  .operation-list-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    &:hover {
+      color: #409eff;
+      background-color: #f5f7fa;
+    }
+  }
+}
+
 .translation_group {
   padding: 16px;
 }
