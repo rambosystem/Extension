@@ -13,7 +13,8 @@
     "submit": "Submit",
     "operation": "Operation",
     "delete": "Delete",
-    "search": "Search"
+    "search": "Search",
+    "retry": "Retry"
   },
   "menu": {
     "tools": "Tools",
@@ -42,7 +43,10 @@
     "exportSetting": "Export Setting",
     "excelBaselineKeySaveSuccess": "Excel Baseline Key saved successfully",
     "excelBaselineKeySaveWarning": "Excel Baseline Key should be in the format of Key + Number",
-    "deleteSuccess": "Row deleted successfully"
+    "deleteSuccess": "Deleted successfully",
+    "confirmDelete": "Are you sure you want to delete this translation row?",
+    "allDataDeleted": "All translation data has been deleted",
+    "userSuggestionPlaceholder": "Please enter your suggestion"
   },
   "settings": {
     "title": "Lokalise Settings",

@@ -14,6 +14,8 @@ const { t } = useI18n();
  */
 export function useTranslationManager() {
   // 基础状态
+  const userSuggestion = ref("");
+  const userSuggestionVisible = ref(false);
   const codeContent = ref("");
   const dialogVisible = ref(false);
   const formRef = ref();
@@ -158,6 +160,10 @@ export function useTranslationManager() {
     formRef,
     formData,
 
+        // 用户建议
+    userSuggestion,
+    userSuggestionVisible,
+
     // 翻译结果数据
     translationResult: editor.translationResult,
 
@@ -183,5 +189,8 @@ export function useTranslationManager() {
 
     // 工具方法
     hasLastTranslation: storage.hasLastTranslation,
+    clearLastTranslation: storage.clearLastTranslation,
+    saveTranslationToLocal: storage.saveTranslationToLocal,
+
   };
 }

@@ -82,11 +82,20 @@ export function useTranslationStorage() {
     );
   };
 
+  /**
+   * 清空上次翻译结果
+   */
+  const clearLastTranslation = () => {
+    lastTranslation.value = null;
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   return {
     lastTranslation,
     loadLastTranslation,
     saveTranslationToLocal,
     addEditingStates,
     hasLastTranslation,
+    clearLastTranslation,
   };
 }
