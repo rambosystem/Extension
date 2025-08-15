@@ -14,10 +14,10 @@
             {{ t("translation.lastTranslation") }}
           </el-button>
           <!-- Clear按钮，固定显示 -->
-          <el-button style="width: 90px" @click="handleClear">
+          <el-button style="min-width: 90px" @click="handleClear">
             {{ t("common.clear") }}
           </el-button>
-          <el-button type="primary" @click="handleTranslate">
+          <el-button type="primary" @click="handleTranslate" style="min-width: 90px;">
             {{ t("translation.translate") }}
           </el-button>
         </div>
@@ -33,11 +33,11 @@
       </el-form-item>
       <el-form-item v-show="excelBaselineKeyEditing">
         <div class="excel-key-setting-button-container">
-          <el-button @click="handleExcelBaselineKeyClear" style="width: 90px">{{
+          <el-button @click="handleExcelBaselineKeyClear" style="min-width: 90px">{{
             t("common.clear")
-            }}</el-button>
-          <el-button type="primary" @click="handleExcelBaselineKeySave" style="width: 90px">{{ t("common.save")
-            }}</el-button>
+          }}</el-button>
+          <el-button type="primary" @click="handleExcelBaselineKeySave" style="min-width: 90px">{{ t("common.save")
+          }}</el-button>
         </div>
       </el-form-item>
     </el-form>
@@ -82,10 +82,10 @@
                       <el-row justify="end" style="margin-top: 10px;">
                         <el-button plain size="small" style="min-width: 64px;" @click=handleUseSuggestionCancel()>{{
                           t("common.cancel")
-                        }}</el-button>
+                          }}</el-button>
                         <el-button type="primary" size="small" style="min-width: 64px;" @click=handleUseSuggestion()>{{
                           t("common.retry")
-                        }}</el-button>
+                          }}</el-button>
                       </el-row>
                     </div>
                     <div class="operation-list" v-if="!userSuggestionVisible">
@@ -109,13 +109,13 @@
           <div class="dialog-button-container">
             <el-button @click="dialogVisible = false">{{
               t("common.cancel")
-              }}</el-button>
+            }}</el-button>
             <el-button type="primary" @click="exportExcelAndUpload">{{
               t("translation.exportExcelAndUpload")
-              }}</el-button>
+            }}</el-button>
             <el-button type="primary" @click="exportExcel">{{
               t("translation.exportExcel")
-              }}</el-button>
+            }}</el-button>
           </div>
         </el-form-item>
       </el-form>

@@ -339,7 +339,7 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
 
 .addTermsDict-container {
   margin-bottom: 5px;
-  width: 100%;
+  flex: 1;
 }
 
 .embedding-control {

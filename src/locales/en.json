@@ -13,8 +13,7 @@
     "submit": "Submit",
     "operation": "Operation",
     "delete": "Delete",
-    "search": "Search",
-    "retry": "Retry"
+    "search": "Search"
   },
   "menu": {
     "tools": "Tools",
