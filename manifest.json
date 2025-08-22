@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Rambo Extension",
+  "name": "Penrose",
   "version": "1.0.0",
   "description": "Extension for Rambo",
   "permissions": ["activeTab", "tabs", "scripting", "storage"],

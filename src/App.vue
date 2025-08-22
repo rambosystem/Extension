@@ -4,10 +4,15 @@
       <el-main>
         <el-header>
           <div class="header_icon">
-            <img src="./assets/rambo.svg" class="logo_icon" draggable="false" />
+            <img src="./assets/icon.svg" class="logo_icon" draggable="false" />
           </div>
           <div class="header_button_group">
-            <el-button :icon="Setting" size="24" @click="handleSettingClick" circle></el-button>
+            <el-button
+              :icon="Setting"
+              size="24"
+              @click="handleSettingClick"
+              circle
+            ></el-button>
           </div>
         </el-header>
         <div class="main-content">
@@ -30,7 +35,7 @@
         </div>
       </el-main>
       <el-footer>
-        <div class="footer_text">© Rambo Systems Software Ltd</div>
+        <div class="footer_text">© Rambo Systems Software</div>
       </el-footer>
     </el-container>
   </div>

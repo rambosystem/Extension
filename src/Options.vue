@@ -2,11 +2,26 @@
   <el-container class="common-layout">
     <el-aside width="240px" class="sidebar">
       <div class="sidebar-header">
-        <img src="/src/assets/rambo.svg" alt="Logo" class="adguard-logo" draggable="false" />
+        <img
+          src="./assets/icon.svg"
+          alt="Logo"
+          class="adguard-logo"
+          draggable="false"
+        />
       </div>
-      <el-menu :default-active="selectedMenu" class="sidebar-menu" @select="handleMenuSelect" background-color="#f8f8f8"
-        text-color="#333" active-text-color="#409EFF">
-        <el-menu-item v-for="item in menuConfig" :key="item.index" :index="item.index">
+      <el-menu
+        :default-active="selectedMenu"
+        class="sidebar-menu"
+        @select="handleMenuSelect"
+        background-color="#f8f8f8"
+        text-color="#333"
+        active-text-color="#409EFF"
+      >
+        <el-menu-item
+          v-for="item in menuConfig"
+          :key="item.index"
+          :index="item.index"
+        >
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
@@ -15,7 +30,11 @@
     <el-container>
       <el-main class="main-content">
         <div class="content-placeholder">
-          <component v-if="currentComponent" :is="currentComponent" :title="currentTitle" />
+          <component
+            v-if="currentComponent"
+            :is="currentComponent"
+            :title="currentTitle"
+          />
         </div>
       </el-main>
     </el-container>
@@ -67,12 +86,16 @@ const selectedMenu = ref("1"); // 默认选中Translation菜单
 
 // 计算当前应该显示的组件
 const currentComponent = computed(() => {
-  const item = menuConfig.value.find((item) => item.index === selectedMenu.value);
+  const item = menuConfig.value.find(
+    (item) => item.index === selectedMenu.value
+  );
   return item ? item.component : null;
 });
 
 const currentTitle = computed(() => {
-  const item = menuConfig.value.find((item) => item.index === selectedMenu.value);
+  const item = menuConfig.value.find(
+    (item) => item.index === selectedMenu.value
+  );
   return item ? item.title : "";
 });
 
@@ -106,7 +129,7 @@ onMounted(() => {
 
   // 监听存储变化，当popup设置新的菜单时立即响应
   chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'local' && changes.currentMenu) {
+    if (namespace === "local" && changes.currentMenu) {
       selectedMenu.value = changes.currentMenu.newValue;
     }
   });

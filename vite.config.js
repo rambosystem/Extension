@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   build: {
     outDir: "dist",
+    assetsInlineLimit: 10240,
     rollupOptions: {
       input: {
         popup: resolve(__dirname, "src/main.js"),
