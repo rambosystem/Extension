@@ -1,7 +1,7 @@
 import { ElMessage } from "element-plus";
 import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 const { t } = useI18n();
 const { getFromStorage, saveToStorage } = useStorage();
@@ -22,11 +22,11 @@ export function useExcelExport() {
     if (!match) {
       return baselineKey; // 如果格式不正确，返回原值
     }
-    
+
     const [, prefix, numberStr] = match;
     const baseNumber = parseInt(numberStr, 10);
     const newNumber = baseNumber + index;
-    
+
     return `${prefix}${newNumber}`;
   };
 
@@ -37,10 +37,10 @@ export function useExcelExport() {
    */
   const formatToExcel = (translationResult) => {
     const header = ["key", "en", "zh_CN", "ja"];
-    
+
     // 获取baseline key
     const baselineKey = getFromStorage("excel_baseline_key") || "";
-    
+
     const excelData = [
       header,
       ...translationResult.map((row, index) => {
@@ -53,7 +53,7 @@ export function useExcelExport() {
           // 如果baseline key为空，使用en作为key
           key = row.en;
         }
-        
+
         return [
           key,
           row.en, // en
@@ -74,13 +74,13 @@ export function useExcelExport() {
   const downloadExcel = (excelData, filename = "translation_result.xlsx") => {
     // 创建工作簿
     const wb = XLSX.utils.book_new();
-    
+
     // 创建工作表
     const ws = XLSX.utils.aoa_to_sheet(excelData);
-    
+
     // 将工作表添加到工作簿
     XLSX.utils.book_append_sheet(wb, ws, "Translations");
-    
+
     // 生成Excel文件并下载
     XLSX.writeFile(wb, filename);
   };
@@ -92,10 +92,10 @@ export function useExcelExport() {
     try {
       saveToStorage("excel_baseline_key", "");
       // console.log("Baseline key cleared after export");
-      
+
       // 触发事件通知其他组件baseline key已被清空
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('baselineKeyCleared'));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("baselineKeyCleared"));
       }
     } catch (error) {
       console.error("Failed to clear baseline key:", error);
@@ -115,13 +115,17 @@ export function useExcelExport() {
     try {
       const excelData = formatToExcel(translationResult);
       downloadExcel(excelData);
-      ElMessage.success(t("excelExport.excelDownloaded") || "Excel file downloaded successfully");
-      
+      ElMessage.success(
+        t("excelExport.excelDownloaded") || "Excel file downloaded successfully"
+      );
+
       // 导出完成后清空baseline key
       clearBaselineKey();
     } catch (error) {
       console.error("Excel export failed:", error);
-      ElMessage.error(t("excelExport.excelExportFailed") || "Excel export failed");
+      ElMessage.error(
+        t("excelExport.excelExportFailed") || "Excel export failed"
+      );
     }
   };
 
@@ -134,41 +138,10 @@ export function useExcelExport() {
     return uploadUrl?.trim() || null;
   };
 
-  /**
-   * 导出Excel并打开Lokalise上传页面
-   * @param {Array} translationResult - 翻译结果数组
-   */
-  const exportExcelAndUpload = (translationResult) => {
-    // 先检查是否配置了上传URL
-    const uploadUrl = getLokaliseUploadUrl();
-
-    if (!uploadUrl) {
-      ElMessage.warning(
-        "Upload URL is not configured, please configure Lokalise Project Upload URL in Settings first"
-      );
-      return;
-    }
-
-    // 导出Excel
-    exportExcel(translationResult);
-
-    // 然后打开Lokalise上传页面
-    try {
-      window.open(uploadUrl, "_blank");
-    } catch (error) {
-      console.error("Failed to open upload URL:", error);
-      ElMessage.error(t("excelExport.lokaliseUploadFailed") || "Failed to open Lokalise upload page");
-    }
-    
-    // 确保导出完成后清空baseline key（即使exportExcel已经清空，这里作为双重保险）
-    clearBaselineKey();
-  };
-
   return {
     formatToExcel,
     downloadExcel,
     exportExcel,
-    exportExcelAndUpload,
     getLokaliseUploadUrl,
   };
 }

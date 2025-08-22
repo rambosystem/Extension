@@ -3,7 +3,7 @@
     <el-aside width="240px" class="sidebar">
       <div class="sidebar-header">
         <img
-          src="./assets/icon.svg"
+          src="@/assets/icon.svg"
           alt="Logo"
           class="adguard-logo"
           draggable="false"

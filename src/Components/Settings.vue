@@ -1,38 +1,101 @@
 <template>
   <div class="setting_group">
-    <h2 class="title">{{ t('settings.title') }}</h2>
-    <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
+    <h2 class="title">{{ t("settings.title") }}</h2>
+    <el-form
+      :model="stringStates"
+      ref="formRef"
+      label-position="top"
+      class="settings-form"
+    >
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
-        <SaveableInput v-model="stringStates.apiKey" :label="t('settings.apiKeyForDeepSeek')"
-          :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey" :loading="loadingStates.apiKey" />
+        <SaveableInput
+          v-model="stringStates.apiKey"
+          :label="t('settings.apiKeyForDeepSeek')"
+          :placeholder="t('settings.apiKeyForDeepSeek')"
+          @save="handleSaveAPIKey"
+          :loading="loadingStates.apiKey"
+        />
       </el-form-item>
-      <el-form-item :label="t('settings.lokaliseProjectUploadURL')" prop="uploadUrl">
-        <SaveableInput v-model="stringStates.uploadUrl" :label="t('settings.lokaliseProjectUploadURL')"
-          placeholder="https://app.lokalise.com/upload/..." @save="handleSaveLokaliseURL"
-          :loading="loadingStates.url" />
+      <el-form-item
+        :label="t('settings.lokaliseApiToken')"
+        prop="lokaliseApiToken"
+      >
+        <SaveableInput
+          v-model="stringStates.lokaliseApiToken"
+          :label="t('settings.lokaliseApiToken')"
+          placeholder="Enter your Lokalise API token..."
+          @save="handleSaveLokaliseApiToken"
+          :loading="loadingStates.lokaliseApiToken"
+        />
+      </el-form-item>
+      <el-form-item
+        :label="t('settings.lokaliseProjectUploadURL')"
+        prop="uploadUrl"
+      >
+        <SaveableInput
+          v-model="stringStates.uploadUrl"
+          :label="t('settings.lokaliseProjectUploadURL')"
+          placeholder="https://app.lokalise.com/upload/..."
+          @save="handleSaveLokaliseURL"
+          :loading="loadingStates.url"
+        />
       </el-form-item>
       <div class="embedding-control">
-        <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
+        <el-form-item
+          :label="t('settings.AdTerms')"
+          label-position="left"
+          class="addTermsDict-container"
+        >
         </el-form-item>
         <div class="control-text">
-          <LoadingButton :loading="refreshLoading" :text="t('terms.Refresh')" @click="handleRefreshTerms" />
-          <LoadingButton :loading="rebuildLoading" :text="t('terms.BuildTermsEmbedding')"
-            @click="handleBuildTermsEmbedding" />
+          <LoadingButton
+            :loading="refreshLoading"
+            :text="t('terms.Refresh')"
+            @click="handleRefreshTerms"
+          />
+          <LoadingButton
+            :loading="rebuildLoading"
+            :text="t('terms.BuildTermsEmbedding')"
+            @click="handleBuildTermsEmbedding"
+          />
         </div>
       </div>
       <div class="terms-single">
-        <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
-          :error="termsError" :terms-data="editableTermsData" :embedding-status="embeddingStatus"
-          :last-embedding-time="lastEmbeddingTime" :refresh-loading="refreshLoading" @update:status="updateTermStatus"
-          @refresh="handleRefreshTerms" @fetchTermsData="fetchTermsData" />
+        <TermsCard
+          :title="termsTitle"
+          :status="termsStatus"
+          :total-terms="totalTerms"
+          :loading="termsLoading"
+          :error="termsError"
+          :terms-data="editableTermsData"
+          :embedding-status="embeddingStatus"
+          :last-embedding-time="lastEmbeddingTime"
+          :refresh-loading="refreshLoading"
+          @update:status="updateTermStatus"
+          @refresh="handleRefreshTerms"
+          @fetchTermsData="fetchTermsData"
+        />
       </div>
-      <el-form-item :label="t('settings.translationPrompt')" label-position="top">
-        <el-card shadow="never" style="width: 100%;" body-style="padding: 16px 20px; cursor: pointer;"
-          @click="handleTranslationPromptClick">
+      <el-form-item
+        :label="t('settings.translationPrompt')"
+        label-position="top"
+      >
+        <el-card
+          shadow="never"
+          style="width: 100%"
+          body-style="padding: 16px 20px; cursor: pointer;"
+          @click="handleTranslationPromptClick"
+        >
           <div class="custom-translation-prompt">
-            <span class="custom-translation-prompt-text">{{ t('settings.customTranslationPrompt') }}</span>
-            <el-switch :model-value="booleanStates.translationPrompt"
-              @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
+            <span class="custom-translation-prompt-text">{{
+              t("settings.customTranslationPrompt")
+            }}</span>
+            <el-switch
+              :model-value="booleanStates.translationPrompt"
+              @update:model-value="handleTranslationPromptChange"
+              @click.stop
+              width="45px"
+            />
           </div>
         </el-card>
       </el-form-item>
@@ -43,53 +106,100 @@
       </el-form-item>
       <el-form-item v-if="booleanStates.translationPrompt">
         <div class="button-container">
-          <el-button v-show="booleanStates.isCodeEditing" type="primary" @click="handleSavePrompt"
-            :loading="loadingStates.prompt">
-            {{ t('common.save') }}
+          <el-button
+            v-show="booleanStates.isCodeEditing"
+            type="primary"
+            @click="handleSavePrompt"
+            :loading="loadingStates.prompt"
+          >
+            {{ t("common.save") }}
           </el-button>
         </div>
       </el-form-item>
     </el-form>
-    <h2 class="title">{{ t('settings.advancedSettings') }}</h2>
-    <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
-      <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
+    <h2 class="title">{{ t("settings.advancedSettings") }}</h2>
+    <el-form
+      :model="stringStates"
+      ref="formRef"
+      label-position="top"
+      class="settings-form"
+    >
+      <el-form-item
+        :label="t('termMatch.similarityThreshold')"
+        label-position="left"
+      >
         <div class="similarity-threshold">
-          <el-input-number controls-position="right" v-model="similarityThreshold" :step="0.01" :min="0.5" :max="1"
-            :precision="2" @change="handleSimilarityThresholdChange" />
+          <el-input-number
+            controls-position="right"
+            v-model="similarityThreshold"
+            :step="0.01"
+            :min="0.5"
+            :max="1"
+            :precision="2"
+            @change="handleSimilarityThresholdChange"
+          />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.topK')" label-position="left">
         <div class="top-k">
-          <el-input-number controls-position="right" v-model="topK" :step="1" :min="1" :max="50" :precision="0"
-            @change="handleTopKChange" />
+          <el-input-number
+            controls-position="right"
+            v-model="topK"
+            :step="1"
+            :min="1"
+            :max="50"
+            :precision="0"
+            @change="handleTopKChange"
+          />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.maxNGram')" label-position="left">
         <div class="max-ngram">
-          <el-input-number controls-position="right" v-model="maxNGram" :step="1" :min="1" :max="5" :precision="0"
-            @change="handleMaxNGramChange" />
+          <el-input-number
+            controls-position="right"
+            v-model="maxNGram"
+            :step="1"
+            :min="1"
+            :max="5"
+            :precision="0"
+            @change="handleMaxNGramChange"
+          />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.language')" label-position="left">
         <div class="language-select">
-          <el-select v-model="stringStates.language" @change="handleLanguageChange" style="width: 160px">
+          <el-select
+            v-model="stringStates.language"
+            @change="handleLanguageChange"
+            style="width: 160px"
+          >
             <el-option label="English" value="en" />
             <el-option label="中文" value="zh_CN" />
           </el-select>
         </div>
       </el-form-item>
-      <el-form-item :label="t('settings.clearLocalStorage')" label-position="left">
+      <el-form-item
+        :label="t('settings.clearLocalStorage')"
+        label-position="left"
+      >
         <div class="localStorageClear">
           <el-button type="primary" @click="handleClearLocalStorage">
-            {{ t('common.clear') }}
+            {{ t("common.clear") }}
           </el-button>
         </div>
-        <el-dialog v-model="dialogVisible" :title="t('settings.clearLocalStorage')" width="30%" align-center>
-          <span>{{ t('settings.clearLocalStorageConfirm') }}</span>
+        <el-dialog
+          v-model="dialogVisible"
+          :title="t('settings.clearLocalStorage')"
+          width="30%"
+          align-center
+        >
+          <span>{{ t("settings.clearLocalStorageConfirm") }}</span>
           <template #footer>
-            <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+            <el-button @click="dialogVisible = false">{{
+              t("common.cancel")
+            }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
-              {{ t('common.confirm') }}
+              {{ t("common.confirm") }}
             </el-button>
           </template>
         </el-dialog>
@@ -97,8 +207,13 @@
     </el-form>
 
     <!-- 重建embedding确认框 -->
-    <ConfirmDialog v-model="rebuildConfirmVisible" :title="t('terms.rebuildEmbedding')"
-      :message="t('terms.rebuildEmbeddingCheck')" @confirm="handleRebuildConfirm" @cancel="handleRebuildCancel" />
+    <ConfirmDialog
+      v-model="rebuildConfirmVisible"
+      :title="t('terms.rebuildEmbedding')"
+      :message="t('terms.rebuildEmbeddingCheck')"
+      @confirm="handleRebuildConfirm"
+      @cancel="handleRebuildCancel"
+    />
   </div>
 </template>
 
@@ -132,7 +247,7 @@ const {
   rebuildEmbedding,
   hasChanges,
   getChangedTerms,
-  reinitializeStatus
+  reinitializeStatus,
 } = useTermsManager();
 
 // 使用设置管理composable
@@ -147,6 +262,7 @@ const {
   maxNGram,
   handleSaveAPIKey,
   handleSaveLokaliseURL,
+  handleSaveLokaliseApiToken,
   handleSavePrompt,
   handleClearLocalStorage,
   handleClearLocalStorageConfirm,
@@ -160,7 +276,7 @@ const {
 // 处理翻译提示卡片的点击事件
 const handleTranslationPromptClick = (event) => {
   // 如果点击的是开关本身，不处理
-  if (event.target.closest('.el-switch')) {
+  if (event.target.closest(".el-switch")) {
     return;
   }
   // 切换开关状态
@@ -181,17 +297,25 @@ const rebuildLoading = ref(false);
 const editableTermsData = ref([]);
 
 // 监听原始数据变化，同步到可编辑数据
-watch(originalTermsData, (newData) => {
-  // 深拷贝数据并添加编辑状态
-  const { addEditingStates } = useTranslationStorage();
-  editableTermsData.value = addEditingStates(JSON.parse(JSON.stringify(newData)));
-}, { deep: true });
+watch(
+  originalTermsData,
+  (newData) => {
+    // 深拷贝数据并添加编辑状态
+    const { addEditingStates } = useTranslationStorage();
+    editableTermsData.value = addEditingStates(
+      JSON.parse(JSON.stringify(newData))
+    );
+  },
+  { deep: true }
+);
 
 // 处理terms提交
 const handleSubmitTerms = async () => {
   try {
     // 比较可编辑数据与原始数据
-    const hasChanges = JSON.stringify(editableTermsData.value) !== JSON.stringify(originalTermsData.value);
+    const hasChanges =
+      JSON.stringify(editableTermsData.value) !==
+      JSON.stringify(originalTermsData.value);
 
     if (!hasChanges) {
       ElMessage.warning(t("terms.noChanges"));
@@ -199,7 +323,10 @@ const handleSubmitTerms = async () => {
     }
 
     // 获取改动的terms数据
-    const changedTerms = getChangedTerms(editableTermsData.value, originalTermsData.value);
+    const changedTerms = getChangedTerms(
+      editableTermsData.value,
+      originalTermsData.value
+    );
 
     if (changedTerms.length === 0) {
       ElMessage.warning(t("terms.noChanges"));
@@ -211,7 +338,6 @@ const handleSubmitTerms = async () => {
 
     // 更新原始数据
     refreshTerms();
-
   } catch (error) {
     console.error("Submit terms failed:", error);
   }
@@ -229,7 +355,7 @@ const handleRebuildConfirm = async () => {
     await rebuildEmbedding();
   } catch (error) {
     // 错误消息已经在 rebuildEmbedding 方法中处理了，这里只需要记录日志
-    console.error('Rebuild embedding failed:', error);
+    console.error("Rebuild embedding failed:", error);
   } finally {
     rebuildLoading.value = false;
   }
@@ -246,12 +372,11 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
   try {
     await refreshTerms(showSuccessMessage);
   } catch (error) {
-    console.error('Refresh terms failed:', error);
+    console.error("Refresh terms failed:", error);
   } finally {
     refreshLoading.value = false;
   }
 };
-
 </script>
 
 <style lang="scss" scoped>
@@ -354,7 +479,7 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
   align-items: center;
   justify-content: flex-start;
   cursor: pointer;
-  color: #409EFF;
+  color: #409eff;
   font-size: 14px;
   margin-right: 5px;
   gap: 20px;
@@ -362,4 +487,5 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
   // 按钮样式现在由 LoadingButton 组件处理
 }
 
-// Loading 按钮样式现在由 LoadingButton 组件处理</style>
+// Loading 按钮样式现在由 LoadingButton 组件处理
+</style>

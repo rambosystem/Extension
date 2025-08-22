@@ -2,6 +2,7 @@ import { ref, reactive, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useTranslation } from "./useTranslation.js";
 import { useExcelExport } from "./useExcelExport.js";
+import { useLokaliseUpload } from "./useLokaliseUpload.js";
 import { useTranslationStorage } from "./useTranslationStorage.js";
 import { useTranslationCache } from "./useTranslationCache.js";
 import { useTableEditor } from "./useTableEditor.js";
@@ -25,16 +26,21 @@ export function useTranslationManager() {
   // 使用各个功能模块
   const translation = useTranslation();
   const excelExport = useExcelExport();
+  const lokaliseUpload = useLokaliseUpload();
   const storage = useTranslationStorage();
   const cache = useTranslationCache();
   const editor = useTableEditor();
 
   // 监听输入内容变化，自动保存到缓存
-  watch(codeContent, (newValue) => {
-    if (newValue?.trim()) {
-      cache.saveToCache(newValue);
-    }
-  }, { debounce: 1000 }); // 防抖1秒，减少频繁保存
+  watch(
+    codeContent,
+    (newValue) => {
+      if (newValue?.trim()) {
+        cache.saveToCache(newValue);
+      }
+    },
+    { debounce: 1000 }
+  ); // 防抖1秒，减少频繁保存
 
   /**
    * 从缓存恢复待翻译文本（静默加载）
@@ -62,12 +68,14 @@ export function useTranslationManager() {
   const handleTranslate = async () => {
     // ===== 防重复请求检查 =====
     if (isTranslating.value) {
-      console.log("Translation already in progress, ignoring duplicate request");
+      console.log(
+        "Translation already in progress, ignoring duplicate request"
+      );
       return;
     }
 
     // ===== 错误检查阶段 =====
-    
+
     // 1. 检查 API Key 是否存在（优先检查）
     const apiKey = localStorage.getItem("deepseek_api_key");
     if (!apiKey) {
@@ -82,13 +90,13 @@ export function useTranslationManager() {
     }
 
     // ===== 正常流程阶段 =====
-    
+
     isTranslating.value = true; // 设置翻译中标志
-    
+
     try {
       // 先弹出对话框，显示加载状态
       dialogVisible.value = true;
-      
+
       // 执行翻译
       const result = await translation.performTranslation(codeContent.value);
 
@@ -98,7 +106,6 @@ export function useTranslationManager() {
       // 提取纯数据并保存到存储
       const translationData = translation.extractTranslationData(result);
       storage.saveTranslationToLocal(translationData);
-      
     } catch (error) {
       // 翻译失败时关闭对话框
       dialogVisible.value = false;
@@ -136,14 +143,14 @@ export function useTranslationManager() {
   };
 
   /**
-   * 导出Excel并上传到Lokalise
+   * 上传翻译结果到Lokalise
    */
-  const exportExcelAndUpload = () => {
+  const uploadToLokalise = () => {
     if (editor.isEmpty()) {
       ElMessage.warning(t("translation.noTranslationData"));
       return;
     }
-    excelExport.exportExcelAndUpload(editor.translationResult.value);
+    lokaliseUpload.uploadToLokalise(editor.translationResult.value);
   };
 
   // 组件挂载时初始化
@@ -160,7 +167,7 @@ export function useTranslationManager() {
     formRef,
     formData,
 
-        // 用户建议
+    // 用户建议
     userSuggestion,
     userSuggestionVisible,
 
@@ -169,7 +176,7 @@ export function useTranslationManager() {
 
     // Loading状态
     loadingStates: translation.loadingStates,
-    
+
     // 动态状态
     currentStatus: translation.currentStatus,
     getStatusText: translation.getStatusText,
@@ -178,7 +185,7 @@ export function useTranslationManager() {
     handleTranslate,
     showLastTranslation,
     exportExcel,
-    exportExcelAndUpload,
+    uploadToLokalise,
 
     // 编辑相关方法
     enterEditMode: editor.enterEditMode,
@@ -191,6 +198,5 @@ export function useTranslationManager() {
     hasLastTranslation: storage.hasLastTranslation,
     clearLastTranslation: storage.clearLastTranslation,
     saveTranslationToLocal: storage.saveTranslationToLocal,
-
   };
 }

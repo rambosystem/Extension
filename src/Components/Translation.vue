@@ -195,8 +195,8 @@
             <el-button @click="dialogVisible = false">{{
               t("common.cancel")
             }}</el-button>
-            <el-button type="primary" @click="exportExcelAndUpload">{{
-              t("translation.exportExcelAndUpload")
+            <el-button type="primary" @click="uploadToLokalise">{{
+              t("translation.uploadToLokalise")
             }}</el-button>
             <el-button type="primary" @click="exportExcel">{{
               t("translation.exportExcel")
@@ -363,7 +363,7 @@ const {
   handleTranslate,
   showLastTranslation,
   exportExcel,
-  exportExcelAndUpload,
+  uploadToLokalise,
   enterEditMode,
   hasLastTranslation,
   clearCache,
