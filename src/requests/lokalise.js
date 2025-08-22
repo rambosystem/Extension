@@ -182,13 +182,50 @@ export async function getUserProjects() {
  * @returns {Promise<Object>} 上传结果
  * @throws {Error} 当API调用失败或数据格式错误时抛出错误
  */
-export async function uploadTranslationKeys(projectId, keys, tags = []) {
+export async function uploadTranslationKeys(
+  projectId,
+  keys,
+  tags = [],
+  apiToken = null
+) {
   try {
     // 检查API token是否配置
-    const apiToken = localStorage.getItem("lokalise_api_token");
-    if (!apiToken) {
+    const token = apiToken || localStorage.getItem("lokalise_api_token");
+    if (!token) {
       throw new Error(
         "Lokalise API token not found. Please configure your API token first."
+      );
+    }
+
+    // 验证 token 是否有效
+    try {
+      const validationResponse = await fetch(
+        "https://api.lokalise.com/api2/projects",
+        {
+          method: "GET",
+          headers: {
+            "X-Api-Token": token,
+          },
+        }
+      );
+
+      if (!validationResponse.ok) {
+        const validationError = await validationResponse
+          .json()
+          .catch(() => ({}));
+        throw new Error(
+          `Invalid API token: ${
+            validationError.error?.message ||
+            "Please check your token permissions"
+          }`
+        );
+      }
+    } catch (validationError) {
+      if (validationError.message.includes("Invalid API token")) {
+        throw validationError;
+      }
+      throw new Error(
+        "Failed to validate API token. Please check your network connection."
       );
     }
 
@@ -211,8 +248,10 @@ export async function uploadTranslationKeys(projectId, keys, tags = []) {
           translations: key.translations || [],
         };
 
-        // 只有当tags存在且不为空时才添加
-        if (tags && tags.length > 0) {
+        // 如果 key 本身包含 tags，使用它；否则使用传入的 tags 参数
+        if (key.tags && key.tags.length > 0) {
+          keyData.tags = key.tags;
+        } else if (tags && tags.length > 0) {
           keyData.tags = tags;
         }
 
@@ -220,26 +259,33 @@ export async function uploadTranslationKeys(projectId, keys, tags = []) {
       }),
     };
 
-    console.log("Uploading translation keys to Lokalise:", requestBody);
+    const headers = {
+      "X-Api-Token": token.trim(),
+      "Content-Type": "application/json",
+    };
 
     const response = await fetch(
       `https://api.lokalise.com/api2/projects/${projectId}/keys`,
       {
         method: "POST",
-        headers: {
-          "X-Api-Token": apiToken,
-          "Content-Type": "application/json",
-        },
+        headers: headers,
         body: JSON.stringify(requestBody),
       }
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = {};
+      }
+
       throw new Error(
-        `Failed to upload translation keys: ${response.status} ${
-          response.statusText
-        }. ${errorData.error?.message || ""}`
+        `Upload failed: ${
+          errorData.error?.message ||
+          `HTTP ${response.status} ${response.statusText}`
+        }`
       );
     }
 
@@ -260,7 +306,6 @@ export async function uploadTranslationKeys(projectId, keys, tags = []) {
       throw new Error(`Upload completed with errors: ${errorMessages}`);
     }
 
-    console.log("Successfully uploaded translation keys:", responseData);
     return responseData;
   } catch (error) {
     console.error("Error uploading translation keys:", error);

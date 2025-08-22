@@ -205,6 +205,56 @@
         </el-form-item>
       </el-form>
     </el-dialog>
+
+    <!-- 上传设置弹窗 -->
+    <el-dialog
+      v-model="uploadDialogVisible"
+      title="Upload Setting"
+      width="500px"
+    >
+      <el-form
+        :model="uploadForm"
+        label-position="top"
+        @submit.prevent="executeUpload(translationResult)"
+      >
+        <el-form-item label="Project" required>
+          <el-select
+            v-model="uploadForm.projectId"
+            placeholder="Select a project"
+            style="width: 100%"
+            @change="handleProjectChange"
+          >
+            <el-option
+              v-for="project in projectList"
+              :key="project.project_id"
+              :label="project.name"
+              :value="project.project_id"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="Tag">
+          <el-input
+            v-model="uploadForm.tag"
+            placeholder="Enter tag (optional)"
+            @input="handleTagChange"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="closeUploadDialog">Cancel</el-button>
+          <el-button
+            type="primary"
+            @click="executeUpload(translationResult)"
+            :disabled="!uploadForm.projectId"
+          >
+            Upload
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -365,6 +415,13 @@ const {
   exportExcel,
   uploadToLokalise,
   enterEditMode,
+  uploadDialogVisible,
+  uploadForm,
+  projectList,
+  closeUploadDialog,
+  executeUpload,
+  handleProjectChange,
+  handleTagChange,
   hasLastTranslation,
   clearCache,
   clearLastTranslation,
@@ -579,5 +636,21 @@ const props = defineProps({
   align-items: center;
   width: 100%;
   gap: 8px;
+}
+
+/* 上传设置弹窗样式 */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #303133;
 }
 </style>

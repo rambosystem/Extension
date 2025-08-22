@@ -198,5 +198,14 @@ export function useTranslationManager() {
     hasLastTranslation: storage.hasLastTranslation,
     clearLastTranslation: storage.clearLastTranslation,
     saveTranslationToLocal: storage.saveTranslationToLocal,
+
+    // Lokalise上传相关
+    uploadDialogVisible: lokaliseUpload.uploadDialogVisible,
+    uploadForm: lokaliseUpload.uploadForm,
+    projectList: lokaliseUpload.projectList,
+    closeUploadDialog: lokaliseUpload.closeUploadDialog,
+    executeUpload: lokaliseUpload.executeUpload,
+    handleProjectChange: lokaliseUpload.handleProjectChange,
+    handleTagChange: lokaliseUpload.handleTagChange,
   };
 }
