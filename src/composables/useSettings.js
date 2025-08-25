@@ -4,7 +4,6 @@ import { useState } from "./useState.js";
 import { useStorage } from "./useStorage.js";
 import { validateDeepSeekApiKey } from "../utils/apiValidation.js";
 import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
-import { isValidURL } from "../utils/urlValidation.js";
 import { useI18n } from "./useI18n.js";
 
 /**
@@ -14,7 +13,6 @@ export function useSettings() {
   // 存储键常量
   const STORAGE_KEYS = {
     apiKey: "deepseek_api_key",
-    uploadUrl: "lokalise_upload_url",
     lokaliseApiToken: "lokalise_api_token",
     lokaliseProjects: "lokalise_projects",
     prompt: "custom_translation_prompt",
@@ -136,7 +134,6 @@ export function useSettings() {
     adTerms: DEFAULT_VALUES.adTerms, // Public Terms Library状态
     // 字符串状态
     apiKey: "",
-    uploadUrl: "",
     language: DEFAULT_VALUES.language,
     lokaliseApiToken: "",
   });
@@ -171,38 +168,6 @@ export function useSettings() {
     } catch (error) {
       console.error("API Key validation failed:", error);
       onError(error.message || "API Key validation failed");
-    }
-  };
-
-  /**
-   * 处理Lokalise URL保存
-   */
-  const handleSaveLokaliseURL = async (saveData) => {
-    const { value, onSuccess, onError } = saveData;
-
-    if (!value?.trim()) {
-      onError("Please enter Lokalise Project Upload URL");
-      return;
-    }
-
-    try {
-      await withState("url", async () => {
-        if (!isValidURL(value)) {
-          throw new Error("Invalid URL");
-        }
-
-        const saved = saveToStorage(STORAGE_KEYS.uploadUrl, value);
-        if (!saved) {
-          throw new Error("Failed to save URL");
-        }
-
-        setState("uploadUrl", value.trim(), "string");
-      });
-
-      onSuccess();
-    } catch (error) {
-      console.error("Save failed:", error);
-      onError(error.message || "Save failed");
     }
   };
 
@@ -523,7 +488,6 @@ export function useSettings() {
     const settings = loadSettings(STORAGE_KEYS);
 
     setState("apiKey", settings.apiKey || "", "string");
-    setState("uploadUrl", settings.uploadUrl || "", "string");
     setState("lokaliseApiToken", settings.lokaliseApiToken || "", "string");
     setState(
       "language",
@@ -612,7 +576,6 @@ export function useSettings() {
     maxNGram,
     excelBaselineKey,
     handleSaveAPIKey,
-    handleSaveLokaliseURL,
     handleSaveLokaliseApiToken,
     handleSavePrompt,
     handleClearLocalStorage,

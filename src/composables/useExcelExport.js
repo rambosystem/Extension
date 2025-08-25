@@ -129,19 +129,9 @@ export function useExcelExport() {
     }
   };
 
-  /**
-   * 获取Lokalise上传URL
-   * @returns {string|null} 上传URL或null
-   */
-  const getLokaliseUploadUrl = () => {
-    const uploadUrl = localStorage.getItem("lokalise_upload_url");
-    return uploadUrl?.trim() || null;
-  };
-
   return {
     formatToExcel,
     downloadExcel,
     exportExcel,
-    getLokaliseUploadUrl,
   };
 }

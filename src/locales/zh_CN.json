@@ -52,7 +52,6 @@
     "apiKey": "API密钥",
     "apiKeyForDeepSeek": "DeepSeek API密钥",
     "lokaliseApiToken": "Lokalise API令牌",
-    "lokaliseProjectUploadURL": "Lokalise项目上传URL",
     "customTranslationPrompt": "自定义翻译提示",
     "advancedSettings": "高级设置",
     "language": "语言",

@@ -52,7 +52,6 @@
     "apiKey": "API Key",
     "apiKeyForDeepSeek": "API Key for DeepSeek",
     "lokaliseApiToken": "Lokalise API Token",
-    "lokaliseProjectUploadURL": "Lokalise Project Upload URL",
     "customTranslationPrompt": "Custom Translation Prompt",
     "advancedSettings": "Advanced Settings",
     "language": "Language",

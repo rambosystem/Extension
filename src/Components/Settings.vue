@@ -28,18 +28,7 @@
           :loading="loadingStates.lokaliseApiToken"
         />
       </el-form-item>
-      <el-form-item
-        :label="t('settings.lokaliseProjectUploadURL')"
-        prop="uploadUrl"
-      >
-        <SaveableInput
-          v-model="stringStates.uploadUrl"
-          :label="t('settings.lokaliseProjectUploadURL')"
-          placeholder="https://app.lokalise.com/upload/..."
-          @save="handleSaveLokaliseURL"
-          :loading="loadingStates.url"
-        />
-      </el-form-item>
+
       <div class="embedding-control">
         <el-form-item
           :label="t('settings.AdTerms')"

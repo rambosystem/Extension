@@ -171,18 +171,18 @@
                       >
                         Delete
                       </div>
-                      <div
+                      <!-- <div
                         class="operation-list-item"
                         @click="handleRetranslation(row)"
                       >
                         Re-translation
-                      </div>
-                      <div
+                      </div> -->
+                      <!-- <div
                         class="operation-list-item"
                         @click="handleRetranslationAndModify(row)"
                       >
                         Re-translation and how to modify
-                      </div>
+                      </div> -->
                     </div>
                   </el-popover>
                 </div>
