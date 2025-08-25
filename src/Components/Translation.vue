@@ -277,18 +277,18 @@
           <el-button
             v-if="isUploadSuccess && currentProject"
             type="primary"
-            @click="openLokaliseDownload"
-            style="min-width: 80px"
-          >
-            Build Now
-          </el-button>
-          <el-button
-            v-if="isUploadSuccess && currentProject"
-            type="primary"
             @click="openLokaliseProject"
             style="min-width: 120px"
           >
             View In Lokalise
+          </el-button>
+          <el-button
+            v-if="isUploadSuccess && currentProject"
+            type="primary"
+            @click="openLokaliseDownload"
+            style="min-width: 80px"
+          >
+            Build Now
           </el-button>
         </div>
       </template>
