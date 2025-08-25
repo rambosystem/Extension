@@ -24,6 +24,15 @@ export function useLokaliseUpload() {
   // 项目列表
   const projectList = ref([]);
 
+  // 上传loading状态
+  const isUploading = ref(false);
+
+  // 上传成功状态
+  const isUploadSuccess = ref(false);
+
+  // 成功消息
+  const successMessage = ref("");
+
   /**
    * 显示上传设置弹窗
    */
@@ -104,6 +113,10 @@ export function useLokaliseUpload() {
    */
   const closeUploadDialog = () => {
     uploadDialogVisible.value = false;
+    // 重置所有状态
+    isUploading.value = false;
+    isUploadSuccess.value = false;
+    successMessage.value = "";
   };
 
   /**
@@ -160,6 +173,9 @@ export function useLokaliseUpload() {
     }
 
     try {
+      // 设置loading状态
+      isUploading.value = true;
+
       // 检查API token是否配置
       const apiToken =
         getFromStorage("lokalise_api_token") || stringStates.lokaliseApiToken;
@@ -216,9 +232,6 @@ export function useLokaliseUpload() {
       const tags =
         uploadForm.tag && uploadForm.tag.trim() ? [uploadForm.tag.trim()] : [];
 
-      // 关闭弹窗
-      closeUploadDialog();
-
       // 调用真正的上传API
       const { uploadTranslationKeys } = await import("../requests/lokalise.js");
       const result = await uploadTranslationKeys(
@@ -228,15 +241,17 @@ export function useLokaliseUpload() {
         apiToken
       );
 
-      ElMessage.success(
-        `Successfully uploaded ${keys.length} translation keys to project: ${selectedProject.name}`
-      );
+      // 设置成功状态和消息
+      successMessage.value = `Successfully uploaded ${keys.length} keys to project: ${selectedProject.name}`;
+      isUploadSuccess.value = true;
 
       // 上传完成后清空baseline key
       clearBaselineKey();
     } catch (error) {
-      console.error("Upload to Lokalise failed:", error);
       ElMessage.error(`Upload failed: ${error.message}`);
+    } finally {
+      // 重置loading状态
+      isUploading.value = false;
     }
   };
 
@@ -256,6 +271,9 @@ export function useLokaliseUpload() {
     uploadDialogVisible,
     uploadForm,
     projectList,
+    isUploading,
+    isUploadSuccess,
+    successMessage,
 
     // 方法
     showUploadDialog,

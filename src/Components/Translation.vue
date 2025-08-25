@@ -209,10 +209,27 @@
     <!-- 上传设置弹窗 -->
     <el-dialog
       v-model="uploadDialogVisible"
-      title="Upload Setting"
+      :title="isUploadSuccess ? 'Upload Success' : 'Upload Setting'"
       width="500px"
+      top="30vh"
+      :close-on-click-modal="!isUploading"
+      :close-on-press-escape="!isUploading"
+      v-loading="isUploading"
+      element-loading-text="Uploading to Lokalise..."
+      element-loading-spinner="el-icon-loading"
     >
+      <!-- 成功页面 -->
+      <div v-if="isUploadSuccess" class="upload-success">
+        <div class="success-icon">
+          <img src="../assets/success.svg" alt="Success" />
+        </div>
+        <div class="success-title">Success !</div>
+        <div class="success-message">{{ successMessage }}</div>
+      </div>
+
+      <!-- 上传设置表单 -->
       <el-form
+        v-else
         :model="uploadForm"
         label-position="top"
         @submit.prevent="executeUpload(translationResult)"
@@ -244,13 +261,24 @@
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="closeUploadDialog">Cancel</el-button>
+          <el-button v-if="!isUploadSuccess" @click="closeUploadDialog"
+            >Cancel</el-button
+          >
           <el-button
+            v-if="!isUploadSuccess"
             type="primary"
             @click="executeUpload(translationResult)"
-            :disabled="!uploadForm.projectId"
+            :disabled="!uploadForm.projectId || isUploading"
+            :loading="isUploading"
           >
-            Upload
+            {{ isUploading ? "Uploading..." : "Upload" }}
+          </el-button>
+          <el-button
+            v-if="isUploadSuccess"
+            type="primary"
+            @click="closeUploadDialog"
+          >
+            Close
           </el-button>
         </div>
       </template>
@@ -418,6 +446,9 @@ const {
   uploadDialogVisible,
   uploadForm,
   projectList,
+  isUploading,
+  isUploadSuccess,
+  successMessage,
   closeUploadDialog,
   executeUpload,
   handleProjectChange,
@@ -645,8 +676,39 @@ const props = defineProps({
   gap: 8px;
 }
 
+/* 成功页面样式 */
+.upload-success {
+  text-align: center;
+  padding: 10px 10px;
+
+  .success-icon {
+    margin-bottom: 24px;
+
+    img {
+      width: 120px;
+      height: auto;
+    }
+  }
+
+  .success-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 16px;
+  }
+
+  .success-message {
+    font-size: 14px;
+    color: #606266;
+    line-height: 2;
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
+  }
+}
+
 :deep(.el-dialog__body) {
-  padding: 20px;
+  padding: 0px;
 }
 
 :deep(.el-form-item__label) {
