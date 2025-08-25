@@ -33,6 +33,9 @@ export function useLokaliseUpload() {
   // 成功消息
   const successMessage = ref("");
 
+  // 当前选中的项目信息
+  const currentProject = ref(null);
+
   /**
    * 显示上传设置弹窗
    */
@@ -117,6 +120,7 @@ export function useLokaliseUpload() {
     isUploading.value = false;
     isUploadSuccess.value = false;
     successMessage.value = "";
+    currentProject.value = null;
   };
 
   /**
@@ -171,6 +175,9 @@ export function useLokaliseUpload() {
       ElMessage.error("Selected project not found");
       return;
     }
+
+    // 保存当前项目信息，用于下载链接
+    currentProject.value = selectedProject;
 
     try {
       // 设置loading状态
@@ -274,6 +281,7 @@ export function useLokaliseUpload() {
     isUploading,
     isUploadSuccess,
     successMessage,
+    currentProject,
 
     // 方法
     showUploadDialog,

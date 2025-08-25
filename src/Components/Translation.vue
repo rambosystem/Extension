@@ -195,11 +195,11 @@
             <el-button @click="dialogVisible = false">{{
               t("common.cancel")
             }}</el-button>
-            <el-button type="primary" @click="uploadToLokalise">{{
-              t("translation.uploadToLokalise")
-            }}</el-button>
             <el-button type="primary" @click="exportExcel">{{
               t("translation.exportExcel")
+            }}</el-button>
+            <el-button type="primary" @click="uploadToLokalise">{{
+              t("translation.uploadToLokalise")
             }}</el-button>
           </div>
         </el-form-item>
@@ -217,6 +217,7 @@
       v-loading="isUploading"
       element-loading-text="Uploading to Lokalise..."
       element-loading-spinner="el-icon-loading"
+      @close="handleDialogClose"
     >
       <!-- 成功页面 -->
       <div v-if="isUploadSuccess" class="upload-success">
@@ -274,11 +275,20 @@
             {{ isUploading ? "Uploading..." : "Upload" }}
           </el-button>
           <el-button
-            v-if="isUploadSuccess"
+            v-if="isUploadSuccess && currentProject"
             type="primary"
-            @click="closeUploadDialog"
+            @click="openLokaliseDownload"
+            style="min-width: 80px"
           >
-            Close
+            Build Now
+          </el-button>
+          <el-button
+            v-if="isUploadSuccess && currentProject"
+            type="primary"
+            @click="openLokaliseProject"
+            style="min-width: 120px"
+          >
+            View In Lokalise
           </el-button>
         </div>
       </template>
@@ -426,6 +436,34 @@ const handleClear = () => {
   clearCache();
 };
 
+/**
+ * 处理弹窗关闭事件（包括点击空白处和右上角X按钮）
+ */
+const handleDialogClose = () => {
+  // 重置所有上传相关状态
+  closeUploadDialog();
+};
+
+/**
+ * 打开Lokalise下载页面
+ */
+const openLokaliseDownload = () => {
+  if (currentProject.value) {
+    const downloadUrl = `https://app.lokalise.com/download/${currentProject.value.project_id}/`;
+    window.open(downloadUrl, "_blank");
+  }
+};
+
+/**
+ * 打开Lokalise项目页面
+ */
+const openLokaliseProject = () => {
+  if (currentProject.value) {
+    const projectUrl = `https://app.lokalise.com/project/${currentProject.value.project_id}/?view=multi`;
+    window.open(projectUrl, "_blank");
+  }
+};
+
 // 使用翻译管理composable
 const {
   codeContent,
@@ -449,6 +487,7 @@ const {
   isUploading,
   isUploadSuccess,
   successMessage,
+  currentProject,
   closeUploadDialog,
   executeUpload,
   handleProjectChange,

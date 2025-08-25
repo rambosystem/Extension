@@ -206,6 +206,7 @@ export function useTranslationManager() {
     isUploading: lokaliseUpload.isUploading,
     isUploadSuccess: lokaliseUpload.isUploadSuccess,
     successMessage: lokaliseUpload.successMessage,
+    currentProject: lokaliseUpload.currentProject,
     closeUploadDialog: lokaliseUpload.closeUploadDialog,
     executeUpload: lokaliseUpload.executeUpload,
     handleProjectChange: lokaliseUpload.handleProjectChange,
