@@ -63,20 +63,34 @@ export function useDeduplicate() {
     const originalCount = textLines.length;
     const duplicateTexts = [];
     const remainingTexts = [];
+    const seenTexts = new Set(); // 用于跟踪已处理的文本
 
     console.log("Text lines to check:", textLines);
     console.log("CDN texts sample:", Array.from(cdnTexts).slice(0, 10));
 
     for (const text of textLines) {
-      const isDuplicate = isTextInCdn(text, cdnTexts);
+      // 检查是否在输入文本中重复（内部重复）
+      const isInternalDuplicate = seenTexts.has(text);
+
+      // 检查是否在CDN中重复
+      const isCdnDuplicate = isTextInCdn(text, cdnTexts);
+
+      // 如果文本重复（内部重复或CDN重复），则标记为重复
+      const isDuplicate = isInternalDuplicate || isCdnDuplicate;
+
       console.log(
-        `Checking "${text}": ${isDuplicate ? "DUPLICATE" : "UNIQUE"}`
+        `Checking "${text}": ${
+          isInternalDuplicate ? "INTERNAL_DUPLICATE" : ""
+        } ${isCdnDuplicate ? "CDN_DUPLICATE" : ""} ${
+          isDuplicate ? "DUPLICATE" : "UNIQUE"
+        }`
       );
 
       if (isDuplicate) {
         duplicateTexts.push(text);
       } else {
         remainingTexts.push(text);
+        seenTexts.add(text); // 将唯一文本添加到已见集合中
       }
     }
 

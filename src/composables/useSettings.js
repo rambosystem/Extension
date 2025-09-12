@@ -24,6 +24,7 @@ export function useSettings() {
     maxNGram: "termMatch_max_ngram",
     adTerms: "ad_terms_status",
     excelBaselineKey: "excel_baseline_key",
+    deduplicateProject: "deduplicate_project_selection",
   };
 
   // 默认值常量
@@ -36,6 +37,7 @@ export function useSettings() {
     language: "en",
     adTerms: true,
     excelBaselineKey: "",
+    deduplicateProject: "AmazonSearch",
   };
 
   const { saveToStorage, getFromStorage, clearAllStorage, loadSettings } =
@@ -297,6 +299,13 @@ export function useSettings() {
       // 重置Excel Baseline Key到默认值
       excelBaselineKey.value = DEFAULT_VALUES.excelBaselineKey;
 
+      // 重置去重项目选择到默认值
+      window.dispatchEvent(
+        new CustomEvent("deduplicateProjectChanged", {
+          detail: { project: DEFAULT_VALUES.deduplicateProject },
+        })
+      );
+
       // 触发清空缓存事件，通知其他组件重新初始化状态
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("localStorageCleared"));
@@ -478,6 +487,41 @@ export function useSettings() {
   };
 
   /**
+   * 处理去重项目选择变化
+   */
+  const handleDeduplicateProjectChange = (project) => {
+    try {
+      const saved = saveToStorage(STORAGE_KEYS.deduplicateProject, project);
+      if (!saved) {
+        throw new Error("Failed to save deduplicate project setting");
+      }
+
+      // 触发事件通知其他组件
+      window.dispatchEvent(
+        new CustomEvent("deduplicateProjectChanged", {
+          detail: { project },
+        })
+      );
+    } catch (error) {
+      console.error("Deduplicate project change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+    }
+  };
+
+  /**
+   * 获取存储的去重项目选择
+   */
+  const getStoredDeduplicateProject = () => {
+    try {
+      const stored = getFromStorage(STORAGE_KEYS.deduplicateProject);
+      return stored || DEFAULT_VALUES.deduplicateProject;
+    } catch (error) {
+      console.error("Failed to get deduplicate project from storage:", error);
+      return DEFAULT_VALUES.deduplicateProject;
+    }
+  };
+
+  /**
    * 处理Excel Baseline Key保存
    */
   const handleSaveExcelBaselineKey = (value) => {
@@ -561,6 +605,17 @@ export function useSettings() {
       excelBaselineKey.value = settings.excelBaselineKey;
     }
 
+    // 处理去重项目选择
+    const storedDeduplicateProject = settings.deduplicateProject;
+    const deduplicateProject =
+      storedDeduplicateProject || DEFAULT_VALUES.deduplicateProject;
+    // 触发项目选择变化事件，通知其他组件
+    window.dispatchEvent(
+      new CustomEvent("deduplicateProjectChanged", {
+        detail: { project: deduplicateProject },
+      })
+    );
+
     if (settings.prompt && settings.prompt.trim()) {
       codeContent.value = settings.prompt;
     } else {
@@ -636,5 +691,7 @@ export function useSettings() {
     handleAdTermsChange,
     handleSaveExcelBaselineKey,
     initializeSettings,
+    handleDeduplicateProjectChange,
+    getStoredDeduplicateProject,
   };
 }

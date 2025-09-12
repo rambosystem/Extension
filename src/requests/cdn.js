@@ -5,13 +5,16 @@
 // CDN地址配置
 const CDN_URLS = {
   AmazonSearch:
-    "https://cdn-pacvue-public-doc.pacvue.com/lokalise/AmazonSearch/en.js",
-  Common: "https://cdn-pacvue-public-doc.pacvue.com/lokalise/Common/en.js",
+    "https://pacvue-public-doc.s3.us-west-2.amazonaws.com/lokalise/AmazonSearch/en.js",
+  Common:
+    "https://pacvue-public-doc.s3.us-west-2.amazonaws.com/lokalise/Common/en.js",
+  Commerce:
+    "https://pacvue-public-doc.s3.us-west-2.amazonaws.com/lokalise/Commerce/en.js",
 };
 
 /**
  * 从CDN获取翻译数据
- * @param {string} project - 项目名称 (AmazonSearch 或 Common)
+ * @param {string} project - 项目名称 (AmazonSearch, Common 或 Commerce)
  * @returns {Promise<Object>} 解析后的翻译数据
  */
 export async function fetchCdnTranslations(project) {

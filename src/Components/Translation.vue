@@ -323,6 +323,7 @@
           >
             <el-option label="AmazonSearch" value="AmazonSearch" />
             <el-option label="Common" value="Common" />
+            <el-option label="Commerce" value="Commerce" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -368,14 +369,18 @@ import { MoreFilled } from "@element-plus/icons-vue";
 const { t } = useI18n();
 
 // 使用设置管理
-const { booleanStates } = useSettings();
+const {
+  booleanStates,
+  getStoredDeduplicateProject,
+  handleDeduplicateProjectChange,
+} = useSettings();
 
 // 使用去重功能
 const { deduplicateTranslation } = useDeduplicate();
 
 // 去重相关状态
 const deduplicateDialogVisible = ref(false);
-const selectedProject = ref("");
+const selectedProject = ref(getStoredDeduplicateProject());
 const isDeduplicating = ref(false);
 
 const handleDeduplicate = () => {
@@ -387,14 +392,16 @@ const handleDeduplicate = () => {
 
   // 打开项目选择弹窗
   deduplicateDialogVisible.value = true;
-  selectedProject.value = "";
 };
 
 // 关闭去重弹窗
 const closeDeduplicateDialog = () => {
   deduplicateDialogVisible.value = false;
-  selectedProject.value = "";
   isDeduplicating.value = false;
+  // 保存项目选择
+  if (selectedProject.value) {
+    handleDeduplicateProjectChange(selectedProject.value);
+  }
 };
 
 // 执行去重操作
@@ -430,6 +437,9 @@ const executeDeduplicate = async () => {
       clearCache();
       ElMessage.info(t("translation.allTextsDuplicated"));
     }
+
+    // 保存项目选择
+    handleDeduplicateProjectChange(selectedProject.value);
   } catch (error) {
     console.error("Deduplication failed:", error);
     ElMessage.error(t("translation.deduplicateFailed"));
@@ -548,14 +558,27 @@ const handleBaselineKeyCleared = () => {
   excelBaselineKeyEditing.value = false;
 };
 
+// 监听项目选择变化事件
+const handleProjectSelectionChange = (event) => {
+  selectedProject.value = event.detail.project;
+};
+
 // 组件挂载时添加事件监听
 onMounted(() => {
   window.addEventListener("baselineKeyCleared", handleBaselineKeyCleared);
+  window.addEventListener(
+    "deduplicateProjectChanged",
+    handleProjectSelectionChange
+  );
 });
 
 // 组件卸载时移除事件监听
 onUnmounted(() => {
   window.removeEventListener("baselineKeyCleared", handleBaselineKeyCleared);
+  window.removeEventListener(
+    "deduplicateProjectChanged",
+    handleProjectSelectionChange
+  );
 });
 
 /**
