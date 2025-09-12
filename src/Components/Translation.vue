@@ -382,6 +382,7 @@ const { deduplicateTranslation } = useDeduplicate();
 const deduplicateDialogVisible = ref(false);
 const selectedProject = ref(getStoredDeduplicateProject());
 const isDeduplicating = ref(false);
+const isAutoDeduplicate = ref(false); // 标记是否为自动去重
 
 const handleDeduplicate = () => {
   // 检查是否有待翻译的文本
@@ -390,6 +391,8 @@ const handleDeduplicate = () => {
     return;
   }
 
+  // 设置为手动去重
+  isAutoDeduplicate.value = false;
   // 打开项目选择弹窗
   deduplicateDialogVisible.value = true;
 };
@@ -398,6 +401,7 @@ const handleDeduplicate = () => {
 const closeDeduplicateDialog = () => {
   deduplicateDialogVisible.value = false;
   isDeduplicating.value = false;
+  isAutoDeduplicate.value = false; // 重置自动去重标志
   // 保存项目选择
   if (selectedProject.value) {
     handleDeduplicateProjectChange(selectedProject.value);
@@ -432,10 +436,23 @@ const executeDeduplicate = async () => {
           remaining: result.remainingCount,
         })
       );
+
+      // 如果是自动去重，继续翻译流程
+      if (isAutoDeduplicate.value) {
+        // 关闭去重对话框
+        deduplicateDialogVisible.value = false;
+        // 继续翻译
+        await continueTranslation();
+      }
     } else {
       // 如果所有文本都被去重了，清空缓存
       clearCache();
       ElMessage.info(t("translation.allTextsDuplicated"));
+
+      // 如果是自动去重，关闭对话框
+      if (isAutoDeduplicate.value) {
+        deduplicateDialogVisible.value = false;
+      }
     }
 
     // 保存项目选择
@@ -563,12 +580,31 @@ const handleProjectSelectionChange = (event) => {
   selectedProject.value = event.detail.project;
 };
 
+// 处理自动去重对话框显示
+const handleShowAutoDeduplicateDialog = () => {
+  // 检查是否有待翻译的文本
+  if (!codeContent.value?.trim()) {
+    ElMessage.warning(t("translation.noTextToDeduplicate"));
+    return;
+  }
+
+  // 设置为自动去重
+  isAutoDeduplicate.value = true;
+  // 打开项目选择弹窗
+  deduplicateDialogVisible.value = true;
+};
+
 // 组件挂载时添加事件监听
 onMounted(() => {
   window.addEventListener("baselineKeyCleared", handleBaselineKeyCleared);
   window.addEventListener(
     "deduplicateProjectChanged",
     handleProjectSelectionChange
+  );
+  // 添加自动去重事件监听
+  window.addEventListener(
+    "showAutoDeduplicateDialog",
+    handleShowAutoDeduplicateDialog
   );
 });
 
@@ -578,6 +614,11 @@ onUnmounted(() => {
   window.removeEventListener(
     "deduplicateProjectChanged",
     handleProjectSelectionChange
+  );
+  // 移除自动去重事件监听
+  window.removeEventListener(
+    "showAutoDeduplicateDialog",
+    handleShowAutoDeduplicateDialog
   );
 });
 
@@ -631,6 +672,7 @@ const {
   userSuggestionVisible,
   getStatusText,
   handleTranslate,
+  continueTranslation,
   showLastTranslation,
   exportExcel,
   uploadToLokalise,

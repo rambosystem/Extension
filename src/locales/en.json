@@ -47,7 +47,7 @@
     "allDataDeleted": "All translation data has been deleted",
     "userSuggestionPlaceholder": "Please enter your suggestion",
     "deduplicate": "Deduplicate",
-    "selectProject": "Project Settings",
+    "selectProject": "Select Project",
     "selectProjectLabel": "Choose a project to check for duplicates",
     "noTextToDeduplicate": "No text to deduplicate. Please enter some text first.",
     "pleaseSelectProject": "Please select a project first",
@@ -58,7 +58,11 @@
     "remainingCount": "Remaining Texts",
     "deduplicateSuccess": "Deduplication completed! Found {duplicate} duplicates, {remaining} texts remaining.",
     "allTextsDuplicated": "All texts already exist in the selected project. No translation needed.",
-    "deduplicateFailed": "Deduplication failed. Please try again."
+    "deduplicateFailed": "Deduplication failed. Please try again.",
+    "pleaseSelectDeduplicateProject": "Please select a deduplication project in Settings first.",
+    "allTextsDuplicatedAuto": "All texts have been deduplicated. No translation needed.",
+    "autoDeduplicateSuccess": "Auto deduplication completed! Removed {duplicate} duplicates, {remaining} texts remaining for translation.",
+    "autoDeduplicateFailed": "Auto deduplication failed. Please check your settings and try again."
   },
   "settings": {
     "title": "Lokalise Settings",

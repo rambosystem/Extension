@@ -58,7 +58,11 @@
     "remainingCount": "剩余文本",
     "deduplicateSuccess": "去重完成！发现 {duplicate} 个重复文本，剩余 {remaining} 个文本。",
     "allTextsDuplicated": "所有文本在所选项目中已存在，无需翻译。",
-    "deduplicateFailed": "去重失败，请重试。"
+    "deduplicateFailed": "去重失败，请重试。",
+    "pleaseSelectDeduplicateProject": "请先在设置中选择去重项目。",
+    "allTextsDuplicatedAuto": "所有文本已被去重，无需翻译。",
+    "autoDeduplicateSuccess": "自动去重完成！已移除 {duplicate} 个重复文本，剩余 {remaining} 个文本待翻译。",
+    "autoDeduplicateFailed": "自动去重失败，请检查设置后重试。"
   },
   "settings": {
     "title": "Lokalise设置",

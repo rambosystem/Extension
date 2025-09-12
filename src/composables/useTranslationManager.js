@@ -1,5 +1,5 @@
 import { ref, reactive, onMounted, watch } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { useTranslation } from "./useTranslation.js";
 import { useExcelExport } from "./useExcelExport.js";
 import { useLokaliseUpload } from "./useLokaliseUpload.js";
@@ -7,6 +7,8 @@ import { useTranslationStorage } from "./useTranslationStorage.js";
 import { useTranslationCache } from "./useTranslationCache.js";
 import { useTableEditor } from "./useTableEditor.js";
 import { useI18n } from "./useI18n.js";
+import { useDeduplicate } from "./useDeduplicate.js";
+import { useSettings } from "./useSettings.js";
 
 const { t } = useI18n();
 
@@ -30,6 +32,8 @@ export function useTranslationManager() {
   const storage = useTranslationStorage();
   const cache = useTranslationCache();
   const editor = useTableEditor();
+  const deduplicate = useDeduplicate();
+  const settings = useSettings();
 
   // 监听输入内容变化，自动保存到缓存
   watch(
@@ -63,6 +67,45 @@ export function useTranslationManager() {
   };
 
   /**
+   * 触发自动去重项目选择对话框
+   * 通过事件通信与Translation组件交互
+   */
+  const triggerAutoDeduplicateDialog = () => {
+    // 触发自定义事件，通知Translation组件显示去重对话框
+    window.dispatchEvent(new CustomEvent("showAutoDeduplicateDialog"));
+  };
+
+  /**
+   * 继续翻译流程（在自动去重完成后调用）
+   */
+  const continueTranslation = async () => {
+    // ===== 正常流程阶段 =====
+
+    isTranslating.value = true; // 设置翻译中标志
+
+    try {
+      // 先弹出对话框，显示加载状态
+      dialogVisible.value = true;
+
+      // 执行翻译
+      const result = await translation.performTranslation(codeContent.value);
+
+      // 设置表格数据
+      editor.setTranslationResult(result);
+
+      // 提取纯数据并保存到存储
+      const translationData = translation.extractTranslationData(result);
+      storage.saveTranslationToLocal(translationData);
+    } catch (error) {
+      // 翻译失败时关闭对话框
+      dialogVisible.value = false;
+      console.error("Translation failed:", error);
+    } finally {
+      isTranslating.value = false; // 重置翻译中标志
+    }
+  };
+
+  /**
    * 执行翻译并处理结果
    */
   const handleTranslate = async () => {
@@ -89,30 +132,19 @@ export function useTranslationManager() {
       return;
     }
 
-    // ===== 正常流程阶段 =====
+    // ===== 自动去重检查阶段 =====
 
-    isTranslating.value = true; // 设置翻译中标志
+    // 检查是否启用了自动去重
+    const autoDeduplicationEnabled = settings.booleanStates.autoDeduplication;
 
-    try {
-      // 先弹出对话框，显示加载状态
-      dialogVisible.value = true;
-
-      // 执行翻译
-      const result = await translation.performTranslation(codeContent.value);
-
-      // 设置表格数据
-      editor.setTranslationResult(result);
-
-      // 提取纯数据并保存到存储
-      const translationData = translation.extractTranslationData(result);
-      storage.saveTranslationToLocal(translationData);
-    } catch (error) {
-      // 翻译失败时关闭对话框
-      dialogVisible.value = false;
-      console.error("Translation failed:", error);
-    } finally {
-      isTranslating.value = false; // 重置翻译中标志
+    if (autoDeduplicationEnabled) {
+      // 触发自动去重对话框
+      triggerAutoDeduplicateDialog();
+      return; // 等待用户选择项目后再继续翻译
     }
+
+    // ===== 正常流程阶段 =====
+    await continueTranslation();
   };
 
   /**
@@ -183,6 +215,7 @@ export function useTranslationManager() {
 
     // 主要操作方法
     handleTranslate,
+    continueTranslation,
     showLastTranslation,
     exportExcel,
     uploadToLokalise,
