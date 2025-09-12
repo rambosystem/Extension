@@ -45,7 +45,20 @@
     "deleteSuccess": "Deleted successfully",
     "confirmDelete": "Are you sure you want to delete this translation row?",
     "allDataDeleted": "All translation data has been deleted",
-    "userSuggestionPlaceholder": "Please enter your suggestion"
+    "userSuggestionPlaceholder": "Please enter your suggestion",
+    "deduplicate": "Deduplicate",
+    "selectProject": "Project Settings",
+    "selectProjectLabel": "Choose a project to check for duplicates",
+    "noTextToDeduplicate": "No text to deduplicate. Please enter some text first.",
+    "pleaseSelectProject": "Please select a project first",
+    "processing": "Processing...",
+    "startDeduplicate": "Deduplicate",
+    "originalCount": "Original Texts",
+    "duplicateCount": "Duplicates Found",
+    "remainingCount": "Remaining Texts",
+    "deduplicateSuccess": "Deduplication completed! Found {duplicate} duplicates, {remaining} texts remaining.",
+    "allTextsDuplicated": "All texts already exist in the selected project. No translation needed.",
+    "deduplicateFailed": "Deduplication failed. Please try again."
   },
   "settings": {
     "title": "Lokalise Settings",

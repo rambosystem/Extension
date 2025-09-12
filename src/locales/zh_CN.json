@@ -45,7 +45,20 @@
     "deleteSuccess": "行删除成功",
     "confirmDelete": "确定要删除这行翻译吗？",
     "allDataDeleted": "所有翻译数据已删除",
-    "userSuggestionPlaceholder": "请输入您的建议"
+    "userSuggestionPlaceholder": "请输入您的建议",
+    "deduplicate": "去重",
+    "selectProject": "选择项目",
+    "selectProjectLabel": "选择项目以检查重复文本",
+    "noTextToDeduplicate": "没有文本需要去重，请先输入一些文本。",
+    "pleaseSelectProject": "请先选择一个项目",
+    "processing": "处理中...",
+    "startDeduplicate": "开始",
+    "originalCount": "原始文本",
+    "duplicateCount": "发现重复",
+    "remainingCount": "剩余文本",
+    "deduplicateSuccess": "去重完成！发现 {duplicate} 个重复文本，剩余 {remaining} 个文本。",
+    "allTextsDuplicated": "所有文本在所选项目中已存在，无需翻译。",
+    "deduplicateFailed": "去重失败，请重试。"
   },
   "settings": {
     "title": "Lokalise设置",

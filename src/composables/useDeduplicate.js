@@ -1,0 +1,120 @@
+import { ref } from "vue";
+import { ElMessage } from "element-plus";
+import {
+  fetchCdnTranslations,
+  extractEnglishTexts,
+  isTextInCdn,
+} from "../requests/cdn.js";
+import { useI18n } from "./useI18n.js";
+
+const { t } = useI18n();
+
+/**
+ * 去重功能管理Hook
+ */
+export function useDeduplicate() {
+  const isProcessing = ref(false);
+
+  /**
+   * 执行去重操作
+   * @param {string} project - 项目名称
+   * @param {string} textContent - 待翻译的文本内容
+   * @returns {Promise<Object>} 去重结果
+   */
+  const deduplicateTranslation = async (project, textContent) => {
+    if (!project || !textContent?.trim()) {
+      throw new Error("Invalid parameters for deduplication");
+    }
+
+    isProcessing.value = true;
+
+    try {
+      // 1. 获取CDN翻译数据
+      const translations = await fetchCdnTranslations(project);
+
+      // 2. 提取所有英文文本
+      const cdnTexts = extractEnglishTexts(translations);
+
+      // 3. 分割待翻译文本
+      const textLines = textContent
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+      // 4. 执行去重
+      const result = performDeduplication(textLines, cdnTexts);
+
+      return result;
+    } catch (error) {
+      console.error("Deduplication failed:", error);
+      throw error;
+    } finally {
+      isProcessing.value = false;
+    }
+  };
+
+  /**
+   * 执行去重逻辑
+   * @param {Array<string>} textLines - 待翻译的文本行
+   * @param {Set<string>} cdnTexts - CDN中的文本集合
+   * @returns {Object} 去重结果
+   */
+  const performDeduplication = (textLines, cdnTexts) => {
+    const originalCount = textLines.length;
+    const duplicateTexts = [];
+    const remainingTexts = [];
+
+    console.log("Text lines to check:", textLines);
+    console.log("CDN texts sample:", Array.from(cdnTexts).slice(0, 10));
+
+    for (const text of textLines) {
+      const isDuplicate = isTextInCdn(text, cdnTexts);
+      console.log(
+        `Checking "${text}": ${isDuplicate ? "DUPLICATE" : "UNIQUE"}`
+      );
+
+      if (isDuplicate) {
+        duplicateTexts.push(text);
+      } else {
+        remainingTexts.push(text);
+      }
+    }
+
+    return {
+      originalCount,
+      duplicateCount: duplicateTexts.length,
+      remainingCount: remainingTexts.length,
+      duplicateTexts,
+      remainingTexts,
+      cdnTextCount: cdnTexts.size,
+    };
+  };
+
+  /**
+   * 获取CDN数据统计信息
+   * @param {string} project - 项目名称
+   * @returns {Promise<Object>} CDN数据统计
+   */
+  const getCdnStats = async (project) => {
+    try {
+      const translations = await fetchCdnTranslations(project);
+      const cdnTexts = extractEnglishTexts(translations);
+
+      return {
+        project,
+        totalKeys: Object.keys(translations).length,
+        totalTexts: cdnTexts.size,
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Failed to get CDN stats:", error);
+      throw error;
+    }
+  };
+
+  return {
+    isProcessing,
+    deduplicateTranslation,
+    getCdnStats,
+  };
+}

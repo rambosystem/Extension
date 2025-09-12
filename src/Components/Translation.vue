@@ -26,6 +26,9 @@
           <el-button style="min-width: 90px" @click="handleClear">
             {{ t("common.clear") }}
           </el-button>
+          <el-button style="min-width: 90px" @click="handleDeduplicate">
+            {{ t("translation.deduplicate") }}
+          </el-button>
           <el-button
             type="primary"
             @click="handleTranslate"
@@ -293,6 +296,58 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 去重项目选择弹窗 -->
+    <el-dialog
+      v-model="deduplicateDialogVisible"
+      :title="t('translation.selectProject')"
+      width="400px"
+      top="30vh"
+      :close-on-click-modal="!isDeduplicating"
+      :close-on-press-escape="!isDeduplicating"
+      v-loading="isDeduplicating"
+      element-loading-text="Processing deduplication..."
+      element-loading-spinner="el-icon-loading"
+    >
+      <el-form label-position="top">
+        <el-form-item>
+          <el-select
+            v-model="selectedProject"
+            placeholder="Project"
+            style="width: 100%"
+            :disabled="isDeduplicating"
+          >
+            <el-option label="AmazonSearch" value="AmazonSearch" />
+            <el-option label="Common" value="Common" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button
+            @click="closeDeduplicateDialog"
+            :disabled="isDeduplicating"
+            style="min-width: 90px"
+          >
+            {{ t("common.cancel") }}
+          </el-button>
+          <el-button
+            type="primary"
+            style="min-width: 90px"
+            @click="executeDeduplicate"
+            :disabled="!selectedProject || isDeduplicating"
+            :loading="isDeduplicating"
+          >
+            {{
+              isDeduplicating
+                ? t("translation.processing")
+                : t("translation.startDeduplicate")
+            }}
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -302,10 +357,79 @@ import EditableCell from "./EditableCell.vue";
 import { useTranslationManager } from "../composables/useTranslationManager.js";
 import { useI18n } from "../composables/useI18n.js";
 import { useSettings } from "../composables/useSettings.js";
+import { useDeduplicate } from "../composables/useDeduplicate.js";
 import { ref, watch, onMounted, onUnmounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { MoreFilled } from "@element-plus/icons-vue";
 const { t } = useI18n();
+
+// 使用去重功能
+const { deduplicateTranslation } = useDeduplicate();
+
+// 去重相关状态
+const deduplicateDialogVisible = ref(false);
+const selectedProject = ref("");
+const isDeduplicating = ref(false);
+
+const handleDeduplicate = () => {
+  // 检查是否有待翻译的文本
+  if (!codeContent.value?.trim()) {
+    ElMessage.warning(t("translation.noTextToDeduplicate"));
+    return;
+  }
+
+  // 打开项目选择弹窗
+  deduplicateDialogVisible.value = true;
+  selectedProject.value = "";
+};
+
+// 关闭去重弹窗
+const closeDeduplicateDialog = () => {
+  deduplicateDialogVisible.value = false;
+  selectedProject.value = "";
+  isDeduplicating.value = false;
+};
+
+// 执行去重操作
+const executeDeduplicate = async () => {
+  if (!selectedProject.value) {
+    ElMessage.warning(t("translation.pleaseSelectProject"));
+    return;
+  }
+
+  isDeduplicating.value = true;
+
+  try {
+    const result = await deduplicateTranslation(
+      selectedProject.value,
+      codeContent.value
+    );
+
+    // 无论是否有剩余文本，都要更新文本框内容
+    console.log("Before update - codeContent:", codeContent.value);
+    console.log("Remaining texts:", result.remainingTexts);
+    codeContent.value = result.remainingTexts.join("\n");
+    console.log("After update - codeContent:", codeContent.value);
+
+    if (result.remainingCount > 0) {
+      ElMessage.success(
+        t("translation.deduplicateSuccess", {
+          duplicate: result.duplicateCount,
+          remaining: result.remainingCount,
+        })
+      );
+    } else {
+      // 如果所有文本都被去重了，清空缓存
+      clearCache();
+      ElMessage.info(t("translation.allTextsDuplicated"));
+    }
+  } catch (error) {
+    console.error("Deduplication failed:", error);
+    ElMessage.error(t("translation.deduplicateFailed"));
+  } finally {
+    isDeduplicating.value = false;
+  }
+};
 
 const handleRetranslationAndModify = () => {
   userSuggestionVisible.value = true;
