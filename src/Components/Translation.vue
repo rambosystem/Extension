@@ -202,12 +202,18 @@
             <el-button @click="dialogVisible = false">{{
               t("common.cancel")
             }}</el-button>
-            <el-button type="primary" @click="exportExcel">{{
-              t("translation.exportExcel")
-            }}</el-button>
-            <el-button type="primary" @click="uploadToLokalise">{{
-              t("translation.uploadToLokalise")
-            }}</el-button>
+            <el-button
+              type="primary"
+              @click="exportExcel"
+              :disabled="isTranslating"
+              >{{ t("translation.exportExcel") }}</el-button
+            >
+            <el-button
+              type="primary"
+              @click="uploadToLokalise"
+              :disabled="isTranslating"
+              >{{ t("translation.uploadToLokalise") }}</el-button
+            >
           </div>
         </el-form-item>
       </el-form>
@@ -670,6 +676,7 @@ const {
   currentStatus,
   userSuggestion,
   userSuggestionVisible,
+  isTranslating,
   getStatusText,
   handleTranslate,
   continueTranslation,

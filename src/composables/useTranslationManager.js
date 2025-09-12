@@ -203,6 +203,9 @@ export function useTranslationManager() {
     userSuggestion,
     userSuggestionVisible,
 
+    // 翻译状态
+    isTranslating,
+
     // 翻译结果数据
     translationResult: editor.translationResult,
 
