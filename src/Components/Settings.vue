@@ -29,6 +29,30 @@
         />
       </el-form-item>
 
+      <el-form-item
+        :label="t('settings.autoDeduplication')"
+        label-position="top"
+      >
+        <el-card
+          shadow="never"
+          style="width: 100%"
+          body-style="padding: 16px 20px; cursor: pointer;"
+          @click="handleAutoDeduplicationClick"
+        >
+          <div class="auto-deduplication">
+            <span class="auto-deduplication-text">{{
+              t("settings.autoDeduplicationLabel")
+            }}</span>
+            <el-switch
+              :model-value="booleanStates.autoDeduplication"
+              @update:model-value="handleAutoDeduplicationChange"
+              @click.stop
+              width="45px"
+            />
+          </div>
+        </el-card>
+      </el-form-item>
+
       <div class="embedding-control">
         <el-form-item
           :label="t('settings.AdTerms')"
@@ -256,6 +280,7 @@ const {
   handleClearLocalStorage,
   handleClearLocalStorageConfirm,
   handleTranslationPromptChange,
+  handleAutoDeduplicationChange,
   handleLanguageChange,
   handleSimilarityThresholdChange,
   handleTopKChange,
@@ -271,6 +296,17 @@ const handleTranslationPromptClick = (event) => {
   // 切换开关状态
   const newState = !booleanStates.translationPrompt;
   handleTranslationPromptChange(newState);
+};
+
+// 处理自动去重卡片的点击事件
+const handleAutoDeduplicationClick = (event) => {
+  // 如果点击的是开关本身，不处理
+  if (event.target.closest(".el-switch")) {
+    return;
+  }
+  // 切换开关状态
+  const newState = !booleanStates.autoDeduplication;
+  handleAutoDeduplicationChange(newState);
 };
 
 const formRef = ref();
@@ -431,6 +467,18 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
 }
 
 .custom-translation-prompt-text {
+  font-weight: 500;
+  font-size: 16px;
+  color: #606266;
+}
+
+.auto-deduplication {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auto-deduplication-text {
   font-weight: 500;
   font-size: 16px;
   color: #606266;

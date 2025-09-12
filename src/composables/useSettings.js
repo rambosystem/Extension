@@ -17,6 +17,7 @@ export function useSettings() {
     lokaliseProjects: "lokalise_projects",
     prompt: "custom_translation_prompt",
     translationPrompt: "translation_prompt_enabled",
+    autoDeduplication: "auto_deduplication_enabled",
     language: "app_language",
     similarityThreshold: "termMatch_similarity_threshold",
     topK: "termMatch_top_k",
@@ -31,6 +32,7 @@ export function useSettings() {
     topK: 10,
     maxNGram: 3,
     translationPrompt: true,
+    autoDeduplication: false,
     language: "en",
     adTerms: true,
     excelBaselineKey: "",
@@ -114,6 +116,15 @@ export function useSettings() {
       ? storedTranslationPrompt === "true" || storedTranslationPrompt === true
       : DEFAULT_VALUES.translationPrompt;
 
+  // 立即加载存储的自动去重状态
+  const storedAutoDeduplication = getFromStorage(
+    STORAGE_KEYS.autoDeduplication
+  );
+  const initialAutoDeduplication =
+    storedAutoDeduplication !== undefined
+      ? storedAutoDeduplication === "true" || storedAutoDeduplication === true
+      : DEFAULT_VALUES.autoDeduplication;
+
   // 初始化composables
   const {
     loadingStates,
@@ -131,6 +142,7 @@ export function useSettings() {
     // 布尔状态
     isCodeEditing: false,
     translationPrompt: initialTranslationPrompt, // 使用存储的值初始化
+    autoDeduplication: initialAutoDeduplication, // 使用存储的值初始化
     adTerms: DEFAULT_VALUES.adTerms, // Public Terms Library状态
     // 字符串状态
     apiKey: "",
@@ -275,6 +287,13 @@ export function useSettings() {
         "boolean"
       );
 
+      // 确保Auto Deduplication状态重置为默认值
+      setState(
+        "autoDeduplication",
+        DEFAULT_VALUES.autoDeduplication,
+        "boolean"
+      );
+
       // 重置Excel Baseline Key到默认值
       excelBaselineKey.value = DEFAULT_VALUES.excelBaselineKey;
 
@@ -303,6 +322,26 @@ export function useSettings() {
       setState("translationPrompt", enabled, "boolean");
     } catch (error) {
       console.error("Translation prompt change failed:", error);
+      ElMessage.error(error.message || t("settings.saveFailed"));
+    }
+  };
+
+  /**
+   * 处理自动去重开关状态变化
+   */
+  const handleAutoDeduplicationChange = (enabled) => {
+    try {
+      const saved = saveToStorage(
+        STORAGE_KEYS.autoDeduplication,
+        enabled ? "true" : "false"
+      );
+      if (!saved) {
+        throw new Error("Failed to save auto deduplication setting");
+      }
+
+      setState("autoDeduplication", enabled, "boolean");
+    } catch (error) {
+      console.error("Auto deduplication change failed:", error);
       ElMessage.error(error.message || t("settings.saveFailed"));
     }
   };
@@ -503,6 +542,14 @@ export function useSettings() {
         : DEFAULT_VALUES.translationPrompt;
     setState("translationPrompt", translationPromptEnabled, "boolean");
 
+    // 处理自动去重开关状态
+    const storedAutoDeduplication = settings.autoDeduplication;
+    const autoDeduplicationEnabled =
+      storedAutoDeduplication !== undefined
+        ? storedAutoDeduplication === "true" || storedAutoDeduplication === true
+        : DEFAULT_VALUES.autoDeduplication;
+    setState("autoDeduplication", autoDeduplicationEnabled, "boolean");
+
     // 处理Public Terms Library开关状态
     const storedAdTerms = settings.adTerms;
     const adTermsEnabled =
@@ -581,6 +628,7 @@ export function useSettings() {
     handleClearLocalStorage,
     handleClearLocalStorageConfirm,
     handleTranslationPromptChange,
+    handleAutoDeduplicationChange,
     handleLanguageChange,
     handleSimilarityThresholdChange,
     handleTopKChange,

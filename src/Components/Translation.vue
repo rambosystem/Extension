@@ -26,7 +26,11 @@
           <el-button style="min-width: 90px" @click="handleClear">
             {{ t("common.clear") }}
           </el-button>
-          <el-button style="min-width: 90px" @click="handleDeduplicate">
+          <el-button
+            v-if="!booleanStates.autoDeduplication"
+            style="min-width: 90px"
+            @click="handleDeduplicate"
+          >
             {{ t("translation.deduplicate") }}
           </el-button>
           <el-button
@@ -362,6 +366,9 @@ import { ref, watch, onMounted, onUnmounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { MoreFilled } from "@element-plus/icons-vue";
 const { t } = useI18n();
+
+// 使用设置管理
+const { booleanStates } = useSettings();
 
 // 使用去重功能
 const { deduplicateTranslation } = useDeduplicate();
