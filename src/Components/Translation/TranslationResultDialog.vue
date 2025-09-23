@@ -62,18 +62,16 @@
                     </el-table-column>
                 </el-table>
             </el-form-item>
-            <el-form-item>
-                <div class="dialog-button-container">
-                    <el-button @click="dialogVisible = false">{{
-                        t("common.cancel")
-                    }}</el-button>
-                    <el-button type="primary" @click="exportExcel" :disabled="isTranslating">{{
-                        t("translation.exportExcel")
-                    }}</el-button>
-                    <el-button type="primary" @click="uploadToLokalise" :disabled="isTranslating">{{
-                        t("translation.uploadToLokalise") }}</el-button>
-                </div>
-            </el-form-item>
+            <div class="dialog-button-container">
+                <el-button @click="dialogVisible = false">{{
+                    t("common.cancel")
+                }}</el-button>
+                <el-button type="primary" @click="exportExcel" :disabled="isTranslating">{{
+                    t("translation.exportExcel")
+                }}</el-button>
+                <el-button type="primary" @click="uploadToLokalise" :disabled="isTranslating">{{
+                    t("translation.uploadToLokalise") }}</el-button>
+            </div>
         </el-form>
     </el-dialog>
 </template>
