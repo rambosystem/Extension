@@ -1,7 +1,7 @@
 // terms.js - Terms API 请求管理
 
-const API_BASE_URL = 'http://43.142.250.179:8000';
-const Public_Account_ID = '1'
+const API_BASE_URL = "http://43.142.250.179:8000";
+const Public_Account_ID = "1";
 
 /**
  * 获取用户terms状态信息
@@ -10,38 +10,40 @@ const Public_Account_ID = '1'
  */
 export async function fetchUserTermsStatus() {
   try {
-    console.log('fetchUserTermsStatus');
-    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms/status`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/users/${Public_Account_ID}/terms/status`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Terms Status API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
-        }`
+        `Terms Status API request failed: ${response.status} ${
+          response.statusText
+        }. ${errorData.error?.message || errorData.message || ""}`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Terms Status API');
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response format from Terms Status API");
     }
 
     // 验证必需的字段
-    if (typeof data.total_terms !== 'number') {
-      throw new Error('total_terms field is missing or invalid');
+    if (typeof data.total_terms !== "number") {
+      throw new Error("total_terms field is missing or invalid");
     }
 
     return data;
   } catch (error) {
-    console.error('Failed to fetch user terms status:', error);
+    console.error("Failed to fetch user terms status:", error);
     throw error;
   }
 }
@@ -53,60 +55,63 @@ export async function fetchUserTermsStatus() {
  */
 export async function fetchUserTerms() {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/users/${Public_Account_ID}/terms`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         `Terms API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
+          errorData.error?.message || errorData.message || ""
         }`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Terms API');
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response format from Terms API");
     }
 
     if (!Array.isArray(data.terms)) {
-      throw new Error('Terms data is not an array');
+      throw new Error("Terms data is not an array");
     }
 
     // 验证每个term对象的格式
     for (let i = 0; i < data.terms.length; i++) {
       const term = data.terms[i];
-      if (!term || typeof term !== 'object') {
+      if (!term || typeof term !== "object") {
         throw new Error(`Term at index ${i} is not an object`);
       }
-      
+
       // 验证必需的字段
-      if (typeof term.term_id !== 'number') {
+      if (typeof term.term_id !== "number") {
         throw new Error(`term_id field is missing or invalid at index ${i}`);
       }
-      if (!term.en || typeof term.en !== 'string') {
+      if (!term.en || typeof term.en !== "string") {
         throw new Error(`en field is missing or invalid at index ${i}`);
       }
-      
+
       // 验证可选字段（如果存在）
-      if (term.cn !== undefined && typeof term.cn !== 'string') {
+      if (term.cn !== undefined && typeof term.cn !== "string") {
         throw new Error(`cn field must be a string at index ${i}`);
       }
-      if (term.jp !== undefined && typeof term.jp !== 'string') {
+      if (term.jp !== undefined && typeof term.jp !== "string") {
         throw new Error(`jp field must be a string at index ${i}`);
       }
     }
 
     return data;
   } catch (error) {
-    console.error('Failed to fetch user terms:', error);
+    console.error("Failed to fetch user terms:", error);
     throw error;
   }
 }
@@ -128,74 +133,77 @@ export async function addUserTerms(termsData) {
   try {
     // 验证输入数据格式
     if (!Array.isArray(termsData)) {
-      throw new Error('Terms data must be an array');
+      throw new Error("Terms data must be an array");
     }
 
     // 验证每个term项的格式
     for (const term of termsData) {
-      if (!term || typeof term !== 'object') {
-        throw new Error('Each term must be an object');
+      if (!term || typeof term !== "object") {
+        throw new Error("Each term must be an object");
       }
       if (!term.en || !term.en.trim()) {
-        throw new Error('Each term must have a non-empty en property');
+        throw new Error("Each term must have a non-empty en property");
       }
     }
 
-    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(termsData),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/users/${Public_Account_ID}/terms`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(termsData),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Add terms API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
-        }`
+        `Add terms API request failed: ${response.status} ${
+          response.statusText
+        }. ${errorData.error?.message || errorData.message || ""}`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Add Terms API');
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response format from Add Terms API");
     }
 
     if (!Array.isArray(data.terms)) {
-      throw new Error('Terms data is not an array');
+      throw new Error("Terms data is not an array");
     }
 
     // 验证每个term对象的格式
     for (let i = 0; i < data.terms.length; i++) {
       const term = data.terms[i];
-      if (!term || typeof term !== 'object') {
+      if (!term || typeof term !== "object") {
         throw new Error(`Term at index ${i} is not an object`);
       }
-      
+
       // 验证必需的字段
-      if (typeof term.term_id !== 'number') {
+      if (typeof term.term_id !== "number") {
         throw new Error(`term_id field is missing or invalid at index ${i}`);
       }
-      if (!term.en || typeof term.en !== 'string') {
+      if (!term.en || typeof term.en !== "string") {
         throw new Error(`en field is missing or invalid at index ${i}`);
       }
-      
+
       // 验证可选字段（如果存在）
-      if (term.cn !== undefined && typeof term.cn !== 'string') {
+      if (term.cn !== undefined && typeof term.cn !== "string") {
         throw new Error(`cn field must be a string at index ${i}`);
       }
-      if (term.jp !== undefined && typeof term.jp !== 'string') {
+      if (term.jp !== undefined && typeof term.jp !== "string") {
         throw new Error(`jp field must be a string at index ${i}`);
       }
     }
 
     return data;
   } catch (error) {
-    console.error('Failed to add user terms:', error);
+    console.error("Failed to add user terms:", error);
     throw error;
   }
 }
@@ -207,52 +215,60 @@ export async function addUserTerms(termsData) {
  */
 export async function fetchUserEmbeddingStatus() {
   try {
-    console.log('fetchUserEmbeddingStatus');
-    const response = await fetch(`${API_BASE_URL}/term-match/status/${Public_Account_ID}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/term-match/status/${Public_Account_ID}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Term-match Status API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
-        }`
+        `Term-match Status API request failed: ${response.status} ${
+          response.statusText
+        }. ${errorData.error?.message || errorData.message || ""}`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Term-match Status API');
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response format from Term-match Status API");
     }
 
     // 验证必需的字段
-    if (!data.user_id || typeof data.user_id !== 'number') {
-      throw new Error('user_id field is missing or invalid');
+    if (!data.user_id || typeof data.user_id !== "number") {
+      throw new Error("user_id field is missing or invalid");
     }
 
     // 新API使用index_status而不是embedding_status
-    if (!data.index_status || typeof data.index_status !== 'string') {
-      throw new Error('index_status field is missing or invalid');
+    if (!data.index_status || typeof data.index_status !== "string") {
+      throw new Error("index_status field is missing or invalid");
     }
 
-    if (data.last_build_time !== null && data.last_build_time !== undefined && typeof data.last_build_time !== 'string') {
-      throw new Error('last_build_time field must be a string or null/undefined');
+    if (
+      data.last_build_time !== null &&
+      data.last_build_time !== undefined &&
+      typeof data.last_build_time !== "string"
+    ) {
+      throw new Error(
+        "last_build_time field must be a string or null/undefined"
+      );
     }
 
     // 为了保持向后兼容，将index_status映射为embedding_status
     return {
       user_id: data.user_id,
       embedding_status: data.index_status,
-      last_embedding_time: data.last_build_time
+      last_embedding_time: data.last_build_time,
     };
   } catch (error) {
-    console.error('Failed to fetch user embedding status:', error);
+    console.error("Failed to fetch user embedding status:", error);
     throw error;
   }
 }
@@ -264,51 +280,55 @@ export async function fetchUserEmbeddingStatus() {
  */
 export async function rebuildUserEmbedding() {
   try {
-    console.log('rebuildUserEmbedding');
-    const response = await fetch(`${API_BASE_URL}/term-match/build/user/${Public_Account_ID}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/term-match/build/user/${Public_Account_ID}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       // 特殊处理 409 状态码
       if (response.status === 409) {
-        throw new Error('Index Processing, please try again later');
+        throw new Error("Index Processing, please try again later");
       }
-      
+
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Rebuild term-match index API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
-        }`
+        `Rebuild term-match index API request failed: ${response.status} ${
+          response.statusText
+        }. ${errorData.error?.message || errorData.message || ""}`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Rebuild Term-match Index API');
+    if (!data || typeof data !== "object") {
+      throw new Error(
+        "Invalid response format from Rebuild Term-match Index API"
+      );
     }
 
     // 验证必需的字段
-    if (!data.message || typeof data.message !== 'string') {
-      throw new Error('message field is missing or invalid');
+    if (!data.message || typeof data.message !== "string") {
+      throw new Error("message field is missing or invalid");
     }
 
-    if (!data.user_id || typeof data.user_id !== 'number') {
-      throw new Error('user_id field is missing or invalid');
+    if (!data.user_id || typeof data.user_id !== "number") {
+      throw new Error("user_id field is missing or invalid");
     }
 
-    if (!data.status || typeof data.status !== 'string') {
-      throw new Error('status field is missing or invalid');
+    if (!data.status || typeof data.status !== "string") {
+      throw new Error("status field is missing or invalid");
     }
 
     return data;
   } catch (error) {
-    console.error('Failed to rebuild user embedding:', error);
+    console.error("Failed to rebuild user embedding:", error);
     throw error;
   }
 }
@@ -320,31 +340,31 @@ export async function rebuildUserEmbedding() {
 export async function updateIndex() {
   try {
     const response = await fetch(`${API_BASE_URL}/term-match/update-index`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Update Index API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
-        }`
+        `Update Index API request failed: ${response.status} ${
+          response.statusText
+        }. ${errorData.error?.message || errorData.message || ""}`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Update Index API');
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response format from Update Index API");
     }
 
     return data;
   } catch (error) {
-    console.error('Failed to update index:', error);
+    console.error("Failed to update index:", error);
     throw error;
   }
 }
@@ -358,20 +378,20 @@ export async function deleteTermIndex(termIds) {
   try {
     // 验证输入参数
     if (!Array.isArray(termIds)) {
-      throw new Error('Term IDs must be an array');
+      throw new Error("Term IDs must be an array");
     }
 
     // 验证每个term ID
     for (let i = 0; i < termIds.length; i++) {
-      if (typeof termIds[i] !== 'number' || termIds[i] <= 0) {
+      if (typeof termIds[i] !== "number" || termIds[i] <= 0) {
         throw new Error(`Term ID at index ${i} must be a positive number`);
       }
     }
 
     const response = await fetch(`${API_BASE_URL}/term-match/terms`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(termIds),
     });
@@ -379,22 +399,22 @@ export async function deleteTermIndex(termIds) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Delete Term Index API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
-        }`
+        `Delete Term Index API request failed: ${response.status} ${
+          response.statusText
+        }. ${errorData.error?.message || errorData.message || ""}`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Delete Term Index API');
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response format from Delete Term Index API");
     }
 
     return data;
   } catch (error) {
-    console.error('Failed to delete term index:', error);
+    console.error("Failed to delete term index:", error);
     throw error;
   }
 }
@@ -407,31 +427,34 @@ export async function deleteTermIndex(termIds) {
 export async function deleteUserTerm(termId) {
   try {
     // 验证输入参数
-    if (typeof termId !== 'number' || termId <= 0) {
-      throw new Error('Term ID must be a positive number');
+    if (typeof termId !== "number" || termId <= 0) {
+      throw new Error("Term ID must be a positive number");
     }
 
-    const response = await fetch(`${API_BASE_URL}/users/${Public_Account_ID}/terms/${termId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/users/${Public_Account_ID}/terms/${termId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `Delete term API request failed: ${response.status} ${response.statusText}. ${
-          errorData.error?.message || errorData.message || ''
-        }`
+        `Delete term API request failed: ${response.status} ${
+          response.statusText
+        }. ${errorData.error?.message || errorData.message || ""}`
       );
     }
 
     const data = await response.json();
-    
+
     // 验证返回的数据格式
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from Delete Term API');
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response format from Delete Term API");
     }
 
     // 删除接口返回成功消息格式
@@ -440,7 +463,7 @@ export async function deleteUserTerm(termId) {
       return {
         success: true,
         message: data.message,
-        term_id: data.term_id
+        term_id: data.term_id,
       };
     }
 
@@ -450,9 +473,9 @@ export async function deleteUserTerm(termId) {
     }
 
     // 其他情况抛出错误
-    throw new Error('Unexpected response format from Delete Term API');
+    throw new Error("Unexpected response format from Delete Term API");
   } catch (error) {
-    console.error('Failed to delete user term:', error);
+    console.error("Failed to delete user term:", error);
     throw error;
   }
 }

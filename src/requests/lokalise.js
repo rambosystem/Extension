@@ -66,12 +66,7 @@ export async function translate(content, onStatusUpdate = null) {
 
       let matchedTerms;
       try {
-        console.log("Starting term matching...");
         matchedTerms = await matchTerms(textLines, matchOptions);
-        console.log(
-          "Term matching completed, found terms:",
-          matchedTerms ? matchedTerms.length : 0
-        );
       } catch (error) {
         console.error("Term matching error in lokalise.js:", error);
         // 如果术语匹配失败，继续翻译但不使用术语
@@ -88,11 +83,6 @@ export async function translate(content, onStatusUpdate = null) {
 
       // 如果有匹配成功的术语，需要将术语信息传递给 DeepSeek 服务
       if (matchedTerms && matchedTerms.length > 0) {
-        console.log(
-          "Adding matched terms to translation, count:",
-          matchedTerms.length
-        );
-
         // 构建术语库文本并添加到内容中
         let termsText =
           "这里提供可供参考的术语库，如果匹配到术语请根据术语库翻译文本：\n";
@@ -103,7 +93,6 @@ export async function translate(content, onStatusUpdate = null) {
         // 将术语信息添加到翻译内容中
         content = termsText + "\n\n需要翻译的文本：\n" + content;
       } else {
-        console.log("No matched terms found");
       }
     } catch (error) {
       // 术语匹配失败，继续翻译但不使用术语

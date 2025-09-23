@@ -65,9 +65,6 @@ export function useDeduplicate() {
     const remainingTexts = [];
     const seenTexts = new Set(); // 用于跟踪已处理的文本
 
-    console.log("Text lines to check:", textLines);
-    console.log("CDN texts sample:", Array.from(cdnTexts).slice(0, 10));
-
     for (const text of textLines) {
       // 检查是否在输入文本中重复（内部重复）
       const isInternalDuplicate = seenTexts.has(text);
@@ -77,14 +74,6 @@ export function useDeduplicate() {
 
       // 如果文本重复（内部重复或CDN重复），则标记为重复
       const isDuplicate = isInternalDuplicate || isCdnDuplicate;
-
-      console.log(
-        `Checking "${text}": ${
-          isInternalDuplicate ? "INTERNAL_DUPLICATE" : ""
-        } ${isCdnDuplicate ? "CDN_DUPLICATE" : ""} ${
-          isDuplicate ? "DUPLICATE" : "UNIQUE"
-        }`
-      );
 
       if (isDuplicate) {
         duplicateTexts.push(text);

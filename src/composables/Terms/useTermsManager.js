@@ -200,7 +200,6 @@ export function useTermsManager() {
       // 调用增量索引更新
       try {
         await updateIndex();
-        console.log("Index updated successfully after adding terms");
       } catch (indexError) {
         console.warn("Failed to update index after adding terms:", indexError);
         // 不抛出错误，因为索引更新失败不应该影响terms添加的成功
@@ -243,7 +242,6 @@ export function useTermsManager() {
       // 调用删除term索引
       try {
         await deleteTermIndex([termId]);
-        console.log("Term index deleted successfully");
       } catch (indexError) {
         console.warn("Failed to delete term index:", indexError);
         // 不抛出错误，因为索引删除失败不应该影响term删除的成功

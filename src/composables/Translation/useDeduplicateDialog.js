@@ -54,10 +54,7 @@ export function useDeduplicateDialog() {
       );
 
       // 无论是否有剩余文本，都要更新文本框内容
-      console.log("Before update - codeContent:", codeContent);
-      console.log("Remaining texts:", result.remainingTexts);
       const remainingTexts = result.remainingTexts.join("\n");
-      console.log("After update - codeContent:", remainingTexts);
 
       if (result.remainingCount > 0) {
         ElMessage.success(

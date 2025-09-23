@@ -134,12 +134,16 @@ import { Setting, Loading } from "@element-plus/icons-vue";
 import { ref, computed, watch } from "vue";
 import EditableCell from "../Common/EditableCell.vue";
 import { useTermsManager } from "../../composables/Terms/useTermsManager.js";
+import { useTermsStore } from "../../stores/terms.js";
 import { Search } from "@element-plus/icons-vue";
 import { deleteTermIndex } from "../../requests/terms.js";
 
 
 const { t } = useI18n();
 const { deleteTerm, addTerms } = useTermsManager();
+
+// 使用Terms Store
+const termsStore = useTermsStore();
 
 const props = defineProps({
     title: {
@@ -436,7 +440,6 @@ const handleSaveTerm = async (row) => {
             if (result.terms && result.terms.length > 0) {
                 const savedTerm = result.terms[0];
                 row.term_id = savedTerm.term_id;
-                console.log('Term ID updated after creation:', row.term_id);
             }
         }
 

@@ -1,29 +1,33 @@
 <template>
-    <el-dialog :modelValue="dialogVisible" @update:modelValue="$emit('update:dialogVisible', $event)"
+    <el-dialog :modelValue="translationStore.dialogVisible" @update:modelValue="translationStore.setDialogVisible"
         :title="t('translation.translationResult')" width="70%">
         <el-form label-position="top">
             <el-form-item>
-                <el-table :data="translationResult" style="width: 100%" height="450" empty-text=""
-                    v-loading="loadingStates.translation" :element-loading-text="getStatusText()">
+                <el-table :data="translationStore.translationResult" style="width: 100%" height="450" empty-text=""
+                    v-loading="translationStore.loadingStates.translation"
+                    :element-loading-text="translationStore.getStatusText()">
                     <el-table-column prop="en" label="EN">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.en" :isEditing="row.editing_en"
-                                @enterEdit="enterEditMode($index, 'en')" @exitEdit="row.editing_en = false"
-                                @update:value="row.en = $event" />
+                                @enterEdit="translationStore.enterEditMode($index, 'en')"
+                                @exitEdit="row.editing_en = false" @update:value="row.en = $event"
+                                @save="() => handleSaveTranslation($index)" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="cn" label="CN">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.cn" :isEditing="row.editing_cn"
-                                @enterEdit="enterEditMode($index, 'cn')" @exitEdit="row.editing_cn = false"
-                                @update:value="row.cn = $event" />
+                                @enterEdit="translationStore.enterEditMode($index, 'cn')"
+                                @exitEdit="row.editing_cn = false" @update:value="row.cn = $event"
+                                @save="() => handleSaveTranslation($index)" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="jp" label="JP">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.jp" :isEditing="row.editing_jp"
-                                @enterEdit="enterEditMode($index, 'jp')" @exitEdit="row.editing_jp = false"
-                                @update:value="row.jp = $event" />
+                                @enterEdit="translationStore.enterEditMode($index, 'jp')"
+                                @exitEdit="row.editing_jp = false" @update:value="row.jp = $event"
+                                @save="() => handleSaveTranslation($index)" />
                         </template>
                     </el-table-column>
                     <el-table-column fixed="right" :label="t('common.operation')" width="120">
@@ -31,28 +35,28 @@
                             <div class="operation-container">
                                 <el-popover trigger="hover" placement="right-start" :show-arrow="false" :offset="5"
                                     width="auto" popper-style="padding: 8px 0;  min-width: 250px;"
-                                    @hide="handlePopoverHide">
+                                    @hide="translationStore.handlePopoverHide">
                                     <template #reference>
                                         <el-icon>
                                             <MoreFilled />
                                         </el-icon>
                                     </template>
-                                    <div class="user-suggestion" v-if="userSuggestionVisible">
-                                        <el-input type="textarea" :modelValue="userSuggestion"
-                                            @update:modelValue="$emit('update:userSuggestion', $event)"
+                                    <div class="user-suggestion" v-if="translationStore.userSuggestionVisible">
+                                        <el-input type="textarea" :modelValue="translationStore.userSuggestion"
+                                            @update:modelValue="translationStore.setUserSuggestion"
                                             :autosize="{ minRows: 2 }" :placeholder="t('translation.userSuggestionPlaceholder')
                                                 " />
                                         <el-row justify="end" style="margin-top: 10px">
                                             <el-button plain size="small" style="min-width: 64px"
-                                                @click="handleUseSuggestionCancel()">{{
+                                                @click="translationStore.handleUseSuggestionCancel()">{{
                                                     t("common.cancel") }}</el-button>
                                             <el-button type="primary" size="small" style="min-width: 64px"
-                                                @click="handleUseSuggestion()">{{
+                                                @click="translationStore.handleUseSuggestion()">{{
                                                     t("common.retry") }}</el-button>
                                         </el-row>
                                     </div>
-                                    <div class="operation-list" v-if="!userSuggestionVisible">
-                                        <div class="operation-list-item" @click="handleDelete(row)">
+                                    <div class="operation-list" v-if="!translationStore.userSuggestionVisible">
+                                        <div class="operation-list-item" @click="translationStore.handleDelete(row)">
                                             Delete
                                         </div>
                                     </div>
@@ -63,14 +67,16 @@
                 </el-table>
             </el-form-item>
             <div class="dialog-button-container">
-                <el-button @click="dialogVisible = false">{{
+                <el-button @click="translationStore.closeDialog()">{{
                     t("common.cancel")
                 }}</el-button>
-                <el-button type="primary" @click="exportExcel" :disabled="isTranslating">{{
-                    t("translation.exportExcel")
-                }}</el-button>
-                <el-button type="primary" @click="uploadToLokalise" :disabled="isTranslating">{{
-                    t("translation.uploadToLokalise") }}</el-button>
+                <el-button type="primary" @click="translationStore.exportExcel"
+                    :disabled="translationStore.isTranslating">{{
+                        t("translation.exportExcel")
+                    }}</el-button>
+                <el-button type="primary" @click="translationStore.uploadToLokalise"
+                    :disabled="translationStore.isTranslating">{{
+                        t("translation.uploadToLokalise") }}</el-button>
             </div>
         </el-form>
     </el-dialog>
@@ -79,83 +85,23 @@
 <script setup>
 import EditableCell from "../Common/EditableCell.vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
-import { ElMessage } from "element-plus";
+import { useTranslationStore } from "../../stores/translation.js";
 import { MoreFilled } from "@element-plus/icons-vue";
 
 const { t } = useI18n();
 
-const props = defineProps({
-    dialogVisible: {
-        type: Boolean,
-        required: true,
-    },
-    translationResult: {
-        type: Array,
-        required: true,
-    },
-    loadingStates: {
-        type: Object,
-        required: true,
-    },
-    userSuggestion: {
-        type: String,
-        default: "",
-    },
-    userSuggestionVisible: {
-        type: Boolean,
-        default: false,
-    },
-    isTranslating: {
-        type: Boolean,
-        default: false,
-    },
-    getStatusText: {
-        type: Function,
-        required: true,
-    },
-});
+// 使用翻译Store
+const translationStore = useTranslationStore();
 
-const emit = defineEmits([
-    'update:dialogVisible',
-    'update:userSuggestion',
-    'update:userSuggestionVisible',
-    'enterEditMode',
-    'delete',
-    'exportExcel',
-    'uploadToLokalise',
-    'useSuggestion',
-    'useSuggestionCancel',
-    'popoverHide'
-]);
-
-// getStatusText 现在从 props 中获取
-
-const enterEditMode = (index, field) => {
-    emit('enterEditMode', index, field);
-};
-
-const handleDelete = (row) => {
-    emit('delete', row);
-};
-
-const handleUseSuggestion = () => {
-    emit('useSuggestion');
-};
-
-const handleUseSuggestionCancel = () => {
-    emit('useSuggestionCancel');
-};
-
-const handlePopoverHide = () => {
-    emit('popoverHide');
-};
-
-const exportExcel = () => {
-    emit('exportExcel');
-};
-
-const uploadToLokalise = () => {
-    emit('uploadToLokalise');
+// 处理保存翻译结果
+const handleSaveTranslation = (index) => {
+    // 更新本地存储中的翻译结果
+    const translationData = translationStore.translationResult.map((item) => ({
+        en: item.en,
+        cn: item.cn,
+        jp: item.jp,
+    }));
+    translationStore.saveTranslationToLocal(translationData);
 };
 </script>
 

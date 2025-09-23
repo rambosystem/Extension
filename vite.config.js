@@ -3,13 +3,22 @@ import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue({
+      template: {
+        compilerOptions: {
+          // 禁用 Vue 3 的 export helper
+          hoistStatic: false,
+        },
+      },
+    }),
+  ],
   css: {
     preprocessorOptions: {
       scss: {
-        api: 'modern-compiler' // 使用现代编译器API，解决Sass弃用警告
-      }
-    }
+        api: "modern-compiler", // 使用现代编译器API，解决Sass弃用警告
+      },
+    },
   },
   build: {
     outDir: "dist",
@@ -31,11 +40,16 @@ export default defineConfig({
         },
         // 手动分块，优化大文件
         manualChunks: {
-          'vue-vendor': ['vue'],
-          'element-plus': ['element-plus', '@element-plus/icons-vue'],
-          'codemirror': ['@codemirror/state', '@codemirror/view', '@codemirror/commands', '@codemirror/lang-javascript'],
-          'utils': ['xlsx']
-        }
+          "vue-vendor": ["vue"],
+          "element-plus": ["element-plus", "@element-plus/icons-vue"],
+          codemirror: [
+            "@codemirror/state",
+            "@codemirror/view",
+            "@codemirror/commands",
+            "@codemirror/lang-javascript",
+          ],
+          utils: ["xlsx"],
+        },
       },
     },
   },

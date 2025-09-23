@@ -8,7 +8,7 @@ const { t } = useI18n();
  * 翻译结果存储管理Hook
  */
 export function useTranslationStorage() {
-  const STORAGE_KEY = "last_translation_result";
+  const STORAGE_KEY = "last_translation";
   const lastTranslation = ref(null);
 
   /**

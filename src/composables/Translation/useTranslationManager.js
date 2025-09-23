@@ -111,9 +111,6 @@ export function useTranslationManager() {
   const handleTranslate = async () => {
     // ===== 防重复请求检查 =====
     if (isTranslating.value) {
-      console.log(
-        "Translation already in progress, ignoring duplicate request"
-      );
       return;
     }
 

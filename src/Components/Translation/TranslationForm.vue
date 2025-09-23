@@ -2,24 +2,26 @@
     <el-form :model="formData" ref="formRef" label-position="top" class="translation-form">
         <el-form-item :label="t('translation.enCopywriting')" prop="content">
             <div class="CodeEditor">
-                <CodeEditor :modelValue="codeContent" @update:modelValue="$emit('update:codeContent', $event)">
+                <CodeEditor :modelValue="translationStore.codeContent"
+                    @update:modelValue="translationStore.setCodeContent">
                 </CodeEditor>
             </div>
         </el-form-item>
         <el-form-item>
             <div class="button-container">
                 <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
-                <el-button type="text" @click="showLastTranslation" v-if="hasLastTranslation">
+                <el-button type="text" @click="translationStore.showLastTranslation"
+                    v-if="translationStore.hasLastTranslation">
                     {{ t("translation.lastTranslation") }}
                 </el-button>
                 <!-- Clear按钮，固定显示 -->
-                <el-button style="min-width: 90px" @click="handleClear">
+                <el-button style="min-width: 90px" @click="translationStore.handleClear">
                     {{ t("common.clear") }}
                 </el-button>
-                <el-button v-if="!booleanStates.autoDeduplication" style="min-width: 90px" @click="handleDeduplicate">
+                <el-button v-if="!settingsStore.autoDeduplication" style="min-width: 90px" @click="handleDeduplicate">
                     {{ t("translation.deduplicate") }}
                 </el-button>
-                <el-button type="primary" @click="handleTranslate" style="min-width: 90px">
+                <el-button type="primary" @click="translationStore.handleTranslate" style="min-width: 90px">
                     {{ t("translation.translate") }}
                 </el-button>
             </div>
@@ -30,12 +32,14 @@
 <script setup>
 import CodeEditor from "../Common/CodeEditor.vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
-import { useSettings } from "../../composables/Core/useSettings.js";
+import { useTranslationStore } from "../../stores/translation.js";
+import { useSettingsStore } from "../../stores/settings.js";
 
 const { t } = useI18n();
 
-// 使用设置管理
-const { booleanStates } = useSettings();
+// 使用 Stores
+const translationStore = useTranslationStore();
+const settingsStore = useSettingsStore();
 
 const props = defineProps({
     formData: {
@@ -46,38 +50,14 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    codeContent: {
-        type: String,
-        required: true,
-    },
-    hasLastTranslation: {
-        type: Boolean,
-        default: false,
-    },
 });
 
 const emit = defineEmits([
-    'update:codeContent',
-    'clear',
-    'deduplicate',
-    'translate',
-    'showLastTranslation'
+    'deduplicate'
 ]);
-
-const handleClear = () => {
-    emit('clear');
-};
 
 const handleDeduplicate = () => {
     emit('deduplicate');
-};
-
-const handleTranslate = () => {
-    emit('translate');
-};
-
-const showLastTranslation = () => {
-    emit('showLastTranslation');
 };
 </script>
 

@@ -1,15 +1,16 @@
 <template>
   <div class="setting_group">
     <h2 class="title">{{ t("settings.title") }}</h2>
-    <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
+    <el-form :model="settingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
-        <SaveableInput v-model="stringStates.apiKey" :label="t('settings.apiKeyForDeepSeek')"
-          :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey" :loading="loadingStates.apiKey" />
+        <SaveableInput v-model="settingsStore.apiKey" :label="t('settings.apiKeyForDeepSeek')"
+          :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey"
+          :loading="settingsStore.loadingStates.apiKey" />
       </el-form-item>
       <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken">
-        <SaveableInput v-model="stringStates.lokaliseApiToken" :label="t('settings.lokaliseApiToken')"
+        <SaveableInput v-model="settingsStore.lokaliseApiToken" :label="t('settings.lokaliseApiToken')"
           placeholder="Enter your Lokalise API token..." @save="handleSaveLokaliseApiToken"
-          :loading="loadingStates.lokaliseApiToken" />
+          :loading="settingsStore.loadingStates.lokaliseApiToken" />
       </el-form-item>
 
       <el-form-item :label="t('settings.autoDeduplication')" label-position="top">
@@ -18,8 +19,8 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-              }}</span>
-            <el-switch :model-value="booleanStates.autoDeduplication"
+            }}</span>
+            <el-switch :model-value="settingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
         </el-card>
@@ -35,10 +36,11 @@
         </div>
       </div>
       <div class="terms-single">
-        <TermsCard :title="termsTitle" :status="termsStatus" :total-terms="totalTerms" :loading="termsLoading"
-          :error="termsError" :terms-data="editableTermsData" :embedding-status="embeddingStatus"
-          :last-embedding-time="lastEmbeddingTime" :refresh-loading="refreshLoading" @update:status="updateTermStatus"
-          @refresh="handleRefreshTerms" @fetchTermsData="fetchTermsData" />
+        <TermsCard :title="termsStore.termsTitle" :status="termsStore.termsStatus" :total-terms="termsStore.totalTerms"
+          :loading="termsStore.termsLoading" :error="termsStore.termsError" :terms-data="editableTermsData"
+          :embedding-status="termsStore.embeddingStatus" :last-embedding-time="termsStore.lastEmbeddingTime"
+          :refresh-loading="refreshLoading" @update:status="termsStore.updateTermStatus" @refresh="handleRefreshTerms"
+          @fetchTermsData="termsStore.fetchTermsData" />
       </div>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
         <el-card shadow="never" style="width: 100%" body-style="padding: 16px 20px; cursor: pointer;"
@@ -46,49 +48,49 @@
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
-              }}</span>
-            <el-switch :model-value="booleanStates.translationPrompt"
+            }}</span>
+            <el-switch :model-value="settingsStore.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
         </el-card>
       </el-form-item>
-      <el-form-item v-if="booleanStates.translationPrompt">
+      <el-form-item v-if="settingsStore.translationPrompt">
         <div class="CodeEditor">
-          <CodeEditor v-model="codeContent"></CodeEditor>
+          <CodeEditor v-model="settingsStore.customPrompt"></CodeEditor>
         </div>
       </el-form-item>
-      <el-form-item v-if="booleanStates.translationPrompt">
+      <el-form-item v-if="settingsStore.translationPrompt">
         <div class="button-container">
-          <el-button v-show="booleanStates.isCodeEditing" type="primary" @click="handleSavePrompt"
-            :loading="loadingStates.prompt">
+          <el-button v-show="settingsStore.isCodeEditing" type="primary" @click="handleSavePrompt"
+            :loading="settingsStore.loadingStates.prompt">
             {{ t("common.save") }}
           </el-button>
         </div>
       </el-form-item>
     </el-form>
     <h2 class="title">{{ t("settings.advancedSettings") }}</h2>
-    <el-form :model="stringStates" ref="formRef" label-position="top" class="settings-form">
+    <el-form :model="settingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
         <div class="similarity-threshold">
-          <el-input-number controls-position="right" v-model="similarityThreshold" :step="0.01" :min="0.5" :max="1"
-            :precision="2" @change="handleSimilarityThresholdChange" />
+          <el-input-number controls-position="right" v-model="settingsStore.similarityThreshold" :step="0.01" :min="0.5"
+            :max="1" :precision="2" @change="handleSimilarityThresholdChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.topK')" label-position="left">
         <div class="top-k">
-          <el-input-number controls-position="right" v-model="topK" :step="1" :min="1" :max="50" :precision="0"
-            @change="handleTopKChange" />
+          <el-input-number controls-position="right" v-model="settingsStore.topK" :step="1" :min="1" :max="50"
+            :precision="0" @change="handleTopKChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.maxNGram')" label-position="left">
         <div class="max-ngram">
-          <el-input-number controls-position="right" v-model="maxNGram" :step="1" :min="1" :max="5" :precision="0"
-            @change="handleMaxNGramChange" />
+          <el-input-number controls-position="right" v-model="settingsStore.maxNGram" :step="1" :min="1" :max="5"
+            :precision="0" @change="handleMaxNGramChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.language')" label-position="left">
         <div class="language-select">
-          <el-select v-model="stringStates.language" @change="handleLanguageChange" style="width: 160px">
+          <el-select v-model="settingsStore.language" @change="handleLanguageChange" style="width: 160px">
             <el-option label="English" value="en" />
             <el-option label="中文" value="zh_CN" />
           </el-select>
@@ -100,10 +102,11 @@
             {{ t("common.clear") }}
           </el-button>
         </div>
-        <el-dialog v-model="dialogVisible" :title="t('settings.clearLocalStorage')" width="30%" align-center>
+        <el-dialog v-model="settingsStore.dialogVisible" :title="t('settings.clearLocalStorage')" width="30%"
+          align-center>
           <span>{{ t("settings.clearLocalStorageConfirm") }}</span>
           <template #footer>
-            <el-button @click="dialogVisible = false">{{
+            <el-button @click="settingsStore.dialogVisible = false">{{
               t("common.cancel")
               }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
@@ -127,55 +130,19 @@ import CodeEditor from "../Components/Common/CodeEditor.vue";
 import SaveableInput from "../Components/Common/SaveableInput.vue";
 import ConfirmDialog from "../Components/Common/ConfirmDialog.vue";
 import LoadingButton from "../Components/Common/LoadingButton.vue";
-import { useSettings } from "../composables/Core/useSettings.js";
 import { useI18n } from "../composables/Core/useI18n.js";
 import TermsCard from "../Components/Terms/TermsCard.vue";
-import { useTermsManager } from "../composables/Terms/useTermsManager.js";
 import { useTranslationStorage } from "../composables/Translation/useTranslationStorage.js";
+import { useSettingsStore } from "../stores/settings.js";
+import { useTermsStore } from "../stores/terms.js";
 
 const { t } = useI18n();
-const {
-  termsStatus,
-  termsTitle,
-  totalTerms,
-  termsData: originalTermsData,
-  loading: termsLoading,
-  error: termsError,
-  embeddingStatus,
-  lastEmbeddingTime,
-  updateTermStatus,
-  refreshTerms,
-  fetchTermsData,
-  addTerms,
-  rebuildEmbedding,
-  hasChanges,
-  getChangedTerms,
-  reinitializeStatus,
-} = useTermsManager();
 
-// 使用设置管理composable
-const {
-  loadingStates,
-  codeContent,
-  dialogVisible,
-  stringStates,
-  booleanStates,
-  similarityThreshold,
-  topK,
-  maxNGram,
-  handleSaveAPIKey,
-  handleSaveLokaliseURL,
-  handleSaveLokaliseApiToken,
-  handleSavePrompt,
-  handleClearLocalStorage,
-  handleClearLocalStorageConfirm,
-  handleTranslationPromptChange,
-  handleAutoDeduplicationChange,
-  handleLanguageChange,
-  handleSimilarityThresholdChange,
-  handleTopKChange,
-  handleMaxNGramChange,
-} = useSettings();
+// 使用Pinia stores
+const settingsStore = useSettingsStore();
+const termsStore = useTermsStore();
+
+// 直接使用store实例，不进行解构以保持响应式
 
 // 处理翻译提示卡片的点击事件
 const handleTranslationPromptClick = (event) => {
@@ -184,8 +151,8 @@ const handleTranslationPromptClick = (event) => {
     return;
   }
   // 切换开关状态
-  const newState = !booleanStates.translationPrompt;
-  handleTranslationPromptChange(newState);
+  const newState = !settingsStore.translationPrompt;
+  settingsStore.toggleTranslationPrompt(newState);
 };
 
 // 处理自动去重卡片的点击事件
@@ -195,11 +162,56 @@ const handleAutoDeduplicationClick = (event) => {
     return;
   }
   // 切换开关状态
-  const newState = !booleanStates.autoDeduplication;
-  handleAutoDeduplicationChange(newState);
+  const newState = !settingsStore.autoDeduplication;
+  settingsStore.toggleAutoDeduplication(newState);
 };
 
 const formRef = ref();
+
+// 添加缺失的事件处理函数
+const handleSaveAPIKey = async (saveData) => {
+  await settingsStore.saveApiKey(saveData);
+};
+
+const handleSaveLokaliseApiToken = async (saveData) => {
+  await settingsStore.saveLokaliseApiToken(saveData);
+};
+
+const handleSavePrompt = async () => {
+  await settingsStore.saveCustomPrompt();
+};
+
+const handleTranslationPromptChange = (value) => {
+  settingsStore.toggleTranslationPrompt(value);
+};
+
+const handleAutoDeduplicationChange = (value) => {
+  settingsStore.toggleAutoDeduplication(value);
+};
+
+const handleSimilarityThresholdChange = (value) => {
+  settingsStore.updateSimilarityThreshold(value);
+};
+
+const handleTopKChange = (value) => {
+  settingsStore.updateTopK(value);
+};
+
+const handleMaxNGramChange = (value) => {
+  settingsStore.updateMaxNGram(value);
+};
+
+const handleLanguageChange = (value) => {
+  settingsStore.updateLanguage(value);
+};
+
+const handleClearLocalStorage = () => {
+  settingsStore.dialogVisible = true;
+};
+
+const handleClearLocalStorageConfirm = async () => {
+  await settingsStore.clearAllSettings();
+};
 
 // 重建embedding确认框状态
 const rebuildConfirmVisible = ref(false);
@@ -213,7 +225,7 @@ const editableTermsData = ref([]);
 
 // 监听原始数据变化，同步到可编辑数据
 watch(
-  originalTermsData,
+  () => termsStore.termsData,
   (newData) => {
     // 深拷贝数据并添加编辑状态
     const { addEditingStates } = useTranslationStorage();
@@ -230,7 +242,7 @@ const handleSubmitTerms = async () => {
     // 比较可编辑数据与原始数据
     const hasChanges =
       JSON.stringify(editableTermsData.value) !==
-      JSON.stringify(originalTermsData.value);
+      JSON.stringify(termsStore.termsData);
 
     if (!hasChanges) {
       ElMessage.warning(t("terms.noChanges"));
@@ -238,9 +250,9 @@ const handleSubmitTerms = async () => {
     }
 
     // 获取改动的terms数据
-    const changedTerms = getChangedTerms(
+    const changedTerms = termsStore.getChangedTerms(
       editableTermsData.value,
-      originalTermsData.value
+      termsStore.termsData
     );
 
     if (changedTerms.length === 0) {
@@ -249,10 +261,10 @@ const handleSubmitTerms = async () => {
     }
 
     // 只提交改动的terms数据（使用统一的addUserTerms接口）
-    await addTerms(changedTerms);
+    await termsStore.addTerms(changedTerms);
 
     // 更新原始数据
-    refreshTerms();
+    termsStore.refreshTerms();
   } catch (error) {
     console.error("Submit terms failed:", error);
   }
@@ -265,14 +277,11 @@ const handleBuildTermsEmbedding = () => {
 
 // 处理重建确认
 const handleRebuildConfirm = async () => {
-  rebuildLoading.value = true;
   try {
-    await rebuildEmbedding();
+    await termsStore.rebuildEmbedding();
   } catch (error) {
     // 错误消息已经在 rebuildEmbedding 方法中处理了，这里只需要记录日志
     console.error("Rebuild embedding failed:", error);
-  } finally {
-    rebuildLoading.value = false;
   }
 };
 
@@ -283,13 +292,10 @@ const handleRebuildCancel = () => {
 
 // 处理refresh，添加loading状态
 const handleRefreshTerms = async (showSuccessMessage = true) => {
-  refreshLoading.value = true;
   try {
-    await refreshTerms(showSuccessMessage);
+    await termsStore.refreshTerms(showSuccessMessage);
   } catch (error) {
     console.error("Refresh terms failed:", error);
-  } finally {
-    refreshLoading.value = false;
   }
 };
 </script>

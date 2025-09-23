@@ -140,7 +140,6 @@ export async function matchTerms(texts, options = {}) {
  */
 export async function rebuildAllUserEmbeddings() {
   try {
-    console.log("rebuildAllUserEmbeddings");
     const response = await fetch(`${API_BASE_URL}/term-match/build/all`, {
       method: "POST",
       headers: {
