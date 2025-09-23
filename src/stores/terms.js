@@ -279,7 +279,7 @@ export const useTermsStore = defineStore("terms", {
     async fetchEmbeddingStatus() {
       try {
         const statusData = await fetchUserEmbeddingStatus();
-        this.embeddingStatus = statusData.status || "pending";
+        this.embeddingStatus = statusData.embedding_status || "pending";
         this.lastEmbeddingTime = statusData.last_embedding_time || "";
       } catch (err) {
         console.error("Failed to fetch embedding status:", err);

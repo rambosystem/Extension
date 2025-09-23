@@ -133,14 +133,10 @@ import { useI18n } from "../../composables/Core/useI18n.js";
 import { Setting, Loading } from "@element-plus/icons-vue";
 import { ref, computed, watch } from "vue";
 import EditableCell from "../Common/EditableCell.vue";
-import { useTermsManager } from "../../composables/Terms/useTermsManager.js";
 import { useTermsStore } from "../../stores/terms.js";
 import { Search } from "@element-plus/icons-vue";
-import { deleteTermIndex } from "../../requests/terms.js";
-
 
 const { t } = useI18n();
-const { deleteTerm, addTerms } = useTermsManager();
 
 // 使用Terms Store
 const termsStore = useTermsStore();
@@ -330,8 +326,8 @@ const handleDelete = async (row) => {
             return;
         }
 
-        // 对于已保存的行，调用API删除（内部已包含删除索引的逻辑）
-        await deleteTerm(row.term_id);
+        // 对于已保存的行，调用store的删除方法
+        await termsStore.deleteTerm(row.term_id);
 
         // 删除成功后，删除term_id对应的当前行
         const index = props.termsData.findIndex(term => term.term_id === row.term_id);
@@ -423,14 +419,14 @@ const handleSaveTerm = async (row) => {
             return;
         }
 
-        // 调用useTermsManager中的addTerms函数，它会自动处理索引更新
+        // 调用store的addTerms方法
         const termsData = [{
             en: row.en.trim(),
             cn: row.cn || '',
             jp: row.jp || ''
         }];
 
-        const result = await addTerms(termsData);
+        const result = await termsStore.addTerms(termsData);
         // console.log('Term saved successfully:', row);
 
         // 如果是新添加的行，保存成功后移除isNew标记并更新term_id
