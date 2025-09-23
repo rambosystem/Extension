@@ -201,6 +201,14 @@ export async function addUserTerms(termsData) {
       }
     }
 
+    // 添加术语成功后，更新索引
+    try {
+      await updateIndex();
+    } catch (indexError) {
+      console.warn("Failed to update index after adding terms:", indexError);
+      // 不抛出错误，因为添加术语已经成功
+    }
+
     return data;
   } catch (error) {
     console.error("Failed to add user terms:", error);
@@ -459,6 +467,14 @@ export async function deleteUserTerm(termId) {
 
     // 删除接口返回成功消息格式
     if (data.message && data.term_id) {
+      // 删除成功后，更新索引
+      try {
+        await updateIndex();
+      } catch (indexError) {
+        console.warn("Failed to update index after deleting term:", indexError);
+        // 不抛出错误，因为删除术语已经成功
+      }
+
       // 删除成功，返回成功消息
       return {
         success: true,
@@ -469,6 +485,14 @@ export async function deleteUserTerm(termId) {
 
     // 如果返回了terms数组，也支持
     if (Array.isArray(data.terms)) {
+      // 删除成功后，更新索引
+      try {
+        await updateIndex();
+      } catch (indexError) {
+        console.warn("Failed to update index after deleting term:", indexError);
+        // 不抛出错误，因为删除术语已经成功
+      }
+
       return data;
     }
 

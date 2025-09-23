@@ -79,8 +79,8 @@
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.en" :isEditing="row.editing_en" :rowIndex="$index"
                                 :columnIndex="0" :isLastCell="false" @enterEdit="enterEditMode($index, 'en')"
-                                @exitEdit="row.editing_en = false"
-                                @update:value="(value) => { row.en = value; handleTermsChange(); }"
+                                @exitEdit="() => emit('updateTerm', row, 'editing_en', false)"
+                                @update:value="(value) => emit('updateTerm', row, 'en', value)"
                                 @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
@@ -88,8 +88,8 @@
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.cn" :isEditing="row.editing_cn" :rowIndex="$index"
                                 :columnIndex="1" :isLastCell="false" @enterEdit="enterEditMode($index, 'cn')"
-                                @exitEdit="row.editing_cn = false"
-                                @update:value="(value) => { row.cn = value; handleTermsChange(); }"
+                                @exitEdit="() => emit('updateTerm', row, 'editing_cn', false)"
+                                @update:value="(value) => emit('updateTerm', row, 'cn', value)"
                                 @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
@@ -97,8 +97,8 @@
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.jp" :isEditing="row.editing_jp" :rowIndex="$index"
                                 :columnIndex="2" :isLastCell="false" @enterEdit="enterEditMode($index, 'jp')"
-                                @exitEdit="row.editing_jp = false"
-                                @update:value="(value) => { row.jp = value; handleTermsChange(); }"
+                                @exitEdit="() => emit('updateTerm', row, 'editing_jp', false)"
+                                @update:value="(value) => emit('updateTerm', row, 'jp', value)"
                                 @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
@@ -180,7 +180,15 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:status', 'refresh', 'fetchTermsData']);
+const emit = defineEmits([
+    'update:status',
+    'refresh',
+    'fetchTermsData',
+    'update:termsData',
+    'addTerm',
+    'deleteTerm',
+    'updateTerm'
+]);
 const dialogVisible = ref(false);
 
 // 搜索筛选相关状态
@@ -311,35 +319,17 @@ const handleCardClick = (event) => {
 
 const handleDelete = async (row) => {
     try {
-        // 如果是新添加的行（未保存），直接从本地数据中删除
+        // 如果是新添加的行（未保存），通过事件通知父组件删除
         if (row.isNew) {
-            const index = props.termsData.findIndex(term => term === row);
-            if (index !== -1) {
-                props.termsData.splice(index, 1);
-                // 如果有搜索条件，重新执行筛选
-                if (filter.value.trim()) {
-                    handleFilter();
-                } else {
-                    totalItems.value--;
-                }
-            }
+            emit('deleteTerm', row);
             return;
         }
 
         // 对于已保存的行，调用store的删除方法
         await termsStore.deleteTerm(row.term_id);
 
-        // 删除成功后，删除term_id对应的当前行
-        const index = props.termsData.findIndex(term => term.term_id === row.term_id);
-        if (index !== -1) {
-            props.termsData.splice(index, 1);
-            // 如果有搜索条件，重新执行筛选
-            if (filter.value.trim()) {
-                handleFilter();
-            } else {
-                totalItems.value--;
-            }
-        }
+        // 删除成功后，通过事件通知父组件删除
+        emit('deleteTerm', row);
     } catch (error) {
         console.error('Delete failed:', error);
     }
@@ -373,7 +363,7 @@ const enterEditMode = (index, field) => {
     const dataToUse = filter.value.trim() ? filteredTermsData.value : props.termsData;
     const row = dataToUse[getActualIndex(index)];
     if (row) {
-        row[`editing_${field}`] = true;
+        emit('updateTerm', row, `editing_${field}`, true);
     }
 };
 
@@ -389,26 +379,8 @@ const addNewTerm = () => {
         isNew: true // 标记为新添加的行
     };
 
-    // 将新行添加到数据中
-    props.termsData.unshift(newTerm); // 添加到数组开头
-
-    // 如果有搜索条件，重新执行筛选
-    if (filter.value.trim()) {
-        handleFilter();
-    } else {
-        // 更新总数
-        totalItems.value = props.termsData.length;
-    }
-
-    // 重置到第一页
-    currentPage.value = 1;
-
-    // 自动进入第一行的编辑模式
-    setTimeout(() => {
-        if (props.termsData.length > 0) {
-            props.termsData[0].editing_en = true;
-        }
-    }, 100);
+    // 通过事件通知父组件添加新行
+    emit('addTerm', newTerm);
 };
 
 const handleSaveTerm = async (row) => {

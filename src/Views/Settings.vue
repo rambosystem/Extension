@@ -19,7 +19,7 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-              }}</span>
+            }}</span>
             <el-switch :model-value="settingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
@@ -40,7 +40,8 @@
           :loading="termsStore.termsLoading" :error="termsStore.termsError" :terms-data="editableTermsData"
           :embedding-status="termsStore.embeddingStatus" :last-embedding-time="termsStore.lastEmbeddingTime"
           :refresh-loading="refreshLoading" @update:status="termsStore.updateTermStatus" @refresh="handleRefreshTerms"
-          @fetchTermsData="termsStore.fetchTermsData" />
+          @fetchTermsData="termsStore.fetchTermsData" @addTerm="handleAddTerm" @deleteTerm="handleDeleteTerm"
+          @updateTerm="handleUpdateTerm" />
       </div>
       <el-form-item :label="t('settings.translationPrompt')" label-position="top">
         <el-card shadow="never" style="width: 100%" body-style="padding: 16px 20px; cursor: pointer;"
@@ -48,7 +49,7 @@
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
-              }}</span>
+            }}</span>
             <el-switch :model-value="settingsStore.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
@@ -108,7 +109,7 @@
           <template #footer>
             <el-button @click="settingsStore.dialogVisible = false">{{
               t("common.cancel")
-            }}</el-button>
+              }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -296,6 +297,31 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
     await termsStore.refreshTerms(showSuccessMessage);
   } catch (error) {
     console.error("Refresh terms failed:", error);
+  }
+};
+
+// 处理TermsCard的事件
+const handleAddTerm = (newTerm) => {
+  editableTermsData.value.unshift(newTerm);
+  // 自动进入第一行的编辑模式
+  setTimeout(() => {
+    if (editableTermsData.value.length > 0) {
+      editableTermsData.value[0].editing_en = true;
+    }
+  }, 100);
+};
+
+const handleDeleteTerm = (term) => {
+  const index = editableTermsData.value.findIndex(t => t === term || t.term_id === term.term_id);
+  if (index !== -1) {
+    editableTermsData.value.splice(index, 1);
+  }
+};
+
+const handleUpdateTerm = (term, field, value) => {
+  const index = editableTermsData.value.findIndex(t => t === term || t.term_id === term.term_id);
+  if (index !== -1) {
+    editableTermsData.value[index][field] = value;
   }
 };
 
