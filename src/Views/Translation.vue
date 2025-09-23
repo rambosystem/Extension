@@ -33,11 +33,11 @@
 </template>
 
 <script setup>
-import TranslationForm from "./TranslationForm.vue";
-import TranslationResultDialog from "./TranslationResultDialog.vue";
-import UploadSettingsDialog from "./UploadSettingsDialog.vue";
-import DeduplicateDialog from "./DeduplicateDialog.vue";
-import ExcelKeySetting from "./ExcelKeySetting.vue";
+import TranslationForm from "../Components/Translation/TranslationForm.vue";
+import TranslationResultDialog from "../Components/Translation/TranslationResultDialog.vue";
+import UploadSettingsDialog from "../Components/Upload/UploadSettingsDialog.vue";
+import DeduplicateDialog from "../Components/Translation/DeduplicateDialog.vue";
+import ExcelKeySetting from "../Components/Translation/ExcelKeySetting.vue";
 import { useTranslationManager } from "../composables/useTranslationManager.js";
 import { useDeduplicateDialog } from "../composables/useDeduplicateDialog.js";
 import { useI18n } from "../composables/useI18n.js";

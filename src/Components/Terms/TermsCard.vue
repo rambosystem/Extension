@@ -129,13 +129,13 @@
 </template>
 
 <script setup>
-import { useI18n } from "../composables/useI18n.js";
+import { useI18n } from "../../composables/useI18n.js";
 import { Setting, Loading } from "@element-plus/icons-vue";
 import { ref, computed, watch } from "vue";
-import EditableCell from "./EditableCell.vue";
-import { useTermsManager } from "../composables/useTermsManager.js";
+import EditableCell from "../Common/EditableCell.vue";
+import { useTermsManager } from "../../composables/useTermsManager.js";
 import { Search } from "@element-plus/icons-vue";
-import { deleteTermIndex } from "../requests/terms.js";
+import { deleteTermIndex } from "../../requests/terms.js";
 
 
 const { t } = useI18n();

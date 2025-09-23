@@ -43,8 +43,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import Settings from "./Components/Settings.vue";
-import Translation from "./Components/Translation.vue";
+import Settings from "./Views/Settings.vue";
+import Translation from "./Views/Translation.vue";
 
 import { useI18n } from "./composables/useI18n.js";
 

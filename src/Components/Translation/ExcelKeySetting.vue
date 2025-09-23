@@ -21,8 +21,8 @@
 </template>
 
 <script setup>
-import { useI18n } from "../composables/useI18n.js";
-import { useSettings } from "../composables/useSettings.js";
+import { useI18n } from "../../composables/useI18n.js";
+import { useSettings } from "../../composables/useSettings.js";
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 

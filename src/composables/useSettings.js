@@ -3,6 +3,7 @@ import { ElMessage } from "element-plus";
 import { useState } from "./useState.js";
 import { useStorage } from "./useStorage.js";
 import { validateDeepSeekApiKey } from "../utils/apiValidation.js";
+import { getUserProjects } from "../requests/lokalise.js";
 import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
 import { useI18n } from "./useI18n.js";
 
@@ -208,7 +209,6 @@ export function useSettings() {
         }
 
         // 调用 getUserProjects 验证 token 并获取项目列表
-        const { getUserProjects } = await import("../requests/lokalise.js");
         const projects = await getUserProjects();
 
         // 保存项目列表

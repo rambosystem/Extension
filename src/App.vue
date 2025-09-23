@@ -43,7 +43,7 @@
 
 <script setup>
 import { Setting } from "@element-plus/icons-vue";
-import WeightItem from "./Components/Weight-Item.vue";
+import WeightItem from "./Components/Terms/Weight-Item.vue";
 
 const handleSettingClick = () => {
   // console.log("Setting button clicked");

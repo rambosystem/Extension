@@ -4,9 +4,17 @@ import { resolve } from "path";
 
 export default defineConfig({
   plugins: [vue()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler' // 使用现代编译器API，解决Sass弃用警告
+      }
+    }
+  },
   build: {
     outDir: "dist",
     assetsInlineLimit: 10240,
+    chunkSizeWarningLimit: 1000, // 提高chunk大小警告限制
     rollupOptions: {
       input: {
         popup: resolve(__dirname, "src/main.js"),
@@ -21,6 +29,13 @@ export default defineConfig({
           }
           return "assets/[name]-[hash].[ext]";
         },
+        // 手动分块，优化大文件
+        manualChunks: {
+          'vue-vendor': ['vue'],
+          'element-plus': ['element-plus', '@element-plus/icons-vue'],
+          'codemirror': ['@codemirror/state', '@codemirror/view', '@codemirror/commands', '@codemirror/lang-javascript'],
+          'utils': ['xlsx']
+        }
       },
     },
   },

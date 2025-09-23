@@ -3,6 +3,7 @@ import { useI18n } from "./useI18n.js";
 import { useStorage } from "./useStorage.js";
 import { useSettings } from "./useSettings.js";
 import { ref, reactive } from "vue";
+import { uploadTranslationKeys } from "../requests/lokalise.js";
 
 const { t } = useI18n();
 const { getFromStorage, saveToStorage } = useStorage();
@@ -240,7 +241,6 @@ export function useLokaliseUpload() {
         uploadForm.tag && uploadForm.tag.trim() ? [uploadForm.tag.trim()] : [];
 
       // 调用真正的上传API
-      const { uploadTranslationKeys } = await import("../requests/lokalise.js");
       const result = await uploadTranslationKeys(
         uploadForm.projectId,
         keys,

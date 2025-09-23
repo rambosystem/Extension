@@ -79,8 +79,8 @@
 </template>
 
 <script setup>
-import EditableCell from "./EditableCell.vue";
-import { useI18n } from "../composables/useI18n.js";
+import EditableCell from "../Common/EditableCell.vue";
+import { useI18n } from "../../composables/useI18n.js";
 import { ElMessage } from "element-plus";
 import { MoreFilled } from "@element-plus/icons-vue";
 

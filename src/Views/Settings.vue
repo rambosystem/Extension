@@ -233,13 +233,13 @@
 <script setup>
 import { ref, watch } from "vue";
 import { ElDialog, ElMessage } from "element-plus";
-import CodeEditor from "./CodeEditor.vue";
-import SaveableInput from "./SaveableInput.vue";
-import ConfirmDialog from "./ConfirmDialog.vue";
-import LoadingButton from "./LoadingButton.vue";
+import CodeEditor from "../Components/Common/CodeEditor.vue";
+import SaveableInput from "../Components/Common/SaveableInput.vue";
+import ConfirmDialog from "../Components/Common/ConfirmDialog.vue";
+import LoadingButton from "../Components/Common/LoadingButton.vue";
 import { useSettings } from "../composables/useSettings.js";
 import { useI18n } from "../composables/useI18n.js";
-import TermsCard from "./TermsCard.vue";
+import TermsCard from "../Components/Terms/TermsCard.vue";
 import { useTermsManager } from "../composables/useTermsManager.js";
 import { useTranslationStorage } from "../composables/useTranslationStorage.js";
 

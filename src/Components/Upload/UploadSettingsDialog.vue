@@ -7,7 +7,7 @@
         <!-- 成功页面 -->
         <div v-if="isUploadSuccess" class="upload-success">
             <div class="success-icon">
-                <img src="../assets/success.svg" alt="Success" />
+                <img src="../../assets/success.svg" alt="Success" />
             </div>
             <div class="success-title">Success !</div>
             <div class="success-message">{{ successMessage }}</div>
