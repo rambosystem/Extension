@@ -3,7 +3,7 @@
     <h2 class="title">{{ title }}</h2>
 
     <!-- 翻译表单 -->
-    <TranslationForm :formData="formData" :formRef="formRef" @deduplicate="handleDeduplicate" />
+    <TranslationForm @deduplicate="handleDeduplicate" />
 
     <!-- Excel 基线键设置 -->
     <ExcelKeySetting />
@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import TranslationForm from "../Components/Translation/TranslationForm.vue";
 import TranslationResultDialog from "../Components/Translation/TranslationResultDialog.vue";
 import UploadSettingsDialog from "../Components/Upload/UploadSettingsDialog.vue";
@@ -40,9 +40,7 @@ const translationStore = useTranslationStore();
 
 // 直接使用store实例，不进行解构以保持响应式
 
-// 临时状态（避免引入不必要的状态）
-const formRef = ref();
-const formData = reactive({});
+// 不再需要临时状态，直接使用 stores
 
 // 使用去重对话框composable
 const {

@@ -1,5 +1,5 @@
 <template>
-    <el-form :model="formData" ref="formRef" label-position="top" class="translation-form">
+    <el-form label-position="top" class="translation-form">
         <el-form-item :label="t('translation.enCopywriting')" prop="content">
             <div class="CodeEditor">
                 <CodeEditor :modelValue="translationStore.codeContent"
@@ -41,16 +41,7 @@ const { t } = useI18n();
 const translationStore = useTranslationStore();
 const settingsStore = useSettingsStore();
 
-const props = defineProps({
-    formData: {
-        type: Object,
-        required: true,
-    },
-    formRef: {
-        type: Object,
-        required: true,
-    },
-});
+// 不再需要 props，直接使用 stores
 
 const emit = defineEmits([
     'deduplicate'
