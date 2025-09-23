@@ -4,8 +4,8 @@ import {
   fetchCdnTranslations,
   extractEnglishTexts,
   isTextInCdn,
-} from "../requests/cdn.js";
-import { useI18n } from "./useI18n.js";
+} from "../../requests/cdn.js";
+import { useI18n } from "../Core/useI18n.js";
 
 const { t } = useI18n();
 

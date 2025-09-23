@@ -1,9 +1,9 @@
 import { ElMessage } from "element-plus";
-import { useI18n } from "./useI18n.js";
-import { useStorage } from "./useStorage.js";
-import { useSettings } from "./useSettings.js";
+import { useI18n } from "../Core/useI18n.js";
+import { useStorage } from "../Core/useStorage.js";
+import { useSettings } from "../Core/useSettings.js";
 import { ref, reactive } from "vue";
-import { uploadTranslationKeys } from "../requests/lokalise.js";
+import { uploadTranslationKeys } from "../../requests/lokalise.js";
 
 const { t } = useI18n();
 const { getFromStorage, saveToStorage } = useStorage();

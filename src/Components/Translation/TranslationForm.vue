@@ -29,8 +29,8 @@
 
 <script setup>
 import CodeEditor from "../Common/CodeEditor.vue";
-import { useI18n } from "../../composables/useI18n.js";
-import { useSettings } from "../../composables/useSettings.js";
+import { useI18n } from "../../composables/Core/useI18n.js";
+import { useSettings } from "../../composables/Core/useSettings.js";
 
 const { t } = useI18n();
 

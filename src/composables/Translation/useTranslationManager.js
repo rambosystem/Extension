@@ -1,14 +1,14 @@
 import { ref, reactive, onMounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useTranslation } from "./useTranslation.js";
-import { useExcelExport } from "./useExcelExport.js";
-import { useLokaliseUpload } from "./useLokaliseUpload.js";
+import { useExcelExport } from "../Excel/useExcelExport.js";
+import { useLokaliseUpload } from "../Upload/useLokaliseUpload.js";
 import { useTranslationStorage } from "./useTranslationStorage.js";
 import { useTranslationCache } from "./useTranslationCache.js";
-import { useTableEditor } from "./useTableEditor.js";
-import { useI18n } from "./useI18n.js";
+import { useTableEditor } from "../Excel/useTableEditor.js";
+import { useI18n } from "../Core/useI18n.js";
 import { useDeduplicate } from "./useDeduplicate.js";
-import { useSettings } from "./useSettings.js";
+import { useSettings } from "../Core/useSettings.js";
 
 const { t } = useI18n();
 

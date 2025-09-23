@@ -1,8 +1,8 @@
 import { ref, onMounted, onUnmounted } from "vue";
-import { useSettings } from "./useSettings.js";
+import { useSettings } from "../Core/useSettings.js";
 import { useDeduplicate } from "./useDeduplicate.js";
 import { ElMessage } from "element-plus";
-import { useI18n } from "./useI18n.js";
+import { useI18n } from "../Core/useI18n.js";
 
 export function useDeduplicateDialog() {
   const { t } = useI18n();

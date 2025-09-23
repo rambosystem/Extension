@@ -1,7 +1,7 @@
 import { ElMessage } from "element-plus";
-import { translate } from "../requests/lokalise.js";
-import { useState } from "./useState.js";
-import { useI18n } from "./useI18n.js";
+import { translate } from "../../requests/lokalise.js";
+import { useState } from "../Core/useState.js";
+import { useI18n } from "../Core/useI18n.js";
 import { ref } from "vue";
 
 const { t } = useI18n();
@@ -83,11 +83,11 @@ export function useTranslation() {
       const result = await withState("translation", async () => {
         // 重置状态
         currentStatus.value = "idle";
-        
+
         const data = await translate(content, (status) => {
           currentStatus.value = status;
         });
-        
+
         const translationResult = parseTranslationResult(data);
 
         ElMessage.success(t("translation.translationCompleted"));
@@ -97,9 +97,7 @@ export function useTranslation() {
       return result;
     } catch (error) {
       console.error("Translation error:", error);
-      const errorMessage =
-        error.message ||
-        t("translation.translationFailed");
+      const errorMessage = error.message || t("translation.translationFailed");
       ElMessage.error(errorMessage);
       throw error;
     }

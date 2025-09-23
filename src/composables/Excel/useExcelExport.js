@@ -1,6 +1,6 @@
 import { ElMessage } from "element-plus";
-import { useI18n } from "./useI18n.js";
-import { useStorage } from "./useStorage.js";
+import { useI18n } from "../Core/useI18n.js";
+import { useStorage } from "../Core/useStorage.js";
 import * as XLSX from "xlsx";
 
 const { t } = useI18n();

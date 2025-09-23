@@ -1,6 +1,6 @@
 import { ref, computed, watch } from 'vue';
-import en from '../locales/en.json';
-import zh_CN from '../locales/zh_CN.json';
+import en from '../../locales/en.json';
+import zh_CN from '../../locales/zh_CN.json';
 
 // 支持的语言
 const SUPPORTED_LANGUAGES = {

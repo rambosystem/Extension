@@ -2,9 +2,9 @@ import { ref, onMounted, onUnmounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useState } from "./useState.js";
 import { useStorage } from "./useStorage.js";
-import { validateDeepSeekApiKey } from "../utils/apiValidation.js";
-import { getUserProjects } from "../requests/lokalise.js";
-import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
+import { validateDeepSeekApiKey } from "../../utils/apiValidation.js";
+import { getUserProjects } from "../../requests/lokalise.js";
+import { DEFAULT_TRANSLATION_PROMPT } from "../../config/prompts.js";
 import { useI18n } from "./useI18n.js";
 
 /**

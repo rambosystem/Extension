@@ -1,5 +1,5 @@
 import { ref, watch, onMounted, onUnmounted } from "vue";
-import { useSettings } from "./useSettings.js";
+import { useSettings } from "../Core/useSettings.js";
 
 export function useExcelBaselineKey() {
   const { excelBaselineKey, handleSaveExcelBaselineKey } = useSettings();

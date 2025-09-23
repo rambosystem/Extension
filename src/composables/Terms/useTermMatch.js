@@ -1,7 +1,7 @@
-import { ref, computed, onMounted } from 'vue';
-import { ElMessage } from 'element-plus';
-import { matchTerms } from '../requests/termMatch.js';
-import { useI18n } from './useI18n.js';
+import { ref, computed, onMounted } from "vue";
+import { ElMessage } from "element-plus";
+import { matchTerms } from "../../requests/termMatch.js";
+import { useI18n } from "../Core/useI18n.js";
 
 export function useTermMatch() {
   const { t } = useI18n();
@@ -9,11 +9,14 @@ export function useTermMatch() {
   // 从 localStorage 获取保存的相似度阈值，默认为 0.7
   const getStoredSimilarityThreshold = () => {
     try {
-      const stored = localStorage.getItem('termMatch_similarity_threshold');
+      const stored = localStorage.getItem("termMatch_similarity_threshold");
       const value = stored ? parseFloat(stored) : 0.7;
       return isNaN(value) ? 0.7 : Math.max(0.5, Math.min(1.0, value));
     } catch (error) {
-      console.error('Failed to get similarity threshold from localStorage:', error);
+      console.error(
+        "Failed to get similarity threshold from localStorage:",
+        error
+      );
       return 0.7;
     }
   };
@@ -21,9 +24,12 @@ export function useTermMatch() {
   // 保存相似度阈值到 localStorage
   const saveSimilarityThreshold = (value) => {
     try {
-      localStorage.setItem('termMatch_similarity_threshold', value.toString());
+      localStorage.setItem("termMatch_similarity_threshold", value.toString());
     } catch (error) {
-      console.error('Failed to save similarity threshold to localStorage:', error);
+      console.error(
+        "Failed to save similarity threshold to localStorage:",
+        error
+      );
     }
   };
 
@@ -35,7 +41,7 @@ export function useTermMatch() {
     similarity_threshold: getStoredSimilarityThreshold(),
     top_k: 10,
     max_ngram: 3,
-    user_id: 1 // 默认用户ID
+    user_id: 1, // 默认用户ID
   });
 
   // 计算属性
@@ -54,7 +60,7 @@ export function useTermMatch() {
    */
   const performMatch = async (texts, options = {}) => {
     if (!Array.isArray(texts) || texts.length === 0) {
-      throw new Error('Texts must be a non-empty array');
+      throw new Error("Texts must be a non-empty array");
     }
 
     isMatching.value = true;
@@ -63,18 +69,18 @@ export function useTermMatch() {
     try {
       // 合并选项
       const finalOptions = { ...matchOptions.value, ...options };
-      
+
       // console.log('Starting term matching with options:', finalOptions);
       const results = await matchTerms(texts, finalOptions);
-      
+
       matchResults.value = results;
       // console.log('Term matching completed:', results);
-      
+
       return results;
     } catch (error) {
       matchError.value = error.message;
-      console.error('Term matching failed:', error);
-      ElMessage.error(t('termMatch.matchFailed') || 'Term matching failed');
+      console.error("Term matching failed:", error);
+      ElMessage.error(t("termMatch.matchFailed") || "Term matching failed");
       throw error;
     } finally {
       isMatching.value = false;
@@ -87,7 +93,7 @@ export function useTermMatch() {
    */
   const updateMatchOptions = (options) => {
     matchOptions.value = { ...matchOptions.value, ...options };
-    
+
     // 如果更新了 similarity_threshold，保存到 localStorage
     if (options.similarity_threshold !== undefined) {
       saveSimilarityThreshold(options.similarity_threshold);
@@ -138,23 +144,32 @@ export function useTermMatch() {
 
     // 监听清空缓存事件，重置匹配选项到默认值
     const handleLocalStorageCleared = () => {
-              // console.log('LocalStorage cleared, resetting term match options to defaults...');
+      // console.log('LocalStorage cleared, resetting term match options to defaults...');
       matchOptions.value.similarity_threshold = 0.7;
       matchOptions.value.top_k = 10;
       matchOptions.value.max_ngram = 3;
     };
 
-    window.addEventListener('similarityThresholdChanged', handleSimilarityThresholdChanged);
-    window.addEventListener('topKChanged', handleTopKChanged);
-    window.addEventListener('maxNGramChanged', handleMaxNGramChanged);
-    window.addEventListener('localStorageCleared', handleLocalStorageCleared);
+    window.addEventListener(
+      "similarityThresholdChanged",
+      handleSimilarityThresholdChanged
+    );
+    window.addEventListener("topKChanged", handleTopKChanged);
+    window.addEventListener("maxNGramChanged", handleMaxNGramChanged);
+    window.addEventListener("localStorageCleared", handleLocalStorageCleared);
 
     // 清理事件监听器
     return () => {
-      window.removeEventListener('similarityThresholdChanged', handleSimilarityThresholdChanged);
-      window.removeEventListener('topKChanged', handleTopKChanged);
-      window.removeEventListener('maxNGramChanged', handleMaxNGramChanged);
-      window.removeEventListener('localStorageCleared', handleLocalStorageCleared);
+      window.removeEventListener(
+        "similarityThresholdChanged",
+        handleSimilarityThresholdChanged
+      );
+      window.removeEventListener("topKChanged", handleTopKChanged);
+      window.removeEventListener("maxNGramChanged", handleMaxNGramChanged);
+      window.removeEventListener(
+        "localStorageCleared",
+        handleLocalStorageCleared
+      );
     };
   });
 
@@ -164,15 +179,15 @@ export function useTermMatch() {
     matchResults,
     matchError,
     matchOptions,
-    
+
     // 计算属性
     hasResults,
     totalMatches,
-    
+
     // 方法
     performMatch,
     updateMatchOptions,
     updateSimilarityThreshold,
-    resetResults
+    resetResults,
   };
-} 
+}

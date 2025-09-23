@@ -38,9 +38,9 @@ import TranslationResultDialog from "../Components/Translation/TranslationResult
 import UploadSettingsDialog from "../Components/Upload/UploadSettingsDialog.vue";
 import DeduplicateDialog from "../Components/Translation/DeduplicateDialog.vue";
 import ExcelKeySetting from "../Components/Translation/ExcelKeySetting.vue";
-import { useTranslationManager } from "../composables/useTranslationManager.js";
-import { useDeduplicateDialog } from "../composables/useDeduplicateDialog.js";
-import { useI18n } from "../composables/useI18n.js";
+import { useTranslationManager } from "../composables/Translation/useTranslationManager.js";
+import { useDeduplicateDialog } from "../composables/Translation/useDeduplicateDialog.js";
+import { useI18n } from "../composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";
 
 const { t } = useI18n();
