@@ -1,480 +1,120 @@
 <template>
   <div class="translation_group">
     <h2 class="title">{{ title }}</h2>
-    <el-form
-      :model="formData"
-      ref="formRef"
-      label-position="top"
-      class="translation-form"
-    >
-      <el-form-item :label="t('translation.enCopywriting')" prop="content">
-        <div class="CodeEditor">
-          <CodeEditor v-model="codeContent"></CodeEditor>
-        </div>
-      </el-form-item>
-      <el-form-item>
-        <div class="button-container">
-          <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
-          <el-button
-            type="text"
-            @click="showLastTranslation"
-            v-if="hasLastTranslation"
-          >
-            {{ t("translation.lastTranslation") }}
-          </el-button>
-          <!-- Clear按钮，固定显示 -->
-          <el-button style="min-width: 90px" @click="handleClear">
-            {{ t("common.clear") }}
-          </el-button>
-          <el-button
-            v-if="!booleanStates.autoDeduplication"
-            style="min-width: 90px"
-            @click="handleDeduplicate"
-          >
-            {{ t("translation.deduplicate") }}
-          </el-button>
-          <el-button
-            type="primary"
-            @click="handleTranslate"
-            style="min-width: 90px"
-          >
-            {{ t("translation.translate") }}
-          </el-button>
-        </div>
-      </el-form-item>
-      <h2 class="title">{{ t("translation.exportSetting") }}</h2>
-      <el-form-item
-        :label="t('translation.excelKeySetting')"
-        label-position="left"
-      >
-        <div class="excel-key-setting">
-          <div class="input-container">
-            <el-input
-              v-model="excelBaselineKey"
-              :placeholder="t('translation.excelKeySettingPlaceholder')"
-              @blur="handleExcelBaselineKeyCancel"
-              @focus="handleExcelBaselineKeyFocus"
-            />
-          </div>
-        </div>
-      </el-form-item>
-      <el-form-item v-show="excelBaselineKeyEditing">
-        <div class="excel-key-setting-button-container">
-          <el-button
-            @click="handleExcelBaselineKeyClear"
-            style="min-width: 90px"
-            >{{ t("common.clear") }}</el-button
-          >
-          <el-button
-            type="primary"
-            @click="handleExcelBaselineKeySave"
-            style="min-width: 90px"
-            >{{ t("common.save") }}</el-button
-          >
-        </div>
-      </el-form-item>
-    </el-form>
-    <!-- 使用El-dialog展示翻译结果, 结果使用El-table展示-->
-    <!-- 提供导出Excel功能-->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="t('translation.translationResult')"
-      width="70%"
-    >
-      <el-form label-position="top">
-        <el-form-item>
-          <el-table
-            :data="translationResult"
-            style="width: 100%"
-            height="450"
-            empty-text=""
-            v-loading="loadingStates.translation"
-            :element-loading-text="getStatusText()"
-          >
-            <el-table-column prop="en" label="EN">
-              <template #default="{ row, $index }">
-                <EditableCell
-                  :value="row.en"
-                  :isEditing="row.editing_en"
-                  @enterEdit="enterEditMode($index, 'en')"
-                  @exitEdit="row.editing_en = false"
-                  @update:value="row.en = $event"
-                />
-              </template>
-            </el-table-column>
-            <el-table-column prop="cn" label="CN">
-              <template #default="{ row, $index }">
-                <EditableCell
-                  :value="row.cn"
-                  :isEditing="row.editing_cn"
-                  @enterEdit="enterEditMode($index, 'cn')"
-                  @exitEdit="row.editing_cn = false"
-                  @update:value="row.cn = $event"
-                />
-              </template>
-            </el-table-column>
-            <el-table-column prop="jp" label="JP">
-              <template #default="{ row, $index }">
-                <EditableCell
-                  :value="row.jp"
-                  :isEditing="row.editing_jp"
-                  @enterEdit="enterEditMode($index, 'jp')"
-                  @exitEdit="row.editing_jp = false"
-                  @update:value="row.jp = $event"
-                />
-              </template>
-            </el-table-column>
-            <el-table-column
-              fixed="right"
-              :label="t('common.operation')"
-              width="120"
-            >
-              <template #default="{ row }">
-                <div class="operation-container">
-                  <el-popover
-                    trigger="hover"
-                    placement="right-start"
-                    :show-arrow="false"
-                    :offset="5"
-                    width="auto"
-                    popper-style="padding: 8px 0;  min-width: 250px;"
-                    @hide="handlePopoverHide"
-                  >
-                    <template #reference>
-                      <el-icon>
-                        <MoreFilled />
-                      </el-icon>
-                    </template>
-                    <div class="user-suggestion" v-if="userSuggestionVisible">
-                      <el-input
-                        type="textarea"
-                        v-model="userSuggestion"
-                        :autosize="{ minRows: 2 }"
-                        :placeholder="
-                          t('translation.userSuggestionPlaceholder')
-                        "
-                      />
-                      <el-row justify="end" style="margin-top: 10px">
-                        <el-button
-                          plain
-                          size="small"
-                          style="min-width: 64px"
-                          @click="handleUseSuggestionCancel()"
-                          >{{ t("common.cancel") }}</el-button
-                        >
-                        <el-button
-                          type="primary"
-                          size="small"
-                          style="min-width: 64px"
-                          @click="handleUseSuggestion()"
-                          >{{ t("common.retry") }}</el-button
-                        >
-                      </el-row>
-                    </div>
-                    <div class="operation-list" v-if="!userSuggestionVisible">
-                      <div
-                        class="operation-list-item"
-                        @click="handleDelete(row)"
-                      >
-                        Delete
-                      </div>
-                      <!-- <div
-                        class="operation-list-item"
-                        @click="handleRetranslation(row)"
-                      >
-                        Re-translation
-                      </div> -->
-                      <!-- <div
-                        class="operation-list-item"
-                        @click="handleRetranslationAndModify(row)"
-                      >
-                        Re-translation and how to modify
-                      </div> -->
-                    </div>
-                  </el-popover>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-form-item>
-        <el-form-item>
-          <div class="dialog-button-container">
-            <el-button @click="dialogVisible = false">{{
-              t("common.cancel")
-            }}</el-button>
-            <el-button
-              type="primary"
-              @click="exportExcel"
-              :disabled="isTranslating"
-              >{{ t("translation.exportExcel") }}</el-button
-            >
-            <el-button
-              type="primary"
-              @click="uploadToLokalise"
-              :disabled="isTranslating"
-              >{{ t("translation.uploadToLokalise") }}</el-button
-            >
-          </div>
-        </el-form-item>
-      </el-form>
-    </el-dialog>
 
-    <!-- 上传设置弹窗 -->
-    <el-dialog
-      v-model="uploadDialogVisible"
-      :title="isUploadSuccess ? 'Upload Success' : 'Upload Setting'"
-      width="500px"
-      top="30vh"
-      :close-on-click-modal="!isUploading"
-      :close-on-press-escape="!isUploading"
-      v-loading="isUploading"
-      element-loading-text="Uploading to Lokalise..."
-      element-loading-spinner="el-icon-loading"
-      @close="handleDialogClose"
-    >
-      <!-- 成功页面 -->
-      <div v-if="isUploadSuccess" class="upload-success">
-        <div class="success-icon">
-          <img src="../assets/success.svg" alt="Success" />
-        </div>
-        <div class="success-title">Success !</div>
-        <div class="success-message">{{ successMessage }}</div>
-      </div>
+    <!-- 翻译表单 -->
+    <TranslationForm :formData="formData" :formRef="formRef" v-model:codeContent="codeContent"
+      :hasLastTranslation="hasLastTranslation" @clear="handleClear" @deduplicate="handleDeduplicate"
+      @translate="handleTranslate" @showLastTranslation="showLastTranslation" />
 
-      <!-- 上传设置表单 -->
-      <el-form
-        v-else
-        :model="uploadForm"
-        label-position="top"
-        @submit.prevent="executeUpload(translationResult)"
-      >
-        <el-form-item label="Project" required>
-          <el-select
-            v-model="uploadForm.projectId"
-            placeholder="Select a project"
-            style="width: 100%"
-            @change="handleProjectChange"
-          >
-            <el-option
-              v-for="project in projectList"
-              :key="project.project_id"
-              :label="project.name"
-              :value="project.project_id"
-            />
-          </el-select>
-        </el-form-item>
+    <!-- Excel 基线键设置 -->
+    <ExcelKeySetting />
 
-        <el-form-item label="Tag">
-          <el-input
-            v-model="uploadForm.tag"
-            placeholder="Enter tag (optional)"
-            @input="handleTagChange"
-          />
-        </el-form-item>
-      </el-form>
+    <!-- 翻译结果对话框 -->
+    <TranslationResultDialog v-model:dialogVisible="dialogVisible" :translationResult="translationResult"
+      :loadingStates="loadingStates" v-model:userSuggestion="userSuggestion"
+      v-model:userSuggestionVisible="userSuggestionVisible" :isTranslating="isTranslating"
+      :getStatusText="getStatusText" @enterEditMode="enterEditMode" @delete="handleDelete" @exportExcel="exportExcel"
+      @uploadToLokalise="uploadToLokalise" @useSuggestion="handleUseSuggestion"
+      @useSuggestionCancel="handleUseSuggestionCancel" @popoverHide="handlePopoverHide" />
 
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button v-if="!isUploadSuccess" @click="closeUploadDialog"
-            >Cancel</el-button
-          >
-          <el-button
-            v-if="!isUploadSuccess"
-            type="primary"
-            @click="executeUpload(translationResult)"
-            :disabled="!uploadForm.projectId || isUploading"
-            :loading="isUploading"
-          >
-            {{ isUploading ? "Uploading..." : "Upload" }}
-          </el-button>
-          <el-button
-            v-if="isUploadSuccess && currentProject"
-            type="primary"
-            @click="openLokaliseProject"
-            style="min-width: 120px"
-          >
-            View In Lokalise
-          </el-button>
-          <el-button
-            v-if="isUploadSuccess && currentProject"
-            type="primary"
-            @click="openLokaliseDownload"
-            style="min-width: 80px"
-          >
-            Build Now
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
+    <!-- 上传设置对话框 -->
+    <UploadSettingsDialog v-model:uploadDialogVisible="uploadDialogVisible" v-model:uploadForm="uploadForm"
+      :projectList="projectList" :isUploading="isUploading" :isUploadSuccess="isUploadSuccess"
+      :successMessage="successMessage" :currentProject="currentProject" @close="handleDialogClose"
+      @executeUpload="executeUpload" @projectChange="handleProjectChange" @tagChange="handleTagChange"
+      @openLokaliseProject="openLokaliseProject" @openLokaliseDownload="openLokaliseDownload" />
 
-    <!-- 去重项目选择弹窗 -->
-    <el-dialog
-      v-model="deduplicateDialogVisible"
-      :title="t('translation.selectProject')"
-      width="400px"
-      top="30vh"
-      :close-on-click-modal="!isDeduplicating"
-      :close-on-press-escape="!isDeduplicating"
-      v-loading="isDeduplicating"
-      element-loading-text="Processing deduplication..."
-      element-loading-spinner="el-icon-loading"
-    >
-      <el-form label-position="top">
-        <el-form-item>
-          <el-select
-            v-model="selectedProject"
-            placeholder="Project"
-            style="width: 100%"
-            :disabled="isDeduplicating"
-          >
-            <el-option label="AmazonSearch" value="AmazonSearch" />
-            <el-option label="Common" value="Common" />
-            <el-option label="Commerce" value="Commerce" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button
-            @click="closeDeduplicateDialog"
-            :disabled="isDeduplicating"
-            style="min-width: 90px"
-          >
-            {{ t("common.cancel") }}
-          </el-button>
-          <el-button
-            type="primary"
-            style="min-width: 90px"
-            @click="executeDeduplicate"
-            :disabled="!selectedProject || isDeduplicating"
-            :loading="isDeduplicating"
-          >
-            {{
-              isDeduplicating
-                ? t("translation.processing")
-                : t("translation.startDeduplicate")
-            }}
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
+    <!-- 去重项目选择对话框 -->
+    <DeduplicateDialog v-model:deduplicateDialogVisible="deduplicateDialogVisible"
+      v-model:selectedProject="selectedProject" :isDeduplicating="isDeduplicating" @close="closeDeduplicateDialog"
+      @execute="executeDeduplicate" />
   </div>
 </template>
 
 <script setup>
-import CodeEditor from "./CodeEditor.vue";
-import EditableCell from "./EditableCell.vue";
+import TranslationForm from "./TranslationForm.vue";
+import TranslationResultDialog from "./TranslationResultDialog.vue";
+import UploadSettingsDialog from "./UploadSettingsDialog.vue";
+import DeduplicateDialog from "./DeduplicateDialog.vue";
+import ExcelKeySetting from "./ExcelKeySetting.vue";
 import { useTranslationManager } from "../composables/useTranslationManager.js";
+import { useDeduplicateDialog } from "../composables/useDeduplicateDialog.js";
 import { useI18n } from "../composables/useI18n.js";
-import { useSettings } from "../composables/useSettings.js";
-import { useDeduplicate } from "../composables/useDeduplicate.js";
-import { ref, watch, onMounted, onUnmounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { MoreFilled } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+
 const { t } = useI18n();
 
-// 使用设置管理
+// 使用翻译管理composable
 const {
-  booleanStates,
-  getStoredDeduplicateProject,
-  handleDeduplicateProjectChange,
-} = useSettings();
+  codeContent,
+  dialogVisible,
+  formRef,
+  formData,
+  translationResult,
+  loadingStates,
+  currentStatus,
+  userSuggestion,
+  userSuggestionVisible,
+  isTranslating,
+  getStatusText,
+  handleTranslate,
+  continueTranslation,
+  showLastTranslation,
+  exportExcel,
+  uploadToLokalise,
+  enterEditMode,
+  uploadDialogVisible,
+  uploadForm,
+  projectList,
+  isUploading,
+  isUploadSuccess,
+  successMessage,
+  currentProject,
+  closeUploadDialog,
+  executeUpload,
+  handleProjectChange,
+  handleTagChange,
+  hasLastTranslation,
+  clearCache,
+  clearLastTranslation,
+  saveTranslationToLocal,
+} = useTranslationManager();
 
-// 使用去重功能
-const { deduplicateTranslation } = useDeduplicate();
+// 使用去重对话框composable
+const {
+  deduplicateDialogVisible,
+  selectedProject,
+  isDeduplicating,
+  handleDeduplicate: handleDeduplicateDialog,
+  closeDeduplicateDialog,
+  executeDeduplicate: executeDeduplicateDialog,
+} = useDeduplicateDialog();
 
-// 去重相关状态
-const deduplicateDialogVisible = ref(false);
-const selectedProject = ref(getStoredDeduplicateProject());
-const isDeduplicating = ref(false);
-const isAutoDeduplicate = ref(false); // 标记是否为自动去重
-
+// 处理去重操作
 const handleDeduplicate = () => {
   // 检查是否有待翻译的文本
   if (!codeContent.value?.trim()) {
     ElMessage.warning(t("translation.noTextToDeduplicate"));
     return;
   }
-
-  // 设置为手动去重
-  isAutoDeduplicate.value = false;
-  // 打开项目选择弹窗
-  deduplicateDialogVisible.value = true;
-};
-
-// 关闭去重弹窗
-const closeDeduplicateDialog = () => {
-  deduplicateDialogVisible.value = false;
-  isDeduplicating.value = false;
-  isAutoDeduplicate.value = false; // 重置自动去重标志
-  // 保存项目选择
-  if (selectedProject.value) {
-    handleDeduplicateProjectChange(selectedProject.value);
-  }
+  handleDeduplicateDialog();
 };
 
 // 执行去重操作
 const executeDeduplicate = async () => {
-  if (!selectedProject.value) {
-    ElMessage.warning(t("translation.pleaseSelectProject"));
-    return;
-  }
+  const result = await executeDeduplicateDialog(
+    codeContent.value,
+    continueTranslation,
+    clearCache
+  );
 
-  isDeduplicating.value = true;
-
-  try {
-    const result = await deduplicateTranslation(
-      selectedProject.value,
-      codeContent.value
-    );
-
-    // 无论是否有剩余文本，都要更新文本框内容
-    console.log("Before update - codeContent:", codeContent.value);
-    console.log("Remaining texts:", result.remainingTexts);
-    codeContent.value = result.remainingTexts.join("\n");
-    console.log("After update - codeContent:", codeContent.value);
-
-    if (result.remainingCount > 0) {
-      ElMessage.success(
-        t("translation.deduplicateSuccess", {
-          duplicate: result.duplicateCount,
-          remaining: result.remainingCount,
-        })
-      );
-
-      // 如果是自动去重，继续翻译流程
-      if (isAutoDeduplicate.value) {
-        // 关闭去重对话框
-        deduplicateDialogVisible.value = false;
-        // 继续翻译
-        await continueTranslation();
-      }
-    } else {
-      // 如果所有文本都被去重了，清空缓存
-      clearCache();
-      ElMessage.info(t("translation.allTextsDuplicated"));
-
-      // 如果是自动去重，关闭对话框
-      if (isAutoDeduplicate.value) {
-        deduplicateDialogVisible.value = false;
-      }
-    }
-
-    // 保存项目选择
-    handleDeduplicateProjectChange(selectedProject.value);
-  } catch (error) {
-    console.error("Deduplication failed:", error);
-    ElMessage.error(t("translation.deduplicateFailed"));
-  } finally {
-    isDeduplicating.value = false;
+  if (result && result.success) {
+    codeContent.value = result.remainingTexts;
   }
 };
 
-const handleRetranslationAndModify = () => {
-  userSuggestionVisible.value = true;
-};
-
+// 处理用户建议相关操作
 const handleUseSuggestionCancel = () => {
   userSuggestion.value = "";
   userSuggestionVisible.value = false;
@@ -509,124 +149,6 @@ const handleDelete = (row) => {
     }
   }
 };
-
-// 使用设置管理
-const { excelBaselineKey, handleSaveExcelBaselineKey } = useSettings();
-
-const excelBaselineKeyEditing = ref(false);
-const isSaving = ref(false);
-
-//excelBaselineKey变动时，设置excelBaselineKeyEditing为true，空值时设置为false
-watch(
-  () => excelBaselineKey.value,
-  (newValue) => {
-    // 有值时显示按钮，空值时隐藏按钮
-    if (newValue && newValue.trim()) {
-      excelBaselineKeyEditing.value = true;
-    } else {
-      excelBaselineKeyEditing.value = false;
-    }
-  }
-);
-
-const handleExcelBaselineKeySave = () => {
-  if (!excelBaselineKeyEditing.value) return;
-
-  const currentValue = excelBaselineKey.value || "";
-
-  // 检查是否为空
-  if (!currentValue.trim()) {
-    ElMessage.warning(t("translation.excelBaselineKeySaveWarning"));
-    return;
-  }
-
-  isSaving.value = true;
-
-  const success = handleSaveExcelBaselineKey(currentValue);
-  if (success) {
-    excelBaselineKeyEditing.value = false;
-  }
-
-  isSaving.value = false;
-};
-
-const handleExcelBaselineKeyFocus = () => {
-  excelBaselineKeyEditing.value = true;
-};
-
-const handleExcelBaselineKeyCancel = () => {
-  // 如果正在保存，不处理失焦
-  if (isSaving.value) return;
-
-  // 延迟处理，给用户时间点击保存按钮
-  setTimeout(() => {
-    if (excelBaselineKeyEditing.value && !isSaving.value) {
-      // 失焦时清空值并隐藏按钮
-      excelBaselineKey.value = "";
-      excelBaselineKeyEditing.value = false;
-    }
-  }, 200);
-};
-
-const handleExcelBaselineKeyClear = () => {
-  excelBaselineKey.value = "";
-  excelBaselineKeyEditing.value = false;
-  // 清空存储
-  handleSaveExcelBaselineKey("");
-};
-
-// 监听baseline key清空事件
-const handleBaselineKeyCleared = () => {
-  excelBaselineKey.value = "";
-  excelBaselineKeyEditing.value = false;
-};
-
-// 监听项目选择变化事件
-const handleProjectSelectionChange = (event) => {
-  selectedProject.value = event.detail.project;
-};
-
-// 处理自动去重对话框显示
-const handleShowAutoDeduplicateDialog = () => {
-  // 检查是否有待翻译的文本
-  if (!codeContent.value?.trim()) {
-    ElMessage.warning(t("translation.noTextToDeduplicate"));
-    return;
-  }
-
-  // 设置为自动去重
-  isAutoDeduplicate.value = true;
-  // 打开项目选择弹窗
-  deduplicateDialogVisible.value = true;
-};
-
-// 组件挂载时添加事件监听
-onMounted(() => {
-  window.addEventListener("baselineKeyCleared", handleBaselineKeyCleared);
-  window.addEventListener(
-    "deduplicateProjectChanged",
-    handleProjectSelectionChange
-  );
-  // 添加自动去重事件监听
-  window.addEventListener(
-    "showAutoDeduplicateDialog",
-    handleShowAutoDeduplicateDialog
-  );
-});
-
-// 组件卸载时移除事件监听
-onUnmounted(() => {
-  window.removeEventListener("baselineKeyCleared", handleBaselineKeyCleared);
-  window.removeEventListener(
-    "deduplicateProjectChanged",
-    handleProjectSelectionChange
-  );
-  // 移除自动去重事件监听
-  window.removeEventListener(
-    "showAutoDeduplicateDialog",
-    handleShowAutoDeduplicateDialog
-  );
-});
 
 /**
  * 清除编辑器内容
@@ -665,42 +187,6 @@ const openLokaliseProject = () => {
   }
 };
 
-// 使用翻译管理composable
-const {
-  codeContent,
-  dialogVisible,
-  formRef,
-  formData,
-  translationResult,
-  loadingStates,
-  currentStatus,
-  userSuggestion,
-  userSuggestionVisible,
-  isTranslating,
-  getStatusText,
-  handleTranslate,
-  continueTranslation,
-  showLastTranslation,
-  exportExcel,
-  uploadToLokalise,
-  enterEditMode,
-  uploadDialogVisible,
-  uploadForm,
-  projectList,
-  isUploading,
-  isUploadSuccess,
-  successMessage,
-  currentProject,
-  closeUploadDialog,
-  executeUpload,
-  handleProjectChange,
-  handleTagChange,
-  hasLastTranslation,
-  clearCache,
-  clearLastTranslation,
-  saveTranslationToLocal,
-} = useTranslationManager();
-
 const props = defineProps({
   title: {
     type: String,
@@ -710,38 +196,6 @@ const props = defineProps({
 </script>
 
 <style lang="scss" scoped>
-.user-suggestion {
-  padding: 8px 16px;
-}
-
-.operation-container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-  padding-right: 20px;
-  cursor: pointer;
-
-  .el-icon {
-    transform: rotate(90deg);
-  }
-}
-
-.operation-list {
-  display: flex;
-  flex-direction: column;
-
-  .operation-list-item {
-    padding: 8px 16px;
-    cursor: pointer;
-
-    &:hover {
-      color: #409eff;
-      background-color: #f5f7fa;
-    }
-  }
-}
-
 .translation_group {
   padding: 16px;
 }
@@ -749,212 +203,5 @@ const props = defineProps({
 .title {
   font-size: 24px;
   margin-bottom: 20px;
-}
-
-.translation-form {
-  width: 100%;
-}
-
-.translation-content {
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 16px;
-}
-
-.CodeEditor {
-  width: 100%;
-}
-
-.button-container {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Last Translation 按钮样式 */
-.button-container .el-button--text {
-  color: #409eff;
-  font-size: 14px;
-  padding: 0;
-  height: auto;
-  line-height: 1.5;
-}
-
-.button-container .el-button--text:hover {
-  color: #66b1ff;
-  text-decoration: underline;
-}
-
-.dialog-button-container {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-:deep(.el-form-item__label) {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* 对话框表单样式 */
-:deep(.el-dialog .el-form) {
-  margin: 0;
-}
-
-:deep(.el-dialog .el-form-item) {
-  margin-bottom: 20px;
-}
-
-:deep(.el-dialog .el-form-item:last-child) {
-  margin-bottom: 0;
-}
-
-:deep(.el-dialog .el-form-item__label) {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-  margin-bottom: 8px;
-}
-
-/* 加粗对话框标题 */
-:deep(.el-dialog__title) {
-  font-weight: 600;
-  font-size: 18px;
-  color: #303133;
-}
-
-.title {
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
-/* 设置对话框内边距 */
-:deep(.el-dialog) {
-  --el-dialog-padding-primary: 20px;
-}
-
-/* 单元格样式已经移到 EditableCell 组件中 */
-
-/* 表格样式优化 */
-:deep(.el-table) {
-  border: none;
-}
-
-:deep(.el-table__border-top-patch) {
-  display: none;
-}
-
-:deep(.el-table__border-right-patch) {
-  display: none;
-}
-
-:deep(.el-table td) {
-  border: none;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 0;
-  height: 50px;
-}
-
-:deep(.el-table th) {
-  border: none;
-  height: 50px;
-  padding-left: 12px;
-}
-
-:deep(.el-table__row) {
-  height: 50px;
-}
-
-:deep(.el-table__row:last-child td) {
-  border-bottom: none;
-}
-
-:deep(.el-table__cell) {
-  border: none;
-  padding: 0;
-}
-
-:deep(.el-table--border) {
-  border: none;
-}
-
-:deep(.el-table--border::after) {
-  display: none;
-}
-
-:deep(.el-table--border::before) {
-  display: none;
-}
-
-.excel-key-setting {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-
-  .input-container {
-    width: 200px;
-  }
-}
-
-.excel-key-setting-button-container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-  gap: 8px;
-}
-
-/* 上传设置弹窗样式 */
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* 成功页面样式 */
-.upload-success {
-  text-align: center;
-  padding: 10px 10px;
-
-  .success-icon {
-    margin-bottom: 24px;
-
-    img {
-      width: 120px;
-      height: auto;
-    }
-  }
-
-  .success-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #303133;
-    margin-bottom: 16px;
-  }
-
-  .success-message {
-    font-size: 14px;
-    color: #606266;
-    line-height: 2;
-    max-width: 400px;
-    margin: 0 auto;
-    text-align: center;
-  }
-}
-
-:deep(.el-dialog__body) {
-  padding: 0px;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #303133;
 }
 </style>
