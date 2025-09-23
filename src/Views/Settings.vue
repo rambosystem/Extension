@@ -18,7 +18,7 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-            }}</span>
+              }}</span>
             <el-switch :model-value="booleanStates.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
@@ -46,7 +46,7 @@
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
-            }}</span>
+              }}</span>
             <el-switch :model-value="booleanStates.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
@@ -105,7 +105,7 @@
           <template #footer>
             <el-button @click="dialogVisible = false">{{
               t("common.cancel")
-            }}</el-button>
+              }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -357,9 +357,12 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
 }
 
 .custom-translation-prompt-text {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 16px;
-  color: #606266;
+  color: #303133;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .auto-deduplication {
@@ -369,9 +372,12 @@ const handleRefreshTerms = async (showSuccessMessage = true) => {
 }
 
 .auto-deduplication-text {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 16px;
-  color: #606266;
+  color: #303133;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .language-select,
