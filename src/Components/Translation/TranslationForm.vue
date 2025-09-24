@@ -22,7 +22,7 @@
                     @click="handleDeduplicate">
                     {{ t("translation.deduplicate") }}
                 </el-button>
-                <el-button type="primary" @click="translationCoreStore.handleTranslate" style="min-width: 90px">
+                <el-button type="primary" @click="handleTranslate" style="min-width: 90px">
                     {{ t("translation.translate") }}
                 </el-button>
             </div>
@@ -52,6 +52,16 @@ const emit = defineEmits([
 
 const handleDeduplicate = () => {
     emit('deduplicate');
+};
+
+// 处理翻译按钮点击
+const handleTranslate = async () => {
+    const result = await translationCoreStore.handleTranslate();
+
+    // 如果需要去重，触发自动去重对话框
+    if (result && result.needsDeduplication) {
+        window.dispatchEvent(new CustomEvent('showAutoDeduplicateDialog'));
+    }
 };
 
 // // 调试信息

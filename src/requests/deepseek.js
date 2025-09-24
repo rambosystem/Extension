@@ -1,4 +1,5 @@
 import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
+import { debugLog } from "../utils/debug.js";
 
 export async function translateWithDeepSeek(content, onStatusUpdate = null) {
   const apiKey = localStorage.getItem("deepseek_api_key");
@@ -64,7 +65,7 @@ export async function translateWithDeepSeek(content, onStatusUpdate = null) {
   }
 
   const data = await response.json();
-
+  debugLog("DeepSeek response:", JSON.stringify(data, null, 2));
   if (!data.choices || !data.choices[0] || !data.choices[0].message) {
     throw new Error("Invalid response format from API");
   }

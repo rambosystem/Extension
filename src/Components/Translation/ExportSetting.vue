@@ -1,10 +1,10 @@
 <template>
     <div>
-        <h2 class="title">{{ t("translation.exportSetting") }}</h2>
-        <el-form-item :label="t('translation.excelKeySetting')" label-position="left">
+        <h2 class="title">{{ t("exportSetting.exportSetting") }}</h2>
+        <el-form-item :label="t('exportSetting.excelKeySetting')" label-position="left">
             <div class="excel-key-setting">
                 <div class="input-container">
-                    <el-input v-model="excelBaselineKey" :placeholder="t('translation.excelKeySettingPlaceholder')"
+                    <el-input v-model="excelBaselineKey" :placeholder="t('exportSetting.excelKeySettingPlaceholder')"
                         @blur="handleExcelBaselineKeyCancel" @focus="handleExcelBaselineKeyFocus" />
                 </div>
             </div>
@@ -17,9 +17,9 @@
                     t("common.save") }}</el-button>
             </div>
         </el-form-item>
-        <el-form-item :label="t('translation.excelOverwrite')" label-position="left">
+        <el-form-item :label="t('exportSetting.overwrite')" label-position="left">
             <div class="excel-overwrite-setting">
-                <el-switch v-model="Overwrite" @change="handleOverwriteChange" />
+                <el-switch v-model="Overwrite" @change="handleOverwriteChange" width="45px" />
             </div>
         </el-form-item>
 
@@ -76,7 +76,7 @@ const handleExcelBaselineKeySave = () => {
 
     // 检查是否为空
     if (!currentValue.trim()) {
-        ElMessage.warning(t("translation.excelBaselineKeySaveWarning"));
+        ElMessage.warning(t("exportSetting.excelBaselineKeySaveWarning"));
         return;
     }
 
@@ -149,6 +149,13 @@ onMounted(() => {
     align-items: center;
     width: 100%;
     gap: 8px;
+}
+
+.excel-overwrite-setting {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
 }
 
 :deep(.el-form-item__label) {

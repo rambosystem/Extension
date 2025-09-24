@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { useLokaliseUpload } from "../../composables/Upload/useLokaliseUpload.js";
 
 /**
  * 上传功能状态管理
@@ -60,7 +59,34 @@ export const useUploadStore = defineStore("upload", {
      * 打开上传对话框
      */
     openUploadDialog() {
+      // 加载项目列表
+      this.loadProjectList();
       this.uploadDialogVisible = true;
+    },
+
+    /**
+     * 加载项目列表
+     */
+    loadProjectList() {
+      try {
+        const projects = localStorage.getItem("lokalise_projects");
+        if (projects) {
+          const parsedProjects = JSON.parse(projects);
+          if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
+            this.projectList = parsedProjects;
+            // 如果有保存的项目ID，尝试恢复
+            const savedProjectId = localStorage.getItem(
+              "lokalise_upload_project_id"
+            );
+            if (savedProjectId) {
+              this.setUploadProjectId(savedProjectId);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load project list:", error);
+        this.projectList = [];
+      }
     },
 
     /**
@@ -142,8 +168,8 @@ export const useUploadStore = defineStore("upload", {
         return;
       }
 
-      const lokaliseUpload = useLokaliseUpload();
-      lokaliseUpload.uploadToLokalise(translationResult);
+      // 直接打开上传对话框，不调用composable
+      this.openUploadDialog();
     },
 
     /**
@@ -159,11 +185,8 @@ export const useUploadStore = defineStore("upload", {
       this.setUploading(true);
 
       try {
-        const lokaliseUpload = useLokaliseUpload();
-        await lokaliseUpload.uploadToLokalise(
-          translationResult,
-          this.uploadForm
-        );
+        // 直接调用上传API，不依赖composable
+        await this.performUpload(translationResult);
         this.setUploadSuccess(true, "Upload completed successfully");
       } catch (error) {
         console.error("Upload failed:", error);
@@ -171,6 +194,53 @@ export const useUploadStore = defineStore("upload", {
       } finally {
         this.setUploading(false);
       }
+    },
+
+    /**
+     * 执行实际的上传操作
+     * @param {Array} translationResult - 翻译结果
+     */
+    async performUpload(translationResult) {
+      // 获取API token
+      const apiToken = localStorage.getItem("lokalise_api_token");
+      if (!apiToken) {
+        throw new Error("Lokalise API token not configured");
+      }
+
+      // 获取选中的项目
+      const selectedProject = this.currentProject;
+      if (!selectedProject) {
+        throw new Error("No project selected");
+      }
+
+      // 导入上传API函数
+      const { uploadTranslationKeys } = await import(
+        "../../requests/lokalise.js"
+      );
+
+      // 准备上传数据
+      const keys = translationResult.map((item, index) => ({
+        key_name: `translation_${Date.now()}_${index}`,
+        platforms: ["web"],
+        translations: [
+          {
+            language_iso: "en",
+            translation: item.en,
+          },
+          {
+            language_iso: "zh",
+            translation: item.cn,
+          },
+          {
+            language_iso: "ja",
+            translation: item.jp,
+          },
+        ],
+        tags: this.uploadForm.tag ? [this.uploadForm.tag] : [],
+      }));
+
+      // 执行上传
+      await uploadTranslationKeys(selectedProject.project_id, keys, apiToken);
     },
 
     /**
@@ -182,6 +252,14 @@ export const useUploadStore = defineStore("upload", {
       // 找到对应的项目对象
       const project = this.projectList.find((p) => p.project_id === projectId);
       this.setCurrentProject(project);
+    },
+
+    /**
+     * 处理标签变化
+     * @param {string} tag - 标签
+     */
+    handleTagChange(tag) {
+      this.setUploadTag(tag);
     },
 
     /**
@@ -225,6 +303,26 @@ export const useUploadStore = defineStore("upload", {
       Object.keys(this.loadingStates).forEach((key) => {
         this.loadingStates[key] = false;
       });
+    },
+
+    /**
+     * 打开Lokalise项目页面
+     */
+    openLokaliseProject() {
+      if (this.currentProject) {
+        const projectUrl = `https://app.lokalise.com/project/${this.currentProject.project_id}/?view=multi`;
+        window.open(projectUrl, "_blank");
+      }
+    },
+
+    /**
+     * 打开Lokalise下载页面
+     */
+    openLokaliseDownload() {
+      if (this.currentProject) {
+        const downloadUrl = `https://app.lokalise.com/download/${this.currentProject.project_id}/`;
+        window.open(downloadUrl, "_blank");
+      }
     },
   },
 

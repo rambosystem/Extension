@@ -17,7 +17,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
 
   getters: {
     // 检查是否正在去重
-    isDeduplicating: (state) => state.isDeduplicating,
+    isProcessing: (state) => state.isDeduplicating,
   },
 
   actions: {
@@ -74,6 +74,10 @@ export const useDeduplicateStore = defineStore("deduplicate", {
      */
     handleShowAutoDeduplicateDialog() {
       this.setAutoDeduplicate(true);
+
+      // 初始化去重设置，确保有项目选择
+      this.initializeDeduplicateSettings();
+
       this.openDeduplicateDialog();
     },
 
@@ -102,6 +106,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
 
       try {
         const deduplicate = useDeduplicate();
+        // selectedProject 是字符串（项目名称）
         const result = await deduplicate.deduplicateTranslation(
           this.selectedProject,
           codeContent
@@ -160,6 +165,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
           "deduplicate_project_selection"
         );
         if (deduplicateProject) {
+          // selectedProject 是字符串（项目名称）
           this.selectedProject = deduplicateProject;
         }
       } catch (error) {

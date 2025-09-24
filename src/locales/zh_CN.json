@@ -37,11 +37,6 @@
     "pleaseEnterContent": "请输入要翻译的内容",
     "pleaseConfigureAPIKey": "请在设置中配置您的API密钥以使用翻译功能。",
     "translationFailed": "翻译失败，请检查您的API密钥和设置。",
-    "excelKeySetting": "Excel基准键",
-    "excelKeySettingPlaceholder": "基准键",
-    "exportSetting": "导出设置",
-    "excelBaselineKeySaveSuccess": "Excel基准键保存成功",
-    "excelBaselineKeySaveWarning": "Excel 基准键应为Key+数字的格式",
     "deleteSuccess": "行删除成功",
     "confirmDelete": "确定要删除这行翻译吗？",
     "allDataDeleted": "所有翻译数据已删除",
@@ -63,6 +58,14 @@
     "allTextsDuplicatedAuto": "所有文本已被去重，无需翻译。",
     "autoDeduplicateSuccess": "自动去重完成！已移除 {duplicate} 个重复文本，剩余 {remaining} 个文本待翻译。",
     "autoDeduplicateFailed": "自动去重失败，请检查设置后重试。"
+  },
+  "exportSetting": {
+    "excelKeySetting": "Excel基准键",
+    "excelKeySettingPlaceholder": "基准键",
+    "exportSetting": "导出设置",
+    "excelBaselineKeySaveSuccess": "Excel基准键保存成功",
+    "excelBaselineKeySaveWarning": "Excel 基准键应为Key+数字的格式",
+    "overwrite": "覆盖现有键"
   },
   "settings": {
     "title": "Lokalise设置",

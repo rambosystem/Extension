@@ -37,11 +37,6 @@
     "pleaseEnterContent": "Please Enter the Content to Translate",
     "pleaseConfigureAPIKey": "Please Configure Your API Key in Settings to Use Translation Feature.",
     "translationFailed": "Translation failed. Please check your API key and settings.",
-    "excelKeySetting": "Excel Baseline Key",
-    "excelKeySettingPlaceholder": "Baseline Key",
-    "exportSetting": "Export Setting",
-    "excelBaselineKeySaveSuccess": "Excel Baseline Key saved successfully",
-    "excelBaselineKeySaveWarning": "Excel Baseline Key should be in the format of Key + Number",
     "deleteSuccess": "Deleted successfully",
     "confirmDelete": "Are you sure you want to delete this translation row?",
     "allDataDeleted": "All translation data has been deleted",
@@ -63,6 +58,14 @@
     "allTextsDuplicatedAuto": "All texts have been deduplicated. No translation needed.",
     "autoDeduplicateSuccess": "Auto deduplication completed! Removed {duplicate} duplicates, {remaining} texts remaining for translation.",
     "autoDeduplicateFailed": "Auto deduplication failed. Please check your settings and try again."
+  },
+  "exportSetting": {
+    "excelKeySetting": "Excel Baseline Key",
+    "excelKeySettingPlaceholder": "Baseline Key",
+    "exportSetting": "Export Setting",
+    "excelBaselineKeySaveSuccess": "Excel Baseline Key saved successfully",
+    "excelBaselineKeySaveWarning": "Excel Baseline Key should be in the format of Key + Number",
+    "overwrite": "Overwrite Existing Keys"
   },
   "settings": {
     "title": "Lokalise Settings",

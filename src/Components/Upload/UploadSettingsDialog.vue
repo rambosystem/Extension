@@ -14,8 +14,7 @@
         </div>
 
         <!-- 上传设置表单 -->
-        <el-form v-else :model="uploadStore.uploadForm" label-position="top"
-            @submit.prevent="uploadStore.executeUpload">
+        <el-form v-else :model="uploadStore.uploadForm" label-position="top" @submit.prevent="handleUpload">
             <el-form-item label="Project" required>
                 <el-select :modelValue="uploadStore.uploadForm.projectId"
                     @update:modelValue="uploadStore.handleProjectChange" placeholder="Select a project"
@@ -34,7 +33,7 @@
         <template #footer>
             <div class="dialog-footer">
                 <el-button v-if="!uploadStore.isUploadSuccess" @click="uploadStore.closeUploadDialog">Cancel</el-button>
-                <el-button v-if="!uploadStore.isUploadSuccess" type="primary" @click="uploadStore.executeUpload"
+                <el-button v-if="!uploadStore.isUploadSuccess" type="primary" @click="handleUpload"
                     :disabled="!uploadStore.uploadForm.projectId || uploadStore.isUploading"
                     :loading="uploadStore.isUploading">
                     {{ uploadStore.isUploading ? "Uploading..." : "Upload" }}
@@ -54,9 +53,16 @@
 
 <script setup>
 import { useUploadStore } from "../../stores/translation/upload.js";
+import { useTranslationCoreStore } from "../../stores/translation/core.js";
 
 // 使用翻译Store
 const uploadStore = useUploadStore();
+const translationCoreStore = useTranslationCoreStore();
+
+// 处理上传
+const handleUpload = async () => {
+    await uploadStore.executeUpload(translationCoreStore.translationResult);
+};
 </script>
 
 <style lang="scss" scoped>
