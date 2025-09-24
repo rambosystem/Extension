@@ -88,7 +88,8 @@
     "autoDeduplication": "自动去重",
     "autoDeduplicationLabel": "自动去重",
     "addTermsDict": "添加术语字典",
-    "debugLogging": "调试日志"
+    "debugLogging": "调试日志",
+    "translationTemperature": "翻译温度"
   },
   "excelExport": {
     "excelDownloaded": "Excel文件下载成功",

@@ -69,6 +69,12 @@
       </el-form-item>
     </el-form>
     <h2 class="title">{{ t("settings.advancedSettings") }}</h2>
+    <el-form-item :label="t('settings.translationTemperature')" label-position="left">
+      <div class="translation-temperature">
+        <el-input-number controls-position="right" v-model="translationSettingsStore.translationTemperature" :step="0.1"
+          :min="0" :max="2" :precision="1" @change="handleTranslationTemperatureChange" />
+      </div>
+    </el-form-item>
     <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
         <div class="similarity-threshold">
@@ -217,6 +223,10 @@ const handleLanguageChange = (value) => {
 
 const handleDebugLoggingChange = (value) => {
   translationSettingsStore.toggleDebugLogging(value);
+};
+
+const handleTranslationTemperatureChange = (value) => {
+  translationSettingsStore.updateTranslationTemperature(value);
 };
 
 const handleClearLocalStorage = () => {
@@ -451,7 +461,8 @@ onMounted(async () => {
 .similarity-threshold,
 .top-k,
 .max-ngram,
-.debug-logging-setting {
+.debug-logging-setting,
+.translation-temperature {
   display: flex;
   justify-content: flex-end;
   align-items: center;

@@ -88,7 +88,8 @@
     "autoDeduplication": "Auto Deduplication",
     "autoDeduplicationLabel": "Auto Deduplication",
     "addTermsDict": "Add Terms Dictionary",
-    "debugLogging": "Debug Logging"
+    "debugLogging": "Debug Logging",
+    "translationTemperature": "Translation Temperature"
   },
   "excelExport": {
     "excelDownloaded": "Excel file downloaded successfully",

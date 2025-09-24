@@ -27,6 +27,9 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     // 调试日志开关
     debugLogging: false,
 
+    // 翻译温度设置
+    translationTemperature: 0.1,
+
     // 加载状态
     loadingStates: {
       prompt: false,
@@ -280,6 +283,15 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         if (debugLogging !== null) {
           this.debugLogging = debugLogging === "true";
         }
+
+        // 加载翻译温度设置
+        const translationTemperature = localStorage.getItem(
+          "translation_temperature"
+        );
+        if (translationTemperature) {
+          this.translationTemperature =
+            parseFloat(translationTemperature) || 0.1;
+        }
       } catch (error) {
         console.error("Failed to initialize translation settings:", error);
       }
@@ -299,6 +311,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       this.deduplicateProject = "Common";
       this.adTerms = true;
       this.isCodeEditing = false;
+      this.translationTemperature = 0.1;
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {
@@ -315,6 +328,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       localStorage.removeItem("deduplicate_project_selection");
       localStorage.removeItem("ad_terms_status");
       localStorage.removeItem("debug_logging_enabled");
+      localStorage.removeItem("translation_temperature");
     },
 
     /**
@@ -347,6 +361,20 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     },
 
     /**
+     * 更新翻译温度设置
+     * @param {number} temperature - 温度值
+     */
+    updateTranslationTemperature(temperature) {
+      // 验证温度值范围
+      const validTemperature = Math.max(0, Math.min(2, temperature));
+      this.translationTemperature = validTemperature;
+      localStorage.setItem(
+        "translation_temperature",
+        validTemperature.toString()
+      );
+    },
+
+    /**
      * 清空所有设置（包括API设置）
      */
     async clearAllSettings() {
@@ -375,6 +403,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
           "excel_overwrite",
           "app_language",
           "pending_translation_cache",
+          "translation_temperature",
         ];
 
         additionalKeys.forEach((key) => {

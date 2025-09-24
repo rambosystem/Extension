@@ -72,11 +72,19 @@ ${copiesSection}  </copies>
     },
   ];
 
+  // 获取翻译温度设置
+  const translationTemperature = localStorage.getItem(
+    "translation_temperature"
+  );
+  const temperature = translationTemperature
+    ? parseFloat(translationTemperature)
+    : 0.1;
+
   // 构建完整的请求体
   const requestBody = {
     model: "deepseek-chat",
     messages: messages,
-    temperature: 0.1,
+    temperature: temperature,
     response_format: { type: "text" },
   };
 
