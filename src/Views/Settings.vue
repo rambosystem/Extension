@@ -235,8 +235,8 @@ const handleClearLocalStorage = () => {
   translationSettingsStore.dialogVisible = true;
 };
 
-const handleClearLocalStorageConfirm = async () => {
-  await translationSettingsStore.clearAllSettings();
+const handleClearLocalStorageConfirm = () => {
+  translationSettingsStore.clearAllSettings();
 };
 
 // 重建embedding确认框状态

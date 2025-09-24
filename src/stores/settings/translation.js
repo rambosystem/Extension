@@ -423,7 +423,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
      * 初始化所有设置（清除缓存但保留重要设置）
      * 重构后的版本：只调用各Store的初始化函数，禁止直接操作localStorage
      */
-    async clearAllSettings() {
+    clearAllSettings() {
       try {
         // 调用各Store的初始化函数重置到默认值
         // 1. 初始化翻译设置（保留去重和ad terms设置）
@@ -452,8 +452,10 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         // 7. 确保重要设置被正确保存到 localStorage
         this.saveImportantSettings();
 
-        // 8. 刷新 Terms Card 数据
-        await termsStore.refreshTerms(false); // 不显示成功消息
+        // 8. 异步刷新 Terms Card 数据（不等待完成）
+        termsStore.refreshTerms(false).catch((error) => {
+          console.error("Terms refresh failed after cache clear:", error);
+        });
 
         // 关闭对话框
         this.dialogVisible = false;
