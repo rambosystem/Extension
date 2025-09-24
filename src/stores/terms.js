@@ -22,7 +22,7 @@ export const useTermsStore = defineStore("terms", {
     termsData: [],
 
     // 术语状态
-    termsStatus: false,
+    termsStatus: true, // 默认为true，避免初始化时的动画闪烁
     termsTitle: "Terms Library",
 
     // 统计信息
@@ -406,6 +406,9 @@ export const useTermsStore = defineStore("terms", {
       if (typeof window !== "undefined" && window.localStorage) {
         const savedStatus = localStorage.getItem("ad_terms_status");
         this.termsStatus = savedStatus !== null ? savedStatus === "true" : true;
+      } else {
+        // 如果没有localStorage，使用默认值true
+        this.termsStatus = true;
       }
     },
 

@@ -394,6 +394,14 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         const cache = useTranslationCache();
         cache.clearCache();
 
+        // 重置terms store状态
+        const { useTermsStore } = await import("../terms.js");
+        const termsStore = useTermsStore();
+        termsStore.resetAll();
+
+        // 重新初始化terms状态，确保UI立即更新
+        termsStore.initializeTermsStatus();
+
         // 清空其他localStorage项目
         const additionalKeys = [
           "last_translation",
@@ -404,6 +412,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
           "app_language",
           "pending_translation_cache",
           "translation_temperature",
+          "ad_terms_status",
         ];
 
         additionalKeys.forEach((key) => {

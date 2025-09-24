@@ -88,8 +88,8 @@
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.cn" :isEditing="row.editing_cn" :rowIndex="$index"
                                 :columnIndex="1" :isLastCell="false" @enterEdit="enterEditMode($index, 'cn')"
-                                @exitEdit="() => emit('updateTerm', row, 'editing_cn', false)"
-                                @update:value="(value) => emit('updateTerm', row, 'cn', value)"
+                                @exitEdit="row.editing_cn = false"
+                                @update:value="(value) => { row.cn = value; handleTermsChange(); }"
                                 @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
