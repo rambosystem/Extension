@@ -1,5 +1,6 @@
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
+import { useTranslationStore } from "../../stores/translation.js";
 import * as XLSX from "xlsx";
 
 const { t } = useI18n();
@@ -8,6 +9,8 @@ const { t } = useI18n();
  * Excel导出功能Hook
  */
 export function useExcelExport() {
+  const translationStore = useTranslationStore();
+
   /**
    * 生成自增序列key
    * @param {string} baselineKey - 基准key（如"key1"）
@@ -36,8 +39,8 @@ export function useExcelExport() {
   const formatToExcel = (translationResult) => {
     const header = ["key", "en", "zh_CN", "ja"];
 
-    // 获取baseline key
-    const baselineKey = localStorage.getItem("excel_baseline_key") || "";
+    // 从 store 获取 baseline key
+    const baselineKey = translationStore.excelBaselineKey || "";
 
     const excelData = [
       header,
@@ -88,12 +91,8 @@ export function useExcelExport() {
    */
   const clearBaselineKey = () => {
     try {
-      localStorage.setItem("excel_baseline_key", "");
-
-      // 触发事件通知其他组件baseline key已被清空
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("baselineKeyCleared"));
-      }
+      // 使用 store 的方法清空 baseline key
+      translationStore.saveExcelBaselineKey("");
     } catch (error) {
       console.error("Failed to clear baseline key:", error);
     }
@@ -130,5 +129,6 @@ export function useExcelExport() {
     formatToExcel,
     downloadExcel,
     exportExcel,
+    clearBaselineKey,
   };
 }
