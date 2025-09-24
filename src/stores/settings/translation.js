@@ -343,40 +343,6 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     },
 
     /**
-     * 清空翻译设置
-     */
-    clearTranslationSettings() {
-      // 重置到默认值
-      this.translationPrompt = false;
-      this.autoDeduplication = true;
-      this.customPrompt = DEFAULT_TRANSLATION_PROMPT;
-      this.similarityThreshold = 0.7;
-      this.topK = 10;
-      this.maxNGram = 3;
-      this.deduplicateProject = "Common";
-      this.adTerms = true;
-      this.isCodeEditing = false;
-      this.translationTemperature = 0.1;
-
-      // 重置加载状态
-      Object.keys(this.loadingStates).forEach((key) => {
-        this.loadingStates[key] = false;
-      });
-
-      // 清空localStorage中的翻译设置
-      localStorage.removeItem("translation_prompt_enabled");
-      localStorage.removeItem("auto_deduplication_enabled");
-      localStorage.removeItem("custom_translation_prompt");
-      localStorage.removeItem("termMatch_similarity_threshold");
-      localStorage.removeItem("termMatch_top_k");
-      localStorage.removeItem("termMatch_max_ngram");
-      localStorage.removeItem("deduplicate_project_selection");
-      localStorage.removeItem("ad_terms_status");
-      localStorage.removeItem("debug_logging_enabled");
-      localStorage.removeItem("translation_temperature");
-    },
-
-    /**
      * 获取存储键名
      * @param {string} key - 设置键
      * @returns {string} 存储键名

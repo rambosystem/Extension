@@ -524,24 +524,6 @@ export const useTermsStore = defineStore("terms", {
         localStorage.setItem("ad_terms_status", "true");
       }
     },
-
-    /**
-     * 重置所有状态
-     */
-    resetAll() {
-      this.termsData = [];
-      this.termsStatus = false;
-      this.termsTitle = "Terms Library";
-      this.totalTerms = 0;
-      this.termsLoading = false;
-      this.refreshLoading = false;
-      this.rebuildLoading = false;
-      this.termsError = null;
-      this.embeddingStatus = "pending";
-      this.lastEmbeddingTime = "";
-      this.editableTermsData = [];
-      this.hasChanges = false;
-    },
   },
 
   // 启用持久化存储

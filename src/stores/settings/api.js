@@ -214,24 +214,6 @@ export const useApiStore = defineStore("api", {
     },
 
     /**
-     * 清空API设置
-     */
-    clearApiSettings() {
-      this.apiKey = "";
-      this.lokaliseApiToken = "";
-
-      // 重置加载状态
-      Object.keys(this.loadingStates).forEach((key) => {
-        this.loadingStates[key] = false;
-      });
-
-      // 清空localStorage中的API相关数据
-      localStorage.removeItem("deepseek_api_key");
-      localStorage.removeItem("lokalise_api_token");
-      localStorage.removeItem("lokalise_projects");
-    },
-
-    /**
      * 保存到存储
      * @param {string} key - 存储键
      * @param {any} value - 存储值
