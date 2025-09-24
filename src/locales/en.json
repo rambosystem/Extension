@@ -85,8 +85,7 @@
     "autoDeduplication": "Auto Deduplication",
     "autoDeduplicationLabel": "Auto Deduplication",
     "addTermsDict": "Add Terms Dictionary",
-    "debugLogging": "Debug Logging",
-    "debugLoggingDescription": "Enable debug logging for troubleshooting"
+    "debugLogging": "Debug Logging"
   },
   "excelExport": {
     "excelDownloaded": "Excel file downloaded successfully",

@@ -85,8 +85,7 @@
     "autoDeduplication": "自动去重",
     "autoDeduplicationLabel": "自动去重",
     "addTermsDict": "添加术语字典",
-    "debugLogging": "调试日志",
-    "debugLoggingDescription": "启用调试日志以便故障排除"
+    "debugLogging": "调试日志"
   },
   "excelExport": {
     "excelDownloaded": "Excel文件下载成功",

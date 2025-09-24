@@ -42,6 +42,7 @@ export async function translateWithDeepSeek(content, onStatusUpdate = null) {
   };
 
   // 输出完整的DeepSeek请求信息
+  debugLog("DeepSeek request body:", JSON.stringify(requestBody, null, 2));
 
   // 调用deepseek的api
   const response = await fetch("https://api.deepseek.com/v1/chat/completions", {

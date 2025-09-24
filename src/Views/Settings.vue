@@ -19,13 +19,12 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-              }}</span>
+            }}</span>
             <el-switch :model-value="translationSettingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
         </el-card>
       </el-form-item>
-
       <div class="embedding-control">
         <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
         </el-form-item>
@@ -49,7 +48,7 @@
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
-              }}</span>
+            }}</span>
             <el-switch :model-value="translationSettingsStore.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
@@ -99,8 +98,7 @@
       </el-form-item>
       <el-form-item :label="t('settings.debugLogging')" label-position="left">
         <div class="debug-logging-setting">
-          <el-switch v-model="translationSettingsStore.debugLogging" @change="handleDebugLoggingChange" />
-          <span class="setting-description">{{ t('settings.debugLoggingDescription') }}</span>
+          <el-switch v-model="translationSettingsStore.debugLogging" @change="handleDebugLoggingChange" width="45px" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.clearLocalStorage')" label-position="left">
@@ -115,7 +113,7 @@
           <template #footer>
             <el-button @click="translationSettingsStore.dialogVisible = false">{{
               t("common.cancel")
-            }}</el-button>
+              }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -144,6 +142,7 @@ import { useApiStore } from "../stores/settings/api.js";
 import { useTranslationSettingsStore } from "../stores/settings/translation.js";
 import { useTermsStore } from "../stores/terms.js";
 import { useAppStore } from "../stores/app.js";
+import { debugLog } from "../utils/debug.js";
 
 const { t } = useI18n();
 
@@ -346,12 +345,12 @@ onMounted(async () => {
     apiStore.initializeApiSettings();
     translationSettingsStore.initializeTranslationSettings();
 
-    // // Debug: Log store state
-    // console.log('API Store State:', {
-    //   apiKey: apiStore.apiKey,
-    //   lokaliseApiToken: apiStore.lokaliseApiToken,
-    //   loadingStates: apiStore.loadingStates
-    // });
+    // Debug: Log store state
+    debugLog('API Store State:', {
+      apiKey: apiStore.apiKey,
+      lokaliseApiToken: apiStore.lokaliseApiToken,
+      loadingStates: apiStore.loadingStates
+    });
 
     // 初始化Terms状态
     await termsStore.refreshTerms(false); // 不显示成功消息
@@ -450,7 +449,8 @@ onMounted(async () => {
 .language-select,
 .similarity-threshold,
 .top-k,
-.max-ngram {
+.max-ngram,
+.debug-logging-setting {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -460,6 +460,7 @@ onMounted(async () => {
     width: 160px;
     color: #606266;
   }
+
 }
 
 .addTermsDict-container {
