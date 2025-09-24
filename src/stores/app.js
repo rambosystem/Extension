@@ -85,7 +85,8 @@ export const useAppStore = defineStore("app", {
      * 用于缓存清除时重置状态
      */
     initializeToDefaults() {
-      this.language = "en"; // 默认英语
+      // 注意：不重置 currentMenu，保持当前菜单选择
+      this.setLanguage("en"); // 使用setLanguage方法确保触发事件
       this.isLoading = false;
       this.isInitialized = false;
     },
