@@ -19,7 +19,7 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-            }}</span>
+              }}</span>
             <el-switch :model-value="translationSettingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
@@ -48,7 +48,7 @@
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
-            }}</span>
+              }}</span>
             <el-switch :model-value="translationSettingsStore.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
@@ -113,7 +113,7 @@
           <template #footer>
             <el-button @click="translationSettingsStore.dialogVisible = false">{{
               t("common.cancel")
-              }}</el-button>
+            }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -353,6 +353,7 @@ onMounted(async () => {
     });
 
     // 初始化Terms状态
+    termsStore.initializeTermsStatus(); // 初始化术语库开关状态
     await termsStore.refreshTerms(false); // 不显示成功消息
   } catch (error) {
     console.error("Failed to initialize settings:", error);

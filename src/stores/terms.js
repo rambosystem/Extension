@@ -395,7 +395,7 @@ export const useTermsStore = defineStore("terms", {
       this.termsStatus = status;
       // 保存到存储
       if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("ad_terms_status", status);
+        localStorage.setItem("ad_terms_status", status.toString());
       }
     },
 
