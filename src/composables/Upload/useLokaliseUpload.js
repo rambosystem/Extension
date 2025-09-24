@@ -1,6 +1,7 @@
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
 import { useSettingsStore } from "../../stores/settings.js";
+import { useTranslationStore } from "../../stores/translation.js";
 import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
 
@@ -11,14 +12,7 @@ const { t } = useI18n();
  */
 export function useLokaliseUpload() {
   const settingsStore = useSettingsStore();
-  // 弹窗状态
-  const uploadDialogVisible = ref(false);
-
-  // 表单数据
-  const uploadForm = reactive({
-    projectId: "",
-    tag: "",
-  });
+  const translationStore = useTranslationStore();
 
   // 项目列表
   const projectList = ref([]);
@@ -41,7 +35,7 @@ export function useLokaliseUpload() {
   const showUploadDialog = () => {
     // 加载项目列表
     loadProjectList();
-    uploadDialogVisible.value = true;
+    translationStore.openUploadDialog();
   };
 
   /**
@@ -59,7 +53,7 @@ export function useLokaliseUpload() {
             "lokalise_upload_project_id"
           );
           if (savedProjectId) {
-            uploadForm.projectId = savedProjectId;
+            translationStore.setUploadProjectId(savedProjectId);
           }
         }
       }
@@ -73,11 +67,17 @@ export function useLokaliseUpload() {
    * 保存上传设置
    */
   const saveUploadSettings = () => {
-    if (uploadForm.projectId) {
-      localStorage.setItem("lokalise_upload_project_id", uploadForm.projectId);
+    if (translationStore.uploadForm.projectId) {
+      localStorage.setItem(
+        "lokalise_upload_project_id",
+        translationStore.uploadForm.projectId
+      );
     }
-    if (uploadForm.tag) {
-      localStorage.setItem("lokalise_upload_tag", uploadForm.tag);
+    if (translationStore.uploadForm.tag) {
+      localStorage.setItem(
+        "lokalise_upload_tag",
+        translationStore.uploadForm.tag
+      );
     }
   };
 
@@ -147,7 +147,8 @@ export function useLokaliseUpload() {
    */
   const clearBaselineKey = () => {
     try {
-      localStorage.setItem("excel_baseline_key", "");
+      // 使用 store 的方法清空 baseline key
+      translationStore.saveExcelBaselineKey("");
 
       // 触发事件通知其他组件baseline key已被清空
       if (typeof window !== "undefined") {
@@ -162,14 +163,14 @@ export function useLokaliseUpload() {
    * 执行上传
    */
   const executeUpload = async (translationResult) => {
-    if (!uploadForm.projectId) {
+    if (!translationStore.uploadForm.projectId) {
       ElMessage.warning("Please select a project");
       return;
     }
 
     // 获取选中的项目信息
     const selectedProject = projectList.value.find(
-      (p) => p.project_id === uploadForm.projectId
+      (p) => p.project_id === translationStore.uploadForm.projectId
     );
     if (!selectedProject) {
       ElMessage.error("Selected project not found");
@@ -229,8 +230,11 @@ export function useLokaliseUpload() {
         };
 
         // 如果有标签，添加到key中
-        if (uploadForm.tag && uploadForm.tag.trim()) {
-          keyData.tags = [uploadForm.tag.trim()];
+        if (
+          translationStore.uploadForm.tag &&
+          translationStore.uploadForm.tag.trim()
+        ) {
+          keyData.tags = [translationStore.uploadForm.tag.trim()];
         }
 
         return keyData;
@@ -238,11 +242,14 @@ export function useLokaliseUpload() {
 
       // 准备tags数组（作为第三个参数传递给API）
       const tags =
-        uploadForm.tag && uploadForm.tag.trim() ? [uploadForm.tag.trim()] : [];
+        translationStore.uploadForm.tag &&
+        translationStore.uploadForm.tag.trim()
+          ? [translationStore.uploadForm.tag.trim()]
+          : [];
 
       // 调用真正的上传API
       const result = await uploadTranslationKeys(
-        uploadForm.projectId,
+        translationStore.uploadForm.projectId,
         keys,
         tags,
         apiToken
@@ -275,8 +282,8 @@ export function useLokaliseUpload() {
 
   return {
     // 状态
-    uploadDialogVisible,
-    uploadForm,
+    uploadDialogVisible: computed(() => translationStore.uploadDialogVisible),
+    uploadForm: computed(() => translationStore.uploadForm),
     projectList,
     isUploading,
     isUploadSuccess,
