@@ -17,22 +17,44 @@
                     t("common.save") }}</el-button>
             </div>
         </el-form-item>
+        <el-form-item :label="t('translation.excelOverwrite')" label-position="left">
+            <div class="excel-overwrite-setting">
+                <el-switch v-model="Overwrite" @change="handleOverwriteChange" />
+            </div>
+        </el-form-item>
+
     </div>
 </template>
 
 <script setup>
 import { useI18n } from "../../composables/Core/useI18n.js";
-import { useSettings } from "../../composables/Core/useSettings.js";
-import { ref, watch } from "vue";
+import { useTranslationStore } from "../../stores/translation.js";
+import { ref, watch, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 
 const { t } = useI18n();
 
-// 使用设置管理
-const { excelBaselineKey, handleSaveExcelBaselineKey } = useSettings();
+// 使用 Translation store
+const translationStore = useTranslationStore();
 
 const excelBaselineKeyEditing = ref(false);
 const isSaving = ref(false);
+
+// 使用 computed 来获取 store 中的状态
+const excelBaselineKey = computed({
+    get: () => translationStore.excelBaselineKey,
+    set: (value) => {
+        translationStore.excelBaselineKey = value;
+    }
+});
+
+// 使用 computed 来获取 Overwrite 状态
+const Overwrite = computed({
+    get: () => translationStore.excelOverwrite,
+    set: (value) => {
+        translationStore.excelOverwrite = value;
+    }
+});
 
 //excelBaselineKey变动时，设置excelBaselineKeyEditing为true，空值时设置为false
 watch(
@@ -60,7 +82,7 @@ const handleExcelBaselineKeySave = () => {
 
     isSaving.value = true;
 
-    const success = handleSaveExcelBaselineKey(currentValue);
+    const success = translationStore.saveExcelBaselineKey(currentValue);
     if (success) {
         excelBaselineKeyEditing.value = false;
     }
@@ -90,8 +112,18 @@ const handleExcelBaselineKeyClear = () => {
     excelBaselineKey.value = "";
     excelBaselineKeyEditing.value = false;
     // 清空存储
-    handleSaveExcelBaselineKey("");
+    translationStore.saveExcelBaselineKey("");
 };
+
+const handleOverwriteChange = (value) => {
+    // 使用 translation store 的方法更新状态
+    translationStore.updateExcelOverwrite(value);
+};
+
+// 组件挂载时初始化 store
+onMounted(() => {
+    translationStore.initializeTranslationSettings();
+});
 </script>
 
 <style lang="scss" scoped>

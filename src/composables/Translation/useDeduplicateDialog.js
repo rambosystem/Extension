@@ -1,18 +1,17 @@
 import { ref, onMounted, onUnmounted } from "vue";
-import { useSettings } from "../Core/useSettings.js";
+import { useSettingsStore } from "../../stores/settings.js";
 import { useDeduplicate } from "./useDeduplicate.js";
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
 
 export function useDeduplicateDialog() {
   const { t } = useI18n();
-  const { getStoredDeduplicateProject, handleDeduplicateProjectChange } =
-    useSettings();
+  const settingsStore = useSettingsStore();
   const { deduplicateTranslation } = useDeduplicate();
 
   // 去重相关状态
   const deduplicateDialogVisible = ref(false);
-  const selectedProject = ref(getStoredDeduplicateProject());
+  const selectedProject = ref(settingsStore.deduplicateProject);
   const isDeduplicating = ref(false);
   const isAutoDeduplicate = ref(false); // 标记是否为自动去重
 
@@ -30,7 +29,7 @@ export function useDeduplicateDialog() {
     isAutoDeduplicate.value = false; // 重置自动去重标志
     // 保存项目选择
     if (selectedProject.value) {
-      handleDeduplicateProjectChange(selectedProject.value);
+      settingsStore.updateSetting("deduplicateProject", selectedProject.value);
     }
   };
 
@@ -75,7 +74,10 @@ export function useDeduplicateDialog() {
         }
 
         // 保存项目选择
-        handleDeduplicateProjectChange(selectedProject.value);
+        settingsStore.updateSetting(
+          "deduplicateProject",
+          selectedProject.value
+        );
 
         return { success: true, remainingTexts };
       } else {
@@ -91,7 +93,10 @@ export function useDeduplicateDialog() {
         }
 
         // 保存项目选择
-        handleDeduplicateProjectChange(selectedProject.value);
+        settingsStore.updateSetting(
+          "deduplicateProject",
+          selectedProject.value
+        );
 
         return { success: true, remainingTexts: "" };
       }

@@ -40,17 +40,14 @@ src/
 │   │   └── Weight-Item.vue     # 权重项
 │   ├── Translation/     # 翻译相关组件
 │   │   ├── DeduplicateDialog.vue      # 去重对话框
-│   │   ├── ExcelKeySetting.vue        # Excel 键设置
+│   │   ├── ExportSetting.vue          # 导出设置
 │   │   ├── TranslationForm.vue       # 翻译表单
 │   │   └── TranslationResultDialog.vue # 翻译结果对话框
 │   └── Upload/          # 上传相关组件
 │       └── UploadSettingsDialog.vue  # 上传设置对话框
 ├── composables/         # 组合式函数
 │   ├── Core/            # 核心功能
-│   │   ├── useI18n.js           # 国际化
-│   │   ├── useSettings.js       # 设置管理
-│   │   ├── useState.js          # 状态管理
-│   │   └── useStorage.js        # 存储管理
+│   │   └── useI18n.js           # 国际化
 │   ├── Excel/           # Excel 相关
 │   │   └── useExcelExport.js    # Excel 导出
 │   ├── Translation/     # 翻译相关

@@ -358,32 +358,6 @@ export const useSettingsStore = defineStore("settings", {
     },
 
     /**
-     * 保存Excel基线键
-     * @param {string} key - 基线键
-     */
-    saveExcelBaselineKey(key) {
-      if (!key?.trim()) {
-        // 清空操作
-        localStorage.setItem("excel_baseline_key", "");
-        this.excelBaselineKey = "";
-        return true;
-      }
-
-      // 验证格式：key+数字
-      if (!key.match(/^[a-zA-Z]+[0-9]+$/)) {
-        ElMessage.warning(
-          "Excel baseline key format should be: letters + numbers (e.g., key123)"
-        );
-        return false;
-      }
-
-      localStorage.setItem("excel_baseline_key", key.trim());
-      this.excelBaselineKey = key.trim();
-      ElMessage.success("Excel baseline key saved successfully");
-      return true;
-    },
-
-    /**
      * 清空所有设置
      */
     clearAllSettings() {

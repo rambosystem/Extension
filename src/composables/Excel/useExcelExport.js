@@ -1,10 +1,8 @@
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
-import { useStorage } from "../Core/useStorage.js";
 import * as XLSX from "xlsx";
 
 const { t } = useI18n();
-const { getFromStorage, saveToStorage } = useStorage();
 
 /**
  * Excel导出功能Hook
@@ -39,7 +37,7 @@ export function useExcelExport() {
     const header = ["key", "en", "zh_CN", "ja"];
 
     // 获取baseline key
-    const baselineKey = getFromStorage("excel_baseline_key") || "";
+    const baselineKey = localStorage.getItem("excel_baseline_key") || "";
 
     const excelData = [
       header,
@@ -90,7 +88,7 @@ export function useExcelExport() {
    */
   const clearBaselineKey = () => {
     try {
-      saveToStorage("excel_baseline_key", "");
+      localStorage.setItem("excel_baseline_key", "");
 
       // 触发事件通知其他组件baseline key已被清空
       if (typeof window !== "undefined") {

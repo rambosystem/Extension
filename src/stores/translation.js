@@ -62,6 +62,10 @@ export const useTranslationStore = defineStore("translation", {
     // 缓存相关
     hasLastTranslation: false,
     lastTranslation: [],
+
+    // Excel 导出设置
+    excelBaselineKey: "",
+    excelOverwrite: false,
   }),
 
   getters: {
@@ -515,6 +519,63 @@ export const useTranslationStore = defineStore("translation", {
 
       const excelExport = useExcelExport();
       excelExport.exportExcel(this.translationResult);
+    },
+
+    /**
+     * 保存Excel基线键
+     * @param {string} key - 基线键
+     */
+    saveExcelBaselineKey(key) {
+      if (!key?.trim()) {
+        // 清空操作
+        localStorage.setItem("excel_baseline_key", "");
+        this.excelBaselineKey = "";
+        return true;
+      }
+
+      // 验证格式：key+数字
+      if (!key.match(/^[a-zA-Z]+[0-9]+$/)) {
+        ElMessage.warning(
+          "Excel baseline key format should be: letters + numbers (e.g., key123)"
+        );
+        return false;
+      }
+
+      localStorage.setItem("excel_baseline_key", key.trim());
+      this.excelBaselineKey = key.trim();
+      ElMessage.success("Excel baseline key saved successfully");
+      return true;
+    },
+
+    /**
+     * 更新Excel覆盖设置
+     * @param {boolean} overwrite - 是否覆盖
+     */
+    updateExcelOverwrite(overwrite) {
+      this.excelOverwrite = overwrite;
+      localStorage.setItem("excel_overwrite", overwrite ? "true" : "false");
+    },
+
+    /**
+     * 初始化翻译设置
+     * 从localStorage加载设置
+     */
+    initializeTranslationSettings() {
+      try {
+        // 加载Excel基线键
+        const excelBaselineKey = localStorage.getItem("excel_baseline_key");
+        if (excelBaselineKey) {
+          this.excelBaselineKey = excelBaselineKey;
+        }
+
+        // 加载Excel覆盖设置
+        const excelOverwrite = localStorage.getItem("excel_overwrite");
+        if (excelOverwrite !== null) {
+          this.excelOverwrite = excelOverwrite === "true";
+        }
+      } catch (error) {
+        console.error("Failed to initialize translation settings:", error);
+      }
     },
 
     /**

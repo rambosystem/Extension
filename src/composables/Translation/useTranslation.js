@@ -1,6 +1,5 @@
 import { ElMessage } from "element-plus";
 import { translate } from "../../requests/lokalise.js";
-import { useState } from "../Core/useState.js";
 import { useI18n } from "../Core/useI18n.js";
 import { ref } from "vue";
 
@@ -10,7 +9,7 @@ const { t } = useI18n();
  * 翻译功能Hook
  */
 export function useTranslation() {
-  const { loadingStates, withState } = useState({
+  const loadingStates = ref({
     translation: false,
   });
 
@@ -80,26 +79,26 @@ export function useTranslation() {
    */
   const performTranslation = async (content) => {
     try {
-      const result = await withState("translation", async () => {
-        // 重置状态
-        currentStatus.value = "idle";
+      loadingStates.value.translation = true;
 
-        const data = await translate(content, (status) => {
-          currentStatus.value = status;
-        });
+      // 重置状态
+      currentStatus.value = "idle";
 
-        const translationResult = parseTranslationResult(data);
-
-        ElMessage.success(t("translation.translationCompleted"));
-        return translationResult;
+      const data = await translate(content, (status) => {
+        currentStatus.value = status;
       });
 
-      return result;
+      const translationResult = parseTranslationResult(data);
+
+      ElMessage.success(t("translation.translationCompleted"));
+      return translationResult;
     } catch (error) {
       console.error("Translation error:", error);
       const errorMessage = error.message || t("translation.translationFailed");
       ElMessage.error(errorMessage);
       throw error;
+    } finally {
+      loadingStates.value.translation = false;
     }
   };
 
