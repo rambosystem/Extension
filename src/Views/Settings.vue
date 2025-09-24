@@ -38,7 +38,8 @@
         <TermsCard :title="termsStore.termsTitle" :status="termsStore.termsStatus" :total-terms="termsStore.totalTerms"
           :loading="termsStore.termsLoading" :error="termsStore.termsError" :terms-data="editableTermsData"
           :embedding-status="termsStore.embeddingStatus" :last-embedding-time="termsStore.lastEmbeddingTime"
-          :refresh-loading="refreshLoading" @update:status="termsStore.updateTermStatus" @refresh="handleRefreshTerms"
+          :refresh-loading="refreshLoading" :library-loading="libraryLoading"
+          @update:status="termsStore.updateTermStatus" @refresh="handleRefreshTerms"
           @fetchTermsData="termsStore.fetchTermsData" @addTerm="handleAddTerm" @deleteTerm="handleDeleteTerm"
           @updateTerm="handleUpdateTerm" />
       </div>
@@ -243,6 +244,7 @@ const rebuildConfirmVisible = ref(false);
 // refresh loading状态
 const refreshLoading = ref(false);
 const rebuildLoading = ref(false);
+const libraryLoading = ref(false);
 
 // 创建可编辑的terms数据
 const editableTermsData = ref([]);
@@ -317,9 +319,12 @@ const handleRebuildCancel = () => {
 // 处理refresh，添加loading状态
 const handleRefreshTerms = async (showSuccessMessage = true) => {
   try {
+    libraryLoading.value = true;
     await termsStore.refreshTerms(showSuccessMessage);
   } catch (error) {
     console.error("Refresh terms failed:", error);
+  } finally {
+    libraryLoading.value = false;
   }
 };
 
@@ -351,6 +356,9 @@ const handleUpdateTerm = (term, field, value) => {
 // 初始化Terms状态
 onMounted(async () => {
   try {
+    // 设置library loading状态
+    libraryLoading.value = true;
+
     // 初始化设置
     apiStore.initializeApiSettings();
     translationSettingsStore.initializeTranslationSettings();
@@ -367,6 +375,9 @@ onMounted(async () => {
     await termsStore.refreshTerms(false); // 不显示成功消息
   } catch (error) {
     console.error("Failed to initialize settings:", error);
+  } finally {
+    // 无论成功还是失败，都要关闭loading状态
+    libraryLoading.value = false;
   }
 });
 </script>

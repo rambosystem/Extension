@@ -16,7 +16,13 @@
             <div class="adTerms-content-text">
                 <div class="total-terms-container">
                     <span class="total-terms">{{ t('terms.totalTerms') }}</span>
-                    <span v-if="loading" class="total-value loading">
+                    <span v-if="libraryLoading" class="total-value loading">
+                        <el-icon class="is-loading">
+                            <Loading />
+                        </el-icon>
+                        {{ t('common.loading') }}
+                    </span>
+                    <span v-else-if="loading" class="total-value loading">
                         <el-icon class="is-loading">
                             <Loading />
                         </el-icon>
@@ -29,7 +35,7 @@
                         </el-button>
                     </span>
                     <span v-else class="total-value">{{ totalTerms }}</span>
-                    <div class="embedding-status-container">
+                    <div v-if="!libraryLoading" class="embedding-status-container">
                         <span class="embedding-status">Embedding Status:</span>
                         <span class="embedding-status-success" v-if="embeddingStatus === 'completed'">Completed</span>
                         <span class="embedding-status-building"
@@ -175,6 +181,10 @@ const props = defineProps({
         default: '',
     },
     refreshLoading: {
+        type: Boolean,
+        default: false,
+    },
+    libraryLoading: {
         type: Boolean,
         default: false,
     },
