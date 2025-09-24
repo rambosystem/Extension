@@ -1,20 +1,20 @@
-import { ref, computed, watch } from 'vue';
-import en from '../../locales/en.json';
-import zh_CN from '../../locales/zh_CN.json';
+import { ref, computed, watch } from "vue";
+import en from "../../locales/en.json";
+import zh_CN from "../../locales/zh_CN.json";
 
 // 支持的语言
 const SUPPORTED_LANGUAGES = {
-  en: 'English',
-  zh_CN: '中文'
+  en: "English",
+  zh_CN: "中文",
 };
 
 // 默认语言
-const DEFAULT_LANGUAGE = 'en';
+const DEFAULT_LANGUAGE = "en";
 
 // 语言包
 const messages = {
   en,
-  zh_CN
+  zh_CN,
 };
 
 // 全局语言状态，确保所有组件共享同一个状态
@@ -23,11 +23,11 @@ let globalLanguage = ref(DEFAULT_LANGUAGE);
 // 安全地获取存储的语言设置
 const getStoredLanguage = () => {
   try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return localStorage.getItem('app_language') || DEFAULT_LANGUAGE;
+    if (typeof window !== "undefined" && window.localStorage) {
+      return localStorage.getItem("app_language") || DEFAULT_LANGUAGE;
     }
   } catch (error) {
-    console.warn('Failed to access localStorage:', error);
+    console.warn("Failed to access localStorage:", error);
   }
   return DEFAULT_LANGUAGE;
 };
@@ -36,8 +36,10 @@ const getStoredLanguage = () => {
 globalLanguage.value = getStoredLanguage();
 
 export function useI18n() {
-  // 当前语言包
-  const currentMessages = computed(() => messages[globalLanguage.value] || messages[DEFAULT_LANGUAGE]);
+  // 语言包
+  const currentMessages = computed(
+    () => messages[globalLanguage.value] || messages[DEFAULT_LANGUAGE]
+  );
 
   /**
    * 切换语言
@@ -47,11 +49,11 @@ export function useI18n() {
     if (SUPPORTED_LANGUAGES[language]) {
       globalLanguage.value = language;
       try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          localStorage.setItem('app_language', language);
+        if (typeof window !== "undefined" && window.localStorage) {
+          localStorage.setItem("app_language", language);
         }
       } catch (error) {
-        console.warn('Failed to save language to localStorage:', error);
+        console.warn("Failed to save language to localStorage:", error);
       }
     }
   };
@@ -63,28 +65,28 @@ export function useI18n() {
    * @param {string} defaultValue - 默认值（当params是对象时使用）
    * @returns {string} 文案内容
    */
-  const t = (key, params = '', defaultValue = '') => {
-    const keys = key.split('.');
+  const t = (key, params = "", defaultValue = "") => {
+    const keys = key.split(".");
     let value = currentMessages.value;
-    
+
     for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
+      if (value && typeof value === "object" && k in value) {
         value = value[k];
       } else {
         return defaultValue || key;
       }
     }
-    
+
     // 如果params是对象，进行参数替换
-    if (typeof params === 'object' && params !== null) {
+    if (typeof params === "object" && params !== null) {
       let result = value || defaultValue || key;
-      Object.keys(params).forEach(paramKey => {
-        const regex = new RegExp(`\\{${paramKey}\\}`, 'g');
+      Object.keys(params).forEach((paramKey) => {
+        const regex = new RegExp(`\\{${paramKey}\\}`, "g");
         result = result.replace(regex, params[paramKey]);
       });
       return result;
     }
-    
+
     // 如果params是字符串，作为默认值处理
     return value || params || defaultValue || key;
   };
@@ -99,7 +101,8 @@ export function useI18n() {
    * 获取当前语言名称
    * @returns {string} 当前语言名称
    */
-  const getCurrentLanguageName = () => SUPPORTED_LANGUAGES[globalLanguage.value];
+  const getCurrentLanguageName = () =>
+    SUPPORTED_LANGUAGES[globalLanguage.value];
 
   /**
    * 检查是否为指定语言
@@ -110,7 +113,7 @@ export function useI18n() {
 
   // 监听localStorage变化
   const handleStorageChange = (e) => {
-    if (e.key === 'app_language' && e.newValue) {
+    if (e.key === "app_language" && e.newValue) {
       globalLanguage.value = e.newValue;
     }
   };
@@ -123,25 +126,25 @@ export function useI18n() {
   };
 
   // 添加事件监听
-  if (typeof window !== 'undefined') {
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('languageChanged', handleLanguageChanged);
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("languageChanged", handleLanguageChanged);
   }
 
   return {
     // 状态
     currentLanguage: globalLanguage,
     currentMessages,
-    
+
     // 方法
     t,
     setLanguage,
     getSupportedLanguages,
     getCurrentLanguageName,
     isLanguage,
-    
+
     // 常量
     SUPPORTED_LANGUAGES,
-    DEFAULT_LANGUAGE
+    DEFAULT_LANGUAGE,
   };
-} 
+}

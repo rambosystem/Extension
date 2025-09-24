@@ -68,13 +68,13 @@ const menuConfig = computed(() => [
   },
 ]);
 
-// 当前选中的菜单项 - 使用store中的状态
+// 选中的菜单项 - 使用store中的状态
 const selectedMenu = computed({
   get: () => appStore.currentMenu,
   set: (value) => appStore.setCurrentMenu(value)
 });
 
-// 计算当前应该显示的组件
+// 计算应该显示的组件
 const currentComponent = computed(() => {
   const item = menuConfig.value.find(
     (item) => item.index === selectedMenu.value

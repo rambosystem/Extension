@@ -478,7 +478,7 @@ export const useTermsStore = defineStore("terms", {
 
       try {
         // 这里应该调用实际的API来保存更改
-        // 暂时直接更新本地数据
+        // 直接更新本地数据
         this.setTermsData(this.editableTermsData);
 
         ElMessage.success(`Saved ${changedTerms.length} term changes`);

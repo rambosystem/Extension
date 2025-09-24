@@ -7,12 +7,7 @@
             <img src="./assets/icon.svg" class="logo_icon" draggable="false" />
           </div>
           <div class="header_button_group">
-            <el-button
-              :icon="Setting"
-              size="24"
-              @click="handleSettingClick"
-              circle
-            ></el-button>
+            <el-button :icon="Setting" size="24" @click="handleSettingClick" circle></el-button>
           </div>
         </el-header>
         <div class="main-content">
@@ -46,12 +41,9 @@ import { Setting } from "@element-plus/icons-vue";
 import WeightItem from "./Components/Terms/Weight-Item.vue";
 
 const handleSettingClick = () => {
-  // console.log("Setting button clicked");
-
   // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
   chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
     chrome.runtime.openOptionsPage(() => {
-      // console.log("Options page opened");
       window.close();
     });
   });
@@ -63,12 +55,10 @@ const handleLokaliseClick = () => {
       action: "lokalise",
     });
   });
-  // console.log("Lokalise action sent");
 
   // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
   chrome.storage.local.set({ initialMenu: "1", currentMenu: "1" }, () => {
     chrome.runtime.openOptionsPage(() => {
-      // console.log("Options page opened");
       window.close();
     });
   });

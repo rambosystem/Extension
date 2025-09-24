@@ -6,7 +6,7 @@ import { defineStore } from "pinia";
  */
 export const useAppStore = defineStore("app", {
   state: () => ({
-    // 当前选中的菜单项
+    // 选中的菜单项
     currentMenu: "1", // 默认选中Translation菜单
 
     // 应用语言设置
@@ -20,7 +20,7 @@ export const useAppStore = defineStore("app", {
   }),
 
   getters: {
-    // 获取当前菜单的显示名称
+    // 获取菜单的显示名称
     currentMenuName: (state) => {
       const menuNames = {
         1: "Translation",

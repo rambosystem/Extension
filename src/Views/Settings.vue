@@ -462,7 +462,7 @@ onMounted(async () => {
   margin-right: 5px;
   gap: 20px;
 
-  // 按钮样式现在由 LoadingButton 组件处理
+  // 按钮样式由 LoadingButton 组件处理
 }
 
-// Loading 按钮样式现在由 LoadingButton 组件处理</style>
+// Loading 按钮样式由 LoadingButton 组件处理</style>

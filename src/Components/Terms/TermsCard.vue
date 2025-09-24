@@ -242,7 +242,7 @@ const handleFilterInput = () => {
     }, 300);
 };
 
-// 计算当前页显示的数据（基于筛选后的数据）
+// 计算页显示的数据（基于筛选后的数据）
 const paginatedTermsData = computed(() => {
     // 如果有搜索条件，使用筛选后的数据（即使为空）
     // 如果没有搜索条件，使用原始数据
@@ -272,7 +272,7 @@ watch(() => props.termsData, (newData) => {
         // 没有搜索条件时，清空筛选数据并更新总数
         filteredTermsData.value = [];
         totalItems.value = newData.length;
-        // 如果当前页超出范围，重置到第一页
+        // 如果页超出范围，重置到第一页
         const maxPage = Math.ceil(totalItems.value / pageSize.value);
         if (currentPage.value > maxPage && maxPage > 0) {
             currentPage.value = 1;
@@ -280,7 +280,7 @@ watch(() => props.termsData, (newData) => {
     }
 }, { immediate: true });
 
-// 计算当前页信息
+// 计算页信息
 const currentPageInfo = computed(() => {
     if (totalItems.value === 0) return '';
     const start = (currentPage.value - 1) * pageSize.value + 1;
@@ -349,7 +349,7 @@ const handleSettingClick = (event) => {
 
 const handleTermsChange = () => {
     // 当terms数据发生变化时触发
-    // 这里可以添加额外的逻辑，比如实时检测变动状态
+    // 这里可以添加额外的逻辑
 };
 
 const getActualIndex = (pageIndex) => {
@@ -399,7 +399,6 @@ const handleSaveTerm = async (row) => {
         }];
 
         const result = await termsStore.addTerms(termsData);
-        // console.log('Term saved successfully:', row);
 
         // 如果是新添加的行，保存成功后移除isNew标记并更新term_id
         if (row.isNew) {
@@ -414,13 +413,8 @@ const handleSaveTerm = async (row) => {
         // 保存成功后静默刷新数据，确保显示最新数据
         emit('refresh', false);
 
-        // 可以在这里添加成功提示
-        // ElMessage.success('Term saved successfully');
-
     } catch (error) {
         console.error('Failed to save term:', error);
-        // 可以在这里添加错误提示
-        // ElMessage.error('Failed to save term: ' + error.message);
     }
 };
 
@@ -432,27 +426,26 @@ const handleTabNext = (tabInfo) => {
     let nextRow = currentRow;
     let nextColumn = currentColumn + 1;
 
-    // 如果当前列是最后一列（JP列），跳转到下一行的第一列（EN列）
+    // 如果是最后一列（JP列），跳转到下一行的第一列（EN列）
     if (nextColumn >= 3) {
         nextRow = currentRow + 1;
         nextColumn = 0;
     }
 
-    // 检查是否超出当前页的数据范围
+    // 检查是否超出页的数据范围
     const startIndex = (currentPage.value - 1) * pageSize.value;
     const endIndex = startIndex + pageSize.value;
     const currentPageData = dataToUse.slice(startIndex, endIndex);
 
     if (nextRow >= currentPageData.length) {
-        // 如果超出当前页范围，检查是否有下一页
+        // 如果超出页范围，检查是否有下一页
         if (nextRow >= dataToUse.length) {
             // 如果超出总数据范围，说明是最后一个单元格，只保存不跳转
-            // console.log('Reached last cell, saving only');
             return;
         } else {
             // 跳转到下一页
             currentPage.value = Math.floor(nextRow / pageSize.value) + 1;
-            // 重新计算在当前页中的位置
+            // 重新计算在页中的位置
             nextRow = nextRow % pageSize.value;
         }
     }
@@ -461,7 +454,7 @@ const handleTabNext = (tabInfo) => {
     const fieldMap = ['en', 'cn', 'jp'];
     const nextField = fieldMap[nextColumn];
 
-    // 退出当前编辑模式
+    // 退出编辑模式
     const currentField = fieldMap[currentColumn];
     const currentRowData = currentPageData[currentRow];
     if (currentRowData) {

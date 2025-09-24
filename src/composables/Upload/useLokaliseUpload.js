@@ -34,7 +34,7 @@ export function useLokaliseUpload() {
   // 成功消息
   const successMessage = ref("");
 
-  // 当前选中的项目信息
+  // 选中的项目信息
   const currentProject = ref(null);
 
   /**
@@ -177,7 +177,7 @@ export function useLokaliseUpload() {
       return;
     }
 
-    // 保存当前项目信息，用于下载链接
+    // 保存项目信息，用于下载链接
     currentProject.value = selectedProject;
 
     try {

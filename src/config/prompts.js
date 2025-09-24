@@ -12,10 +12,6 @@ export const DEFAULT_TRANSLATION_PROMPT = `1.角色定位：你是Pacvue的一�
 ***如果文案中存在特殊字符请保留原有格式，例如",",".","?","\\n","\\t","{0}","{1}"等等***
 ***中文以及日文翻译中去除{n}占位符前后的空格***`;
 
-// 可以添加更多不同类型的 prompt
 export const PROMPTS = {
   TRANSLATION: DEFAULT_TRANSLATION_PROMPT,
-  // 未来可以添加其他类型的 prompt
-  // SUMMARIZATION: "",
-  // CONTENT_GENERATION: "",
 };

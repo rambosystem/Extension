@@ -40,8 +40,6 @@ const translationStore = useTranslationStore();
 
 // 直接使用store实例，不进行解构以保持响应式
 
-// 不再需要临时状态，直接使用 stores
-
 // 使用去重对话框composable
 const {
   deduplicateDialogVisible,
@@ -75,7 +73,7 @@ const executeDeduplicate = async () => {
   }
 };
 
-// 这些方法现在直接从store中获取，不需要重新定义
+// 这些方法直接从store中获取，不需要重新定义
 
 /**
  * 处理弹窗关闭事件（包括点击空白处和右上角X按钮）
