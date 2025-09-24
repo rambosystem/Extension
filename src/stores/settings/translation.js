@@ -394,13 +394,9 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         const cache = useTranslationCache();
         cache.clearCache();
 
-        // 重置terms store状态
-        const { useTermsStore } = await import("../terms.js");
-        const termsStore = useTermsStore();
-        termsStore.resetAll();
-
-        // 重新初始化terms状态，确保UI立即更新
-        termsStore.initializeTermsStatus();
+        // 注意：不重置 terms store 状态，以保留 ad terms 的结果数据
+        // terms store 的数据通过 Pinia 持久化存储在 localStorage 中
+        // 用户希望保留 ad terms 的结果数据，只清除其他缓存
 
         // 清空其他localStorage项目
         const additionalKeys = [
