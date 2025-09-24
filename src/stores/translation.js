@@ -58,6 +58,7 @@ export const useTranslationStore = defineStore("translation", {
     deduplicateDialogVisible: false,
     selectedProject: "AmazonSearch",
     isDeduplicating: false,
+    isAutoDeduplicate: false, // 标记是否为自动去重
 
     // 缓存相关
     hasLastTranslation: false,
@@ -322,6 +323,8 @@ export const useTranslationStore = defineStore("translation", {
      */
     closeDeduplicateDialog() {
       this.deduplicateDialogVisible = false;
+      this.isDeduplicating = false;
+      this.isAutoDeduplicate = false; // 重置自动去重标志
     },
 
     /**
@@ -330,6 +333,30 @@ export const useTranslationStore = defineStore("translation", {
      */
     setSelectedProject(project) {
       this.selectedProject = project;
+    },
+
+    /**
+     * 设置自动去重标志
+     * @param {boolean} isAuto - 是否为自动去重
+     */
+    setAutoDeduplicate(isAuto) {
+      this.isAutoDeduplicate = isAuto;
+    },
+
+    /**
+     * 处理去重操作（手动）
+     */
+    handleDeduplicate() {
+      this.setAutoDeduplicate(false);
+      this.openDeduplicateDialog();
+    },
+
+    /**
+     * 处理自动去重对话框显示
+     */
+    handleShowAutoDeduplicateDialog() {
+      this.setAutoDeduplicate(true);
+      this.openDeduplicateDialog();
     },
 
     /**
@@ -573,6 +600,14 @@ export const useTranslationStore = defineStore("translation", {
         if (excelOverwrite !== null) {
           this.excelOverwrite = excelOverwrite === "true";
         }
+
+        // 从 localStorage 获取去重项目设置
+        const deduplicateProject = localStorage.getItem(
+          "deduplicate_project_selection"
+        );
+        if (deduplicateProject) {
+          this.selectedProject = deduplicateProject;
+        }
       } catch (error) {
         console.error("Failed to initialize translation settings:", error);
       }
@@ -603,28 +638,66 @@ export const useTranslationStore = defineStore("translation", {
     },
 
     /**
-     * 处理去重操作
+     * 执行去重操作
+     * @param {string} codeContent - 待去重的代码内容
+     * @param {Function} continueTranslation - 继续翻译的回调函数
+     * @param {Function} clearCache - 清空缓存的回调函数
+     * @returns {Promise<Object>} 去重结果
      */
-    async executeDeduplicate(project, remainingTexts) {
+    async executeDeduplicate(codeContent, continueTranslation, clearCache) {
+      if (!this.selectedProject) {
+        ElMessage.warning("Please select a project");
+        return { success: false, error: "No project selected" };
+      }
+
       this.setDeduplicating(true);
 
       try {
         const deduplicate = useDeduplicate();
-        const result = await deduplicate.performDeduplication(
-          this.codeContent,
-          project
+        const result = await deduplicate.deduplicateTranslation(
+          this.selectedProject,
+          codeContent
         );
 
-        if (result && result.success) {
-          this.codeContent = result.remainingTexts;
-          ElMessage.success("Deduplication completed");
+        // 无论是否有剩余文本，都要更新文本框内容
+        const remainingTexts = result.remainingTexts.join("\n");
+
+        if (result.remainingCount > 0) {
+          ElMessage.success(
+            `Deduplication completed: ${result.duplicateCount} duplicates removed, ${result.remainingCount} texts remaining`
+          );
+
+          // 如果是自动去重，继续翻译流程
+          if (this.isAutoDeduplicate) {
+            // 关闭去重对话框
+            this.closeDeduplicateDialog();
+            // 继续翻译
+            if (continueTranslation) {
+              await continueTranslation();
+            }
+          }
+
+          return { success: true, remainingTexts };
+        } else {
+          // 如果所有文本都被去重了，清空缓存
+          if (clearCache) {
+            clearCache();
+          }
+          ElMessage.info("All texts were duplicated and removed");
+
+          // 如果是自动去重，关闭对话框
+          if (this.isAutoDeduplicate) {
+            this.closeDeduplicateDialog();
+          }
+
+          return { success: true, remainingTexts: "" };
         }
       } catch (error) {
         console.error("Deduplication failed:", error);
         ElMessage.error("Deduplication failed");
+        return { success: false, error };
       } finally {
         this.setDeduplicating(false);
-        this.closeDeduplicateDialog();
       }
     },
 
