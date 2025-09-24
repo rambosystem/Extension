@@ -74,17 +74,16 @@ src/
 │   ├── index.js         # Store 导出
 │   ├── settings/        # 设置模块
 │   │   ├── api.js       # API 设置
-│   │   ├── translation.js # 翻译设置
-│   │   └── index.js     # 设置模块导出
+│   │   └── translation.js # 翻译设置
 │   ├── translation/      # 翻译模块
 │   │   ├── core.js      # 翻译核心功能
 │   │   ├── upload.js    # 上传功能
 │   │   ├── export.js    # 导出功能
-│   │   ├── deduplicate.js # 去重功能
-│   │   └── index.js     # 翻译模块导出
+│   │   └── deduplicate.js # 去重功能
 │   └── terms.js         # 术语状态
 ├── utils/               # 工具函数
-│   └── apiValidation.js # API 验证
+│   ├── apiValidation.js # API 验证
+│   └── debug.js         # 调试日志控制
 ├── Views/               # 页面视图
 │   ├── Settings.vue     # 设置页面
 │   └── Translation.vue # 翻译页面
@@ -137,11 +136,13 @@ src/
   - `maxNGram`: 最大 N-gram 值
   - `deduplicateProject`: 去重项目选择
   - `adTerms`: 公共术语库状态
+  - `debugLogging`: 调试日志开关
 - **主要方法**:
   - `saveCustomPrompt()`: 保存自定义提示
   - `toggleTranslationPrompt()`: 切换翻译提示
   - `toggleAutoDeduplication()`: 切换自动去重
   - `updateSimilarityThreshold()`: 更新相似度阈值
+  - `toggleDebugLogging()`: 切换调试日志开关
 
 #### 3. Translation Module (`stores/translation/`)
 
@@ -214,30 +215,54 @@ src/
   - `rebuildEmbedding()`: 重建嵌入
   - `refreshTerms()`: 刷新术语
 
-### Store 模块化架构
+### Store 直接使用架构
 
-#### 🎯 **模块化优势**
+#### 🎯 **架构优势**
 
-1. **更好的可维护性**: 每个模块职责单一，便于维护和调试
-2. **更清晰的边界**: 功能模块化，避免状态混乱
-3. **更好的可扩展性**: 新增功能时可以独立添加模块
-4. **更好的团队协作**: 不同开发者可以独立开发不同模块
-5. **更好的测试性**: 每个模块可以独立测试
+1. **✅ 保持模块化**: 每个 Store 管理特定领域的状态
+2. **✅ 简化状态同步**: 不再需要复杂的主 Store 同步机制
+3. **✅ 提高响应式**: 直接使用子 Store，避免响应式丢失
+4. **✅ 易于维护**: 组件直接使用需要的 Store，逻辑清晰
+5. **✅ 最优性能**: 减少不必要的中间层，性能最优
 
-#### 📁 **模块结构说明**
+#### 📁 **架构设计**
 
-- **Settings 模块**: 按功能领域拆分（API 设置 vs 翻译设置）
-- **Translation 模块**: 按业务流程拆分（核心、上传、导出、去重）
-- **向后兼容**: 通过 `index.js` 提供统一的 API 接口
-- **渐进式迁移**: 可以逐步优化，不需要一次性重构所有代码
+**核心原则**: 组件直接使用子 Store，避免复杂的主 Store 包装
+
+```javascript
+// ✅ 推荐：直接使用子 Store
+import { useApiStore } from "../stores/settings/api.js";
+import { useTranslationCoreStore } from "../stores/translation/core.js";
+
+const apiStore = useApiStore();
+const translationCoreStore = useTranslationCoreStore();
+```
+
+**❌ 避免**: 复杂的主 Store 包装
+
+```javascript
+// ❌ 不推荐：复杂的主 Store
+import { useSettingsStore } from "../stores/settings/index.js";
+const settingsStore = useSettingsStore(); // 包含复杂的状态同步
+```
 
 #### 🔄 **数据流向**
 
 ```
-Component → Store Module → Sub-Store → Composable → API
-     ↓           ↓            ↓           ↓
-    UI交互    模块管理      功能管理     业务逻辑
+Component → Direct Store → Composable → API
+     ↓           ↓            ↓
+    UI交互    直接状态管理   业务逻辑
 ```
+
+#### 📊 **架构对比**
+
+| 方面         | 复杂主 Store       | 直接子 Store   |
+| ------------ | ------------------ | -------------- |
+| **状态同步** | 复杂，需要手动同步 | 简单，直接使用 |
+| **响应式**   | 容易丢失           | 完全保持       |
+| **维护性**   | 复杂，多层嵌套     | 简单，直接引用 |
+| **性能**     | 有额外开销         | 最优性能       |
+| **可读性**   | 需要理解同步逻辑   | 一目了然       |
 
 ## 开发准则
 
@@ -285,19 +310,19 @@ Component → Store Module → Sub-Store → Composable → API
 #### 🏗️ **架构模式**
 
 ```javascript
-// ✅ 正确的架构模式
+// ✅ 推荐：直接使用子 Store
 
 // Store: 状态管理
-export const useTranslationStore = defineStore("translation", {
+export const useTranslationCoreStore = defineStore("translationCore", {
   state: () => ({
     codeContent: "",
     translationResult: [],
   }),
   actions: {
     async translate(content) {
-      // 业务逻辑调用 composable
-      const { performTranslation } = useTranslation();
-      this.translationResult = await performTranslation(content);
+      // 状态管理和业务逻辑
+      this.codeContent = content;
+      this.translationResult = await translateAPI(content);
     },
   },
 });
@@ -312,13 +337,15 @@ export function useTranslation() {
   return { performTranslation };
 }
 
-// Component: UI 交互
+// Component: UI 交互 - 直接使用 Store
 export default {
   setup() {
-    const translationStore = useTranslationStore();
+    // ✅ 直接使用子 Store
+    const translationCoreStore = useTranslationCoreStore();
+    const apiStore = useApiStore();
 
     const handleTranslate = () => {
-      translationStore.translate(translationStore.codeContent);
+      translationCoreStore.translate(translationCoreStore.codeContent);
     };
 
     return { handleTranslate };
@@ -336,6 +363,23 @@ export function useTranslation() {
 
   return { codeContent, translationResult };
 }
+
+// ❌ 错误：复杂的主 Store 包装
+export const useSettingsStore = defineStore("settings", {
+  state: () => ({
+    // 重复的状态定义
+    apiKey: "",
+    translationPrompt: true,
+    // ... 大量状态
+  }),
+  actions: {
+    async saveApiKey(data) {
+      const apiStore = useApiStore(); // 复杂的状态同步
+      await apiStore.saveApiKey(data);
+      this.apiKey = apiStore.apiKey; // 手动同步状态
+    },
+  },
+});
 
 // ❌ 错误：Store 调用其他 Store
 export const useTranslationStore = defineStore("translation", {
@@ -359,8 +403,10 @@ export default {
 
 #### 📝 **命名规范**
 
-- **Stores**: `use[Domain]Store` (如 `useTranslationStore`)
+- **Stores**: `use[Domain][Feature]Store` (如 `useTranslationCoreStore`, `useApiStore`)
 - **Composables**: `use[Feature]` (如 `useTranslation`, `useExcelExport`)
+- **组件**: `PascalCase` (如 `TranslationForm`, `ExportSetting`)
+- **文件**: `kebab-case` (如 `translation-form.vue`, `export-setting.vue`)
 - **状态**: 使用 stores 中的状态
 - **方法**: 通过 stores 的 actions 调用
 
@@ -379,6 +425,56 @@ Component → Store → Composable → API
 3. **从 store 返回状态时，必须使用 `computed` 包装以确保响应式**
 4. **Composables 应该保持纯函数特性，不管理状态**
 5. **所有 localStorage 操作都应该通过 stores 进行**
+
+## 工具函数
+
+### 1. 调试日志工具 (`utils/debug.js`)
+
+提供统一的调试日志控制功能，可以根据设置中的调试开关控制所有调试信息的输出。
+
+#### 功能特点
+
+- **全局控制**: 通过设置界面统一控制所有调试输出
+- **自动保存**: 调试设置自动保存到 localStorage
+- **简单易用**: 直接替换 console.log 即可
+- **性能友好**: 开关关闭时不会执行任何日志输出
+
+#### 使用方法
+
+```javascript
+import {
+  debugLog,
+  debugInfo,
+  debugWarn,
+  debugError,
+} from "../../utils/debug.js";
+
+// 基础调试日志
+debugLog("调试信息");
+debugInfo("信息日志");
+debugWarn("警告日志");
+debugError("错误日志");
+
+// 替换现有的 console.log
+console.log("调试信息"); // ❌ 总是输出
+debugLog("调试信息"); // ✅ 只有开关开启时才输出
+```
+
+#### 控制方式
+
+1. 打开扩展的选项页面
+2. 进入 "Settings" → "Advanced Settings"
+3. 开启/关闭 "调试日志" 开关
+
+### 2. API 验证工具 (`utils/apiValidation.js`)
+
+提供 API 相关的验证功能，确保 API 调用的正确性和安全性。
+
+#### 功能特点
+
+- **参数验证**: 验证 API 调用参数的有效性
+- **错误处理**: 统一的错误处理机制
+- **类型检查**: 确保参数类型正确
 
 ### 1. 组件开发规范
 
@@ -633,23 +729,63 @@ export default defineConfig({
 
 ## 调试指南
 
-### 1. 状态调试
+### 1. 调试日志控制
+
+项目提供了统一的调试日志控制功能，可以通过设置界面控制所有调试信息的输出。
+
+#### 启用调试日志
+
+1. 打开扩展的选项页面
+2. 进入 "Settings" → "Advanced Settings"
+3. 开启 "调试日志" 开关
+
+#### 使用调试日志
+
+```javascript
+import {
+  debugLog,
+  debugInfo,
+  debugWarn,
+  debugError,
+} from "../../utils/debug.js";
+
+// 替换 console.log
+console.log("调试信息"); // ❌ 总是输出
+debugLog("调试信息"); // ✅ 只有开关开启时才输出
+
+// 其他调试方法
+debugInfo("信息日志");
+debugWarn("警告日志");
+debugError("错误日志");
+```
+
+#### 调试日志特点
+
+- **全局控制**: 通过一个开关控制所有调试输出
+- **自动保存**: 设置自动保存到 localStorage
+- **简单易用**: 直接替换 console.log 即可
+- **性能友好**: 开关关闭时不会执行任何日志输出
+
+### 2. 状态调试
 
 - 使用 Vue DevTools 查看 Pinia Store 状态
 - 检查 Store 的持久化数据
 - 验证状态更新的时机
+- 使用 `debugLog` 输出状态变化信息
 
-### 2. 组件调试
+### 3. 组件调试
 
 - 检查 Props 传递是否正确
 - 验证事件发射和监听
 - 确认组件的生命周期
+- 在组件中使用 `debugLog` 跟踪组件状态
 
-### 3. API 调试
+### 4. API 调试
 
 - 检查网络请求的 URL 和参数
 - 验证响应数据的格式
 - 确认错误处理机制
+- 使用 `debugLog` 记录 API 调用过程
 
 ## 常见问题
 

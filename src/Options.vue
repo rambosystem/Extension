@@ -29,13 +29,13 @@ import Translation from "./Views/Translation.vue";
 
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
-import { useTranslationStore } from "./stores/translation/index.js";
+import { useTranslationCoreStore } from "./stores/translation/core.js";
 
 const { t } = useI18n();
 
 // 使用应用store
 const appStore = useAppStore();
-const translationStore = useTranslationStore();
+const translationCoreStore = useTranslationCoreStore();
 
 // 菜单项配置 - 使用计算属性确保响应式
 const menuConfig = computed(() => [
@@ -98,7 +98,7 @@ onMounted(() => {
   // 初始化应用状态
   appStore.initializeApp();
   // 加载上次翻译结果
-  translationStore.loadLastTranslation();
+  translationCoreStore.loadLastTranslation();
 });
 </script>
 

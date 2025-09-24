@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
-import { useTranslationStore } from "../../stores/translation/index.js";
+import { useTranslationCoreStore } from "../../stores/translation/core.js";
 
 const { t } = useI18n();
 
@@ -9,7 +9,7 @@ const { t } = useI18n();
  * 翻译结果存储管理Hook
  */
 export function useTranslationStorage() {
-  const translationStore = useTranslationStore();
+  const translationCoreStore = useTranslationCoreStore();
 
   /**
    * 从本地存储加载上次翻译结果
@@ -19,16 +19,16 @@ export function useTranslationStorage() {
       const saved = localStorage.getItem("last_translation");
       if (saved) {
         const translationData = JSON.parse(saved);
-        translationStore.setLastTranslation(translationData);
+        translationCoreStore.setLastTranslation(translationData);
       } else {
-        translationStore.clearLastTranslation();
+        translationCoreStore.clearLastTranslation();
       }
     } catch (error) {
       console.error(
         "Failed to parse last translation from localStorage:",
         error
       );
-      translationStore.clearLastTranslation();
+      translationCoreStore.clearLastTranslation();
       ElMessage.warning(t("storage.loadFailed"));
     }
   };
@@ -41,7 +41,7 @@ export function useTranslationStorage() {
     try {
       const dataToSave = JSON.stringify(translationData);
       localStorage.setItem("last_translation", dataToSave);
-      translationStore.setLastTranslation(translationData);
+      translationCoreStore.setLastTranslation(translationData);
     } catch (error) {
       console.error("Failed to save translation to localStorage:", error);
       ElMessage.warning(t("storage.saveFailed"));
@@ -71,21 +71,21 @@ export function useTranslationStorage() {
    * @returns {boolean} 是否有上次翻译结果
    */
   const hasLastTranslation = () => {
-    return translationStore.hasLastTranslation;
+    return translationCoreStore.hasLastTranslation;
   };
 
   /**
    * 清空上次翻译结果
    */
   const clearLastTranslation = () => {
-    translationStore.clearLastTranslation();
+    translationCoreStore.clearLastTranslation();
     localStorage.removeItem("last_translation");
   };
 
   return {
     // 状态（使用 computed 确保响应式）
-    lastTranslation: computed(() => translationStore.lastTranslation),
-    hasLastTranslation: computed(() => translationStore.hasLastTranslation),
+    lastTranslation: computed(() => translationCoreStore.lastTranslation),
+    hasLastTranslation: computed(() => translationCoreStore.hasLastTranslation),
 
     // 方法
     loadLastTranslation,

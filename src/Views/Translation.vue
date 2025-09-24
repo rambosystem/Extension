@@ -31,12 +31,16 @@ import ExportSetting from "../Components/Translation/ExportSetting.vue";
 import { useDeduplicateDialog } from "../composables/Translation/useDeduplicateDialog.js";
 import { useI18n } from "../composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";
-import { useTranslationStore } from "../stores/translation/index.js";
+import { useTranslationCoreStore } from "../stores/translation/core.js";
+import { useDeduplicateStore } from "../stores/translation/deduplicate.js";
+import { useUploadStore } from "../stores/translation/upload.js";
 
 const { t } = useI18n();
 
 // 使用翻译管理store
-const translationStore = useTranslationStore();
+const translationCoreStore = useTranslationCoreStore();
+const deduplicateStore = useDeduplicateStore();
+const uploadStore = useUploadStore();
 
 // 直接使用store实例，不进行解构以保持响应式
 
@@ -53,7 +57,7 @@ const {
 // 处理去重操作
 const handleDeduplicate = () => {
   // 检查是否有待翻译的文本
-  if (!translationStore.codeContent?.trim()) {
+  if (!translationCoreStore.codeContent?.trim()) {
     ElMessage.warning(t("translation.noTextToDeduplicate"));
     return;
   }
@@ -63,13 +67,13 @@ const handleDeduplicate = () => {
 // 执行去重操作
 const executeDeduplicate = async () => {
   const result = await executeDeduplicateDialog(
-    translationStore.codeContent,
-    translationStore.continueTranslation,
-    translationStore.handleClear
+    translationCoreStore.codeContent,
+    translationCoreStore.continueTranslation,
+    translationCoreStore.handleClear
   );
 
   if (result && result.success) {
-    translationStore.setCodeContent(result.remainingTexts);
+    translationCoreStore.setCodeContent(result.remainingTexts);
   }
 };
 
@@ -80,15 +84,15 @@ const executeDeduplicate = async () => {
  */
 const handleDialogClose = () => {
   // 重置所有上传相关状态
-  translationStore.closeUploadDialog();
+  uploadStore.closeUploadDialog();
 };
 
 /**
  * 打开Lokalise下载页面
  */
 const openLokaliseDownload = () => {
-  if (translationStore.currentProject) {
-    const downloadUrl = `https://app.lokalise.com/download/${translationStore.currentProject.project_id}/`;
+  if (uploadStore.currentProject) {
+    const downloadUrl = `https://app.lokalise.com/download/${uploadStore.currentProject.project_id}/`;
     window.open(downloadUrl, "_blank");
   }
 };
@@ -97,8 +101,8 @@ const openLokaliseDownload = () => {
  * 打开Lokalise项目页面
  */
 const openLokaliseProject = () => {
-  if (translationStore.currentProject) {
-    const projectUrl = `https://app.lokalise.com/project/${translationStore.currentProject.project_id}/?view=multi`;
+  if (uploadStore.currentProject) {
+    const projectUrl = `https://app.lokalise.com/project/${uploadStore.currentProject.project_id}/?view=multi`;
     window.open(projectUrl, "_blank");
   }
 };

@@ -12,7 +12,7 @@
         <el-form-item v-show="excelBaselineKeyEditing">
             <div class="excel-key-setting-button-container">
                 <el-button @click="handleExcelBaselineKeyClear" style="min-width: 90px">{{ t("common.clear")
-                }}</el-button>
+                    }}</el-button>
                 <el-button type="primary" @click="handleExcelBaselineKeySave" style="min-width: 90px">{{
                     t("common.save") }}</el-button>
             </div>
@@ -28,31 +28,31 @@
 
 <script setup>
 import { useI18n } from "../../composables/Core/useI18n.js";
-import { useTranslationStore } from "../../stores/translation/index.js";
+import { useExportStore } from "../../stores/translation/export.js";
 import { ref, watch, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 
 const { t } = useI18n();
 
 // 使用 Translation store
-const translationStore = useTranslationStore();
+const exportStore = useExportStore();
 
 const excelBaselineKeyEditing = ref(false);
 const isSaving = ref(false);
 
 // 使用 computed 来获取 store 中的状态
 const excelBaselineKey = computed({
-    get: () => translationStore.excelBaselineKey,
+    get: () => exportStore.excelBaselineKey,
     set: (value) => {
-        translationStore.excelBaselineKey = value;
+        exportStore.excelBaselineKey = value;
     }
 });
 
 // 使用 computed 来获取 Overwrite 状态
 const Overwrite = computed({
-    get: () => translationStore.excelOverwrite,
+    get: () => exportStore.excelOverwrite,
     set: (value) => {
-        translationStore.excelOverwrite = value;
+        exportStore.excelOverwrite = value;
     }
 });
 
@@ -82,7 +82,7 @@ const handleExcelBaselineKeySave = () => {
 
     isSaving.value = true;
 
-    const success = translationStore.saveExcelBaselineKey(currentValue);
+    const success = exportStore.saveExcelBaselineKey(currentValue);
     if (success) {
         excelBaselineKeyEditing.value = false;
     }
@@ -112,17 +112,17 @@ const handleExcelBaselineKeyClear = () => {
     excelBaselineKey.value = "";
     excelBaselineKeyEditing.value = false;
     // 清空存储
-    translationStore.saveExcelBaselineKey("");
+    exportStore.saveExcelBaselineKey("");
 };
 
 const handleOverwriteChange = (value) => {
     // 使用 translation store 的方法更新状态
-    translationStore.updateExcelOverwrite(value);
+    exportStore.updateExcelOverwrite(value);
 };
 
 // 组件挂载时初始化 store
 onMounted(() => {
-    translationStore.initializeTranslationSettings();
+    exportStore.initializeExportSettings();
 });
 </script>
 

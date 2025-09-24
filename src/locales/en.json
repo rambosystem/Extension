@@ -84,7 +84,9 @@
     "translationPrompt": "Translation Prompt",
     "autoDeduplication": "Auto Deduplication",
     "autoDeduplicationLabel": "Auto Deduplication",
-    "addTermsDict": "Add Terms Dictionary"
+    "addTermsDict": "Add Terms Dictionary",
+    "debugLogging": "Debug Logging",
+    "debugLoggingDescription": "Enable debug logging for troubleshooting"
   },
   "excelExport": {
     "excelDownloaded": "Excel file downloaded successfully",

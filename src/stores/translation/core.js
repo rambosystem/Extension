@@ -153,6 +153,17 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
 
     /**
+     * 获取当前状态的显示文本
+     * @returns {string} 状态显示文本
+     */
+    getStatusText() {
+      if (this.loadingStates.translation) {
+        return "翻译中...";
+      }
+      return "加载中...";
+    },
+
+    /**
      * 设置翻译状态
      * @param {boolean} translating - 是否正在翻译
      */

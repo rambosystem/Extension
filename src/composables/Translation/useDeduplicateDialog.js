@@ -1,24 +1,24 @@
 import { onMounted, onUnmounted, computed } from "vue";
-import { useTranslationStore } from "../../stores/translation/index.js";
-import { useSettingsStore } from "../../stores/settings/index.js";
+import { useDeduplicateStore } from "../../stores/translation/deduplicate.js";
+import { useTranslationSettingsStore } from "../../stores/settings/translation.js";
 import { useI18n } from "../Core/useI18n.js";
 
 export function useDeduplicateDialog() {
   const { t } = useI18n();
-  const translationStore = useTranslationStore();
-  const settingsStore = useSettingsStore();
+  const deduplicateStore = useDeduplicateStore();
+  const translationSettingsStore = useTranslationSettingsStore();
 
   // 初始化设置
-  translationStore.initializeTranslationSettings();
+  translationSettingsStore.initializeTranslationSettings();
 
   // 监听项目选择变化事件
   const handleProjectSelectionChange = (event) => {
-    translationStore.setSelectedProject(event.detail.project);
+    deduplicateStore.setSelectedProject(event.detail.project);
   };
 
   // 处理自动去重对话框显示
   const handleShowAutoDeduplicateDialog = () => {
-    translationStore.handleShowAutoDeduplicateDialog();
+    deduplicateStore.handleShowAutoDeduplicateDialog();
   };
 
   // 执行去重操作
@@ -27,17 +27,17 @@ export function useDeduplicateDialog() {
     continueTranslation,
     clearCache
   ) => {
-    const result = await translationStore.executeDeduplicate(
+    const result = await deduplicateStore.executeDeduplicate(
       codeContent,
       continueTranslation,
       clearCache
     );
 
     // 保存项目选择到 settings store
-    if (translationStore.selectedProject) {
-      settingsStore.updateSetting(
+    if (deduplicateStore.selectedProject) {
+      translationSettingsStore.updateSetting(
         "deduplicateProject",
-        translationStore.selectedProject
+        deduplicateStore.selectedProject
       );
     }
 
@@ -73,15 +73,15 @@ export function useDeduplicateDialog() {
   return {
     // 状态（使用 computed 确保响应式）
     deduplicateDialogVisible: computed(
-      () => translationStore.deduplicateDialogVisible
+      () => deduplicateStore.deduplicateDialogVisible
     ),
-    selectedProject: computed(() => translationStore.selectedProject),
-    isDeduplicating: computed(() => translationStore.isDeduplicating),
-    isAutoDeduplicate: computed(() => translationStore.isAutoDeduplicate),
+    selectedProject: computed(() => deduplicateStore.selectedProject),
+    isDeduplicating: computed(() => deduplicateStore.isDeduplicating),
+    isAutoDeduplicate: computed(() => deduplicateStore.isAutoDeduplicate),
 
     // 方法（使用 store 的方法）
-    handleDeduplicate: translationStore.handleDeduplicate,
-    closeDeduplicateDialog: translationStore.closeDeduplicateDialog,
+    handleDeduplicate: deduplicateStore.handleDeduplicate,
+    closeDeduplicateDialog: deduplicateStore.closeDeduplicateDialog,
     executeDeduplicate,
   };
 }

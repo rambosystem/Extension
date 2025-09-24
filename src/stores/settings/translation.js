@@ -24,6 +24,9 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     // 公共术语库状态
     adTerms: true,
 
+    // 调试日志开关
+    debugLogging: false,
+
     // 加载状态
     loadingStates: {
       prompt: false,
@@ -43,6 +46,9 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
 
     // 检查是否有未保存的更改
     hasUnsavedChanges: (state) => state.isCodeEditing,
+
+    // 检查是否启用调试日志
+    isDebugLoggingEnabled: (state) => state.debugLogging,
   },
 
   actions: {
@@ -268,6 +274,12 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         if (adTerms !== null) {
           this.adTerms = adTerms === "true";
         }
+
+        // 加载调试日志设置
+        const debugLogging = localStorage.getItem("debug_logging_enabled");
+        if (debugLogging !== null) {
+          this.debugLogging = debugLogging === "true";
+        }
       } catch (error) {
         console.error("Failed to initialize translation settings:", error);
       }
@@ -302,6 +314,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       localStorage.removeItem("termMatch_max_ngram");
       localStorage.removeItem("deduplicate_project_selection");
       localStorage.removeItem("ad_terms_status");
+      localStorage.removeItem("debug_logging_enabled");
     },
 
     /**
@@ -319,8 +332,18 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         maxNGram: "termMatch_max_ngram",
         deduplicateProject: "deduplicate_project_selection",
         adTerms: "ad_terms_status",
+        debugLogging: "debug_logging_enabled",
       };
       return storageKeys[key] || null;
+    },
+
+    /**
+     * 切换调试日志开关
+     * @param {boolean} enabled - 是否启用调试日志
+     */
+    toggleDebugLogging(enabled) {
+      this.debugLogging = enabled;
+      localStorage.setItem("debug_logging_enabled", enabled.toString());
     },
 
     /**

@@ -1,16 +1,16 @@
 <template>
   <div class="setting_group">
     <h2 class="title">{{ t("settings.title") }}</h2>
-    <el-form :model="settingsStore" ref="formRef" label-position="top" class="settings-form">
+    <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
-        <SaveableInput v-model="settingsStore.apiKey" :label="t('settings.apiKeyForDeepSeek')"
+        <SaveableInput v-model="apiStore.apiKey" :label="t('settings.apiKeyForDeepSeek')"
           :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey"
-          :loading="settingsStore.loadingStates?.apiKey || false" />
+          :loading="apiStore.loadingStates?.apiKey || false" />
       </el-form-item>
       <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken">
-        <SaveableInput v-model="settingsStore.lokaliseApiToken" :label="t('settings.lokaliseApiToken')"
+        <SaveableInput v-model="apiStore.lokaliseApiToken" :label="t('settings.lokaliseApiToken')"
           placeholder="Enter your Lokalise API token..." @save="handleSaveLokaliseApiToken"
-          :loading="settingsStore.loadingStates?.lokaliseApiToken || false" />
+          :loading="apiStore.loadingStates?.lokaliseApiToken || false" />
       </el-form-item>
 
       <el-form-item :label="t('settings.autoDeduplication')" label-position="top">
@@ -20,7 +20,7 @@
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
               }}</span>
-            <el-switch :model-value="settingsStore.autoDeduplication"
+            <el-switch :model-value="translationSettingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
         </el-card>
@@ -50,51 +50,57 @@
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
               }}</span>
-            <el-switch :model-value="settingsStore.translationPrompt"
+            <el-switch :model-value="translationSettingsStore.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
         </el-card>
       </el-form-item>
-      <el-form-item v-if="settingsStore.translationPrompt">
+      <el-form-item v-if="translationSettingsStore.translationPrompt">
         <div class="CodeEditor">
-          <CodeEditor v-model="settingsStore.customPrompt"></CodeEditor>
+          <CodeEditor v-model="translationSettingsStore.customPrompt"></CodeEditor>
         </div>
       </el-form-item>
-      <el-form-item v-if="settingsStore.translationPrompt">
+      <el-form-item v-if="translationSettingsStore.translationPrompt">
         <div class="button-container">
-          <el-button v-show="settingsStore.isCodeEditing" type="primary" @click="handleSavePrompt"
-            :loading="settingsStore.loadingStates.prompt">
+          <el-button v-show="translationSettingsStore.isCodeEditing" type="primary" @click="handleSavePrompt"
+            :loading="translationSettingsStore.loadingStates?.prompt || false">
             {{ t("common.save") }}
           </el-button>
         </div>
       </el-form-item>
     </el-form>
     <h2 class="title">{{ t("settings.advancedSettings") }}</h2>
-    <el-form :model="settingsStore" ref="formRef" label-position="top" class="settings-form">
+    <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
         <div class="similarity-threshold">
-          <el-input-number controls-position="right" v-model="settingsStore.similarityThreshold" :step="0.01" :min="0.5"
-            :max="1" :precision="2" @change="handleSimilarityThresholdChange" />
+          <el-input-number controls-position="right" v-model="translationSettingsStore.similarityThreshold" :step="0.01"
+            :min="0.5" :max="1" :precision="2" @change="handleSimilarityThresholdChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.topK')" label-position="left">
         <div class="top-k">
-          <el-input-number controls-position="right" v-model="settingsStore.topK" :step="1" :min="1" :max="50"
-            :precision="0" @change="handleTopKChange" />
+          <el-input-number controls-position="right" v-model="translationSettingsStore.topK" :step="1" :min="1"
+            :max="50" :precision="0" @change="handleTopKChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.maxNGram')" label-position="left">
         <div class="max-ngram">
-          <el-input-number controls-position="right" v-model="settingsStore.maxNGram" :step="1" :min="1" :max="5"
-            :precision="0" @change="handleMaxNGramChange" />
+          <el-input-number controls-position="right" v-model="translationSettingsStore.maxNGram" :step="1" :min="1"
+            :max="5" :precision="0" @change="handleMaxNGramChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.language')" label-position="left">
         <div class="language-select">
-          <el-select v-model="settingsStore.language" @change="handleLanguageChange" style="width: 160px">
+          <el-select v-model="appStore.language" @change="handleLanguageChange" style="width: 160px">
             <el-option label="English" value="en" />
             <el-option label="中文" value="zh_CN" />
           </el-select>
+        </div>
+      </el-form-item>
+      <el-form-item :label="t('settings.debugLogging')" label-position="left">
+        <div class="debug-logging-setting">
+          <el-switch v-model="translationSettingsStore.debugLogging" @change="handleDebugLoggingChange" />
+          <span class="setting-description">{{ t('settings.debugLoggingDescription') }}</span>
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.clearLocalStorage')" label-position="left">
@@ -103,11 +109,11 @@
             {{ t("common.clear") }}
           </el-button>
         </div>
-        <el-dialog v-model="settingsStore.dialogVisible" :title="t('settings.clearLocalStorage')" width="30%"
+        <el-dialog v-model="translationSettingsStore.dialogVisible" :title="t('settings.clearLocalStorage')" width="30%"
           align-center>
           <span>{{ t("settings.clearLocalStorageConfirm") }}</span>
           <template #footer>
-            <el-button @click="settingsStore.dialogVisible = false">{{
+            <el-button @click="translationSettingsStore.dialogVisible = false">{{
               t("common.cancel")
             }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
@@ -134,14 +140,18 @@ import LoadingButton from "../Components/Common/LoadingButton.vue";
 import { useI18n } from "../composables/Core/useI18n.js";
 import TermsCard from "../Components/Terms/TermsCard.vue";
 import { useTranslationStorage } from "../composables/Translation/useTranslationStorage.js";
-import { useSettingsStore } from "../stores/settings/index.js";
+import { useApiStore } from "../stores/settings/api.js";
+import { useTranslationSettingsStore } from "../stores/settings/translation.js";
 import { useTermsStore } from "../stores/terms.js";
+import { useAppStore } from "../stores/app.js";
 
 const { t } = useI18n();
 
 // 使用Pinia stores
-const settingsStore = useSettingsStore();
+const apiStore = useApiStore();
+const translationSettingsStore = useTranslationSettingsStore();
 const termsStore = useTermsStore();
+const appStore = useAppStore();
 
 // 直接使用store实例，不进行解构以保持响应式
 
@@ -152,8 +162,8 @@ const handleTranslationPromptClick = (event) => {
     return;
   }
   // 切换开关状态
-  const newState = !settingsStore.translationPrompt;
-  settingsStore.toggleTranslationPrompt(newState);
+  const newState = !translationSettingsStore.translationPrompt;
+  translationSettingsStore.toggleTranslationPrompt(newState);
 };
 
 // 处理自动去重卡片的点击事件
@@ -163,55 +173,59 @@ const handleAutoDeduplicationClick = (event) => {
     return;
   }
   // 切换开关状态
-  const newState = !settingsStore.autoDeduplication;
-  settingsStore.toggleAutoDeduplication(newState);
+  const newState = !translationSettingsStore.autoDeduplication;
+  translationSettingsStore.toggleAutoDeduplication(newState);
 };
 
 const formRef = ref();
 
 // 添加缺失的事件处理函数
 const handleSaveAPIKey = async (saveData) => {
-  await settingsStore.saveApiKey(saveData);
+  await apiStore.saveApiKey(saveData);
 };
 
 const handleSaveLokaliseApiToken = async (saveData) => {
-  await settingsStore.saveLokaliseApiToken(saveData);
+  await apiStore.saveLokaliseApiToken(saveData);
 };
 
 const handleSavePrompt = async () => {
-  await settingsStore.saveCustomPrompt();
+  await translationSettingsStore.saveCustomPrompt();
 };
 
 const handleTranslationPromptChange = (value) => {
-  settingsStore.toggleTranslationPrompt(value);
+  translationSettingsStore.toggleTranslationPrompt(value);
 };
 
 const handleAutoDeduplicationChange = (value) => {
-  settingsStore.toggleAutoDeduplication(value);
+  translationSettingsStore.toggleAutoDeduplication(value);
 };
 
 const handleSimilarityThresholdChange = (value) => {
-  settingsStore.updateSimilarityThreshold(value);
+  translationSettingsStore.updateSimilarityThreshold(value);
 };
 
 const handleTopKChange = (value) => {
-  settingsStore.updateTopK(value);
+  translationSettingsStore.updateTopK(value);
 };
 
 const handleMaxNGramChange = (value) => {
-  settingsStore.updateMaxNGram(value);
+  translationSettingsStore.updateMaxNGram(value);
 };
 
 const handleLanguageChange = (value) => {
-  settingsStore.updateLanguage(value);
+  appStore.setLanguage(value);
+};
+
+const handleDebugLoggingChange = (value) => {
+  translationSettingsStore.toggleDebugLogging(value);
 };
 
 const handleClearLocalStorage = () => {
-  settingsStore.dialogVisible = true;
+  translationSettingsStore.dialogVisible = true;
 };
 
 const handleClearLocalStorageConfirm = async () => {
-  await settingsStore.clearAllSettings();
+  await translationSettingsStore.clearAllSettings();
 };
 
 // 重建embedding确认框状态
@@ -329,13 +343,14 @@ const handleUpdateTerm = (term, field, value) => {
 onMounted(async () => {
   try {
     // 初始化设置
-    settingsStore.initializeSettings();
+    apiStore.initializeApiSettings();
+    translationSettingsStore.initializeTranslationSettings();
 
     // // Debug: Log store state
-    // console.log('Settings Store State:', {
-    //   apiKey: settingsStore.apiKey,
-    //   lokaliseApiToken: settingsStore.lokaliseApiToken,
-    //   loadingStates: settingsStore.loadingStates
+    // console.log('API Store State:', {
+    //   apiKey: apiStore.apiKey,
+    //   lokaliseApiToken: apiStore.lokaliseApiToken,
+    //   loadingStates: apiStore.loadingStates
     // });
 
     // 初始化Terms状态

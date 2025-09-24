@@ -2,26 +2,27 @@
     <el-form label-position="top" class="translation-form">
         <el-form-item :label="t('translation.enCopywriting')" prop="content">
             <div class="CodeEditor">
-                <CodeEditor :modelValue="translationStore.codeContent"
-                    @update:modelValue="translationStore.setCodeContent">
+                <CodeEditor :modelValue="translationCoreStore.codeContent"
+                    @update:modelValue="translationCoreStore.setCodeContent">
                 </CodeEditor>
             </div>
         </el-form-item>
         <el-form-item>
             <div class="button-container">
                 <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
-                <el-button type="text" @click="translationStore.showLastTranslation"
-                    v-if="translationStore.hasLastTranslation">
+                <el-button type="text" @click="translationCoreStore.showLastTranslation"
+                    v-if="translationCoreStore.hasLastTranslation">
                     {{ t("translation.lastTranslation") }}
                 </el-button>
                 <!-- Clear按钮，固定显示 -->
-                <el-button style="min-width: 90px" @click="translationStore.handleClear">
+                <el-button style="min-width: 90px" @click="translationCoreStore.handleClear">
                     {{ t("common.clear") }}
                 </el-button>
-                <el-button v-if="!settingsStore.autoDeduplication" style="min-width: 90px" @click="handleDeduplicate">
+                <el-button v-if="!translationSettingsStore.autoDeduplication" style="min-width: 90px"
+                    @click="handleDeduplicate">
                     {{ t("translation.deduplicate") }}
                 </el-button>
-                <el-button type="primary" @click="translationStore.handleTranslate" style="min-width: 90px">
+                <el-button type="primary" @click="translationCoreStore.handleTranslate" style="min-width: 90px">
                     {{ t("translation.translate") }}
                 </el-button>
             </div>
@@ -32,14 +33,16 @@
 <script setup>
 import CodeEditor from "../Common/CodeEditor.vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
-import { useTranslationStore } from "../../stores/translation/index.js";
-import { useSettingsStore } from "../../stores/settings/index.js";
+import { useTranslationCoreStore } from "../../stores/translation/core.js";
+import { useTranslationSettingsStore } from "../../stores/settings/translation.js";
+import { debugLog } from "../../utils/debug.js";
+import { onMounted } from "vue";
 
 const { t } = useI18n();
 
 // 使用 Stores
-const translationStore = useTranslationStore();
-const settingsStore = useSettingsStore();
+const translationCoreStore = useTranslationCoreStore();
+const translationSettingsStore = useTranslationSettingsStore();
 
 // 不再需要 props，直接使用 stores
 
@@ -50,6 +53,13 @@ const emit = defineEmits([
 const handleDeduplicate = () => {
     emit('deduplicate');
 };
+
+// // 调试信息
+onMounted(() => {
+    debugLog('TranslationForm mounted');
+    debugLog('translationCoreStore:', translationCoreStore);
+    debugLog('translationSettingsStore:', translationSettingsStore);
+});
 </script>
 
 <style lang="scss" scoped>

@@ -1,7 +1,7 @@
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
-import { useSettingsStore } from "../../stores/settings/index.js";
-import { useTranslationStore } from "../../stores/translation/index.js";
+import { useApiStore } from "../../stores/settings/api.js";
+import { useUploadStore } from "../../stores/translation/upload.js";
 import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
 
@@ -11,8 +11,8 @@ const { t } = useI18n();
  * Lokalise上传功能Hook
  */
 export function useLokaliseUpload() {
-  const settingsStore = useSettingsStore();
-  const translationStore = useTranslationStore();
+  const apiStore = useApiStore();
+  const uploadStore = useUploadStore();
 
   // 项目列表
   const projectList = ref([]);
@@ -35,7 +35,7 @@ export function useLokaliseUpload() {
   const showUploadDialog = () => {
     // 加载项目列表
     loadProjectList();
-    translationStore.openUploadDialog();
+    uploadStore.openUploadDialog();
   };
 
   /**
@@ -53,7 +53,7 @@ export function useLokaliseUpload() {
             "lokalise_upload_project_id"
           );
           if (savedProjectId) {
-            translationStore.setUploadProjectId(savedProjectId);
+            uploadStore.setUploadProjectId(savedProjectId);
           }
         }
       }
@@ -67,17 +67,14 @@ export function useLokaliseUpload() {
    * 保存上传设置
    */
   const saveUploadSettings = () => {
-    if (translationStore.uploadForm.projectId) {
+    if (uploadStore.uploadForm.projectId) {
       localStorage.setItem(
         "lokalise_upload_project_id",
-        translationStore.uploadForm.projectId
+        uploadStore.uploadForm.projectId
       );
     }
-    if (translationStore.uploadForm.tag) {
-      localStorage.setItem(
-        "lokalise_upload_tag",
-        translationStore.uploadForm.tag
-      );
+    if (uploadStore.uploadForm.tag) {
+      localStorage.setItem("lokalise_upload_tag", uploadStore.uploadForm.tag);
     }
   };
 
@@ -148,7 +145,7 @@ export function useLokaliseUpload() {
   const clearBaselineKey = () => {
     try {
       // 使用 store 的方法清空 baseline key
-      translationStore.saveExcelBaselineKey("");
+      uploadStore.saveExcelBaselineKey("");
 
       // 触发事件通知其他组件baseline key已被清空
       if (typeof window !== "undefined") {
@@ -163,14 +160,14 @@ export function useLokaliseUpload() {
    * 执行上传
    */
   const executeUpload = async (translationResult) => {
-    if (!translationStore.uploadForm.projectId) {
+    if (!uploadStore.uploadForm.projectId) {
       ElMessage.warning("Please select a project");
       return;
     }
 
     // 获取选中的项目信息
     const selectedProject = projectList.value.find(
-      (p) => p.project_id === translationStore.uploadForm.projectId
+      (p) => p.project_id === uploadStore.uploadForm.projectId
     );
     if (!selectedProject) {
       ElMessage.error("Selected project not found");
@@ -186,8 +183,7 @@ export function useLokaliseUpload() {
 
       // 检查API token是否配置
       const apiToken =
-        localStorage.getItem("lokalise_api_token") ||
-        settingsStore.lokaliseApiToken;
+        localStorage.getItem("lokalise_api_token") || apiStore.lokaliseApiToken;
 
       if (!apiToken || !apiToken.trim()) {
         throw new Error(
@@ -230,11 +226,8 @@ export function useLokaliseUpload() {
         };
 
         // 如果有标签，添加到key中
-        if (
-          translationStore.uploadForm.tag &&
-          translationStore.uploadForm.tag.trim()
-        ) {
-          keyData.tags = [translationStore.uploadForm.tag.trim()];
+        if (uploadStore.uploadForm.tag && uploadStore.uploadForm.tag.trim()) {
+          keyData.tags = [uploadStore.uploadForm.tag.trim()];
         }
 
         return keyData;
@@ -242,14 +235,13 @@ export function useLokaliseUpload() {
 
       // 准备tags数组（作为第三个参数传递给API）
       const tags =
-        translationStore.uploadForm.tag &&
-        translationStore.uploadForm.tag.trim()
-          ? [translationStore.uploadForm.tag.trim()]
+        uploadStore.uploadForm.tag && uploadStore.uploadForm.tag.trim()
+          ? [uploadStore.uploadForm.tag.trim()]
           : [];
 
       // 调用真正的上传API
       const result = await uploadTranslationKeys(
-        translationStore.uploadForm.projectId,
+        uploadStore.uploadForm.projectId,
         keys,
         tags,
         apiToken
@@ -282,8 +274,8 @@ export function useLokaliseUpload() {
 
   return {
     // 状态
-    uploadDialogVisible: computed(() => translationStore.uploadDialogVisible),
-    uploadForm: computed(() => translationStore.uploadForm),
+    uploadDialogVisible: computed(() => uploadStore.uploadDialogVisible),
+    uploadForm: computed(() => uploadStore.uploadForm),
     projectList,
     isUploading,
     isUploadSuccess,
