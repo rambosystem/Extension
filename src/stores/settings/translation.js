@@ -9,8 +9,8 @@ import { DEFAULT_TRANSLATION_PROMPT } from "../../config/prompts.js";
 export const useTranslationSettingsStore = defineStore("translationSettings", {
   state: () => ({
     // 翻译相关设置
-    translationPrompt: true,
-    autoDeduplication: false,
+    translationPrompt: false,
+    autoDeduplication: true,
     customPrompt: DEFAULT_TRANSLATION_PROMPT,
 
     // 术语匹配参数
@@ -19,7 +19,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     maxNGram: 3,
 
     // 去重项目选择
-    deduplicateProject: "AmazonSearch",
+    deduplicateProject: "Common",
 
     // 公共术语库状态
     adTerms: true,
@@ -290,13 +290,13 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
      */
     clearTranslationSettings() {
       // 重置到默认值
-      this.translationPrompt = true;
-      this.autoDeduplication = false;
+      this.translationPrompt = false;
+      this.autoDeduplication = true;
       this.customPrompt = DEFAULT_TRANSLATION_PROMPT;
       this.similarityThreshold = 0.7;
       this.topK = 10;
       this.maxNGram = 3;
-      this.deduplicateProject = "AmazonSearch";
+      this.deduplicateProject = "Common";
       this.adTerms = true;
       this.isCodeEditing = false;
 
@@ -344,6 +344,62 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     toggleDebugLogging(enabled) {
       this.debugLogging = enabled;
       localStorage.setItem("debug_logging_enabled", enabled.toString());
+    },
+
+    /**
+     * 清空所有设置（包括API设置）
+     */
+    async clearAllSettings() {
+      try {
+        // 清空翻译设置
+        this.clearTranslationSettings();
+
+        // 清空API设置
+        const { useApiStore } = await import("./api.js");
+        const apiStore = useApiStore();
+        apiStore.clearApiSettings();
+
+        // 清空翻译缓存
+        const { useTranslationCache } = await import(
+          "../../composables/Translation/useTranslationCache.js"
+        );
+        const cache = useTranslationCache();
+        cache.clearCache();
+
+        // 清空其他localStorage项目
+        const additionalKeys = [
+          "last_translation",
+          "lokalise_upload_project_id",
+          "lokalise_upload_tag",
+          "excel_baseline_key",
+          "excel_overwrite",
+          "app_language",
+          "pending_translation_cache",
+        ];
+
+        additionalKeys.forEach((key) => {
+          try {
+            localStorage.removeItem(key);
+          } catch (error) {
+            console.warn(`Failed to remove ${key} from localStorage:`, error);
+          }
+        });
+
+        // 清空sessionStorage
+        try {
+          sessionStorage.removeItem("pending_translation_cache");
+        } catch (error) {
+          console.warn("Failed to clear sessionStorage:", error);
+        }
+
+        // 关闭对话框
+        this.dialogVisible = false;
+
+        ElMessage.success("All settings and cache cleared successfully");
+      } catch (error) {
+        console.error("Failed to clear all settings:", error);
+        ElMessage.error("Failed to clear settings");
+      }
     },
 
     /**

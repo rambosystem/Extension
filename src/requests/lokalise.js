@@ -11,6 +11,8 @@ export async function translate(content, onStatusUpdate = null) {
       ? true
       : adTermsEnabled === "true" || adTermsEnabled === true;
 
+  let matchedTerms = null; // 初始化 matchedTerms 变量
+
   // 检查 adTerms 开关状态，如果开启则进行术语匹配
   if (isAdTermsEnabled) {
     try {
@@ -64,7 +66,6 @@ export async function translate(content, onStatusUpdate = null) {
         user_id: 1,
       };
 
-      let matchedTerms;
       try {
         matchedTerms = await matchTerms(textLines, matchOptions);
       } catch (error) {
@@ -81,19 +82,7 @@ export async function translate(content, onStatusUpdate = null) {
         onStatusUpdate("translating");
       }
 
-      // 如果有匹配成功的术语，需要将术语信息传递给 DeepSeek 服务
-      if (matchedTerms && matchedTerms.length > 0) {
-        // 构建术语库文本并添加到内容中
-        let termsText =
-          "这里提供可供参考的术语库，如果匹配到术语请根据术语库翻译文本：\n";
-        matchedTerms.forEach((term) => {
-          termsText += `- ${term.en} -> ${term.cn} (${term.jp})\n`;
-        });
-
-        // 将术语信息添加到翻译内容中
-        content = termsText + "\n\n需要翻译的文本：\n" + content;
-      } else {
-      }
+      // 术语信息将通过新的模板结构传递给 DeepSeek 服务
     } catch (error) {
       // 术语匹配失败，继续翻译但不使用术语
       if (onStatusUpdate) {
@@ -108,7 +97,7 @@ export async function translate(content, onStatusUpdate = null) {
   }
 
   // 调用 DeepSeek 翻译服务
-  return await translateWithDeepSeek(content, onStatusUpdate);
+  return await translateWithDeepSeek(content, onStatusUpdate, matchedTerms);
 }
 
 /**

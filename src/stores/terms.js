@@ -405,8 +405,7 @@ export const useTermsStore = defineStore("terms", {
     initializeTermsStatus() {
       if (typeof window !== "undefined" && window.localStorage) {
         const savedStatus = localStorage.getItem("ad_terms_status");
-        this.termsStatus =
-          savedStatus !== undefined ? savedStatus === "true" : true;
+        this.termsStatus = savedStatus !== null ? savedStatus === "true" : true;
       }
     },
 
