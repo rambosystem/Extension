@@ -53,6 +53,7 @@ export function useCacheValidation() {
         termMatch_max_ngram: expectedSettings.maxNGram?.toString() || "3",
         translation_temperature:
           expectedSettings.translationTemperature?.toString() || "0.1",
+        app_language: expectedSettings.appLanguage || "en",
       };
 
       for (const [key, expectedValue] of Object.entries(preservedSettings)) {
@@ -81,7 +82,6 @@ export function useCacheValidation() {
         "lokalise_upload_tag",
         "excel_baseline_key",
         "excel_overwrite",
-        "app_language",
         "pending_translation_cache",
       ];
 

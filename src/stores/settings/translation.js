@@ -526,6 +526,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
           topK: 10, // 重置为默认值
           maxNGram: 3, // 重置为默认值
           translationTemperature: 0.1, // 重置为默认值
+          appLanguage: "en", // 重置为默认值
         };
 
         const result = await validateCacheInitialization(expectedSettings);
