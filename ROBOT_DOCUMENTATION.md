@@ -47,7 +47,8 @@ src/
 │       └── UploadSettingsDialog.vue  # 上传设置对话框
 ├── composables/         # 组合式函数
 │   ├── Core/            # 核心功能
-│   │   └── useI18n.js           # 国际化
+│   │   ├── useI18n.js           # 国际化
+│   │   └── useCacheValidation.js # 缓存验证
 │   ├── Excel/           # Excel 相关
 │   │   └── useExcelExport.js    # Excel 导出
 │   ├── Translation/     # 翻译相关
@@ -109,6 +110,7 @@ src/
   - `setCurrentMenu()`: 设置当前菜单
   - `setLanguage()`: 设置语言
   - `initializeApp()`: 初始化应用
+  - `initializeToDefaults()`: 初始化到默认值（缓存清除）
 
 #### 2. Settings Module (`stores/settings/`)
 
@@ -123,6 +125,7 @@ src/
   - `saveApiKey()`: 保存 API Key
   - `saveLokaliseApiToken()`: 保存 Lokalise Token
   - `initializeApiSettings()`: 初始化 API 设置
+  - `initializeToDefaults()`: 初始化到默认值（缓存清除）
 
 ##### 2.2 Translation Settings Store (`stores/settings/translation.js`)
 
@@ -143,6 +146,8 @@ src/
   - `toggleAutoDeduplication()`: 切换自动去重
   - `updateSimilarityThreshold()`: 更新相似度阈值
   - `toggleDebugLogging()`: 切换调试日志开关
+  - `initializeToDefaults()`: 初始化到默认值（缓存清除）
+  - `clearAllSettings()`: 清除所有设置（通过 Store 管理）
 
 #### 3. Translation Module (`stores/translation/`)
 
@@ -161,6 +166,7 @@ src/
   - `showLastTranslation()`: 显示上次翻译
   - `handleClear()`: 清除内容
   - `saveTranslationToLocal()`: 保存翻译到本地
+  - `initializeToDefaults()`: 初始化到默认值（缓存清除）
 
 ##### 3.2 Upload Store (`stores/translation/upload.js`)
 
@@ -214,6 +220,59 @@ src/
   - `deleteTerm()`: 删除术语
   - `rebuildEmbedding()`: 重建嵌入
   - `refreshTerms()`: 刷新术语
+  - `initializeToDefaults()`: 初始化到默认值（只重置开关，保留数据）
+
+### 缓存管理架构
+
+#### 🎯 **缓存管理原则**
+
+1. **✅ Store 统一管理**: 所有缓存操作必须通过 Stores 进行
+2. **✅ 禁止直接操作**: 严禁在方法中直接操作 localStorage
+3. **✅ 初始化函数**: 每个 Store 都有 `initializeToDefaults()` 方法
+4. **✅ 状态同步**: Store 状态和 localStorage 保持完全同步
+5. **✅ 模块化设计**: 每个 Store 负责管理自己的缓存
+
+#### 📋 **缓存清除流程**
+
+```javascript
+// 缓存清除的统一流程
+clearAllSettings() {
+  // 1. 调用各Store的初始化函数
+  this.initializeToDefaults();                    // 翻译设置
+  apiStore.initializeToDefaults();              // API设置
+  translationCoreStore.initializeToDefaults();  // 翻译核心
+  termsStore.initializeToDefaults();            // 术语状态
+  appStore.initializeToDefaults();              // 应用状态
+
+  // 2. 清空缓存通过composable处理
+  const cache = useTranslationCache();
+  cache.clearCache();
+
+  // 3. 保存重要设置
+  this.saveImportantSettings();
+
+  // 4. 异步刷新Terms Card数据
+  termsStore.refreshTerms(false).catch(error => {
+    console.error("Terms refresh failed:", error);
+  });
+}
+```
+
+#### 🔧 **初始化函数设计**
+
+每个 Store 的 `initializeToDefaults()` 方法负责：
+
+- **重置状态**: 将 Store 状态重置为默认值
+- **同步存储**: 确保 localStorage 与 Store 状态同步
+- **保留设置**: 根据业务需求保留某些重要设置
+
+#### 📊 **缓存验证机制**
+
+使用 `useCacheValidation` composable 进行缓存初始化验证：
+
+- **保留设置验证**: 检查应该保留的设置是否正确
+- **清除设置验证**: 检查应该清除的设置是否已删除
+- **自动验证**: 缓存清除后自动执行验证
 
 ### Store 直接使用架构
 
@@ -253,16 +312,6 @@ Component → Direct Store → Composable → API
      ↓           ↓            ↓
     UI交互    直接状态管理   业务逻辑
 ```
-
-#### 📊 **架构对比**
-
-| 方面         | 复杂主 Store       | 直接子 Store   |
-| ------------ | ------------------ | -------------- |
-| **状态同步** | 复杂，需要手动同步 | 简单，直接使用 |
-| **响应式**   | 容易丢失           | 完全保持       |
-| **维护性**   | 复杂，多层嵌套     | 简单，直接引用 |
-| **性能**     | 有额外开销         | 最优性能       |
-| **可读性**   | 需要理解同步逻辑   | 一目了然       |
 
 ## 开发准则
 
@@ -425,6 +474,9 @@ Component → Store → Composable → API
 3. **从 store 返回状态时，必须使用 `computed` 包装以确保响应式**
 4. **Composables 应该保持纯函数特性，不管理状态**
 5. **所有 localStorage 操作都应该通过 stores 进行**
+6. **缓存清除必须通过 Store 的 `initializeToDefaults()` 方法**
+7. **禁止在方法中直接操作 localStorage**
+8. **每个 Store 都必须有初始化函数**
 
 ## 工具函数
 
@@ -475,6 +527,33 @@ debugLog("调试信息"); // ✅ 只有开关开启时才输出
 - **参数验证**: 验证 API 调用参数的有效性
 - **错误处理**: 统一的错误处理机制
 - **类型检查**: 确保参数类型正确
+
+### 3. 缓存验证工具 (`composables/Core/useCacheValidation.js`)
+
+提供缓存初始化验证功能，确保缓存清除操作的正确性。
+
+#### 功能特点
+
+- **自动验证**: 缓存清除后自动执行验证
+- **保留设置检查**: 验证应该保留的设置是否正确
+- **清除设置检查**: 验证应该清除的设置是否已删除
+- **详细报告**: 提供完整的验证结果和错误信息
+
+#### 使用方法
+
+```javascript
+import { useCacheValidation } from "../composables/Core/useCacheValidation.js";
+
+const { validateCacheInitialization } = useCacheValidation();
+
+// 验证缓存初始化结果
+const result = await validateCacheInitialization(expectedSettings);
+if (result.success) {
+  console.log("缓存初始化验证通过");
+} else {
+  console.error("验证失败:", result.errors);
+}
+```
 
 ### 1. 组件开发规范
 
