@@ -100,6 +100,23 @@
     "loadFailed": "Failed to load previous translation result",
     "saveFailed": "Failed to save translation result to local storage"
   },
+  "cacheValidation": {
+    "initializing": "Initializing cache...",
+    "validationPassed": "Cache initialization validated successfully",
+    "validationFailed": "Cache initialization completed with {count} issues",
+    "validationError": "Failed to validate cache initialization",
+    "preservedSettings": "Preserved settings",
+    "clearedSettings": "Cleared settings",
+    "validationErrors": "Validation errors",
+    "neverInitialized": "never initialized",
+    "termsStoreMissing": "terms-store should be preserved but was cleared",
+    "settingMismatch": "Preserved setting {key} mismatch: expected {expected}, got {actual}",
+    "settingNotCleared": "Setting {key} should be cleared but still exists: {value}",
+    "quickValidationPassed": "Quick validation passed: all important settings exist",
+    "quickValidationFailed": "Quick validation failed: {key} is missing",
+    "termsStoreNeverInitialized": "terms-store not found, but no terms data exists - likely never initialized",
+    "termsStoreMissingWithData": "Quick validation failed: terms-store is missing but terms data exists"
+  },
   "about": {
     "title": "About",
     "content": "About page content"

@@ -200,6 +200,20 @@ export const useApiStore = defineStore("api", {
     },
 
     /**
+     * 初始化API设置到默认值
+     * 用于缓存清除时重置设置
+     */
+    initializeToDefaults() {
+      this.apiKey = "";
+      this.lokaliseApiToken = "";
+
+      // 重置加载状态
+      Object.keys(this.loadingStates).forEach((key) => {
+        this.loadingStates[key] = false;
+      });
+    },
+
+    /**
      * 清空API设置
      */
     clearApiSettings() {

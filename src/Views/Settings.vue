@@ -19,7 +19,7 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-            }}</span>
+              }}</span>
             <el-switch :model-value="translationSettingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
@@ -49,7 +49,7 @@
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
-            }}</span>
+              }}</span>
             <el-switch :model-value="translationSettingsStore.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
@@ -120,7 +120,7 @@
           <template #footer>
             <el-button @click="translationSettingsStore.dialogVisible = false">{{
               t("common.cancel")
-              }}</el-button>
+            }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -145,6 +145,7 @@ import LoadingButton from "../Components/Common/LoadingButton.vue";
 import { useI18n } from "../composables/Core/useI18n.js";
 import TermsCard from "../Components/Terms/TermsCard.vue";
 import { useTranslationStorage } from "../composables/Translation/useTranslationStorage.js";
+// import { useCacheValidation } from "../composables/Core/useCacheValidation.js"; // 如需要手动校验可取消注释
 import { useApiStore } from "../stores/settings/api.js";
 import { useTranslationSettingsStore } from "../stores/settings/translation.js";
 import { useTermsStore } from "../stores/terms.js";

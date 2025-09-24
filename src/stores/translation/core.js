@@ -4,6 +4,7 @@ import { useI18n } from "../../composables/Core/useI18n.js";
 import { useTranslation } from "../../composables/Translation/useTranslation.js";
 import { useTranslationStorage } from "../../composables/Translation/useTranslationStorage.js";
 import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
+import { debugLog } from "../../utils/debug.js";
 
 /**
  * 翻译核心功能状态管理
@@ -292,12 +293,24 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       const autoDeduplicationEnabled =
         localStorage.getItem("auto_deduplication_enabled") === "true";
 
+      // 调试信息：显示去重检查结果
+      debugLog("Translation deduplication check:");
+      debugLog(
+        "- auto_deduplication_enabled value:",
+        localStorage.getItem("auto_deduplication_enabled")
+      );
+      debugLog("- autoDeduplicationEnabled:", autoDeduplicationEnabled);
+
       if (autoDeduplicationEnabled) {
         // 需要去重，但这里不处理，由调用方处理
+        debugLog(
+          "Deduplication is enabled, returning needsDeduplication: true"
+        );
         return { needsDeduplication: true };
       }
 
       // 正常翻译流程
+      debugLog("Deduplication is disabled, proceeding with normal translation");
       await this.continueTranslation();
       return { needsDeduplication: false };
     },
@@ -402,10 +415,13 @@ export const useTranslationCoreStore = defineStore("translationCore", {
 
     /**
      * 清除编辑器内容
+     * 重构后的版本：只调用初始化函数，禁止直接操作localStorage
      */
     handleClear() {
+      // 只重置编辑器相关状态，不直接操作localStorage
       this.clearCodeContent();
-      // 清空缓存
+
+      // 清空缓存通过composable处理
       const cache = useTranslationCache();
       cache.clearCache();
     },
@@ -422,15 +438,18 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
 
     /**
-     * 重置所有状态
+     * 初始化翻译核心状态到默认值
+     * 用于缓存清除时重置状态
      */
-    resetAll() {
+    initializeToDefaults() {
       this.codeContent = "";
       this.translationResult = [];
       this.dialogVisible = false;
       this.isTranslating = false;
       this.userSuggestion = "";
       this.userSuggestionVisible = false;
+      this.hasLastTranslation = false;
+      this.lastTranslation = [];
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {

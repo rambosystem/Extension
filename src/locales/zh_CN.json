@@ -100,6 +100,23 @@
     "loadFailed": "加载上次翻译结果失败",
     "saveFailed": "保存翻译结果到本地存储失败"
   },
+  "cacheValidation": {
+    "initializing": "正在初始化缓存...",
+    "validationPassed": "缓存初始化校验成功",
+    "validationFailed": "缓存初始化完成，存在 {count} 个问题",
+    "validationError": "缓存初始化校验失败",
+    "preservedSettings": "保留的设置",
+    "clearedSettings": "清除的设置",
+    "validationErrors": "校验错误",
+    "neverInitialized": "从未初始化",
+    "termsStoreMissing": "terms-store 应该被保留但被清除了",
+    "settingMismatch": "保留设置 {key} 不匹配：期望 {expected}，实际 {actual}",
+    "settingNotCleared": "设置 {key} 应该被清除但仍然存在：{value}",
+    "quickValidationPassed": "快速校验通过：所有重要设置都存在",
+    "quickValidationFailed": "快速校验失败：{key} 缺失",
+    "termsStoreNeverInitialized": "未找到 terms-store，但也没有 terms 数据 - 可能从未初始化",
+    "termsStoreMissingWithData": "快速校验失败：terms-store 缺失但存在 terms 数据"
+  },
   "about": {
     "title": "关于",
     "content": "关于页面内容"

@@ -1,6 +1,13 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
 import { DEFAULT_TRANSLATION_PROMPT } from "../../config/prompts.js";
+import { debugLog } from "../../utils/debug.js";
+import { useApiStore } from "./api.js";
+import { useTranslationCoreStore } from "../translation/core.js";
+import { useTermsStore } from "../terms.js";
+import { useAppStore } from "../app.js";
+import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
+import { useCacheValidation } from "../../composables/Core/useCacheValidation.js";
 
 /**
  * 翻译设置管理状态
@@ -298,6 +305,44 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     },
 
     /**
+     * 初始化翻译设置到默认值
+     * 用于缓存清除时重置设置
+     */
+    initializeToDefaults() {
+      // 重置到默认值
+      this.translationPrompt = false;
+      this.autoDeduplication = true; // 重置为默认值
+      this.customPrompt = DEFAULT_TRANSLATION_PROMPT;
+      this.similarityThreshold = 0.7;
+      this.topK = 10;
+      this.maxNGram = 3;
+      this.deduplicateProject = "Common"; // 重置为默认值
+      this.isCodeEditing = false;
+      this.translationTemperature = 0.1;
+
+      // 重置加载状态
+      Object.keys(this.loadingStates).forEach((key) => {
+        this.loadingStates[key] = false;
+      });
+
+      // 同步重置的设置到localStorage
+      localStorage.setItem("translation_prompt_enabled", "false");
+      localStorage.setItem("auto_deduplication_enabled", "true");
+      localStorage.setItem("deduplicate_project_selection", "Common");
+      localStorage.setItem(
+        "custom_translation_prompt",
+        DEFAULT_TRANSLATION_PROMPT
+      );
+      localStorage.setItem("termMatch_similarity_threshold", "0.7");
+      localStorage.setItem("termMatch_top_k", "10");
+      localStorage.setItem("termMatch_max_ngram", "3");
+      localStorage.setItem("translation_temperature", "0.1");
+
+      // 注意：不重置 adTerms 和 debugLogging
+      // 这些设置需要在缓存清除时保留
+    },
+
+    /**
      * 清空翻译设置
      */
     clearTranslationSettings() {
@@ -375,64 +420,127 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     },
 
     /**
-     * 清空所有设置（包括API设置）
+     * 初始化所有设置（清除缓存但保留重要设置）
+     * 重构后的版本：只调用各Store的初始化函数，禁止直接操作localStorage
      */
     async clearAllSettings() {
       try {
-        // 清空翻译设置
-        this.clearTranslationSettings();
+        // 调用各Store的初始化函数重置到默认值
+        // 1. 初始化翻译设置（保留去重和ad terms设置）
+        this.initializeToDefaults();
 
-        // 清空API设置
-        const { useApiStore } = await import("./api.js");
+        // 2. 初始化API设置
         const apiStore = useApiStore();
-        apiStore.clearApiSettings();
+        apiStore.initializeToDefaults();
 
-        // 清空翻译缓存
-        const { useTranslationCache } = await import(
-          "../../composables/Translation/useTranslationCache.js"
-        );
+        // 3. 初始化翻译核心状态
+        const translationCoreStore = useTranslationCoreStore();
+        translationCoreStore.initializeToDefaults();
+
+        // 4. 初始化术语状态（只重置开关，不重置数据）
+        const termsStore = useTermsStore();
+        termsStore.initializeToDefaults();
+
+        // 5. 初始化应用状态
+        const appStore = useAppStore();
+        appStore.initializeToDefaults();
+
+        // 6. 清空翻译缓存
         const cache = useTranslationCache();
         cache.clearCache();
 
-        // 注意：不重置 terms store 状态，以保留 ad terms 的结果数据
-        // terms store 的数据通过 Pinia 持久化存储在 localStorage 中
-        // 用户希望保留 ad terms 的结果数据，只清除其他缓存
+        // 7. 确保重要设置被正确保存到 localStorage
+        this.saveImportantSettings();
 
-        // 清空其他localStorage项目
-        const additionalKeys = [
-          "last_translation",
-          "lokalise_upload_project_id",
-          "lokalise_upload_tag",
-          "excel_baseline_key",
-          "excel_overwrite",
-          "app_language",
-          "pending_translation_cache",
-          "translation_temperature",
-          "ad_terms_status",
-        ];
-
-        additionalKeys.forEach((key) => {
-          try {
-            localStorage.removeItem(key);
-          } catch (error) {
-            console.warn(`Failed to remove ${key} from localStorage:`, error);
-          }
-        });
-
-        // 清空sessionStorage
-        try {
-          sessionStorage.removeItem("pending_translation_cache");
-        } catch (error) {
-          console.warn("Failed to clear sessionStorage:", error);
-        }
+        // 8. 刷新 Terms Card 数据
+        await termsStore.refreshTerms(false); // 不显示成功消息
 
         // 关闭对话框
         this.dialogVisible = false;
 
-        ElMessage.success("All settings and cache cleared successfully");
+        // 调试信息：显示重置后的设置
+        debugLog("Cache initialization completed. Settings reset to defaults:");
+        debugLog(
+          "- auto_deduplication_enabled:",
+          localStorage.getItem("auto_deduplication_enabled")
+        );
+        debugLog(
+          "- deduplicate_project_selection:",
+          localStorage.getItem("deduplicate_project_selection")
+        );
+        debugLog("- ad_terms_status:", localStorage.getItem("ad_terms_status"));
+        debugLog(
+          "- terms-store:",
+          localStorage.getItem("terms-store") ? "exists" : "not found"
+        );
+        debugLog("- Memory autoDeduplication:", this.autoDeduplication);
+        debugLog("- Memory deduplicateProject:", this.deduplicateProject);
+        debugLog("- Memory adTerms:", this.adTerms);
+
+        ElMessage.success("Cache initialized successfully");
+
+        // 自动校验缓存初始化结果
+        this.autoValidateCache();
       } catch (error) {
-        console.error("Failed to clear all settings:", error);
-        ElMessage.error("Failed to clear settings");
+        console.error("Failed to initialize cache:", error);
+        ElMessage.error("Failed to initialize cache");
+      }
+    },
+
+    /**
+     * 保存重要设置到 localStorage
+     * 确保重要设置被正确保存（现在只保存debug logging）
+     */
+    saveImportantSettings() {
+      try {
+        // 保存调试日志设置（这是唯一需要保留的设置）
+        localStorage.setItem(
+          "debug_logging_enabled",
+          this.debugLogging ? "true" : "false"
+        );
+
+        debugLog("Important settings saved to localStorage:");
+        debugLog("- debug_logging_enabled:", this.debugLogging);
+      } catch (error) {
+        console.error("Failed to save important settings:", error);
+      }
+    },
+
+    /**
+     * 自动校验缓存初始化结果
+     */
+    async autoValidateCache() {
+      try {
+        const { validateCacheInitialization } = useCacheValidation();
+
+        const expectedSettings = {
+          autoDeduplication: true, // 重置为默认值
+          deduplicateProject: "Common", // 重置为默认值
+          adTerms: true, // 重置为默认值
+          debugLogging: this.debugLogging, // 保持当前设置
+          translationPrompt: false, // 重置为默认值
+          customPrompt: DEFAULT_TRANSLATION_PROMPT, // 重置为默认值
+          similarityThreshold: 0.7, // 重置为默认值
+          topK: 10, // 重置为默认值
+          maxNGram: 3, // 重置为默认值
+          translationTemperature: 0.1, // 重置为默认值
+        };
+
+        const result = await validateCacheInitialization(expectedSettings);
+
+        // 只记录调试信息，不显示用户消息
+        debugLog(
+          "Auto validation completed:",
+          result.success ? "PASSED" : "FAILED"
+        );
+        if (!result.success) {
+          debugLog("Validation issues:", result.errors);
+        }
+
+        return result;
+      } catch (error) {
+        console.error("Auto validation failed:", error);
+        return null;
       }
     },
 

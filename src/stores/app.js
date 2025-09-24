@@ -81,6 +81,16 @@ export const useAppStore = defineStore("app", {
     },
 
     /**
+     * 初始化应用状态到默认值
+     * 用于缓存清除时重置状态
+     */
+    initializeToDefaults() {
+      this.language = "en"; // 默认英语
+      this.isLoading = false;
+      this.isInitialized = false;
+    },
+
+    /**
      * 初始化应用状态
      * 从存储中恢复状态
      */

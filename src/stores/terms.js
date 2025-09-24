@@ -499,13 +499,30 @@ export const useTermsStore = defineStore("terms", {
     },
 
     /**
-     * 重新初始化状态
+     * 初始化术语状态到默认值
+     * 用于缓存清除时重置状态（只重置开关，不重置数据）
      */
-    reinitializeStatus() {
-      this.termsStatus = false;
+    initializeToDefaults() {
+      // 只重置开关状态，不重置术语数据
+      // 术语数据通过 Pinia 持久化存储，用户希望保留
+      this.termsStatus = true; // 重置为默认开启状态
       this.termsError = null;
       this.embeddingStatus = "pending";
       this.lastEmbeddingTime = "";
+
+      // 重置加载状态
+      this.termsLoading = false;
+      this.refreshLoading = false;
+      this.rebuildLoading = false;
+
+      // 重置编辑状态
+      this.editableTermsData = [];
+      this.hasChanges = false;
+
+      // 保存Ad Terms状态到localStorage（重置为默认值）
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("ad_terms_status", "true");
+      }
     },
 
     /**
