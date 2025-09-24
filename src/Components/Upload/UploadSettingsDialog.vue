@@ -56,7 +56,7 @@
 </template>
 
 <script setup>
-import { useTranslationStore } from "../../stores/translation.js";
+import { useTranslationStore } from "../../stores/translation/index.js";
 
 // 使用翻译Store
 const translationStore = useTranslationStore();

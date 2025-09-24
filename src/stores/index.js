@@ -8,6 +8,6 @@ export default pinia;
 
 // 导出所有 stores
 export * from "./app.js";
-export * from "./settings.js";
-export * from "./translation.js";
+export * from "./settings/index.js";
+export * from "./translation/index.js";
 export * from "./terms.js";

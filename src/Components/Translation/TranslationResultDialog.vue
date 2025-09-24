@@ -85,7 +85,7 @@
 <script setup>
 import EditableCell from "../Common/EditableCell.vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
-import { useTranslationStore } from "../../stores/translation.js";
+import { useTranslationStore } from "../../stores/translation/index.js";
 import { MoreFilled } from "@element-plus/icons-vue";
 
 const { t } = useI18n();

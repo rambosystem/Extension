@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, computed } from "vue";
-import { useTranslationStore } from "../../stores/translation.js";
-import { useSettingsStore } from "../../stores/settings.js";
+import { useTranslationStore } from "../../stores/translation/index.js";
+import { useSettingsStore } from "../../stores/settings/index.js";
 import { useI18n } from "../Core/useI18n.js";
 
 export function useDeduplicateDialog() {

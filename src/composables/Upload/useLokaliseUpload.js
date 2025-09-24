@@ -1,7 +1,7 @@
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
-import { useSettingsStore } from "../../stores/settings.js";
-import { useTranslationStore } from "../../stores/translation.js";
+import { useSettingsStore } from "../../stores/settings/index.js";
+import { useTranslationStore } from "../../stores/translation/index.js";
 import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
 

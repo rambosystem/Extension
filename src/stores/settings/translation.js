@@ -1,20 +1,13 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { validateDeepSeekApiKey } from "../utils/apiValidation.js";
-import { getUserProjects } from "../requests/lokalise.js";
-import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
-import { useI18n } from "../composables/Core/useI18n.js";
+import { DEFAULT_TRANSLATION_PROMPT } from "../../config/prompts.js";
 
 /**
- * 设置管理状态
- * 管理API密钥、翻译设置、术语匹配参数等
+ * 翻译设置管理状态
+ * 管理翻译提示、自动去重、术语匹配参数等
  */
-export const useSettingsStore = defineStore("settings", {
+export const useTranslationSettingsStore = defineStore("translationSettings", {
   state: () => ({
-    // API 相关设置
-    apiKey: "",
-    lokaliseApiToken: "",
-
     // 翻译相关设置
     translationPrompt: true,
     autoDeduplication: false,
@@ -25,9 +18,6 @@ export const useSettingsStore = defineStore("settings", {
     topK: 10,
     maxNGram: 3,
 
-    // Excel 导出设置
-    excelBaselineKey: "",
-
     // 去重项目选择
     deduplicateProject: "AmazonSearch",
 
@@ -36,8 +26,6 @@ export const useSettingsStore = defineStore("settings", {
 
     // 加载状态
     loadingStates: {
-      apiKey: false,
-      lokaliseApiToken: false,
       prompt: false,
     },
 
@@ -49,12 +37,6 @@ export const useSettingsStore = defineStore("settings", {
   }),
 
   getters: {
-    // 检查API Key是否已配置
-    hasApiKey: (state) => !!state.apiKey?.trim(),
-
-    // 检查Lokalise Token是否已配置
-    hasLokaliseToken: (state) => !!state.lokaliseApiToken?.trim(),
-
     // 获取所有加载状态
     isLoading: (state) =>
       Object.values(state.loadingStates).some((loading) => loading),
@@ -76,7 +58,7 @@ export const useSettingsStore = defineStore("settings", {
     },
 
     /**
-     * 异步操作包装器（类似原来的 withState）
+     * 异步操作包装器
      * @param {string} key - 状态键
      * @param {Function} asyncFn - 异步函数
      */
@@ -88,128 +70,6 @@ export const useSettingsStore = defineStore("settings", {
       } finally {
         this.setLoading(key, false);
       }
-    },
-
-    /**
-     * 保存API Key（兼容原有接口）
-     * @param {Object} saveData - 保存数据对象 {value, onSuccess, onError}
-     */
-    async saveApiKey(saveData) {
-      const { value, onSuccess, onError } = saveData;
-
-      if (!value?.trim()) {
-        onError("Please enter API Key");
-        return;
-      }
-
-      try {
-        await this.withLoading("apiKey", async () => {
-          const isValid = await validateDeepSeekApiKey(value);
-          if (!isValid) {
-            throw new Error("API Key is invalid");
-          }
-
-          const saved = this.saveToStorage("deepseek_api_key", value);
-          if (!saved) {
-            throw new Error("Failed to save API Key");
-          }
-
-          this.apiKey = value.trim();
-        });
-
-        onSuccess();
-      } catch (error) {
-        console.error("API Key validation failed:", error);
-        onError(error.message || "API Key validation failed");
-      }
-    },
-
-    /**
-     * 直接保存API Key（新接口）
-     * @param {string} apiKey - API密钥
-     */
-    async saveApiKeyDirect(apiKey) {
-      if (!apiKey?.trim()) {
-        throw new Error("Please enter API Key");
-      }
-
-      await this.withLoading("apiKey", async () => {
-        const isValid = await validateDeepSeekApiKey(apiKey);
-        if (!isValid) {
-          throw new Error("API Key is invalid");
-        }
-
-        localStorage.setItem("deepseek_api_key", apiKey.trim());
-        this.apiKey = apiKey.trim();
-      });
-
-      ElMessage.success("API Key saved successfully");
-    },
-
-    /**
-     * 保存Lokalise API Token（兼容原有接口）
-     * @param {Object} saveData - 保存数据对象 {value, onSuccess, onError}
-     */
-    async saveLokaliseApiToken(saveData) {
-      const { value, onSuccess, onError } = saveData;
-
-      if (!value?.trim()) {
-        onError("Please enter Lokalise API Token");
-        return;
-      }
-
-      try {
-        await this.withLoading("lokaliseApiToken", async () => {
-          // 先保存 API token 到 localStorage，这样 getUserProjects 就能读取到
-          const saved = this.saveToStorage("lokalise_api_token", value.trim());
-          if (!saved) {
-            throw new Error("Failed to save API Token");
-          }
-
-          // 调用 getUserProjects 验证 token 并获取项目列表
-          const projects = await getUserProjects();
-
-          // 保存项目列表
-          const projectsSaved = this.saveToStorage(
-            "lokalise_projects",
-            projects
-          );
-          if (!projectsSaved) {
-            throw new Error("Failed to save projects list");
-          }
-
-          this.lokaliseApiToken = value.trim();
-        });
-
-        onSuccess();
-      } catch (error) {
-        console.error("Lokalise API Token validation failed:", error);
-        onError(error.message || "API Token validation failed");
-      }
-    },
-
-    /**
-     * 直接保存Lokalise API Token（新接口）
-     * @param {string} token - API Token
-     */
-    async saveLokaliseTokenDirect(token) {
-      if (!token?.trim()) {
-        throw new Error("Please enter Lokalise API Token");
-      }
-
-      await this.withLoading("lokaliseApiToken", async () => {
-        // 先保存到localStorage
-        localStorage.setItem("lokalise_api_token", token.trim());
-
-        // 验证token并获取项目列表
-        const projects = await getUserProjects();
-
-        // 保存项目列表
-        localStorage.setItem("lokalise_projects", JSON.stringify(projects));
-        this.lokaliseApiToken = token.trim();
-      });
-
-      ElMessage.success("Lokalise API Token saved successfully");
     },
 
     /**
@@ -287,14 +147,6 @@ export const useSettingsStore = defineStore("settings", {
     },
 
     /**
-     * 更新语言设置
-     * @param {string} language - 语言代码
-     */
-    updateLanguage(language) {
-      this.setLanguage(language);
-    },
-
-    /**
      * 更新相似度阈值
      * @param {number} threshold - 阈值
      */
@@ -358,48 +210,11 @@ export const useSettingsStore = defineStore("settings", {
     },
 
     /**
-     * 清空所有设置
-     */
-    clearAllSettings() {
-      // 清空localStorage
-      localStorage.clear();
-
-      // 重置到默认值
-      this.apiKey = "";
-      this.lokaliseApiToken = "";
-      this.translationPrompt = true;
-      this.autoDeduplication = false;
-      this.customPrompt = DEFAULT_TRANSLATION_PROMPT;
-      this.similarityThreshold = 0.7;
-      this.topK = 10;
-      this.maxNGram = 3;
-      this.excelBaselineKey = "";
-      this.deduplicateProject = "AmazonSearch";
-      this.adTerms = true;
-      this.isCodeEditing = false;
-
-      // 重置加载状态
-      Object.keys(this.loadingStates).forEach((key) => {
-        this.loadingStates[key] = false;
-      });
-
-      ElMessage.success("All settings cleared successfully");
-    },
-
-    /**
-     * 初始化设置
+     * 初始化翻译设置
      * 从localStorage加载设置
      */
-    initializeSettings() {
+    initializeTranslationSettings() {
       try {
-        // 加载API Key
-        const apiKey = localStorage.getItem("deepseek_api_key");
-        if (apiKey) this.apiKey = apiKey;
-
-        // 加载Lokalise Token
-        const lokaliseToken = localStorage.getItem("lokalise_api_token");
-        if (lokaliseToken) this.lokaliseApiToken = lokaliseToken;
-
         // 加载翻译提示设置
         const translationPrompt = localStorage.getItem(
           "translation_prompt_enabled"
@@ -440,12 +255,6 @@ export const useSettingsStore = defineStore("settings", {
           this.maxNGram = parseInt(maxNGram) || 3;
         }
 
-        // 加载Excel基线键
-        const excelBaselineKey = localStorage.getItem("excel_baseline_key");
-        if (excelBaselineKey) {
-          this.excelBaselineKey = excelBaselineKey;
-        }
-
         // 加载去重项目选择
         const deduplicateProject = localStorage.getItem(
           "deduplicate_project_selection"
@@ -460,8 +269,39 @@ export const useSettingsStore = defineStore("settings", {
           this.adTerms = adTerms === "true";
         }
       } catch (error) {
-        console.error("Failed to initialize settings:", error);
+        console.error("Failed to initialize translation settings:", error);
       }
+    },
+
+    /**
+     * 清空翻译设置
+     */
+    clearTranslationSettings() {
+      // 重置到默认值
+      this.translationPrompt = true;
+      this.autoDeduplication = false;
+      this.customPrompt = DEFAULT_TRANSLATION_PROMPT;
+      this.similarityThreshold = 0.7;
+      this.topK = 10;
+      this.maxNGram = 3;
+      this.deduplicateProject = "AmazonSearch";
+      this.adTerms = true;
+      this.isCodeEditing = false;
+
+      // 重置加载状态
+      Object.keys(this.loadingStates).forEach((key) => {
+        this.loadingStates[key] = false;
+      });
+
+      // 清空localStorage中的翻译设置
+      localStorage.removeItem("translation_prompt_enabled");
+      localStorage.removeItem("auto_deduplication_enabled");
+      localStorage.removeItem("custom_translation_prompt");
+      localStorage.removeItem("termMatch_similarity_threshold");
+      localStorage.removeItem("termMatch_top_k");
+      localStorage.removeItem("termMatch_max_ngram");
+      localStorage.removeItem("deduplicate_project_selection");
+      localStorage.removeItem("ad_terms_status");
     },
 
     /**
@@ -471,15 +311,12 @@ export const useSettingsStore = defineStore("settings", {
      */
     getStorageKey(key) {
       const storageKeys = {
-        apiKey: "deepseek_api_key",
-        lokaliseApiToken: "lokalise_api_token",
         translationPrompt: "translation_prompt_enabled",
         autoDeduplication: "auto_deduplication_enabled",
         customPrompt: "custom_translation_prompt",
         similarityThreshold: "termMatch_similarity_threshold",
         topK: "termMatch_top_k",
         maxNGram: "termMatch_max_ngram",
-        excelBaselineKey: "excel_baseline_key",
         deduplicateProject: "deduplicate_project_selection",
         adTerms: "ad_terms_status",
       };
@@ -503,62 +340,11 @@ export const useSettingsStore = defineStore("settings", {
         return false;
       }
     },
-
-    /**
-     * 从存储获取
-     * @param {string} key - 存储键
-     * @param {any} defaultValue - 默认值
-     * @returns {any} 获取的值
-     */
-    getFromStorage(key, defaultValue = "") {
-      try {
-        const value = localStorage.getItem(key);
-        if (value === null) {
-          return defaultValue;
-        }
-
-        try {
-          return JSON.parse(value);
-        } catch {
-          return value;
-        }
-      } catch (error) {
-        console.error(`Failed to get ${key} from localStorage:`, error);
-        return defaultValue;
-      }
-    },
-
-    /**
-     * 清空所有存储
-     * @returns {boolean} 是否成功
-     */
-    clearAllStorage() {
-      try {
-        localStorage.clear();
-        return true;
-      } catch (error) {
-        console.error("Failed to clear localStorage:", error);
-        return false;
-      }
-    },
-
-    /**
-     * 批量加载设置数据
-     * @param {Object} storageKeys - 存储键映射对象
-     * @returns {Object} 加载的数据对象
-     */
-    loadSettings(storageKeys) {
-      const settings = {};
-      Object.entries(storageKeys).forEach(([key, storageKey]) => {
-        settings[key] = this.getFromStorage(storageKey);
-      });
-      return settings;
-    },
   },
 
   // 启用持久化存储
   persist: {
-    key: "settings-store",
+    key: "translation-settings-store",
     storage: {
       getItem: (key) => {
         if (typeof window !== "undefined" && window.localStorage) {

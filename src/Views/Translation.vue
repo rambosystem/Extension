@@ -31,7 +31,7 @@ import ExportSetting from "../Components/Translation/ExportSetting.vue";
 import { useDeduplicateDialog } from "../composables/Translation/useDeduplicateDialog.js";
 import { useI18n } from "../composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";
-import { useTranslationStore } from "../stores/translation.js";
+import { useTranslationStore } from "../stores/translation/index.js";
 
 const { t } = useI18n();
 

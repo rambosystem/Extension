@@ -5,12 +5,12 @@
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
         <SaveableInput v-model="settingsStore.apiKey" :label="t('settings.apiKeyForDeepSeek')"
           :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey"
-          :loading="settingsStore.loadingStates.apiKey" />
+          :loading="settingsStore.loadingStates?.apiKey || false" />
       </el-form-item>
       <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken">
         <SaveableInput v-model="settingsStore.lokaliseApiToken" :label="t('settings.lokaliseApiToken')"
           placeholder="Enter your Lokalise API token..." @save="handleSaveLokaliseApiToken"
-          :loading="settingsStore.loadingStates.lokaliseApiToken" />
+          :loading="settingsStore.loadingStates?.lokaliseApiToken || false" />
       </el-form-item>
 
       <el-form-item :label="t('settings.autoDeduplication')" label-position="top">
@@ -19,7 +19,7 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-            }}</span>
+              }}</span>
             <el-switch :model-value="settingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
@@ -49,7 +49,7 @@
           <div class="custom-translation-prompt">
             <span class="custom-translation-prompt-text">{{
               t("settings.customTranslationPrompt")
-            }}</span>
+              }}</span>
             <el-switch :model-value="settingsStore.translationPrompt"
               @update:model-value="handleTranslationPromptChange" @click.stop width="45px" />
           </div>
@@ -109,7 +109,7 @@
           <template #footer>
             <el-button @click="settingsStore.dialogVisible = false">{{
               t("common.cancel")
-              }}</el-button>
+            }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -134,7 +134,7 @@ import LoadingButton from "../Components/Common/LoadingButton.vue";
 import { useI18n } from "../composables/Core/useI18n.js";
 import TermsCard from "../Components/Terms/TermsCard.vue";
 import { useTranslationStorage } from "../composables/Translation/useTranslationStorage.js";
-import { useSettingsStore } from "../stores/settings.js";
+import { useSettingsStore } from "../stores/settings/index.js";
 import { useTermsStore } from "../stores/terms.js";
 
 const { t } = useI18n();
@@ -330,6 +330,13 @@ onMounted(async () => {
   try {
     // 初始化设置
     settingsStore.initializeSettings();
+
+    // // Debug: Log store state
+    // console.log('Settings Store State:', {
+    //   apiKey: settingsStore.apiKey,
+    //   lokaliseApiToken: settingsStore.lokaliseApiToken,
+    //   loadingStates: settingsStore.loadingStates
+    // });
 
     // 初始化Terms状态
     await termsStore.refreshTerms(false); // 不显示成功消息

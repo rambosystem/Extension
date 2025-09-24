@@ -72,9 +72,17 @@ src/
 ├── stores/              # Pinia 状态管理
 │   ├── app.js           # 应用全局状态
 │   ├── index.js         # Store 导出
-│   ├── settings.js      # 设置状态
-│   ├── terms.js         # 术语状态
-│   └── translation.js   # 翻译状态
+│   ├── settings/        # 设置模块
+│   │   ├── api.js       # API 设置
+│   │   ├── translation.js # 翻译设置
+│   │   └── index.js     # 设置模块导出
+│   ├── translation/      # 翻译模块
+│   │   ├── core.js      # 翻译核心功能
+│   │   ├── upload.js    # 上传功能
+│   │   ├── export.js    # 导出功能
+│   │   ├── deduplicate.js # 去重功能
+│   │   └── index.js     # 翻译模块导出
+│   └── terms.js         # 术语状态
 ├── utils/               # 工具函数
 │   └── apiValidation.js # API 验证
 ├── Views/               # 页面视图
@@ -103,46 +111,92 @@ src/
   - `setLanguage()`: 设置语言
   - `initializeApp()`: 初始化应用
 
-#### 2. Settings Store (`stores/settings.js`)
+#### 2. Settings Module (`stores/settings/`)
 
-- **用途**: 管理应用设置
+##### 2.1 API Store (`stores/settings/api.js`)
+
+- **用途**: 管理 API 相关设置
 - **状态**:
   - `apiKey`: DeepSeek API 密钥
   - `lokaliseApiToken`: Lokalise API Token
+  - `loadingStates`: 加载状态
+- **主要方法**:
+  - `saveApiKey()`: 保存 API Key
+  - `saveLokaliseApiToken()`: 保存 Lokalise Token
+  - `initializeApiSettings()`: 初始化 API 设置
+
+##### 2.2 Translation Settings Store (`stores/settings/translation.js`)
+
+- **用途**: 管理翻译相关设置
+- **状态**:
   - `translationPrompt`: 翻译提示开关
   - `autoDeduplication`: 自动去重开关
+  - `customPrompt`: 自定义翻译提示
   - `similarityThreshold`: 相似度阈值
-  - `topK`: Top K 参数
-  - `maxNGram`: 最大 N-gram
-  - `excelBaselineKey`: Excel 基线键
+  - `topK`: Top K 值
+  - `maxNGram`: 最大 N-gram 值
   - `deduplicateProject`: 去重项目选择
   - `adTerms`: 公共术语库状态
 - **主要方法**:
-  - `saveApiKey()`: 保存 API 密钥
-  - `saveLokaliseApiToken()`: 保存 Lokalise Token
   - `saveCustomPrompt()`: 保存自定义提示
   - `toggleTranslationPrompt()`: 切换翻译提示
   - `toggleAutoDeduplication()`: 切换自动去重
+  - `updateSimilarityThreshold()`: 更新相似度阈值
 
-#### 3. Translation Store (`stores/translation.js`)
+#### 3. Translation Module (`stores/translation/`)
 
-- **用途**: 管理翻译相关状态
+##### 3.1 Core Store (`stores/translation/core.js`)
+
+- **用途**: 管理翻译核心功能
 - **状态**:
   - `codeContent`: 待翻译内容
   - `translationResult`: 翻译结果
-  - `dialogVisible`: 翻译结果对话框显示状态
-  - `uploadDialogVisible`: 上传对话框显示状态
-  - `isTranslating`: 翻译进行状态
-  - `loadingStates`: 各种加载状态
-  - `hasLastTranslation`: 是否有上次翻译
+  - `dialogVisible`: 对话框可见性
+  - `isTranslating`: 翻译状态
+  - `userSuggestion`: 用户建议
   - `lastTranslation`: 上次翻译结果
 - **主要方法**:
-  - `handleTranslate()`: 处理翻译
-  - `continueTranslation()`: 继续翻译
+  - `handleTranslate()`: 执行翻译
   - `showLastTranslation()`: 显示上次翻译
   - `handleClear()`: 清除内容
   - `saveTranslationToLocal()`: 保存翻译到本地
-  - `loadLastTranslation()`: 加载上次翻译
+
+##### 3.2 Upload Store (`stores/translation/upload.js`)
+
+- **用途**: 管理上传功能
+- **状态**:
+  - `uploadDialogVisible`: 上传对话框可见性
+  - `uploadForm`: 上传表单数据
+  - `projectList`: 项目列表
+  - `isUploading`: 上传状态
+- **主要方法**:
+  - `uploadToLokalise()`: 上传到 Lokalise
+  - `executeUpload()`: 执行上传操作
+  - `handleProjectChange()`: 处理项目变化
+
+##### 3.3 Export Store (`stores/translation/export.js`)
+
+- **用途**: 管理导出功能
+- **状态**:
+  - `excelBaselineKey`: Excel 基线键
+  - `excelOverwrite`: Excel 覆盖设置
+- **主要方法**:
+  - `exportExcel()`: 导出 Excel 文件
+  - `saveExcelBaselineKey()`: 保存 Excel 基线键
+  - `updateExcelOverwrite()`: 更新 Excel 覆盖设置
+
+##### 3.4 Deduplicate Store (`stores/translation/deduplicate.js`)
+
+- **用途**: 管理去重功能
+- **状态**:
+  - `deduplicateDialogVisible`: 去重对话框可见性
+  - `selectedProject`: 选中的去重项目
+  - `isDeduplicating`: 去重状态
+  - `isAutoDeduplicate`: 自动去重标志
+- **主要方法**:
+  - `executeDeduplicate()`: 执行去重操作
+  - `handleDeduplicate()`: 处理去重操作
+  - `handleShowAutoDeduplicateDialog()`: 显示自动去重对话框
 
 #### 4. Terms Store (`stores/terms.js`)
 
@@ -160,7 +214,171 @@ src/
   - `rebuildEmbedding()`: 重建嵌入
   - `refreshTerms()`: 刷新术语
 
+### Store 模块化架构
+
+#### 🎯 **模块化优势**
+
+1. **更好的可维护性**: 每个模块职责单一，便于维护和调试
+2. **更清晰的边界**: 功能模块化，避免状态混乱
+3. **更好的可扩展性**: 新增功能时可以独立添加模块
+4. **更好的团队协作**: 不同开发者可以独立开发不同模块
+5. **更好的测试性**: 每个模块可以独立测试
+
+#### 📁 **模块结构说明**
+
+- **Settings 模块**: 按功能领域拆分（API 设置 vs 翻译设置）
+- **Translation 模块**: 按业务流程拆分（核心、上传、导出、去重）
+- **向后兼容**: 通过 `index.js` 提供统一的 API 接口
+- **渐进式迁移**: 可以逐步优化，不需要一次性重构所有代码
+
+#### 🔄 **数据流向**
+
+```
+Component → Store Module → Sub-Store → Composable → API
+     ↓           ↓            ↓           ↓
+    UI交互    模块管理      功能管理     业务逻辑
+```
+
 ## 开发准则
+
+### Composables 与 Stores 的界限
+
+#### 🎯 **基本原则**
+
+1. **Stores 负责状态管理**：所有应用状态都应该通过 Pinia stores 管理
+2. **Composables 负责业务逻辑**：封装可复用的业务逻辑和功能
+3. **组件负责 UI 交互**：处理用户界面和用户交互
+
+#### 📋 **Stores 职责**
+
+**✅ Stores 应该负责：**
+
+- 应用状态管理（数据存储、状态变更）
+- 数据持久化（localStorage、API 调用）
+- 状态同步和共享
+- 业务规则验证
+- 复杂的状态计算（getters）
+
+**❌ Stores 不应该：**
+
+- 直接操作 DOM
+- 处理 UI 交互逻辑
+- 包含组件特定的状态
+- 调用其他 stores（避免循环依赖）
+
+#### 🔧 **Composables 职责**
+
+**✅ Composables 应该负责：**
+
+- 封装可复用的业务逻辑
+- 提供功能性的方法集合
+- 处理复杂的数据转换
+- 封装第三方库的使用
+- 提供响应式的计算属性
+
+**❌ Composables 不应该：**
+
+- 直接管理应用状态（应该通过 stores）
+- 直接操作 localStorage（应该通过 stores）
+- 包含组件特定的 UI 逻辑
+
+#### 🏗️ **架构模式**
+
+```javascript
+// ✅ 正确的架构模式
+
+// Store: 状态管理
+export const useTranslationStore = defineStore("translation", {
+  state: () => ({
+    codeContent: "",
+    translationResult: [],
+  }),
+  actions: {
+    async translate(content) {
+      // 业务逻辑调用 composable
+      const { performTranslation } = useTranslation();
+      this.translationResult = await performTranslation(content);
+    },
+  },
+});
+
+// Composable: 业务逻辑
+export function useTranslation() {
+  const performTranslation = async (content) => {
+    // 纯业务逻辑，不管理状态
+    return await translateAPI(content);
+  };
+
+  return { performTranslation };
+}
+
+// Component: UI 交互
+export default {
+  setup() {
+    const translationStore = useTranslationStore();
+
+    const handleTranslate = () => {
+      translationStore.translate(translationStore.codeContent);
+    };
+
+    return { handleTranslate };
+  },
+};
+```
+
+#### 🚫 **反模式示例**
+
+```javascript
+// ❌ 错误：Composable 直接管理状态
+export function useTranslation() {
+  const codeContent = ref(""); // 不应该在 composable 中管理状态
+  const translationResult = ref([]);
+
+  return { codeContent, translationResult };
+}
+
+// ❌ 错误：Store 调用其他 Store
+export const useTranslationStore = defineStore("translation", {
+  actions: {
+    async translate() {
+      const settingsStore = useSettingsStore(); // 避免循环依赖
+      // ...
+    },
+  },
+});
+
+// ❌ 错误：组件直接操作 localStorage
+export default {
+  setup() {
+    const saveData = () => {
+      localStorage.setItem("data", "value"); // 应该通过 store
+    };
+  },
+};
+```
+
+#### 📝 **命名规范**
+
+- **Stores**: `use[Domain]Store` (如 `useTranslationStore`)
+- **Composables**: `use[Feature]` (如 `useTranslation`, `useExcelExport`)
+- **状态**: 使用 stores 中的状态
+- **方法**: 通过 stores 的 actions 调用
+
+#### 🔄 **数据流向**
+
+```
+Component → Store → Composable → API
+    ↓         ↓         ↓
+   UI交互   状态管理   业务逻辑
+```
+
+#### ⚠️ **重要规则**
+
+1. **永远不要在模块顶层调用 Pinia store**
+2. **永远不要在 Pinia store 内部调用其他 store**
+3. **从 store 返回状态时，必须使用 `computed` 包装以确保响应式**
+4. **Composables 应该保持纯函数特性，不管理状态**
+5. **所有 localStorage 操作都应该通过 stores 进行**
 
 ### 1. 组件开发规范
 

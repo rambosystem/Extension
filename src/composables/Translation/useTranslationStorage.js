@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
-import { useTranslationStore } from "../../stores/translation.js";
+import { useTranslationStore } from "../../stores/translation/index.js";
 
 const { t } = useI18n();
 
