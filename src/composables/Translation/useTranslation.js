@@ -64,11 +64,11 @@ export function useTranslation() {
   const getStatusText = () => {
     switch (currentStatus.value) {
       case "matching_terms":
-        return t("translation.matchingTerms") || "匹配术语中...";
+        return t("translation.matchingTerms") || "Terms Matching...";
       case "translating":
-        return t("translation.translating") || "翻译中...";
+        return t("translation.translating") || "Translating...";
       default:
-        return t("translation.translating") || "翻译中...";
+        return t("translation.translating") || "Translating...";
     }
   };
 

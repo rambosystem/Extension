@@ -159,9 +159,9 @@ export const useTranslationCoreStore = defineStore("translationCore", {
      */
     getStatusText() {
       if (this.loadingStates.translation) {
-        return "翻译中...";
+        return "Translating...";
       }
-      return "加载中...";
+      return "Loading...";
     },
 
     /**

@@ -15,9 +15,7 @@
     <UploadSettingsDialog />
 
     <!-- 去重项目选择对话框 -->
-    <DeduplicateDialog v-model:deduplicateDialogVisible="deduplicateDialogVisible"
-      v-model:selectedProject="selectedProject" :isDeduplicating="isDeduplicating" @close="closeDeduplicateDialog"
-      @execute="executeDeduplicate" />
+    <DeduplicateDialog @close="closeDeduplicateDialog" @execute="executeDeduplicate" />
   </div>
 </template>
 
@@ -46,9 +44,6 @@ const uploadStore = useUploadStore();
 
 // 使用去重对话框composable
 const {
-  deduplicateDialogVisible,
-  selectedProject,
-  isDeduplicating,
   handleDeduplicate: handleDeduplicateDialog,
   closeDeduplicateDialog,
   executeDeduplicate: executeDeduplicateDialog,
