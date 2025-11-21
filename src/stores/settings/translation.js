@@ -463,6 +463,24 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         debugLog("- Memory autoDeduplication:", this.autoDeduplication);
         debugLog("- Memory deduplicateProject:", this.deduplicateProject);
         debugLog("- Memory adTerms:", this.adTerms);
+        // 验证API Key和Token是否被清除
+        debugLog(
+          "- deepseek_api_key:",
+          localStorage.getItem("deepseek_api_key") ? "exists" : "cleared"
+        );
+        debugLog(
+          "- lokalise_api_token:",
+          localStorage.getItem("lokalise_api_token") ? "exists" : "cleared"
+        );
+        debugLog(
+          "- lokalise_projects:",
+          localStorage.getItem("lokalise_projects") ? "exists" : "cleared"
+        );
+        debugLog("- API Store apiKey:", apiStore.apiKey || "empty");
+        debugLog(
+          "- API Store lokaliseApiToken:",
+          apiStore.lokaliseApiToken || "empty"
+        );
 
         ElMessage.success("Cache initialized successfully");
 

@@ -202,8 +202,28 @@ export const useApiStore = defineStore("api", {
     /**
      * 初始化API设置到默认值
      * 用于缓存清除时重置设置
+     * 清除所有API相关的localStorage数据
+     *
+     * 注意：清除顺序很重要
+     * 1. 先清除 localStorage（包括 Pinia persist 存储）
+     * 2. 再重置状态，避免 Pinia persist 插件恢复旧数据
      */
     initializeToDefaults() {
+      // 先清除localStorage中的API相关数据（包括 Pinia persist 存储）
+      // 必须在重置状态之前清除，避免 Pinia persist 插件恢复数据
+      try {
+        // 清除直接存储的 API 数据
+        localStorage.removeItem("deepseek_api_key");
+        localStorage.removeItem("lokalise_api_token");
+        localStorage.removeItem("lokalise_projects");
+        // 清除Pinia persist存储（必须在重置状态之前）
+        localStorage.removeItem("api-store");
+      } catch (error) {
+        console.error("Failed to clear API settings from localStorage:", error);
+      }
+
+      // 重置状态（在清除 localStorage 之后）
+      // 这样 Pinia persist 插件保存的将是空值
       this.apiKey = "";
       this.lokaliseApiToken = "";
 
