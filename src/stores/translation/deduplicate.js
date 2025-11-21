@@ -121,41 +121,26 @@ export const useDeduplicateStore = defineStore("deduplicate", {
      * @returns {Promise<Object>} 去重结果
      */
     async executeDeduplicate(codeContent, continueTranslation, clearCache) {
-      // 如果没有选中的项目，尝试使用 Default Project 的名称
-      if (!this.selectedProject) {
-        debugLog(
-          "[DeduplicateStore] No selected project, trying to use default project"
-        );
-        const exportStore = useExportStore();
-        const defaultProjectId = exportStore.defaultProjectId;
-        if (defaultProjectId) {
-          const projectName = this.getProjectNameById(defaultProjectId);
-          if (projectName) {
-            this.selectedProject = projectName;
-            debugLog(
-              "[DeduplicateStore] Using default project name:",
-              projectName
-            );
-          }
-        }
-      }
+      // 获取全局 Default Project 的 project_id
+      const exportStore = useExportStore();
+      const defaultProjectId = exportStore.defaultProjectId;
 
-      if (!this.selectedProject) {
-        ElMessage.warning("Please select a project");
-        return { success: false, error: "No project selected" };
+      if (!defaultProjectId) {
+        ElMessage.warning("Please configure Default Project first");
+        return { success: false, error: "No default project configured" };
       }
 
       debugLog(
-        "[DeduplicateStore] Executing deduplicate with project:",
-        this.selectedProject
+        "[DeduplicateStore] Executing deduplicate with project_id:",
+        defaultProjectId
       );
       this.setDeduplicating(true);
 
       try {
         const deduplicate = useDeduplicate();
-        // selectedProject 是字符串（项目名称）
+        // 使用 project_id 而不是项目名称
         const result = await deduplicate.deduplicateTranslation(
-          this.selectedProject,
+          defaultProjectId,
           codeContent
         );
 
@@ -198,7 +183,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
 
     /**
      * 初始化去重设置
-     * 使用全局 Default Project 的名称
+     * 使用全局 Default Project 的 project_id
      */
     initializeDeduplicateSettings() {
       try {
@@ -208,38 +193,18 @@ export const useDeduplicateStore = defineStore("deduplicate", {
         // 获取默认项目ID
         const defaultProjectId = exportStore.defaultProjectId;
         if (defaultProjectId) {
-          // 从项目列表中查找项目名称
+          debugLog(
+            "[DeduplicateStore] Using default project_id:",
+            defaultProjectId
+          );
+          // 不再需要 selectedProject，因为直接使用 defaultProjectId
+          // 但为了向后兼容，仍然设置 selectedProject 为项目名称（如果有的话）
           const projectName = this.getProjectNameById(defaultProjectId);
           if (projectName) {
             this.selectedProject = projectName;
-            debugLog(
-              "[DeduplicateStore] Using default project name:",
-              projectName
-            );
-          } else {
-            debugLog(
-              "[DeduplicateStore] Default project ID found but name not found:",
-              defaultProjectId
-            );
-            // 如果找不到项目名称，尝试从 localStorage 获取
-            const deduplicateProject = localStorage.getItem(
-              "deduplicate_project_selection"
-            );
-            if (deduplicateProject) {
-              this.selectedProject = deduplicateProject;
-            }
           }
         } else {
-          debugLog(
-            "[DeduplicateStore] No default project ID, using localStorage value"
-          );
-          // 如果没有默认项目，从 localStorage 获取
-          const deduplicateProject = localStorage.getItem(
-            "deduplicate_project_selection"
-          );
-          if (deduplicateProject) {
-            this.selectedProject = deduplicateProject;
-          }
+          debugLog("[DeduplicateStore] No default project ID found");
         }
       } catch (error) {
         debugError(

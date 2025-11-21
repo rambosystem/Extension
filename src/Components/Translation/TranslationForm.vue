@@ -30,8 +30,14 @@
           v-if="shouldShowDeduplicateButton"
           style="min-width: 90px"
           @click="handleDeduplicate"
+          :loading="deduplicateStore.isDeduplicating"
+          :disabled="deduplicateStore.isDeduplicating"
         >
-          {{ t("translation.deduplicate") }}
+          {{
+            deduplicateStore.isDeduplicating
+              ? t("translation.processing")
+              : t("translation.deduplicate")
+          }}
         </el-button>
         <el-button
           type="primary"
@@ -50,6 +56,7 @@ import CodeEditor from "../Common/CodeEditor.vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
 import { useTranslationSettingsStore } from "../../stores/settings/translation.js";
+import { useDeduplicateStore } from "../../stores/translation/deduplicate.js";
 import { useApiStore } from "../../stores/settings/api.js";
 import { useExportStore } from "../../stores/translation/export.js";
 import { debugLog } from "../../utils/debug.js";
@@ -60,6 +67,7 @@ const { t } = useI18n();
 // 使用 Stores
 const translationCoreStore = useTranslationCoreStore();
 const translationSettingsStore = useTranslationSettingsStore();
+const deduplicateStore = useDeduplicateStore();
 const apiStore = useApiStore();
 const exportStore = useExportStore();
 
