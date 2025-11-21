@@ -31,30 +31,35 @@ export const DEFAULT_TRANSLATION_PROMPT = `<System>
 </System>`;
 
 /**
- * 根据目标语言生成翻译 Prompt
+ * 根据目标语言生成 JSON 格式的翻译 Prompt
  * @param {Array<string>} targetLanguages - 目标语言数组
  * @returns {string} 生成的 Prompt
  */
 export function generateTranslationPrompt(targetLanguages = []) {
+  // 0. 兜底处理
   if (!targetLanguages || targetLanguages.length === 0) {
     return DEFAULT_TRANSLATION_PROMPT;
   }
 
-  // 1. 构建列头 (Header)
-  const columns = ["Corrected English", ...targetLanguages];
-
-  // 2. 构建 XML 格式的列定义 (给 LLM 看的结构)
-  const columnsXml = columns.map((col) => `      <col>${col}</col>`).join("\n");
-
-  // 3. 生成语言列表字符串
-  const targetLanguagesText = targetLanguages.join(", ");
-
-  // 4. 构建 JSON 字段名（将语言名称转换为小写并替换空格为下划线）
+  // 1. 构建 JSON 字段名（规范化 Key：小写 + 下划线）
+  // Ex: ["Japanese", "Spanish (Latam)"] -> ["japanese", "spanish_(latam)"]
   const jsonFields = targetLanguages.map((lang) => {
-    return lang.toLowerCase().replace(/\s+/g, "_");
+    return lang
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
   });
 
-  // 5. 生成优化后的 Prompt
+  // 2. 生成目标语言的自然语言描述 (用于 System 指令)
+  const targetLanguagesText = targetLanguages.join(", ");
+
+  // 3. 动态构建 Schema 示例字符串 (提升 LLM 理解力)
+  // 生成类似: "japanese": "translation in japanese",
+  const schemaFields = jsonFields
+    .map((f) => `"${f}": "String, translation in ${f.replace(/_/g, " ")}"`)
+    .join(",\n          ");
+
+  // 4. 生成优化后的 Prompt
   const prompt = `<System>
   <role>You are an expert Ad Copy Translator and Transcreator at Pacvue.</role>
   
@@ -71,45 +76,39 @@ export function generateTranslationPrompt(targetLanguages = []) {
 
   <rules>
     <rule_format>Output strictly in valid JSON format.</rule_format>
-    <rule_format>Output a JSON array where each element is an object.</rule_format>
-    <rule_format>Each object must contain: "en" (corrected English) and translation fields: ${jsonFields
-      .map((f) => `"${f}"`)
-      .join(", ")}.</rule_format>
-    <rule_format>Do NOT output markdown code blocks, explanations, or any text outside the JSON array.</rule_format>
+    <rule_format>Return a JSON Array containing objects.</rule_format>
+    <rule_format>Do NOT output markdown code blocks (\`\`\`json), just the raw JSON string.</rule_format>
     
     <rule_content>Preserve special characters exactly: ",", ".", "?", "\\n", "\\t".</rule_content>
     <rule_content>Preserve placeholders ({0}, {1}, etc.) exactly.</rule_content>
     <rule_content>
       Handle placeholder spacing based on target language grammar:
       - For CJK (Chinese/Japanese/Korean): Remove spaces around placeholders unless necessary.
-      - For Western languages (English/Spanish/etc.): Keep standard spacing around placeholders.
+      - For Western languages: Keep standard spacing around placeholders.
     </rule_content>
     <rule_content>Use the provided Glossary if specific terms match.</rule_content>
   </rules>
 
   <output_structure>
-    <type>JSON</type>
-    <format>
+    <type>JSON Array</type>
+    <example_schema>
       [
         {
-          "en": "corrected English text",
-          ${jsonFields
-            .map((f) => `"${f}": "translation in ${f}"`)
-            .join(",\n          ")}
-        },
-        ...
+          "en": "String, corrected source English text",
+          ${schemaFields}
+        }
       ]
-    </format>
+    </example_schema>
   </output_structure>
 
   <workflow>
-    1. Analyze the input source text.
-    2. Check for English spelling errors. If found, correct them in "en" field. If valid, keep original.
-    3. Translate/Transcreate into target languages for corresponding fields.
-    4. Format as a JSON array of objects.
+    1. Receive input text(s).
+    2. Check for English spelling errors. Correct them in the "en" field.
+    3. Transcreate into target languages mapping to the defined keys.
+    4. Return the result as a flat JSON Array.
   </workflow>
 
-  <final_instruction>Output ONLY the valid JSON array. No markdown code blocks, no explanations, no XML tags.</final_instruction>
+  <final_instruction>Output ONLY the valid JSON array. No Markdown. No preamble.</final_instruction>
 </System>`;
 
   return prompt;
