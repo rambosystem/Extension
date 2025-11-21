@@ -18,6 +18,9 @@ export const useExportStore = defineStore("export", {
     // 默认项目设置
     defaultProjectId: "",
 
+    // 目标语言设置
+    targetLanguages: [],
+
     // 加载状态
     loadingStates: {
       export: false,
@@ -111,6 +114,20 @@ export const useExportStore = defineStore("export", {
     },
 
     /**
+     * 更新目标语言设置
+     * @param {Array<string>} languages - 选中的语言数组
+     */
+    updateTargetLanguages(languages) {
+      debugLog("[ExportStore] Updating target languages:", languages);
+      this.targetLanguages = Array.isArray(languages) ? [...languages] : [];
+      localStorage.setItem(
+        "target_languages",
+        JSON.stringify(this.targetLanguages)
+      );
+      debugLog("[ExportStore] Target languages saved to localStorage");
+    },
+
+    /**
      * 初始化翻译设置
      * 从localStorage加载设置
      */
@@ -151,6 +168,29 @@ export const useExportStore = defineStore("export", {
           );
           // 如果没有保存的默认项目，尝试从项目列表中获取第一个项目
           this.initializeDefaultProjectFromList();
+        }
+
+        // 加载目标语言设置
+        const targetLanguages = localStorage.getItem("target_languages");
+        if (targetLanguages) {
+          try {
+            this.targetLanguages = JSON.parse(targetLanguages);
+            debugLog(
+              "[ExportStore] Target languages loaded from localStorage:",
+              this.targetLanguages
+            );
+          } catch (error) {
+            debugError(
+              "[ExportStore] Failed to parse target languages:",
+              error
+            );
+            this.targetLanguages = [];
+          }
+        } else {
+          debugLog(
+            "[ExportStore] No target languages in localStorage, using default empty array"
+          );
+          this.targetLanguages = [];
         }
       } catch (error) {
         debugError(
@@ -209,6 +249,7 @@ export const useExportStore = defineStore("export", {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
       this.defaultProjectId = "";
+      this.targetLanguages = [];
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {
@@ -219,6 +260,7 @@ export const useExportStore = defineStore("export", {
       localStorage.removeItem("excel_baseline_key");
       localStorage.removeItem("excel_overwrite");
       localStorage.removeItem("default_project_id");
+      localStorage.removeItem("target_languages");
     },
 
     /**
@@ -238,6 +280,7 @@ export const useExportStore = defineStore("export", {
         localStorage.removeItem("excel_baseline_key");
         localStorage.removeItem("excel_overwrite");
         localStorage.removeItem("default_project_id");
+        localStorage.removeItem("target_languages");
         // 清除Pinia persist存储（必须在重置状态之前）
         localStorage.removeItem("export-store");
         debugLog("[ExportStore] Cleared export settings from localStorage");
@@ -253,6 +296,7 @@ export const useExportStore = defineStore("export", {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
       this.defaultProjectId = "";
+      this.targetLanguages = [];
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {

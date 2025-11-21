@@ -22,6 +22,21 @@
       </div>
     </el-form-item>
     <el-form-item
+      :label="t('translationSetting.targetLanguage')"
+      label-position="left"
+    >
+      <div class="target-language-setting">
+        <el-checkbox-group
+          v-model="targetLanguages"
+          @change="handleTargetLanguagesChange"
+        >
+          <el-checkbox label="English">English</el-checkbox>
+          <el-checkbox label="Japanese">Japanese</el-checkbox>
+          <el-checkbox label="Spanish">Spanish</el-checkbox>
+        </el-checkbox-group>
+      </div>
+    </el-form-item>
+    <el-form-item
       :label="t('translationSetting.exportKeySetting')"
       label-position="left"
     >
@@ -101,6 +116,14 @@ const Overwrite = computed({
   get: () => exportStore.excelOverwrite,
   set: (value) => {
     exportStore.excelOverwrite = value;
+  },
+});
+
+// 使用 computed 来获取目标语言状态
+const targetLanguages = computed({
+  get: () => exportStore.targetLanguages,
+  set: (value) => {
+    exportStore.updateTargetLanguages(value);
   },
 });
 
@@ -198,6 +221,15 @@ const handleExcelBaselineKeyClear = () => {
 const handleOverwriteChange = (value) => {
   // 使用 translation store 的方法更新状态
   exportStore.updateExcelOverwrite(value);
+};
+
+/**
+ * 处理目标语言变化
+ * @param {Array<string>} languages - 选中的语言数组
+ */
+const handleTargetLanguagesChange = (languages) => {
+  debugLog("[TranslationSetting] Target languages changed to:", languages);
+  exportStore.updateTargetLanguages(languages);
 };
 
 /**
@@ -332,6 +364,13 @@ watch(
   width: 100%;
 }
 
+.target-language-setting {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+}
+
 .default-project-setting {
   display: flex;
   justify-content: flex-end;
@@ -352,6 +391,18 @@ watch(
 }
 
 :deep(.el-radio) {
+  margin-right: 0;
+  white-space: nowrap;
+}
+
+:deep(.el-checkbox-group) {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
+}
+
+:deep(.el-checkbox) {
   margin-right: 0;
   white-space: nowrap;
 }

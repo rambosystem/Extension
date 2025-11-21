@@ -7,24 +7,9 @@ export async function translateWithDeepSeek(
   matchedTerms = null
 ) {
   const apiKey = localStorage.getItem("deepseek_api_key");
-  const translationPromptEnabled = localStorage.getItem(
-    "translation_prompt_enabled"
-  );
-  let prompt = localStorage.getItem("deepseek_prompt");
 
-  // 检查翻译提示开关状态
-  if (
-    translationPromptEnabled === "true" ||
-    translationPromptEnabled === true
-  ) {
-    // 如果开关开启，使用自定义prompt，如果没有自定义prompt则使用默认prompt
-    if (!prompt) {
-      prompt = DEFAULT_TRANSLATION_PROMPT;
-    }
-  } else {
-    // 如果开关关闭，强制使用默认prompt
-    prompt = DEFAULT_TRANSLATION_PROMPT;
-  }
+  // 强制使用内置的Prompt模板
+  const prompt = DEFAULT_TRANSLATION_PROMPT;
 
   // 术语信息现在插入到用户输入中，而不是系统提示中
 
