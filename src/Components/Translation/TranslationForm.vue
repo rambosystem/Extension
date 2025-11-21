@@ -27,7 +27,7 @@
           {{ t("common.clear") }}
         </el-button>
         <el-button
-          v-if="!translationSettingsStore.autoDeduplication"
+          v-if="shouldShowDeduplicateButton"
           style="min-width: 90px"
           @click="handleDeduplicate"
         >
@@ -50,18 +50,32 @@ import CodeEditor from "../Common/CodeEditor.vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
 import { useTranslationSettingsStore } from "../../stores/settings/translation.js";
+import { useApiStore } from "../../stores/settings/api.js";
+import { useExportStore } from "../../stores/translation/export.js";
 import { debugLog } from "../../utils/debug.js";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 
 const { t } = useI18n();
 
 // 使用 Stores
 const translationCoreStore = useTranslationCoreStore();
 const translationSettingsStore = useTranslationSettingsStore();
+const apiStore = useApiStore();
+const exportStore = useExportStore();
 
 // 不再需要 props，直接使用 stores
 
 const emit = defineEmits(["deduplicate"]);
+
+// 计算属性：判断是否应该显示去重按钮
+// 需要同时满足：1. Auto 去重已关闭 2. 有 Lokalise Token 3. 有 Default Project
+const shouldShowDeduplicateButton = computed(() => {
+  return (
+    !translationSettingsStore.autoDeduplication &&
+    apiStore.hasLokaliseToken &&
+    !!exportStore.defaultProjectId
+  );
+});
 
 const handleDeduplicate = () => {
   emit("deduplicate");
@@ -96,10 +110,28 @@ onMounted(() => {
     translationSettingsStore.autoDeduplication
   );
 
+  // 初始化 API store（包含 Lokalise Token）
+  apiStore.initializeApiSettings();
+  debugLog(
+    "[TranslationForm] API Store initialized. hasLokaliseToken:",
+    apiStore.hasLokaliseToken
+  );
+
+  // 初始化 Export store（包含 Default Project）
+  exportStore.initializeTranslationSettings();
+  debugLog(
+    "[TranslationForm] Export Store initialized. defaultProjectId:",
+    exportStore.defaultProjectId
+  );
+
   debugLog("[TranslationForm] translationCoreStore:", translationCoreStore);
   debugLog(
     "[TranslationForm] translationSettingsStore:",
     translationSettingsStore
+  );
+  debugLog(
+    "[TranslationForm] shouldShowDeduplicateButton:",
+    shouldShowDeduplicateButton.value
   );
 });
 </script>
