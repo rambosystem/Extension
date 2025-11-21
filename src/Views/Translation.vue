@@ -6,7 +6,7 @@
     <TranslationForm @deduplicate="handleDeduplicate" />
 
     <!-- Excel 基线键设置 -->
-    <ExportSetting />
+    <TranslationSetting />
 
     <!-- 翻译结果对话框 -->
     <TranslationResultDialog />
@@ -25,7 +25,7 @@ import TranslationForm from "../Components/Translation/TranslationForm.vue";
 import TranslationResultDialog from "../Components/Translation/TranslationResultDialog.vue";
 import UploadSettingsDialog from "../Components/Upload/UploadSettingsDialog.vue";
 import DeduplicateDialog from "../Components/Translation/DeduplicateDialog.vue";
-import ExportSetting from "../Components/Translation/ExportSetting.vue";
+import TranslationSetting from "../Components/Translation/TranslationSetting.vue";
 import { useDeduplicateDialog } from "../composables/Translation/useDeduplicateDialog.js";
 import { useI18n } from "../composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";

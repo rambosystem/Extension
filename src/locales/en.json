@@ -59,12 +59,12 @@
     "autoDeduplicateSuccess": "Auto deduplication completed! Removed {duplicate} duplicates, {remaining} texts remaining for translation.",
     "autoDeduplicateFailed": "Auto deduplication failed. Please check your settings and try again."
   },
-  "exportSetting": {
-    "excelKeySetting": "Excel Baseline Key",
-    "excelKeySettingPlaceholder": "Baseline Key",
-    "exportSetting": "Export Setting",
-    "excelBaselineKeySaveSuccess": "Excel Baseline Key saved successfully",
-    "excelBaselineKeySaveWarning": "Excel Baseline Key should be in the format of Key + Number",
+  "translationSetting": {
+    "exportKeySetting": "Export Baseline Key",
+    "exportKeySettingPlaceholder": "Baseline Key",
+    "translationSetting": "Translation Setting",
+    "exportBaselineKeySaveSuccess": "Export Baseline Key saved successfully",
+    "exportBaselineKeySaveWarning": "Export Baseline Key should be in the format of Key + Number",
     "overwrite": "Overwrite Existing Keys"
   },
   "settings": {

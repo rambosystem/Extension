@@ -40,7 +40,7 @@ src/
 │   │   └── Weight-Item.vue     # 权重项
 │   ├── Translation/     # 翻译相关组件
 │   │   ├── DeduplicateDialog.vue      # 去重对话框
-│   │   ├── ExportSetting.vue          # 导出设置
+│   │   ├── TranslationSetting.vue     # 翻译设置
 │   │   ├── TranslationForm.vue       # 翻译表单
 │   │   └── TranslationResultDialog.vue # 翻译结果对话框
 │   └── Upload/          # 上传相关组件
@@ -454,8 +454,8 @@ export default {
 
 - **Stores**: `use[Domain][Feature]Store` (如 `useTranslationCoreStore`, `useApiStore`)
 - **Composables**: `use[Feature]` (如 `useTranslation`, `useExcelExport`)
-- **组件**: `PascalCase` (如 `TranslationForm`, `ExportSetting`)
-- **文件**: `kebab-case` (如 `translation-form.vue`, `export-setting.vue`)
+- **组件**: `PascalCase` (如 `TranslationForm`, `TranslationSetting`)
+- **文件**: `kebab-case` (如 `translation-form.vue`, `translation-setting.vue`)
 - **状态**: 使用 stores 中的状态
 - **方法**: 通过 stores 的 actions 调用
 

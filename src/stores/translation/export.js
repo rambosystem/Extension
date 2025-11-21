@@ -1,10 +1,12 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
 import { useExcelExport } from "../../composables/Excel/useExcelExport.js";
+import { useI18n } from "../../composables/Core/useI18n.js";
 
 /**
  * 导出功能状态管理
  * 管理Excel导出设置和相关功能
+ * 注意：设置相关方法已重命名为 Translation Settings
  */
 export const useExportStore = defineStore("export", {
   state: () => ({
@@ -58,6 +60,8 @@ export const useExportStore = defineStore("export", {
      * @param {string} key - 基线键
      */
     saveExcelBaselineKey(key) {
+      const { t } = useI18n();
+
       if (!key?.trim()) {
         // 清空操作
         localStorage.setItem("excel_baseline_key", "");
@@ -67,15 +71,13 @@ export const useExportStore = defineStore("export", {
 
       // 验证格式：key+数字
       if (!key.match(/^[a-zA-Z]+[0-9]+$/)) {
-        ElMessage.warning(
-          "Excel baseline key format should be: letters + numbers (e.g., key123)"
-        );
+        ElMessage.warning(t("translationSetting.exportBaselineKeySaveWarning"));
         return false;
       }
 
       localStorage.setItem("excel_baseline_key", key.trim());
       this.excelBaselineKey = key.trim();
-      ElMessage.success("Excel baseline key saved successfully");
+      ElMessage.success(t("translationSetting.exportBaselineKeySaveSuccess"));
       return true;
     },
 
@@ -89,10 +91,10 @@ export const useExportStore = defineStore("export", {
     },
 
     /**
-     * 初始化导出设置
+     * 初始化翻译设置
      * 从localStorage加载设置
      */
-    initializeExportSettings() {
+    initializeTranslationSettings() {
       try {
         // 加载Excel基线键
         const excelBaselineKey = localStorage.getItem("excel_baseline_key");
@@ -106,14 +108,14 @@ export const useExportStore = defineStore("export", {
           this.excelOverwrite = excelOverwrite === "true";
         }
       } catch (error) {
-        console.error("Failed to initialize export settings:", error);
+        console.error("Failed to initialize translation settings:", error);
       }
     },
 
     /**
-     * 重置导出设置
+     * 重置翻译设置
      */
-    resetExportSettings() {
+    resetTranslationSettings() {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
 
@@ -122,7 +124,7 @@ export const useExportStore = defineStore("export", {
         this.loadingStates[key] = false;
       });
 
-      // 清空localStorage中的导出设置
+      // 清空localStorage中的翻译设置
       localStorage.removeItem("excel_baseline_key");
       localStorage.removeItem("excel_overwrite");
     },

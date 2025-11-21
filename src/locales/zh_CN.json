@@ -59,12 +59,12 @@
     "autoDeduplicateSuccess": "自动去重完成！已移除 {duplicate} 个重复文本，剩余 {remaining} 个文本待翻译。",
     "autoDeduplicateFailed": "自动去重失败，请检查设置后重试。"
   },
-  "exportSetting": {
-    "excelKeySetting": "Excel基准键",
-    "excelKeySettingPlaceholder": "基准键",
-    "exportSetting": "导出设置",
-    "excelBaselineKeySaveSuccess": "Excel基准键保存成功",
-    "excelBaselineKeySaveWarning": "Excel 基准键应为Key+数字的格式",
+  "translationSetting": {
+    "exportKeySetting": "导出基准键",
+    "exportKeySettingPlaceholder": "基准键",
+    "translationSetting": "翻译设置",
+    "exportBaselineKeySaveSuccess": "导出基准键保存成功",
+    "exportBaselineKeySaveWarning": "导出基准键应为Key+数字的格式",
     "overwrite": "覆盖现有键"
   },
   "settings": {

@@ -1,15 +1,15 @@
 <template>
   <div>
-    <h2 class="title">{{ t("exportSetting.exportSetting") }}</h2>
+    <h2 class="title">{{ t("translationSetting.translationSetting") }}</h2>
     <el-form-item
-      :label="t('exportSetting.excelKeySetting')"
+      :label="t('translationSetting.exportKeySetting')"
       label-position="left"
     >
       <div class="excel-key-setting">
         <div class="input-container">
           <AutocompleteInput
             v-model="excelBaselineKey"
-            :placeholder="t('exportSetting.excelKeySettingPlaceholder')"
+            :placeholder="t('translationSetting.exportKeySettingPlaceholder')"
             @blur="handleExcelBaselineKeyCancel"
             @focus="handleExcelBaselineKeyFocus"
             :get-project-id="getProjectId"
@@ -32,7 +32,10 @@
         >
       </div>
     </el-form-item>
-    <el-form-item :label="t('exportSetting.overwrite')" label-position="left">
+    <el-form-item
+      :label="t('translationSetting.overwrite')"
+      label-position="left"
+    >
       <div class="excel-overwrite-setting">
         <el-switch
           v-model="Overwrite"
@@ -108,7 +111,7 @@ const handleExcelBaselineKeySave = () => {
 
   // 检查是否为空
   if (!currentValue.trim()) {
-    ElMessage.warning(t("exportSetting.excelBaselineKeySaveWarning"));
+    ElMessage.warning(t("translationSetting.exportBaselineKeySaveWarning"));
     return;
   }
 
@@ -154,7 +157,7 @@ const handleOverwriteChange = (value) => {
 
 // 组件挂载时初始化 store
 onMounted(() => {
-  exportStore.initializeExportSettings();
+  exportStore.initializeTranslationSettings();
   // 确保上传store已初始化，以便获取projectId
   uploadStore.initializeUploadSettings();
 });
