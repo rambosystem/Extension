@@ -2,6 +2,11 @@ import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
 import { useApiStore } from "../../stores/settings/api.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
+import { useExportStore } from "../../stores/translation/export.js";
+import {
+  getAvailableLanguages,
+  getLanguageIso,
+} from "../../config/languages.js";
 import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
 
@@ -13,6 +18,7 @@ const { t } = useI18n();
 export function useLokaliseUpload() {
   const apiStore = useApiStore();
   const uploadStore = useUploadStore();
+  const exportStore = useExportStore();
 
   // 项目列表
   const projectList = ref([]);
@@ -194,6 +200,13 @@ export function useLokaliseUpload() {
       // 获取baseline key
       const baselineKey = localStorage.getItem("excel_baseline_key") || "";
 
+      // 获取选中的目标语言（按配置文件顺序）
+      const targetLanguages = exportStore.targetLanguages || [];
+      const availableLanguages = getAvailableLanguages();
+      const sortedLanguages = availableLanguages.filter((availLang) =>
+        targetLanguages.includes(availLang.code)
+      );
+
       // 构建请求体
       const keys = translationResult.map((row, index) => {
         // 根据baseline key是否为空决定key的生成方式
@@ -206,23 +219,29 @@ export function useLokaliseUpload() {
           keyName = row.en;
         }
 
+        // 构建translations数组：先添加英文，然后按顺序添加目标语言
+        const translations = [
+          {
+            language_iso: "en",
+            translation: row.en,
+          },
+        ];
+
+        // 添加目标语言的翻译
+        sortedLanguages.forEach((lang) => {
+          const prop = lang.code.toLowerCase().replace(/\s+/g, "_");
+          if (row[prop]) {
+            translations.push({
+              language_iso: lang.iso,
+              translation: row[prop],
+            });
+          }
+        });
+
         const keyData = {
           key_name: keyName,
           platforms: ["web", "other"],
-          translations: [
-            {
-              language_iso: "en",
-              translation: row.en,
-            },
-            {
-              language_iso: "zh_CN",
-              translation: row.cn,
-            },
-            {
-              language_iso: "ja",
-              translation: row.jp,
-            },
-          ],
+          translations: translations,
         };
 
         // 如果有标签，添加到key中

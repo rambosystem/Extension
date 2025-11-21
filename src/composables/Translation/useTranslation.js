@@ -27,32 +27,49 @@ export function useTranslation() {
       .split("\n")
       .filter((line) => line.trim());
 
+    // 获取目标语言设置
+    const targetLanguages = JSON.parse(
+      localStorage.getItem("target_languages") || "[]"
+    );
+
+    // 构建列名数组：第一列是英文，后面是目标语言
+    const columns = [
+      "en",
+      ...targetLanguages.map((lang) => {
+        // 将语言名称转换为小写并替换空格为下划线
+        return lang.toLowerCase().replace(/\s+/g, "_");
+      }),
+    ];
+
     return lines.map((line, index) => {
       // 使用正则表达式来正确解析 CSV 格式，处理包含逗号的字段
-      const matches = line.match(/"([^"]*)","([^"]*)","([^"]*)"/);
-      if (matches) {
-        const [, en, cn, jp] = matches;
-        return {
-          en,
-          cn,
-          jp,
-          editing_en: false,
-          editing_cn: false,
-          editing_jp: false,
-        };
+      // 匹配所有用双引号包裹的字段
+      const csvRegex = /"([^"]*)"/g;
+      const matches = [];
+      let match;
+      while ((match = csvRegex.exec(line)) !== null) {
+        matches.push(match[1]);
+      }
+
+      if (matches.length > 0) {
+        // 构建结果对象
+        const result = {};
+        columns.forEach((col, colIndex) => {
+          result[col] = matches[colIndex] || "";
+          result[`editing_${col}`] = false;
+        });
+        return result;
       } else {
         // 如果正则匹配失败，尝试简单的 split 方法
         const parts = line
           .split(",")
           .map((part) => part.replace(/"/g, "").trim());
-        return {
-          en: parts[0] || "",
-          cn: parts[1] || "",
-          jp: parts[2] || "",
-          editing_en: false,
-          editing_cn: false,
-          editing_jp: false,
-        };
+        const result = {};
+        columns.forEach((col, colIndex) => {
+          result[col] = parts[colIndex] || "";
+          result[`editing_${col}`] = false;
+        });
+        return result;
       }
     });
   };
@@ -108,11 +125,28 @@ export function useTranslation() {
    * @returns {Array} 纯翻译数据
    */
   const extractTranslationData = (translationResult) => {
-    return translationResult.map((row) => ({
-      en: row.en,
-      cn: row.cn,
-      jp: row.jp,
-    }));
+    // 获取目标语言设置
+    const targetLanguages = JSON.parse(
+      localStorage.getItem("target_languages") || "[]"
+    );
+
+    // 构建列名数组
+    const columns = [
+      "en",
+      ...targetLanguages.map((lang) => {
+        return lang.toLowerCase().replace(/\s+/g, "_");
+      }),
+    ];
+
+    return translationResult.map((row) => {
+      const data = {};
+      columns.forEach((col) => {
+        if (row.hasOwnProperty(col)) {
+          data[col] = row[col];
+        }
+      });
+      return data;
+    });
   };
 
   return {

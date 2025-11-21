@@ -1,6 +1,10 @@
 import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
 import { useExportStore } from "../../stores/translation/export.js";
+import {
+  getAvailableLanguages,
+  getLanguageIso,
+} from "../../config/languages.js";
 import * as XLSX from "xlsx";
 
 const { t } = useI18n();
@@ -37,7 +41,15 @@ export function useExcelExport() {
    * @returns {Array} Excel格式的数据数组
    */
   const formatToExcel = (translationResult) => {
-    const header = ["key", "en", "zh_CN", "ja"];
+    // 获取选中的目标语言（按配置文件顺序）
+    const targetLanguages = exportStore.targetLanguages || [];
+    const availableLanguages = getAvailableLanguages();
+    const sortedLanguages = availableLanguages.filter((availLang) =>
+      targetLanguages.includes(availLang.code)
+    );
+
+    // 构建表头：key, en, 然后是目标语言的ISO代码
+    const header = ["key", "en", ...sortedLanguages.map((lang) => lang.iso)];
 
     // 从 store 获取 baseline key
     const baselineKey = exportStore.excelBaselineKey || "";
@@ -55,12 +67,14 @@ export function useExcelExport() {
           key = row.en;
         }
 
-        return [
-          key,
-          row.en, // en
-          row.cn, // zh_CN (使用 cn 字段)
-          row.jp, // ja
-        ];
+        // 构建数据行：key, en, 然后是目标语言的翻译
+        const rowData = [key, row.en];
+        sortedLanguages.forEach((lang) => {
+          const prop = lang.code.toLowerCase().replace(/\s+/g, "_");
+          rowData.push(row[prop] || "");
+        });
+
+        return rowData;
       }),
     ];
 

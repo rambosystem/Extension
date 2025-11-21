@@ -1,5 +1,10 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
+import {
+  getAvailableLanguages,
+  getLanguageIso,
+} from "../../config/languages.js";
+import { useExportStore } from "./export.js";
 
 /**
  * 上传功能状态管理
@@ -218,29 +223,73 @@ export const useUploadStore = defineStore("upload", {
         "../../requests/lokalise.js"
       );
 
+      // 获取选中的目标语言（按配置文件顺序）
+      const exportStore = useExportStore();
+      const targetLanguages = exportStore.targetLanguages || [];
+      const availableLanguages = getAvailableLanguages();
+      const sortedLanguages = availableLanguages.filter((availLang) =>
+        targetLanguages.includes(availLang.code)
+      );
+
+      // 获取baseline key
+      const baselineKey = localStorage.getItem("excel_baseline_key") || "";
+
+      // 生成自增序列key的函数
+      const generateIncrementalKey = (baselineKey, index) => {
+        const match = baselineKey.match(/^([a-zA-Z]+)(\d+)$/);
+        if (!match) {
+          return baselineKey;
+        }
+        const [, prefix, numberStr] = match;
+        const baseNumber = parseInt(numberStr, 10);
+        const newNumber = baseNumber + index;
+        return `${prefix}${newNumber}`;
+      };
+
       // 准备上传数据
-      const keys = translationResult.map((item, index) => ({
-        key_name: `translation_${Date.now()}_${index}`,
-        platforms: ["web"],
-        translations: [
+      const keys = translationResult.map((item, index) => {
+        // 根据baseline key是否为空决定key的生成方式
+        let keyName;
+        if (baselineKey && baselineKey.trim()) {
+          keyName = generateIncrementalKey(baselineKey.trim(), index);
+        } else {
+          keyName = `translation_${Date.now()}_${index}`;
+        }
+
+        // 构建translations数组：先添加英文，然后按顺序添加目标语言
+        const translations = [
           {
             language_iso: "en",
             translation: item.en,
           },
-          {
-            language_iso: "zh",
-            translation: item.cn,
-          },
-          {
-            language_iso: "ja",
-            translation: item.jp,
-          },
-        ],
-        tags: this.uploadForm.tag ? [this.uploadForm.tag] : [],
-      }));
+        ];
+
+        // 添加目标语言的翻译
+        sortedLanguages.forEach((lang) => {
+          const prop = lang.code.toLowerCase().replace(/\s+/g, "_");
+          if (item[prop]) {
+            translations.push({
+              language_iso: lang.iso,
+              translation: item[prop],
+            });
+          }
+        });
+
+        return {
+          key_name: keyName,
+          platforms: ["web", "other"],
+          translations: translations,
+          tags: this.uploadForm.tag ? [this.uploadForm.tag] : [],
+        };
+      });
 
       // 执行上传
-      await uploadTranslationKeys(selectedProject.project_id, keys, apiToken);
+      await uploadTranslationKeys(
+        selectedProject.project_id,
+        keys,
+        this.uploadForm.tag ? [this.uploadForm.tag] : [],
+        apiToken
+      );
     },
 
     /**

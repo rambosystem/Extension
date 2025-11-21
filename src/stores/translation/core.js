@@ -236,11 +236,17 @@ export const useTranslationCoreStore = defineStore("translationCore", {
      */
     saveTranslationToLocal(data) {
       try {
-        const translationData = data.map((item) => ({
-          en: item.en,
-          cn: item.cn,
-          jp: item.jp,
-        }));
+        // 直接保存传入的数据，支持动态字段
+        const translationData = data.map((item) => {
+          const result = {};
+          // 保存所有字段（包括动态语言字段）
+          Object.keys(item).forEach((key) => {
+            if (!key.startsWith("editing_")) {
+              result[key] = item[key];
+            }
+          });
+          return result;
+        });
 
         localStorage.setItem(
           "last_translation",
@@ -395,12 +401,16 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       if (index > -1) {
         this.removeTranslationResult(index);
 
-        // 更新本地存储
-        const translationData = this.translationResult.map((item) => ({
-          en: item.en,
-          cn: item.cn,
-          jp: item.jp,
-        }));
+        // 更新本地存储（支持动态字段）
+        const translationData = this.translationResult.map((item) => {
+          const result = {};
+          Object.keys(item).forEach((key) => {
+            if (!key.startsWith("editing_")) {
+              result[key] = item[key];
+            }
+          });
+          return result;
+        });
         this.saveTranslationToLocal(translationData);
 
         // 如果删除后没有数据了，关闭对话框

@@ -3,6 +3,7 @@ import { ElMessage } from "element-plus";
 import { useExcelExport } from "../../composables/Excel/useExcelExport.js";
 import { useI18n } from "../../composables/Core/useI18n.js";
 import { debugLog, debugError } from "../../utils/debug.js";
+import { getAvailableLanguages } from "../../config/languages.js";
 
 /**
  * 导出功能状态管理
@@ -18,8 +19,8 @@ export const useExportStore = defineStore("export", {
     // 默认项目设置
     defaultProjectId: "",
 
-    // 目标语言设置
-    targetLanguages: [],
+    // 目标语言设置（默认选中 Chinese 和 Japanese）
+    targetLanguages: ["Chinese", "Japanese"],
 
     // 加载状态
     loadingStates: {
@@ -116,15 +117,45 @@ export const useExportStore = defineStore("export", {
     /**
      * 更新目标语言设置
      * @param {Array<string>} languages - 选中的语言数组
+     * @returns {boolean} 是否更新成功
      */
     updateTargetLanguages(languages) {
       debugLog("[ExportStore] Updating target languages:", languages);
-      this.targetLanguages = Array.isArray(languages) ? [...languages] : [];
+
+      // 验证语言代码是否有效（只接受配置文件中的语言）
+      const availableLanguages = getAvailableLanguages();
+      const validLanguages = Array.isArray(languages)
+        ? languages.filter((lang) =>
+            availableLanguages.some((availLang) => availLang.code === lang)
+          )
+        : [];
+
+      // 确保至少选择一个语言
+      if (validLanguages.length === 0) {
+        debugLog(
+          "[ExportStore] Cannot clear all languages, keeping at least one"
+        );
+        return false; // 返回 false 表示更新失败，需要至少选择一个
+      }
+
+      this.targetLanguages = validLanguages;
       localStorage.setItem(
         "target_languages",
         JSON.stringify(this.targetLanguages)
       );
-      debugLog("[ExportStore] Target languages saved to localStorage");
+      debugLog(
+        "[ExportStore] Target languages saved to localStorage:",
+        this.targetLanguages
+      );
+      return true;
+    },
+
+    /**
+     * 获取所有可用语言（从配置文件读取）
+     * @returns {Array<Object>} 语言列表
+     */
+    getAllLanguages() {
+      return getAvailableLanguages();
     },
 
     /**
@@ -174,23 +205,50 @@ export const useExportStore = defineStore("export", {
         const targetLanguages = localStorage.getItem("target_languages");
         if (targetLanguages) {
           try {
-            this.targetLanguages = JSON.parse(targetLanguages);
-            debugLog(
-              "[ExportStore] Target languages loaded from localStorage:",
-              this.targetLanguages
+            const parsedLanguages = JSON.parse(targetLanguages);
+            // 验证语言代码是否有效（从配置文件验证）
+            const availableLanguages = getAvailableLanguages();
+            const validLanguages = parsedLanguages.filter((lang) =>
+              availableLanguages.some((availLang) => availLang.code === lang)
             );
+            // 确保至少选择一个语言，如果没有则使用默认值
+            if (validLanguages.length === 0) {
+              this.targetLanguages = ["Chinese", "Japanese"];
+              localStorage.setItem(
+                "target_languages",
+                JSON.stringify(this.targetLanguages)
+              );
+              debugLog(
+                "[ExportStore] No valid languages found, using default:",
+                this.targetLanguages
+              );
+            } else {
+              this.targetLanguages = validLanguages;
+              debugLog(
+                "[ExportStore] Target languages loaded from localStorage:",
+                this.targetLanguages
+              );
+            }
           } catch (error) {
             debugError(
               "[ExportStore] Failed to parse target languages:",
               error
             );
-            this.targetLanguages = [];
+            this.targetLanguages = ["Chinese", "Japanese"];
+            localStorage.setItem(
+              "target_languages",
+              JSON.stringify(this.targetLanguages)
+            );
           }
         } else {
           debugLog(
-            "[ExportStore] No target languages in localStorage, using default empty array"
+            "[ExportStore] No target languages in localStorage, using default: Chinese, Japanese"
           );
-          this.targetLanguages = [];
+          this.targetLanguages = ["Chinese", "Japanese"];
+          localStorage.setItem(
+            "target_languages",
+            JSON.stringify(this.targetLanguages)
+          );
         }
       } catch (error) {
         debugError(
@@ -249,7 +307,7 @@ export const useExportStore = defineStore("export", {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
       this.defaultProjectId = "";
-      this.targetLanguages = [];
+      this.targetLanguages = ["Chinese", "Japanese"]; // 重置为默认值
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {
@@ -296,7 +354,7 @@ export const useExportStore = defineStore("export", {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
       this.defaultProjectId = "";
-      this.targetLanguages = [];
+      this.targetLanguages = ["Chinese", "Japanese"]; // 重置为默认值
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {

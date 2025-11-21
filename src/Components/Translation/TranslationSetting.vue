@@ -30,9 +30,13 @@
           v-model="targetLanguages"
           @change="handleTargetLanguagesChange"
         >
-          <el-checkbox label="English">English</el-checkbox>
-          <el-checkbox label="Japanese">Japanese</el-checkbox>
-          <el-checkbox label="Spanish">Spanish</el-checkbox>
+          <el-checkbox
+            v-for="lang in availableLanguages"
+            :key="lang.code"
+            :label="lang.code"
+          >
+            {{ lang.name }}
+          </el-checkbox>
         </el-checkbox-group>
       </div>
     </el-form-item>
@@ -91,6 +95,7 @@ import { ref, watch, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import AutocompleteInput from "../Common/AutocompleteInput.vue";
 import { debugLog, debugError } from "../../utils/debug.js";
+import { getAvailableLanguages } from "../../config/languages.js";
 
 const { t } = useI18n();
 
@@ -126,6 +131,9 @@ const targetLanguages = computed({
     exportStore.updateTargetLanguages(value);
   },
 });
+
+// 从配置文件获取可用语言列表
+const availableLanguages = computed(() => getAvailableLanguages());
 
 // 检查是否配置了 Lokalise Token
 const hasLokaliseToken = computed(() => apiStore.hasLokaliseToken);
@@ -229,7 +237,20 @@ const handleOverwriteChange = (value) => {
  */
 const handleTargetLanguagesChange = (languages) => {
   debugLog("[TranslationSetting] Target languages changed to:", languages);
-  exportStore.updateTargetLanguages(languages);
+
+  // 确保至少选择一个语言
+  if (!languages || languages.length === 0) {
+    ElMessage.warning(t("translationSetting.atLeastOneLanguageRequired"));
+    // 恢复之前的选择
+    return;
+  }
+
+  const success = exportStore.updateTargetLanguages(languages);
+  if (!success) {
+    ElMessage.warning(t("translationSetting.atLeastOneLanguageRequired"));
+    // 恢复之前的选择，强制更新 UI
+    targetLanguages.value = exportStore.targetLanguages;
+  }
 };
 
 /**

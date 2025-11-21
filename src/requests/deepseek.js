@@ -1,4 +1,4 @@
-import { DEFAULT_TRANSLATION_PROMPT } from "../config/prompts.js";
+import { generateTranslationPrompt } from "../config/prompts.js";
 import { debugLog } from "../utils/debug.js";
 
 export async function translateWithDeepSeek(
@@ -8,8 +8,13 @@ export async function translateWithDeepSeek(
 ) {
   const apiKey = localStorage.getItem("deepseek_api_key");
 
-  // 强制使用内置的Prompt模板
-  const prompt = DEFAULT_TRANSLATION_PROMPT;
+  // 获取目标语言设置
+  const targetLanguages = JSON.parse(
+    localStorage.getItem("target_languages") || "[]"
+  );
+
+  // 根据目标语言生成 Prompt
+  const prompt = generateTranslationPrompt(targetLanguages);
 
   // 术语信息现在插入到用户输入中，而不是系统提示中
 
@@ -37,7 +42,39 @@ ${copiesSection}  </copies>
   if (matchedTerms && matchedTerms.length > 0) {
     let terminologySection = `<terminology>\n`;
     matchedTerms.forEach((term) => {
-      terminologySection += `  <term>\n    <source>${term.en}</source>\n    <zh>${term.cn}</zh>\n    <ja>${term.jp}</ja>\n  </term>\n`;
+      terminologySection += `  <term>\n    <source>${term.en}</source>`;
+      // 根据目标语言动态添加术语翻译
+      if (
+        targetLanguages.includes("Chinese") ||
+        targetLanguages.includes("中文")
+      ) {
+        terminologySection += `\n    <zh>${term.cn || ""}</zh>`;
+      }
+      if (
+        targetLanguages.includes("Japanese") ||
+        targetLanguages.includes("日文")
+      ) {
+        terminologySection += `\n    <ja>${term.jp || ""}</ja>`;
+      }
+      // 支持其他自定义语言的术语
+      targetLanguages.forEach((lang) => {
+        if (
+          lang !== "English" &&
+          lang !== "Chinese" &&
+          lang !== "Japanese" &&
+          lang !== "中文" &&
+          lang !== "日文"
+        ) {
+          // 尝试从术语对象中获取对应语言的翻译
+          const langKey = lang.toLowerCase();
+          if (term[langKey] || term[lang]) {
+            terminologySection += `\n    <${langKey}>${
+              term[langKey] || term[lang]
+            }</${langKey}>`;
+          }
+        }
+      });
+      terminologySection += `\n  </term>\n`;
     });
     terminologySection += `</terminology>\n\n`;
 
