@@ -13,25 +13,24 @@
 
     <!-- 上传设置对话框 -->
     <UploadSettingsDialog />
-
-    <!-- 去重项目选择对话框 -->
-    <DeduplicateDialog @close="closeDeduplicateDialog" @execute="executeDeduplicate" />
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import TranslationForm from "../Components/Translation/TranslationForm.vue";
 import TranslationResultDialog from "../Components/Translation/TranslationResultDialog.vue";
 import UploadSettingsDialog from "../Components/Upload/UploadSettingsDialog.vue";
-import DeduplicateDialog from "../Components/Translation/DeduplicateDialog.vue";
 import TranslationSetting from "../Components/Translation/TranslationSetting.vue";
-import { useDeduplicateDialog } from "../composables/Translation/useDeduplicateDialog.js";
 import { useI18n } from "../composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";
 import { useTranslationCoreStore } from "../stores/translation/core.js";
 import { useDeduplicateStore } from "../stores/translation/deduplicate.js";
 import { useUploadStore } from "../stores/translation/upload.js";
+import { useExportStore } from "../stores/translation/export.js";
+import { useApiStore } from "../stores/settings/api.js";
+import { useTranslationSettingsStore } from "../stores/settings/translation.js";
+import { debugLog } from "../utils/debug.js";
 
 const { t } = useI18n();
 
@@ -39,29 +38,22 @@ const { t } = useI18n();
 const translationCoreStore = useTranslationCoreStore();
 const deduplicateStore = useDeduplicateStore();
 const uploadStore = useUploadStore();
+const exportStore = useExportStore();
+const apiStore = useApiStore();
+const translationSettingsStore = useTranslationSettingsStore();
 
 // 直接使用store实例，不进行解构以保持响应式
 
-// 使用去重对话框composable
-const {
-  handleDeduplicate: handleDeduplicateDialog,
-  closeDeduplicateDialog,
-  executeDeduplicate: executeDeduplicateDialog,
-} = useDeduplicateDialog();
-
-// 处理去重操作
-const handleDeduplicate = () => {
+// 处理去重操作 - 直接执行，不需要对话框
+const handleDeduplicate = async () => {
   // 检查是否有待翻译的文本
   if (!translationCoreStore.codeContent?.trim()) {
     ElMessage.warning(t("translation.noTextToDeduplicate"));
     return;
   }
-  handleDeduplicateDialog();
-};
 
-// 执行去重操作
-const executeDeduplicate = async () => {
-  const result = await executeDeduplicateDialog(
+  // 直接执行去重
+  const result = await deduplicateStore.handleDeduplicate(
     translationCoreStore.codeContent,
     translationCoreStore.continueTranslation,
     translationCoreStore.handleClear
@@ -71,6 +63,81 @@ const executeDeduplicate = async () => {
     translationCoreStore.setCodeContent(result.remainingTexts);
   }
 };
+
+// 处理自动去重事件 - 直接执行，不需要对话框
+const handleShowAutoDeduplicateDialog = async (event) => {
+  debugLog("[Translation] Auto deduplicate event received");
+  // 从事件中获取参数，如果没有则从 store 获取
+  const codeContent =
+    event?.detail?.codeContent || translationCoreStore.codeContent;
+  const continueTranslation =
+    event?.detail?.continueTranslation ||
+    translationCoreStore.continueTranslation;
+  const clearCache =
+    event?.detail?.clearCache || translationCoreStore.handleClear;
+
+  // 直接执行去重
+  const result = await deduplicateStore.handleShowAutoDeduplicateDialog(
+    codeContent,
+    continueTranslation,
+    clearCache
+  );
+
+  // 如果去重成功且有剩余文本，更新内容
+  if (result && result.success && result.remainingTexts) {
+    translationCoreStore.setCodeContent(result.remainingTexts);
+  }
+};
+
+// 组件挂载时初始化
+onMounted(() => {
+  debugLog("[Translation] Component mounted, initializing stores...");
+
+  // 首先初始化 Translation Settings store（包含 autoDeduplication 状态）
+  // 这必须在组件渲染前完成，避免按钮显示闪烁
+  translationSettingsStore.initializeTranslationSettings();
+  debugLog(
+    "[Translation] Translation Settings Store initialized. autoDeduplication:",
+    translationSettingsStore.autoDeduplication
+  );
+
+  // 确保 API store 已初始化
+  apiStore.initializeApiSettings();
+  debugLog(
+    "[Translation] API Store initialized. hasLokaliseToken:",
+    apiStore.hasLokaliseToken
+  );
+
+  // 确保 Export store 已初始化（包含 Default Project）
+  exportStore.initializeTranslationSettings();
+  debugLog(
+    "[Translation] Export Store initialized. defaultProjectId:",
+    exportStore.defaultProjectId
+  );
+
+  // 初始化去重设置（使用 Default Project）
+  deduplicateStore.initializeDeduplicateSettings();
+  debugLog(
+    "[Translation] Deduplicate Store initialized. selectedProject:",
+    deduplicateStore.selectedProject
+  );
+
+  // 添加自动去重事件监听
+  window.addEventListener(
+    "showAutoDeduplicateDialog",
+    handleShowAutoDeduplicateDialog
+  );
+  debugLog("[Translation] Auto deduplicate event listener added");
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener(
+    "showAutoDeduplicateDialog",
+    handleShowAutoDeduplicateDialog
+  );
+  debugLog("[Translation] Auto deduplicate event listener removed");
+});
 
 // 这些方法直接从store中获取，不需要重新定义
 

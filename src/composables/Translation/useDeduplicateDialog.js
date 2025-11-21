@@ -1,12 +1,14 @@
 import { onMounted, onUnmounted, computed } from "vue";
 import { useDeduplicateStore } from "../../stores/translation/deduplicate.js";
 import { useTranslationSettingsStore } from "../../stores/settings/translation.js";
+import { useTranslationCoreStore } from "../../stores/translation/core.js";
 import { useI18n } from "../Core/useI18n.js";
 
 export function useDeduplicateDialog() {
   const { t } = useI18n();
   const deduplicateStore = useDeduplicateStore();
   const translationSettingsStore = useTranslationSettingsStore();
+  const translationCoreStore = useTranslationCoreStore();
 
   // 初始化设置
   translationSettingsStore.initializeTranslationSettings();
@@ -16,9 +18,23 @@ export function useDeduplicateDialog() {
     deduplicateStore.setSelectedProject(event.detail.project);
   };
 
-  // 处理自动去重对话框显示
-  const handleShowAutoDeduplicateDialog = () => {
-    deduplicateStore.handleShowAutoDeduplicateDialog();
+  // 处理自动去重 - 直接执行，不需要对话框
+  const handleShowAutoDeduplicateDialog = async (event) => {
+    // 从事件中获取参数，如果没有则从 store 获取
+    const codeContent =
+      event?.detail?.codeContent || translationCoreStore.codeContent;
+    const continueTranslation =
+      event?.detail?.continueTranslation ||
+      translationCoreStore.continueTranslation;
+    const clearCache =
+      event?.detail?.clearCache || translationCoreStore.handleClear;
+
+    // 直接执行去重
+    await deduplicateStore.handleShowAutoDeduplicateDialog(
+      codeContent,
+      continueTranslation,
+      clearCache
+    );
   };
 
   // 执行去重操作

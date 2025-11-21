@@ -130,13 +130,23 @@ watch(
 
 /**
  * 获取项目ID的函数
+ * 全局统一使用 Default Project 的值
  */
 const getProjectId = () => {
-  return (
-    uploadStore.uploadForm.projectId ||
-    localStorage.getItem("lokalise_upload_project_id") ||
-    "2582110965ade9652de217.13653519"
+  // 只使用默认项目ID（从 Translation Setting 中选择的）
+  if (exportStore.defaultProjectId) {
+    debugLog(
+      "[TranslationSetting] Using default project ID for autocomplete:",
+      exportStore.defaultProjectId
+    );
+    return exportStore.defaultProjectId;
+  }
+
+  // 如果没有默认项目ID，返回 null，让自动补全逻辑处理
+  debugLog(
+    "[TranslationSetting] No default project ID set, autocomplete will use fallback"
   );
+  return null;
 };
 
 const handleExcelBaselineKeySave = () => {

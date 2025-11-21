@@ -10,7 +10,7 @@ export function useAutocomplete(options = {}) {
   const {
     fetchSuggestions = null, // 自定义获取建议的函数
     debounce = 300, // 防抖延迟
-    defaultProjectId = "2582110965ade9652de217.13653519", // 默认项目ID
+    defaultProjectId = null, // 默认项目ID（全局统一使用 Default Project 的值）
     getProjectId = null, // 自定义获取项目ID的函数
   } = options;
 
@@ -97,10 +97,19 @@ export function useAutocomplete(options = {}) {
       return;
     }
 
-    // 获取项目ID
-    let projectId = defaultProjectId;
+    // 获取项目ID（全局统一使用 Default Project 的值）
+    let projectId = null;
     if (getProjectId) {
-      projectId = getProjectId() || defaultProjectId;
+      projectId = getProjectId();
+    } else if (defaultProjectId) {
+      projectId = defaultProjectId;
+    }
+
+    // 如果没有项目ID，不进行自动补全
+    if (!projectId) {
+      debugLog("[Autocomplete] No project ID available, skipping autocomplete");
+      suggestionText.value = "";
+      return;
     }
 
     debugLog(

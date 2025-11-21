@@ -54,7 +54,7 @@ const props = defineProps({
   },
   defaultProjectId: {
     type: String,
-    default: "2582110965ade9652de217.13653519",
+    default: null,
   },
 });
 

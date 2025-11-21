@@ -14,40 +14,58 @@ import { useCacheValidation } from "../../composables/Core/useCacheValidation.js
  * 管理翻译提示、自动去重、术语匹配参数等
  */
 export const useTranslationSettingsStore = defineStore("translationSettings", {
-  state: () => ({
-    // 翻译相关设置
-    translationPrompt: false,
-    autoDeduplication: true,
-    customPrompt: DEFAULT_TRANSLATION_PROMPT,
+  state: () => {
+    // 在 state 初始化时同步读取 localStorage，避免组件渲染时的闪烁
+    let autoDeduplication = true; // 默认值
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const storedValue = localStorage.getItem("auto_deduplication_enabled");
+        if (storedValue !== null) {
+          autoDeduplication = storedValue === "true";
+        }
+      } catch (error) {
+        console.error(
+          "Failed to read autoDeduplication from localStorage:",
+          error
+        );
+      }
+    }
 
-    // 术语匹配参数
-    similarityThreshold: 0.7,
-    topK: 10,
-    maxNGram: 3,
+    return {
+      // 翻译相关设置
+      translationPrompt: false,
+      autoDeduplication,
+      customPrompt: DEFAULT_TRANSLATION_PROMPT,
 
-    // 去重项目选择
-    deduplicateProject: "Common",
+      // 术语匹配参数
+      similarityThreshold: 0.7,
+      topK: 10,
+      maxNGram: 3,
 
-    // 公共术语库状态
-    adTerms: true,
+      // 去重项目选择
+      deduplicateProject: "Common",
 
-    // 调试日志开关
-    debugLogging: false,
+      // 公共术语库状态
+      adTerms: true,
 
-    // 翻译温度设置
-    translationTemperature: 0.1,
+      // 调试日志开关
+      debugLogging: false,
 
-    // 加载状态
-    loadingStates: {
-      prompt: false,
-    },
+      // 翻译温度设置
+      translationTemperature: 0.1,
 
-    // 编辑状态
-    isCodeEditing: false,
+      // 加载状态
+      loadingStates: {
+        prompt: false,
+      },
 
-    // 对话框状态
-    dialogVisible: false,
-  }),
+      // 编辑状态
+      isCodeEditing: false,
+
+      // 对话框状态
+      dialogVisible: false,
+    };
+  },
 
   getters: {
     // 获取所有加载状态
@@ -239,7 +257,8 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
           this.translationPrompt = translationPrompt === "true";
         }
 
-        // 加载自动去重设置
+        // 加载自动去重设置（如果 state 初始化时已经读取过，这里可以跳过）
+        // 但为了确保一致性，仍然从 localStorage 读取
         const autoDeduplication = localStorage.getItem(
           "auto_deduplication_enabled"
         );
