@@ -65,7 +65,8 @@
     "translationSetting": "Translation Setting",
     "exportBaselineKeySaveSuccess": "Export Baseline Key saved successfully",
     "exportBaselineKeySaveWarning": "Export Baseline Key should be in the format of Key + Number",
-    "overwrite": "Overwrite Existing Keys"
+    "overwrite": "Overwrite Existing Keys",
+    "defaultProject": "Default Project"
   },
   "settings": {
     "title": "Lokalise Settings",

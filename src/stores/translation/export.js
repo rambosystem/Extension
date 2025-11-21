@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
 import { useExcelExport } from "../../composables/Excel/useExcelExport.js";
 import { useI18n } from "../../composables/Core/useI18n.js";
+import { debugLog, debugError } from "../../utils/debug.js";
 
 /**
  * 导出功能状态管理
@@ -13,6 +14,9 @@ export const useExportStore = defineStore("export", {
     // Excel 导出设置
     excelBaselineKey: "",
     excelOverwrite: false,
+
+    // 默认项目设置
+    defaultProjectId: "",
 
     // 加载状态
     loadingStates: {
@@ -91,24 +95,110 @@ export const useExportStore = defineStore("export", {
     },
 
     /**
+     * 更新默认项目ID
+     * @param {string} projectId - 项目ID
+     */
+    updateDefaultProjectId(projectId) {
+      debugLog("[ExportStore] Updating default project ID:", projectId);
+      this.defaultProjectId = projectId || "";
+      if (projectId) {
+        localStorage.setItem("default_project_id", projectId);
+        debugLog("[ExportStore] Default project ID saved to localStorage");
+      } else {
+        localStorage.removeItem("default_project_id");
+        debugLog("[ExportStore] Default project ID removed from localStorage");
+      }
+    },
+
+    /**
      * 初始化翻译设置
      * 从localStorage加载设置
      */
     initializeTranslationSettings() {
       try {
+        debugLog("[ExportStore] Initializing translation settings...");
         // 加载Excel基线键
         const excelBaselineKey = localStorage.getItem("excel_baseline_key");
         if (excelBaselineKey) {
           this.excelBaselineKey = excelBaselineKey;
+          debugLog(
+            "[ExportStore] Excel baseline key loaded:",
+            excelBaselineKey
+          );
         }
 
         // 加载Excel覆盖设置
         const excelOverwrite = localStorage.getItem("excel_overwrite");
         if (excelOverwrite !== null) {
           this.excelOverwrite = excelOverwrite === "true";
+          debugLog(
+            "[ExportStore] Excel overwrite setting loaded:",
+            this.excelOverwrite
+          );
+        }
+
+        // 加载默认项目ID
+        const defaultProjectId = localStorage.getItem("default_project_id");
+        if (defaultProjectId) {
+          this.defaultProjectId = defaultProjectId;
+          debugLog(
+            "[ExportStore] Default project ID loaded from localStorage:",
+            defaultProjectId
+          );
+        } else {
+          debugLog(
+            "[ExportStore] No default project ID in localStorage, trying to initialize from list"
+          );
+          // 如果没有保存的默认项目，尝试从项目列表中获取第一个项目
+          this.initializeDefaultProjectFromList();
         }
       } catch (error) {
-        console.error("Failed to initialize translation settings:", error);
+        debugError(
+          "[ExportStore] Failed to initialize translation settings:",
+          error
+        );
+      }
+    },
+
+    /**
+     * 从项目列表中初始化默认项目（如果没有保存的选择）
+     */
+    initializeDefaultProjectFromList() {
+      try {
+        debugLog("[ExportStore] Initializing default project from list...");
+        const projects = localStorage.getItem("lokalise_projects");
+        if (projects) {
+          const parsedProjects = JSON.parse(projects);
+          debugLog(
+            "[ExportStore] Found projects in localStorage:",
+            parsedProjects
+          );
+          if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
+            // 默认选中第一个项目
+            const firstProject = parsedProjects[0];
+            if (firstProject && firstProject.project_id) {
+              this.defaultProjectId = firstProject.project_id;
+              localStorage.setItem(
+                "default_project_id",
+                firstProject.project_id
+              );
+              debugLog(
+                "[ExportStore] Default project initialized to:",
+                firstProject.project_id,
+                firstProject.name
+              );
+            }
+          } else {
+            debugLog("[ExportStore] No valid projects found in parsed data");
+          }
+        } else {
+          debugLog("[ExportStore] No projects found in localStorage");
+        }
+      } catch (error) {
+        debugError(
+          "[ExportStore] Failed to initialize default project from list:",
+          error
+        );
       }
     },
 
@@ -118,6 +208,7 @@ export const useExportStore = defineStore("export", {
     resetTranslationSettings() {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
+      this.defaultProjectId = "";
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {
@@ -127,6 +218,7 @@ export const useExportStore = defineStore("export", {
       // 清空localStorage中的翻译设置
       localStorage.removeItem("excel_baseline_key");
       localStorage.removeItem("excel_overwrite");
+      localStorage.removeItem("default_project_id");
     },
   },
 
