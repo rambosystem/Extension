@@ -6,6 +6,7 @@ import { useApiStore } from "./api.js";
 import { useTranslationCoreStore } from "../translation/core.js";
 import { useTermsStore } from "../terms.js";
 import { useAppStore } from "../app.js";
+import { useExportStore } from "../translation/export.js";
 import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
 import { useCacheValidation } from "../../composables/Core/useCacheValidation.js";
 
@@ -430,14 +431,18 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         const appStore = useAppStore();
         appStore.initializeToDefaults();
 
-        // 6. 清空翻译缓存
+        // 6. 初始化导出设置（包含 default_project_id）
+        const exportStore = useExportStore();
+        exportStore.initializeToDefaults();
+
+        // 7. 清空翻译缓存
         const cache = useTranslationCache();
         cache.clearCache();
 
-        // 7. 确保重要设置被正确保存到 localStorage
+        // 8. 确保重要设置被正确保存到 localStorage
         this.saveImportantSettings();
 
-        // 8. 异步刷新 Terms Card 数据（不等待完成）
+        // 9. 异步刷新 Terms Card 数据（不等待完成）
         termsStore.refreshTerms(false).catch((error) => {
           console.error("Terms refresh failed after cache clear:", error);
         });
@@ -476,10 +481,18 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
           "- lokalise_projects:",
           localStorage.getItem("lokalise_projects") ? "exists" : "cleared"
         );
+        debugLog(
+          "- default_project_id:",
+          localStorage.getItem("default_project_id") ? "exists" : "cleared"
+        );
         debugLog("- API Store apiKey:", apiStore.apiKey || "empty");
         debugLog(
           "- API Store lokaliseApiToken:",
           apiStore.lokaliseApiToken || "empty"
+        );
+        debugLog(
+          "- Export Store defaultProjectId:",
+          exportStore.defaultProjectId || "empty"
         );
 
         ElMessage.success("Cache initialized successfully");

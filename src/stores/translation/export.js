@@ -220,6 +220,47 @@ export const useExportStore = defineStore("export", {
       localStorage.removeItem("excel_overwrite");
       localStorage.removeItem("default_project_id");
     },
+
+    /**
+     * 初始化导出设置到默认值
+     * 用于缓存清除时重置设置
+     * 清除所有导出相关的localStorage数据
+     *
+     * 注意：清除顺序很重要
+     * 1. 先清除 localStorage（包括 Pinia persist 存储）
+     * 2. 再重置状态，避免 Pinia persist 插件恢复旧数据
+     */
+    initializeToDefaults() {
+      // 先清除localStorage中的导出相关数据（包括 Pinia persist 存储）
+      // 必须在重置状态之前清除，避免 Pinia persist 插件恢复数据
+      try {
+        // 清除直接存储的导出数据
+        localStorage.removeItem("excel_baseline_key");
+        localStorage.removeItem("excel_overwrite");
+        localStorage.removeItem("default_project_id");
+        // 清除Pinia persist存储（必须在重置状态之前）
+        localStorage.removeItem("export-store");
+        debugLog("[ExportStore] Cleared export settings from localStorage");
+      } catch (error) {
+        debugError(
+          "[ExportStore] Failed to clear export settings from localStorage:",
+          error
+        );
+      }
+
+      // 重置状态（在清除 localStorage 之后）
+      // 这样 Pinia persist 插件保存的将是空值
+      this.excelBaselineKey = "";
+      this.excelOverwrite = false;
+      this.defaultProjectId = "";
+
+      // 重置加载状态
+      Object.keys(this.loadingStates).forEach((key) => {
+        this.loadingStates[key] = false;
+      });
+
+      debugLog("[ExportStore] Export settings reset to defaults");
+    },
   },
 
   // 启用持久化存储
