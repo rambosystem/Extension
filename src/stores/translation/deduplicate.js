@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
 import { useDeduplicate } from "../../composables/Translation/useDeduplicate.js";
 import { useExportStore } from "./export.js";
+import { useTranslationCoreStore } from "./core.js";
 import { debugLog, debugError } from "../../utils/debug.js";
 
 /**
@@ -152,9 +153,17 @@ export const useDeduplicateStore = defineStore("deduplicate", {
             `Deduplication completed: ${result.duplicateCount} duplicates removed, ${result.remainingCount} texts remaining`
           );
 
-          // 如果是自动去重，继续翻译流程
+          // 如果是自动去重，先更新 codeContent，然后继续翻译流程
           if (this.isAutoDeduplicate) {
-            // 继续翻译（不需要关闭对话框，因为已经没有对话框了）
+            // 先更新 translationCoreStore 的 codeContent 为去重后的文本
+            const translationCoreStore = useTranslationCoreStore();
+            translationCoreStore.setCodeContent(remainingTexts);
+            debugLog(
+              "[DeduplicateStore] Updated codeContent with deduplicated texts:",
+              remainingTexts
+            );
+
+            // 继续翻译（使用更新后的去重文本）
             if (continueTranslation) {
               await continueTranslation();
             }

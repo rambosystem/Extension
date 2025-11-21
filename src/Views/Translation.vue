@@ -83,9 +83,13 @@ const handleShowAutoDeduplicateDialog = async (event) => {
     clearCache
   );
 
-  // 如果去重成功且有剩余文本，更新内容
-  if (result && result.success && result.remainingTexts) {
-    translationCoreStore.setCodeContent(result.remainingTexts);
+  // 如果去重成功，更新内容（自动去重已经在 store 中更新，但这里确保手动去重也能更新）
+  // 注意：自动去重时，codeContent 已经在去重 store 中更新，这里主要是为了手动去重的情况
+  if (result && result.success) {
+    // 如果 remainingTexts 是空字符串，说明所有文本都被去重了，应该清空
+    // 如果 remainingTexts 有值，更新为去重后的文本
+    // 自动去重时，这里会再次更新，但 setCodeContent 是幂等的，不会有问题
+    translationCoreStore.setCodeContent(result.remainingTexts || "");
   }
 };
 
