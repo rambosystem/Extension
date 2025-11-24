@@ -253,7 +253,8 @@ export const useUploadStore = defineStore("upload", {
         if (baselineKey && baselineKey.trim()) {
           keyName = generateIncrementalKey(baselineKey.trim(), index);
         } else {
-          keyName = `translation_${Date.now()}_${index}`;
+          // 如果baseline key为空，使用en作为key
+          keyName = item.en;
         }
 
         // 构建translations数组：先添加英文，然后按顺序添加目标语言
