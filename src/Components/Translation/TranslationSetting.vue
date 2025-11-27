@@ -49,26 +49,10 @@
           <AutocompleteInput
             v-model="excelBaselineKey"
             :placeholder="t('translationSetting.exportKeySettingPlaceholder')"
-            @blur="handleExcelBaselineKeyCancel"
-            @focus="handleExcelBaselineKeyFocus"
             :get-project-id="getProjectId"
+            @blur="handleExcelBaselineKeyBlur"
           />
         </div>
-      </div>
-    </el-form-item>
-    <el-form-item v-show="excelBaselineKeyEditing">
-      <div class="excel-key-setting-button-container">
-        <el-button
-          @click="handleExcelBaselineKeyClear"
-          style="min-width: 90px"
-          >{{ t("common.clear") }}</el-button
-        >
-        <el-button
-          type="primary"
-          @click="handleExcelBaselineKeySave"
-          style="min-width: 90px"
-          >{{ t("common.save") }}</el-button
-        >
       </div>
     </el-form-item>
     <el-form-item
@@ -91,7 +75,7 @@ import { useI18n } from "../../composables/Core/useI18n.js";
 import { useExportStore } from "../../stores/translation/export.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { useApiStore } from "../../stores/settings/api.js";
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, watch, computed, onMounted, onBeforeUnmount } from "vue";
 import { ElMessage } from "element-plus";
 import AutocompleteInput from "../Common/AutocompleteInput.vue";
 import { debugLog, debugError } from "../../utils/debug.js";
@@ -104,8 +88,6 @@ const exportStore = useExportStore();
 const uploadStore = useUploadStore();
 const apiStore = useApiStore();
 
-const excelBaselineKeyEditing = ref(false);
-const isSaving = ref(false);
 const projectList = ref([]);
 
 // 使用 computed 来获取 store 中的状态
@@ -146,18 +128,26 @@ const defaultProjectId = computed({
   },
 });
 
-//excelBaselineKey变动时，设置excelBaselineKeyEditing为true，空值时设置为false
-watch(
-  () => excelBaselineKey.value,
-  (newValue) => {
-    // 有值时显示按钮，空值时隐藏按钮
-    if (newValue && newValue.trim()) {
-      excelBaselineKeyEditing.value = true;
-    } else {
-      excelBaselineKeyEditing.value = false;
-    }
+/**
+ * 处理Baseline Key失焦事件 - 失焦时进行校验和保存
+ */
+const handleExcelBaselineKeyBlur = () => {
+  const currentValue = excelBaselineKey.value || "";
+
+  // 如果值为空，直接清空存储
+  if (!currentValue.trim()) {
+    exportStore.saveExcelBaselineKey("");
+    return;
   }
-);
+
+  // 调用store的保存方法，它会进行格式校验并显示提示
+  const success = exportStore.saveExcelBaselineKey(currentValue.trim());
+
+  // 如果校验失败，清空输入框
+  if (!success) {
+    excelBaselineKey.value = "";
+  }
+};
 
 /**
  * 获取项目ID的函数
@@ -178,52 +168,6 @@ const getProjectId = () => {
     "[TranslationSetting] No default project ID set, autocomplete will use fallback"
   );
   return null;
-};
-
-const handleExcelBaselineKeySave = () => {
-  if (!excelBaselineKeyEditing.value) return;
-
-  const currentValue = excelBaselineKey.value || "";
-
-  // 检查是否为空
-  if (!currentValue.trim()) {
-    ElMessage.warning(t("translationSetting.exportBaselineKeySaveWarning"));
-    return;
-  }
-
-  isSaving.value = true;
-
-  const success = exportStore.saveExcelBaselineKey(currentValue);
-  if (success) {
-    excelBaselineKeyEditing.value = false;
-  }
-
-  isSaving.value = false;
-};
-
-const handleExcelBaselineKeyFocus = () => {
-  excelBaselineKeyEditing.value = true;
-};
-
-const handleExcelBaselineKeyCancel = () => {
-  // 如果正在保存，不处理失焦
-  if (isSaving.value) return;
-
-  // 延迟处理，给用户时间点击保存按钮
-  setTimeout(() => {
-    if (excelBaselineKeyEditing.value && !isSaving.value) {
-      // 失焦时清空值并隐藏按钮
-      excelBaselineKey.value = "";
-      excelBaselineKeyEditing.value = false;
-    }
-  }, 200);
-};
-
-const handleExcelBaselineKeyClear = () => {
-  excelBaselineKey.value = "";
-  excelBaselineKeyEditing.value = false;
-  // 清空存储
-  exportStore.saveExcelBaselineKey("");
 };
 
 const handleOverwriteChange = (value) => {
@@ -368,14 +312,6 @@ watch(
   .input-container {
     width: 200px;
   }
-}
-
-.excel-key-setting-button-container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-  gap: 8px;
 }
 
 .excel-overwrite-setting {
