@@ -41,8 +41,15 @@ export function useExcelExport() {
    * @returns {Array} Excel格式的数据数组
    */
   const formatToExcel = (translationResult) => {
-    // 获取选中的目标语言（按配置文件顺序）
-    const targetLanguages = exportStore.targetLanguages || [];
+    // 获取选中的目标语言（从 localStorage 获取，与翻译逻辑保持一致）
+    let targetLanguages = [];
+    try {
+      targetLanguages = JSON.parse(
+        localStorage.getItem("target_languages") || "[]"
+      );
+    } catch (error) {
+      console.error("Failed to parse target languages:", error);
+    }
     const availableLanguages = getAvailableLanguages();
     const sortedLanguages = availableLanguages.filter((availLang) =>
       targetLanguages.includes(availLang.code)
@@ -51,8 +58,8 @@ export function useExcelExport() {
     // 构建表头：key, en, 然后是目标语言的ISO代码
     const header = ["key", "en", ...sortedLanguages.map((lang) => lang.iso)];
 
-    // 从 store 获取 baseline key
-    const baselineKey = exportStore.excelBaselineKey || "";
+    // 从 localStorage 获取 baseline key（与上传逻辑保持一致）
+    const baselineKey = localStorage.getItem("excel_baseline_key") || "";
 
     const excelData = [
       header,

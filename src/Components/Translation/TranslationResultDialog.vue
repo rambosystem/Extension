@@ -160,8 +160,15 @@ const formatLanguageLabel = (langCode) => {
 
 // 计算表格列配置
 const tableColumns = computed(() => {
-  // 获取目标语言设置
-  const targetLanguages = exportStore.targetLanguages || [];
+  // 获取目标语言设置（从 localStorage 获取，与翻译逻辑保持一致）
+  let targetLanguages = [];
+  try {
+    targetLanguages = JSON.parse(
+      localStorage.getItem("target_languages") || "[]"
+    );
+  } catch (error) {
+    console.error("Failed to parse target languages:", error);
+  }
 
   // 构建列配置：第一列是英文，后面是目标语言
   const columns = [
@@ -188,21 +195,20 @@ const tableColumns = computed(() => {
     });
   });
 
-  // 如果没有目标语言，使用默认的 CN 和 JP
-  if (columns.length === 1) {
-    columns.push(
-      { prop: "cn", label: "CN", minWidth: 200 },
-      { prop: "jp", label: "JP", minWidth: 200 }
-    );
-  }
-
   return columns;
 });
 
 // 处理保存翻译结果
 const handleSaveTranslation = (index) => {
-  // 获取目标语言设置
-  const targetLanguages = exportStore.targetLanguages || [];
+  // 获取目标语言设置（从 localStorage 获取，与翻译逻辑保持一致）
+  let targetLanguages = [];
+  try {
+    targetLanguages = JSON.parse(
+      localStorage.getItem("target_languages") || "[]"
+    );
+  } catch (error) {
+    console.error("Failed to parse target languages:", error);
+  }
 
   // 构建列名数组
   const columns = [
@@ -211,11 +217,6 @@ const handleSaveTranslation = (index) => {
       return lang.toLowerCase().replace(/\s+/g, "_");
     }),
   ];
-
-  // 如果没有目标语言，使用默认的 cn 和 jp
-  if (columns.length === 1) {
-    columns.push("cn", "jp");
-  }
 
   // 更新本地存储中的翻译结果
   const translationData = translationCoreStore.translationResult.map((item) => {

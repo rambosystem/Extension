@@ -58,12 +58,47 @@ export function useTranslationStorage() {
       return [];
     }
 
-    return translationData.map((row) => ({
-      ...row,
-      editing_en: false,
-      editing_cn: false,
-      editing_jp: false,
-    }));
+    // 从第一行数据中提取所有语言 key（排除 editing_ 开头的 key）
+    const languageKeys = new Set();
+    if (translationData.length > 0) {
+      Object.keys(translationData[0]).forEach((key) => {
+        if (!key.startsWith("editing_")) {
+          languageKeys.add(key);
+        }
+      });
+    }
+
+    // 如果没有从数据中提取到 key，则从配置中获取
+    if (languageKeys.size === 0) {
+      try {
+        const targetLanguages = JSON.parse(
+          localStorage.getItem("target_languages") || "[]"
+        );
+        languageKeys.add("en");
+        targetLanguages.forEach((lang) => {
+          const key = lang.toLowerCase().replace(/\s+/g, "_");
+          languageKeys.add(key);
+        });
+      } catch (error) {
+        console.warn("Failed to parse target languages:", error);
+        // 配置解析失败时，直接返回原数据（不添加编辑状态）
+        return translationData;
+      }
+    }
+
+    // 如果没有找到任何语言 key，直接返回原数据
+    if (languageKeys.size === 0) {
+      return translationData;
+    }
+
+    // 为每行数据添加编辑状态
+    return translationData.map((row) => {
+      const result = { ...row };
+      languageKeys.forEach((key) => {
+        result[`editing_${key}`] = false;
+      });
+      return result;
+    });
   };
 
   /**

@@ -2,7 +2,6 @@ import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
 import { useApiStore } from "../../stores/settings/api.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
-import { useExportStore } from "../../stores/translation/export.js";
 import {
   getAvailableLanguages,
   getLanguageIso,
@@ -18,7 +17,6 @@ const { t } = useI18n();
 export function useLokaliseUpload() {
   const apiStore = useApiStore();
   const uploadStore = useUploadStore();
-  const exportStore = useExportStore();
 
   // 项目列表
   const projectList = ref([]);
@@ -166,6 +164,19 @@ export function useLokaliseUpload() {
    * 执行上传
    */
   const executeUpload = async (translationResult) => {
+    if (!translationResult || translationResult.length === 0) {
+      ElMessage.warning("No translation data to upload");
+      return;
+    }
+
+    // 检查翻译结果的语言配置是否与当前配置匹配
+    if (!uploadStore.checkTranslationConfigMatch(translationResult)) {
+      ElMessage.warning(
+        "The translation data does not match the current language configuration. Please translate again."
+      );
+      return;
+    }
+
     if (!uploadStore.uploadForm.projectId) {
       ElMessage.warning("Please select a project");
       return;
@@ -200,8 +211,15 @@ export function useLokaliseUpload() {
       // 获取baseline key
       const baselineKey = localStorage.getItem("excel_baseline_key") || "";
 
-      // 获取选中的目标语言（按配置文件顺序）
-      const targetLanguages = exportStore.targetLanguages || [];
+      // 获取选中的目标语言（从 localStorage 获取，与翻译逻辑保持一致）
+      let targetLanguages = [];
+      try {
+        targetLanguages = JSON.parse(
+          localStorage.getItem("target_languages") || "[]"
+        );
+      } catch (error) {
+        console.error("Failed to parse target languages:", error);
+      }
       const availableLanguages = getAvailableLanguages();
       const sortedLanguages = availableLanguages.filter((availLang) =>
         targetLanguages.includes(availLang.code)

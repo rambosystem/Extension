@@ -352,10 +352,68 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
 
     /**
+     * 检查翻译结果的语言配置是否与当前配置匹配
+     * @param {Array} translationData - 翻译数据
+     * @returns {boolean} 是否匹配
+     */
+    checkTranslationConfigMatch(translationData) {
+      if (!translationData || translationData.length === 0) {
+        return false;
+      }
+
+      // 从翻译数据中提取所有语言 key（排除 editing_ 开头的 key）
+      const storedLanguageKeys = new Set();
+      Object.keys(translationData[0]).forEach((key) => {
+        if (!key.startsWith("editing_")) {
+          storedLanguageKeys.add(key);
+        }
+      });
+
+      // 获取当前配置的目标语言
+      try {
+        const targetLanguages = JSON.parse(
+          localStorage.getItem("target_languages") || "[]"
+        );
+
+        // 构建当前配置应该有的语言 key
+        const expectedLanguageKeys = new Set(["en"]);
+        targetLanguages.forEach((lang) => {
+          const key = lang.toLowerCase().replace(/\s+/g, "_");
+          expectedLanguageKeys.add(key);
+        });
+
+        // 比较两个集合是否匹配
+        if (storedLanguageKeys.size !== expectedLanguageKeys.size) {
+          return false;
+        }
+
+        // 检查所有期望的 key 是否都存在
+        for (const key of expectedLanguageKeys) {
+          if (!storedLanguageKeys.has(key)) {
+            return false;
+          }
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Failed to parse target languages:", error);
+        return false;
+      }
+    },
+
+    /**
      * 显示上次翻译结果
      */
     showLastTranslation() {
       if (this.hasLastTranslation) {
+        // 检查翻译结果的语言配置是否与当前配置匹配
+        if (!this.checkTranslationConfigMatch(this.lastTranslation)) {
+          ElMessage.warning(
+            "The previous translation does not match the current language configuration. Please translate again."
+          );
+          return;
+        }
+
         // 为加载的数据添加编辑状态属性
         const storage = useTranslationStorage();
         const dataWithEditState = storage.addEditingStates(
