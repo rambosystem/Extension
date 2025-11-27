@@ -5,6 +5,7 @@ import {
   getLanguageIso,
 } from "../../config/languages.js";
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
+import { useExportStore } from "./export.js";
 
 /**
  * 上传功能状态管理
@@ -66,7 +67,51 @@ export const useUploadStore = defineStore("upload", {
     openUploadDialog() {
       // 加载项目列表
       this.loadProjectList();
+
+      // 自动设置默认Project
+      this.setDefaultProject();
+
       this.uploadDialogVisible = true;
+    },
+
+    /**
+     * 设置默认Project
+     */
+    setDefaultProject() {
+      try {
+        // 从exportStore获取默认Project ID
+        const exportStore = useExportStore();
+        const defaultProjectId =
+          exportStore.defaultProjectId ||
+          localStorage.getItem("default_project_id");
+
+        if (defaultProjectId) {
+          // 从项目列表中找到对应的项目
+          const project = this.projectList.find(
+            (p) => p.project_id === defaultProjectId
+          );
+
+          if (project) {
+            this.setUploadProjectId(defaultProjectId);
+            this.setCurrentProject(project);
+          } else {
+            // 如果项目不在列表中，尝试从localStorage加载项目列表
+            const projects = localStorage.getItem("lokalise_projects");
+            if (projects) {
+              const parsedProjects = JSON.parse(projects);
+              const foundProject = parsedProjects.find(
+                (p) => p.project_id === defaultProjectId
+              );
+              if (foundProject) {
+                this.setUploadProjectId(defaultProjectId);
+                this.setCurrentProject(foundProject);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to set default project:", error);
+      }
     },
 
     /**
@@ -278,10 +323,44 @@ export const useUploadStore = defineStore("upload", {
         throw new Error("Lokalise API token not configured");
       }
 
-      // 获取选中的项目
-      const selectedProject = this.currentProject;
-      if (!selectedProject) {
-        throw new Error("No project selected");
+      // 获取默认项目（从exportStore获取）
+      const exportStore = useExportStore();
+      const defaultProjectId =
+        exportStore.defaultProjectId ||
+        localStorage.getItem("default_project_id");
+
+      if (!defaultProjectId) {
+        throw new Error(
+          "No default project configured. Please set a default project in Translation Settings."
+        );
+      }
+
+      // 从项目列表中找到对应的项目
+      let selectedProject = this.currentProject;
+      if (!selectedProject || selectedProject.project_id !== defaultProjectId) {
+        // 如果当前项目不匹配，从列表或localStorage中查找
+        selectedProject = this.projectList.find(
+          (p) => p.project_id === defaultProjectId
+        );
+
+        if (!selectedProject) {
+          // 尝试从localStorage加载
+          const projects = localStorage.getItem("lokalise_projects");
+          if (projects) {
+            const parsedProjects = JSON.parse(projects);
+            selectedProject = parsedProjects.find(
+              (p) => p.project_id === defaultProjectId
+            );
+          }
+        }
+
+        if (selectedProject) {
+          this.setCurrentProject(selectedProject);
+        } else {
+          throw new Error(
+            `Default project (${defaultProjectId}) not found in project list.`
+          );
+        }
       }
 
       // 获取选中的目标语言（从 localStorage 获取，与翻译逻辑保持一致）
