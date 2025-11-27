@@ -8,7 +8,7 @@
     <el-form label-position="top">
       <el-form-item>
         <el-table
-          :data="translationCoreStore.translationResult"
+          :data="filteredTranslationResult"
           style="width: 100%"
           height="450"
           empty-text=""
@@ -160,15 +160,8 @@ const formatLanguageLabel = (langCode) => {
 
 // 计算表格列配置
 const tableColumns = computed(() => {
-  // 获取目标语言设置（从 localStorage 获取，与翻译逻辑保持一致）
-  let targetLanguages = [];
-  try {
-    targetLanguages = JSON.parse(
-      localStorage.getItem("target_languages") || "[]"
-    );
-  } catch (error) {
-    console.error("Failed to parse target languages:", error);
-  }
+  // 从 store 获取目标语言设置（响应式更新）
+  const targetLanguages = exportStore.targetLanguages || [];
 
   // 构建列配置：第一列是英文，后面是目标语言
   const columns = [
@@ -198,17 +191,42 @@ const tableColumns = computed(() => {
   return columns;
 });
 
+// 过滤翻译结果，只保留当前选中的语言字段
+const filteredTranslationResult = computed(() => {
+  // 从 store 获取目标语言设置（响应式更新）
+  const targetLanguages = exportStore.targetLanguages || [];
+
+  // 构建允许的字段列表
+  const allowedFields = new Set(["en"]);
+  targetLanguages.forEach((lang) => {
+    const prop = lang.toLowerCase().replace(/\s+/g, "_");
+    allowedFields.add(prop);
+  });
+
+  // 过滤数据，只保留允许的字段
+  return translationCoreStore.translationResult.map((item) => {
+    const filteredItem = {};
+    // 保留所有允许的字段（包括编辑状态字段）
+    Object.keys(item).forEach((key) => {
+      // 如果是编辑状态字段，检查对应的数据字段是否在允许列表中
+      if (key.startsWith("editing_")) {
+        const dataField = key.replace("editing_", "");
+        if (allowedFields.has(dataField)) {
+          filteredItem[key] = item[key];
+        }
+      } else if (allowedFields.has(key)) {
+        // 如果是数据字段且在允许列表中，保留
+        filteredItem[key] = item[key];
+      }
+    });
+    return filteredItem;
+  });
+});
+
 // 处理保存翻译结果
 const handleSaveTranslation = (index) => {
-  // 获取目标语言设置（从 localStorage 获取，与翻译逻辑保持一致）
-  let targetLanguages = [];
-  try {
-    targetLanguages = JSON.parse(
-      localStorage.getItem("target_languages") || "[]"
-    );
-  } catch (error) {
-    console.error("Failed to parse target languages:", error);
-  }
+  // 从 store 获取目标语言设置（响应式更新）
+  const targetLanguages = exportStore.targetLanguages || [];
 
   // 构建列名数组
   const columns = [

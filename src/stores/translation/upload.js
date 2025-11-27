@@ -226,25 +226,20 @@ export const useUploadStore = defineStore("upload", {
         }
       });
 
-      // 获取当前配置的目标语言
+      // 获取当前配置的目标语言（从 exportStore 获取，响应式更新）
       try {
-        const targetLanguages = JSON.parse(
-          localStorage.getItem("target_languages") || "[]"
-        );
+        const exportStore = useExportStore();
+        const targetLanguages = exportStore.targetLanguages || [];
 
-        // 构建当前配置应该有的语言 key
+        // 构建当前配置应该有的语言 key（必需字段）
         const expectedLanguageKeys = new Set(["en"]);
         targetLanguages.forEach((lang) => {
           const key = lang.toLowerCase().replace(/\s+/g, "_");
           expectedLanguageKeys.add(key);
         });
 
-        // 比较两个集合是否匹配
-        if (storedLanguageKeys.size !== expectedLanguageKeys.size) {
-          return false;
-        }
-
-        // 检查所有期望的 key 是否都存在
+        // 只检查所有期望的 key 是否都存在（允许数据中有额外的字段）
+        // 这样即使数据包含已取消的语言字段，只要必需的字段都存在就可以
         for (const key of expectedLanguageKeys) {
           if (!storedLanguageKeys.has(key)) {
             return false;
