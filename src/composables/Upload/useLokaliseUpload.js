@@ -291,7 +291,13 @@ export function useLokaliseUpload() {
       // 上传完成后清空baseline key
       clearBaselineKey();
     } catch (error) {
-      ElMessage.error(`Upload failed: ${error.message}`);
+      // 显示详细的错误信息
+      const errorMessage =
+        error?.message || error?.toString() || "Upload failed";
+      ElMessage.error({
+        message: errorMessage,
+        duration: 5000, // 显示5秒后自动消失
+      });
     } finally {
       // 重置loading状态
       isUploading.value = false;

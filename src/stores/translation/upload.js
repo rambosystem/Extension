@@ -306,7 +306,14 @@ export const useUploadStore = defineStore("upload", {
         this.setUploadSuccess(true, "Upload completed successfully");
       } catch (error) {
         console.error("Upload failed:", error);
-        ElMessage.error("Upload failed");
+
+        // 显示详细的错误信息
+        const errorMessage =
+          error?.message || error?.toString() || "Upload failed";
+        ElMessage.error({
+          message: errorMessage,
+          duration: 5000, // 显示5秒后自动消失
+        });
       } finally {
         this.setUploading(false);
       }
