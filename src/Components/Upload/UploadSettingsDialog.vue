@@ -29,10 +29,12 @@
       @submit.prevent="handleUpload"
     >
       <el-form-item label="Tag">
-        <el-input
+        <AutocompleteInput
           :modelValue="uploadStore.uploadForm.tag"
           @update:modelValue="uploadStore.handleTagChange"
           placeholder="Enter tag (optional)"
+          :fetch-suggestions="fetchTagSuggestions"
+          :get-project-id="getProjectId"
         />
       </el-form-item>
     </el-form>
@@ -77,10 +79,63 @@
 <script setup>
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
+import AutocompleteInput from "../Common/AutocompleteInput.vue";
+import { autocompleteTags } from "../../requests/autocomplete.js";
+import { debugLog, debugError } from "../../utils/debug.js";
 
 // 使用翻译Store
 const uploadStore = useUploadStore();
 const translationCoreStore = useTranslationCoreStore();
+
+/**
+ * 获取项目ID（用于tag自动补全）
+ */
+const getProjectId = () => {
+  return uploadStore.uploadForm.projectId || null;
+};
+
+/**
+ * 获取Tag自动补全建议
+ * 使用第一个匹配结果（已按优先级排序：前缀匹配 > 包含匹配，最近使用优先）
+ * @param {string} queryString - 搜索关键词
+ * @param {string} projectId - 项目ID
+ * @returns {Promise<string|null>} 建议的tag名称
+ */
+const fetchTagSuggestions = async (queryString, projectId) => {
+  try {
+    debugLog("[Tag Autocomplete] Calling API with:", {
+      projectId,
+      query: queryString.trim(),
+      limit: 1,
+    });
+
+    const response = await autocompleteTags(projectId, queryString.trim(), 1);
+
+    debugLog("[Tag Autocomplete] API response:", response);
+
+    // 验证响应格式
+    if (!response || !response.success) {
+      debugLog(
+        "[Tag Autocomplete] Invalid response or unsuccessful:",
+        response
+      );
+      return null;
+    }
+
+    // 获取第一条建议（已按优先级排序，使用第一个即可）
+    const firstResult = response?.results?.[0];
+    if (firstResult && firstResult.tag) {
+      debugLog("[Tag Autocomplete] Found suggestion:", firstResult.tag);
+      return firstResult.tag;
+    }
+
+    debugLog("[Tag Autocomplete] No suggestions found");
+    return null;
+  } catch (error) {
+    debugError("[Tag Autocomplete] Error occurred:", error);
+    return null;
+  }
+};
 
 // 处理上传
 const handleUpload = async () => {
