@@ -16,6 +16,13 @@
 
 Excel 组件是一个功能完整的类 Excel 表格组件，支持单元格编辑、选择、复制粘贴、撤销重做、智能填充、列宽/行高调整、数据管理（v-model 双向绑定）等功能。组件采用 Vue 3 Composition API 开发，通过 Composables 实现模块化设计，保证代码的可维护性和可复用性。
 
+### 核心特性
+
+- **动态行列支持**: 组件会根据实际数据自动调整行列数，无需手动配置
+- **自动扩展**: 编辑单元格或粘贴数据时，如果超出当前范围会自动扩展行列
+- **列标题生成**: 支持超过 26 列（A-Z, AA-AZ, BA-BZ...）
+- **智能数据管理**: 通过 v-model 双向绑定，数据变化自动同步
+
 ### 设计原则
 
 - **自包含**: 通用组件不依赖 Store，每个实例拥有独立状态
@@ -90,15 +97,26 @@ src/Components/Common/
 
 数据管理 Composable，负责表格数据的创建、管理和剪贴板操作。
 
+**重要**: 组件支持动态行列，会根据 `initialData` 自动计算实际需要的行列数。如果提供了 `initialData`，行列数会根据数据自动调整；如果没有提供，则使用默认值。
+
 #### 参数
 
 ```javascript
 useExcelData({
-  rowsCount?: number,      // 行数，默认 15
-  colsCount?: number,      // 列数，默认 10
-  initialData?: string[][] // 初始数据，可选
+  rowsCount?: number,      // 行数，默认 15（仅在无 initialData 时使用）
+  colsCount?: number,      // 列数，默认 10（仅在无 initialData 时使用）
+  initialData?: string[][] // 初始数据，可选（如果提供，行列数会根据数据自动计算）
 })
 ```
+
+#### 动态行列说明
+
+- 如果提供了 `initialData`，组件会：
+  - 自动计算实际行数（数据数组的长度）
+  - 自动计算实际列数（数据中最长行的长度）
+  - 自动生成列标题（A, B, C, ..., Z, AA, AB, ...）
+- 如果未提供 `initialData`，使用 `rowsCount` 和 `colsCount` 作为默认值
+- 在运行时，通过 `setData()` 或 `updateCell()` 可以动态扩展行列
 
 #### 返回值
 
@@ -136,14 +154,32 @@ const { tableData } = useExcelData({
   colsCount: 15,
 });
 
-// 使用初始数据
-const { tableData } = useExcelData({
+// 使用初始数据（行列数会自动计算：3行3列）
+const { tableData, columns, rows } = useExcelData({
   initialData: [
     ["姓名", "年龄", "城市"],
     ["张三", "25", "北京"],
     ["李四", "30", "上海"],
   ],
 });
+// columns: ["A", "B", "C"]
+// rows: [0, 1, 2]
+// tableData: [["姓名", "年龄", "城市"], ["张三", "25", "北京"], ["李四", "30", "上海"]]
+
+// 动态扩展示例
+const { setData, updateCell } = useExcelData({
+  initialData: [["A1", "B1"]], // 初始 1行2列
+});
+
+// 通过 setData 扩展（会自动调整为 3行4列）
+setData([
+  ["A1", "B1", "C1", "D1"],
+  ["A2", "B2", "C2", "D2"],
+  ["A3", "B3", "C3", "D3"],
+]);
+
+// 通过 updateCell 扩展（超出范围时自动扩展）
+updateCell(5, 6, "G6"); // 自动扩展为 6行7列
 ```
 
 ### useSelection
@@ -418,6 +454,48 @@ const handleDataChange = (data) => {
 </script>
 ```
 
+#### 3. 动态行列示例
+
+组件会根据数据自动调整行列数，无需手动配置：
+
+```vue
+<template>
+  <Excel v-model="excelData" />
+  <button @click="addRow">添加行</button>
+  <button @click="addColumn">添加列</button>
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+// 初始数据：2行3列，组件会自动识别
+const excelData = ref([
+  ["A1", "B1", "C1"],
+  ["A2", "B2", "C2"],
+]);
+
+const addRow = () => {
+  // 添加新行，组件会自动扩展
+  excelData.value.push(["A3", "B3", "C3"]);
+};
+
+const addColumn = () => {
+  // 为所有行添加新列，组件会自动扩展
+  excelData.value.forEach((row) => {
+    row.push("新列");
+  });
+  // 列标题会自动生成（D, E, F...）
+};
+</script>
+```
+
+**注意**:
+
+- 数据变化时，组件会自动调整行列数
+- 列标题会自动生成（A, B, C, ..., Z, AA, AB, ...）
+- 粘贴超出范围的数据时，会自动扩展行列
+
 #### 3. 通过方法操作数据
 
 ```vue
@@ -504,16 +582,20 @@ import Excel from "@/Components/Common/Excel.vue";
 
 ### 自定义配置
 
-组件内部使用默认配置（15 行 10 列），如需自定义，可以修改 `constants.js` 中的 `DEFAULT_CONFIG`：
+组件内部使用默认配置（15 行 10 列），但**如果通过 v-model 或 initialData 传入数据，行列数会根据实际数据自动调整**。
+
+如需修改默认值（仅在无初始数据时使用），可以修改 `constants.js` 中的 `DEFAULT_CONFIG`：
 
 ```javascript
 // src/composables/Excel/constants.js
 export const DEFAULT_CONFIG = {
-  ROWS_COUNT: 20, // 自定义行数
-  COLS_COUNT: 15, // 自定义列数
+  ROWS_COUNT: 20, // 默认行数（仅在无 initialData 时使用）
+  COLS_COUNT: 15, // 默认列数（仅在无 initialData 时使用）
   MAX_HISTORY_SIZE: 100, // 自定义历史记录数
 };
 ```
+
+**注意**: 由于组件支持动态行列，实际使用的行列数会根据数据自动计算，`ROWS_COUNT` 和 `COLS_COUNT` 仅在没有提供初始数据时作为默认值使用。
 
 ### 访问组件数据
 
@@ -597,17 +679,19 @@ const handleDataChange = (data) => {
 - [x] **单元格编辑**: 双击或选中后直接输入编辑
 - [x] **单元格选择**: 鼠标点击、拖拽选择
 - [x] **键盘导航**: 方向键、Tab、Enter 导航
-- [x] **复制粘贴**: 支持多单元格复制粘贴
+- [x] **复制粘贴**: 支持多单元格复制粘贴，粘贴超出范围时自动扩展行列
 - [x] **撤销重做**: Ctrl+Z / Ctrl+Y
 - [x] **智能填充**: 拖拽填充手柄自动递增（可选）
 - [x] **删除内容**: Delete / Backspace 删除选中内容
 - [x] **历史记录**: 自动保存操作历史
+- [x] **动态行列**: 根据实际数据自动调整行列数，支持运行时扩展
 - [x] **列宽调整**: 拖拽列边界调整列宽（可选）
 - [x] **自适应列宽**: 双击列边界自动适应内容宽度（可选）
 - [x] **行高调整**: 拖拽行边界调整行高（可选）
 - [x] **自适应行高**: 双击行边界自动适应内容高度（可选，与列宽联动）
 - [x] **智能显示**: 根据列宽和行高智能判断是否换行
 - [x] **数据管理**: 支持 v-model 双向绑定、初始数据、方法调用
+- [x] **列标题生成**: 支持超过 26 列（A-Z, AA-AZ, BA-BZ...）
 
 ### 🔄 智能填充算法
 
@@ -925,16 +1009,16 @@ const initialData = ref([
 
 ### Q: 如何支持更多列（超过 26 列）？
 
-A: 修改 `useExcelData.js` 中的列标题生成逻辑：
+A: **组件已内置支持超过 26 列**！列标题会自动生成：A, B, C, ..., Z, AA, AB, AC, ..., AZ, BA, BB, ...
 
-```javascript
-// 当前: A-Z (26 列)
-const columns = ref(
-  Array.from({ length: colsCount }, (_, i) => String.fromCharCode(65 + i))
-);
+当数据列数超过 26 列时，组件会自动使用双字母列标题。例如：
 
-// 支持更多列: A, B, ..., Z, AA, AB, ...
-```
+- 第 1-26 列: A, B, C, ..., Z
+- 第 27-52 列: AA, AB, AC, ..., AZ
+- 第 53-78 列: BA, BB, BC, ..., BZ
+- 以此类推...
+
+无需任何额外配置，组件会根据实际数据自动生成正确的列标题。
 
 ### Q: 历史记录占用内存过大怎么办？
 
@@ -1007,9 +1091,59 @@ A: 通过 `enableFillHandle` prop 控制：
 
 禁用后，不会显示填充手柄，也无法进行拖拽填充操作。
 
+### Q: 组件如何支持动态行列？
+
+A: 组件内置支持动态行列，无需额外配置：
+
+1. **自动计算**: 如果通过 `v-model` 或 `initialData` 传入数据，组件会自动计算实际需要的行列数
+2. **自动扩展**: 编辑单元格或粘贴数据时，如果超出当前范围，会自动扩展行列
+3. **列标题自动生成**: 列标题会根据实际列数自动生成（A-Z, AA-AZ, BA-BZ...）
+
+示例：
+
+```vue
+<template>
+  <!-- 数据会自动确定行列数 -->
+  <Excel v-model="excelData" />
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+// 3行4列的数据，组件会自动识别
+const excelData = ref([
+  ["A1", "B1", "C1", "D1"],
+  ["A2", "B2", "C2", "D2"],
+  ["A3", "B3", "C3", "D3"],
+]);
+</script>
+```
+
+### Q: 粘贴数据超出当前范围会怎样？
+
+A: 组件会自动扩展行列以容纳粘贴的数据。例如：
+
+- 如果当前是 3 行 3 列，粘贴 5 行 4 列的数据，会自动扩展为 5 行 4 列
+- 列标题会自动生成（A, B, C, D）
+- 行号会自动更新（1, 2, 3, 4, 5）
+
 ## 更新日志
 
-### v1.5.0 (当前版本)
+### v1.6.0 (当前版本)
+
+- ✅ **新增动态行列支持**
+  - 组件会根据实际数据自动计算行列数，无需手动配置
+  - 支持通过 `initialData` 或 `v-model` 传入数据，自动识别行列数
+  - 编辑单元格或粘贴数据时，超出范围会自动扩展行列
+  - 列标题自动生成，支持超过 26 列（A-Z, AA-AZ, BA-BZ...）
+  - `setData()` 和 `updateCell()` 方法支持动态扩展
+  - 粘贴功能支持自动扩展行列
+- ✅ 优化数据管理
+  - `useExcelData` 现在会根据 `initialData` 自动计算实际行列数
+  - `rowsCount` 和 `colsCount` 仅在无初始数据时作为默认值使用
+
+### v1.5.0
 
 - ✅ 优化智能显示策略
   - 精确的宽度计算：区分全角字符（汉字）和半角字符（英文/数字）

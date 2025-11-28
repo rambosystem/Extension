@@ -1,99 +1,58 @@
 <template>
-  <div
-    class="excel-container"
-    @keydown="handleKeydown"
-    @copy="handleCopy"
-    @paste="handlePaste"
-    tabindex="0"
-    ref="containerRef"
-  >
+  <div class="excel-container" @keydown="handleKeydown" @copy="handleCopy" @paste="handlePaste" tabindex="0"
+    ref="containerRef">
     <div class="excel-table" @mouseleave="handleMouseUp">
       <div class="excel-row header-row">
         <div class="excel-cell header-cell corner-cell"></div>
-        <div
-          v-for="(col, index) in columns"
-          :key="col"
-          class="excel-cell header-cell"
-          :class="{ 'active-header': isInSelectionHeader(index, 'col') }"
-          :style="{
+        <div v-for="(col, index) in displayColumns" :key="col" class="excel-cell header-cell"
+          :class="{ 'active-header': isInSelectionHeader(index, 'col') }" :style="{
             width: getColumnWidth(index) + 'px',
             minWidth: getColumnWidth(index) + 'px',
-          }"
-        >
+          }">
           {{ col }}
-          <div
-            v-if="enableColumnResize"
-            class="column-resizer"
-            @mousedown.stop="startColumnResize(index, $event)"
-            @dblclick.stop="handleDoubleClickResize(index)"
-          ></div>
+          <div v-if="enableColumnResize" class="column-resizer" @mousedown.stop="startColumnResize(index, $event)"
+            @dblclick.stop="handleDoubleClickResize(index)"></div>
         </div>
       </div>
 
       <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="excel-row">
-        <div
-          class="excel-cell row-number"
-          :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }"
-        >
+        <div class="excel-cell row-number" :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }" :style="{
+          height: getRowHeight(rowIndex) + 'px',
+          minHeight: getRowHeight(rowIndex) + 'px',
+        }">
           {{ rowIndex + 1 }}
-          <div
-            v-if="enableRowResize"
-            class="row-resizer"
-            @mousedown.stop="startRowResize(rowIndex, $event)"
-            @dblclick.stop="handleDoubleClickRowResize(rowIndex)"
-          ></div>
+          <div v-if="enableRowResize" class="row-resizer" @mousedown.stop="startRowResize(rowIndex, $event)"
+            @dblclick.stop="handleDoubleClickRowResize(rowIndex)"></div>
         </div>
 
-        <div
-          v-for="(col, colIndex) in columns"
-          :key="colIndex"
-          class="excel-cell"
-          :class="{
-            active: isActive(rowIndex, colIndex),
-            'in-selection': isInSelection(rowIndex, colIndex),
-            'drag-target': isInDragArea(rowIndex, colIndex),
-          }"
-          :style="{
-            width: getColumnWidth(colIndex) + 'px',
-            minWidth: getColumnWidth(colIndex) + 'px',
-            height: getRowHeight(rowIndex) + 'px',
-            minHeight: getRowHeight(rowIndex) + 'px',
-            alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
-          }"
-          @mousedown="handleCellMouseDown(rowIndex, colIndex)"
-          @dblclick="startEdit(rowIndex, colIndex)"
-          @mouseenter="handleMouseEnter(rowIndex, colIndex)"
-        >
-          <input
-            v-if="isEditing(rowIndex, colIndex)"
-            v-model="tableData[rowIndex][colIndex]"
-            class="cell-input"
-            @blur="stopEdit"
-            @keydown.enter.prevent.stop="handleInputEnter"
-            @keydown.tab.prevent.stop="handleInputTab"
-            @keydown.esc="cancelEdit"
-            :ref="(el) => setInputRef(el, rowIndex, colIndex)"
-          />
-          <span
-            v-else
-            :class="{
-              'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
-              'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
-                .ellipsis,
-            }"
-          >
+        <div v-for="(col, colIndex) in internalColumns" :key="colIndex" class="excel-cell" :class="{
+          active: isActive(rowIndex, colIndex),
+          'in-selection': isInSelection(rowIndex, colIndex),
+          'drag-target': isInDragArea(rowIndex, colIndex),
+        }" :style="{
+          width: getColumnWidth(colIndex) + 'px',
+          minWidth: getColumnWidth(colIndex) + 'px',
+          height: getRowHeight(rowIndex) + 'px',
+          minHeight: getRowHeight(rowIndex) + 'px',
+          alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
+        }" @mousedown="handleCellMouseDown(rowIndex, colIndex)" @dblclick="startEdit(rowIndex, colIndex)"
+          @mouseenter="handleMouseEnter(rowIndex, colIndex)">
+          <input v-if="isEditing(rowIndex, colIndex)" v-model="tableData[rowIndex][colIndex]" class="cell-input"
+            @blur="stopEdit" @keydown.enter.prevent.stop="handleInputEnter" @keydown.tab.prevent.stop="handleInputTab"
+            @keydown.esc="cancelEdit" :ref="(el) => setInputRef(el, rowIndex, colIndex)" />
+          <span v-else :class="{
+            'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
+            'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
+              .ellipsis,
+          }">
             {{ tableData[rowIndex][colIndex] }}
           </span>
 
-          <div
-            v-if="
-              enableFillHandle &&
-              shouldShowHandle(rowIndex, colIndex) &&
-              !editingCell
-            "
-            class="fill-handle"
-            @mousedown.stop="startFillDrag(rowIndex, colIndex)"
-          ></div>
+          <div v-if="
+            enableFillHandle &&
+            shouldShowHandle(rowIndex, colIndex) &&
+            !editingCell
+          " class="fill-handle" @mousedown.stop="startFillDrag(rowIndex, colIndex)"></div>
         </div>
       </div>
     </div>
@@ -101,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from "vue";
 import { useHistory } from "../../composables/Excel/useHistory";
 import { useSelection } from "../../composables/Excel/useSelection";
 import { useExcelData } from "../../composables/Excel/useExcelData";
@@ -163,6 +122,14 @@ const props = defineProps({
     type: Array,
     default: null,
   },
+  /**
+   * 自定义列标题（可选，如果不提供则使用默认的A, B, C...）
+   * @type {string[]}
+   */
+  columnNames: {
+    type: Array,
+    default: null,
+  },
 });
 
 /**
@@ -172,7 +139,7 @@ const emit = defineEmits(["update:modelValue", "change"]);
 
 // --- 1. 核心逻辑组合 ---
 const {
-  columns,
+  columns: internalColumns,
   rows,
   tableData,
   getSmartValue,
@@ -184,6 +151,18 @@ const {
   clearData,
 } = useExcelData({
   initialData: props.modelValue,
+});
+
+// 使用自定义列标题或默认列标题（仅用于显示）
+const displayColumns = computed(() => {
+  if (props.columnNames && Array.isArray(props.columnNames) && props.columnNames.length > 0) {
+    // 如果提供了自定义列标题，使用自定义的，但确保数量匹配
+    return props.columnNames.slice(0, internalColumns.value.length).map((name, index) => {
+      // 如果自定义列标题数量不足，用默认的补齐
+      return name || internalColumns.value[index];
+    });
+  }
+  return internalColumns.value;
 });
 const {
   activeCell,
@@ -208,23 +187,25 @@ const {
 // 智能填充管理（仅在启用时使用）
 const fillHandleComposable = props.enableFillHandle
   ? useFillHandle({
-      getSmartValue,
-      saveHistory,
-    })
+    getSmartValue,
+    saveHistory,
+  })
   : null;
 
 // 列宽管理（仅在启用时使用）
+// 传入初始列数，Map会自动处理新增列（使用默认宽度）
 const columnWidthComposable = props.enableColumnResize
   ? useColumnWidth({
-      colsCount: columns.value.length,
-    })
+    colsCount: internalColumns.value.length,
+  })
   : null;
 
 // 行高管理（仅在启用时使用）
+// 传入初始行数，Map会自动处理新增行（使用默认高度）
 const rowHeightComposable = props.enableRowResize
   ? useRowHeight({
-      rowsCount: rows.value.length,
-    })
+    rowsCount: rows.value.length,
+  })
   : null;
 
 const getColumnWidth = (colIndex) => {
@@ -356,7 +337,7 @@ const handleDoubleClickRowResizeBase = (rowIndex) => {
     rowHeightComposable.handleDoubleClickResize(
       rowIndex,
       tableData.value,
-      columns.value.length,
+      internalColumns.value.length,
       getColumnWidth // 传入获取列宽的函数
     );
   }
@@ -368,7 +349,7 @@ const applyFill = () => {
   fillHandleComposable.applyFill(
     tableData.value,
     rows.value.length,
-    columns.value.length
+    internalColumns.value.length
   );
 };
 
@@ -432,7 +413,7 @@ const handleDoubleClickResizeBase = (colIndex) => {
   if (props.enableColumnResize && columnWidthComposable) {
     columnWidthComposable.handleDoubleClickResize(
       colIndex,
-      columns.value,
+      internalColumns.value,
       tableData.value,
       rows.value.length
     );
@@ -512,7 +493,7 @@ const handleCellMouseDown = (row, col) => {
     row < 0 ||
     row >= rows.value.length ||
     col < 0 ||
-    col >= columns.value.length
+    col >= internalColumns.value.length
   ) {
     return;
   }
@@ -554,7 +535,7 @@ const startEdit = (row, col, selectAll = true) => {
     row < 0 ||
     row >= rows.value.length ||
     col < 0 ||
-    col >= columns.value.length
+    col >= internalColumns.value.length
   ) {
     console.warn(`Invalid cell position: row=${row}, col=${col}`);
     return;
@@ -610,7 +591,7 @@ const handleInputEnter = (event) => {
     event.shiftKey ? -1 : 1,
     0,
     rows.value.length,
-    columns.value.length
+    internalColumns.value.length
   );
   nextTick(() => containerRef.value?.focus());
 };
@@ -621,7 +602,7 @@ const handleInputTab = (event) => {
     0,
     event.shiftKey ? -1 : 1,
     rows.value.length,
-    columns.value.length
+    internalColumns.value.length
   );
   nextTick(() => containerRef.value?.focus());
 };
@@ -689,13 +670,50 @@ const handlePaste = (event) => {
 
     pasteData.forEach((rowArr, rIndex) => {
       const r = startRow + rIndex;
-      if (r < 0 || r >= rows.value.length) {
-        return; // 边界检查
+      if (r < 0) {
+        return; // 不允许负行
+      }
+
+      // 如果超出当前行数，自动扩展
+      if (r >= rows.value.length) {
+        const currentLength = rows.value.length;
+        for (let i = currentLength; i <= r; i++) {
+          rows.value.push(i);
+          const currentCols = internalColumns.value.length;
+          tableData.value.push(Array.from({ length: currentCols }, () => ""));
+        }
       }
 
       rowArr.forEach((cellVal, cIndex) => {
         const c = startCol + cIndex;
-        if (c >= 0 && c < columns.value.length && tableData.value[r]) {
+        if (c < 0) {
+          return; // 不允许负列
+        }
+
+        // 如果超出当前列数，自动扩展
+        if (c >= internalColumns.value.length) {
+          const currentLength = internalColumns.value.length;
+          // 生成列标题（支持超过26列）
+          const generateColumnLabel = (index) => {
+            if (index < 26) {
+              return String.fromCharCode(65 + index);
+            }
+            const first = Math.floor((index - 26) / 26);
+            const second = (index - 26) % 26;
+            return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
+          };
+          for (let i = currentLength; i <= c; i++) {
+            internalColumns.value.push(generateColumnLabel(i));
+          }
+          // 为所有行补齐列
+          tableData.value.forEach((rowData) => {
+            while (rowData.length <= c) {
+              rowData.push("");
+            }
+          });
+        }
+
+        if (tableData.value[r]) {
           tableData.value[r][c] = cellVal;
         }
       });
@@ -735,7 +753,7 @@ const { handleKeydown } = useKeyboard({
   deleteSelection,
   tableData,
   getMaxRows: () => rows.value.length,
-  getMaxCols: () => columns.value.length,
+  getMaxCols: () => internalColumns.value.length,
 });
 
 // --- 9. 数据同步和监听 ---
@@ -769,7 +787,8 @@ watch(
 watch(
   () => props.modelValue,
   (newValue) => {
-    if (newValue && Array.isArray(newValue) && newValue.length > 0) {
+    // 处理 null、undefined、空数组和有效数组
+    if (props.modelValue !== null && Array.isArray(newValue)) {
       // 只有当外部数据真正变化时才更新（避免循环更新）
       const currentData = JSON.stringify(getData());
       const newData = JSON.stringify(newValue);
@@ -859,12 +878,13 @@ $header-bg: #f8f9fa;
 $header-active-bg: #e2e6ea;
 
 .excel-container {
-  padding: 20px;
+  padding: 10px;
   overflow: auto;
   max-height: 600px;
   outline: none;
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
+
 .excel-table {
   display: inline-block;
   background: #fff;
@@ -873,9 +893,11 @@ $header-active-bg: #e2e6ea;
   border-top: 1px solid $border-color;
   user-select: none;
 }
+
 .excel-row {
   display: flex;
 }
+
 .excel-cell {
   border-right: 1px solid $border-color;
   border-bottom: 1px solid $border-color;
@@ -891,7 +913,7 @@ $header-active-bg: #e2e6ea;
   overflow: hidden; // 隐藏超出单元格的内容
 
   // 单元格内容样式
-  > span {
+  >span {
     overflow: hidden;
     width: 100%;
 
@@ -920,7 +942,7 @@ $header-active-bg: #e2e6ea;
   }
 
   // 输入框样式
-  > input {
+  >input {
     width: 100%;
     height: 100%;
   }
@@ -928,17 +950,20 @@ $header-active-bg: #e2e6ea;
   &.in-selection {
     background-color: $selection-bg;
   }
+
   &.active {
     background-color: #fff;
     box-shadow: inset 0 0 0 2px $primary-color;
     z-index: 10;
   }
+
   &.drag-target {
     background-color: rgba($primary-color, 0.1);
     border-bottom: 1px dashed $primary-color;
     border-right: 1px dashed $primary-color;
   }
 }
+
 .fill-handle {
   position: absolute;
   right: -4px;
@@ -950,6 +975,7 @@ $header-active-bg: #e2e6ea;
   cursor: crosshair;
   z-index: 20;
 }
+
 .header-cell,
 .row-number {
   background: $header-bg;
@@ -1021,10 +1047,10 @@ $header-active-bg: #e2e6ea;
 }
 
 .row-number {
-  min-height: 28px !important;
   align-items: center !important; // 确保垂直居中
   display: flex !important; // 确保 flex 布局生效
 }
+
 .cell-input {
   overflow: hidden;
   text-overflow: ellipsis;
