@@ -305,9 +305,9 @@ const getCellDisplayStyle = (rowIndex, colIndex) => {
   // 计算所需高度 (行数 * 行高 + 上下 padding 4px)
   const requiredHeight = linesNeeded * lineHeightPx + 4;
 
-  // 如果当前行高 >= 所需高度 -> 允许换行，顶部对齐
+  // 如果当前行高 >= 所需高度 -> 允许换行，垂直居中
   if (rowHeight >= requiredHeight) {
-    return { wrap: true, ellipsis: false, align: "flex-start" };
+    return { wrap: true, ellipsis: false, align: "center" };
   }
 
   // 情况 C: 空间实在不够 -> 强制单行省略，垂直居中
@@ -881,7 +881,7 @@ $header-active-bg: #e2e6ea;
   border-bottom: 1px solid $border-color;
   padding: 0 6px;
   display: flex;
-  // align-items 由 inline style 动态控制（单行居中，多行顶部对齐）
+  // align-items 由 inline style 动态控制（默认垂直居中）
   background: #fff;
   cursor: cell;
   position: relative;
