@@ -14,7 +14,7 @@
 
 ## 概述
 
-Excel 组件是一个功能完整的类 Excel 表格组件，支持单元格编辑、选择、复制粘贴、撤销重做、智能填充等功能。组件采用 Vue 3 Composition API 开发，通过 Composables 实现模块化设计，保证代码的可维护性和可复用性。
+Excel 组件是一个功能完整的类 Excel 表格组件，支持单元格编辑、选择、复制粘贴、撤销重做、智能填充、列宽调整等功能。组件采用 Vue 3 Composition API 开发，通过 Composables 实现模块化设计，保证代码的可维护性和可复用性。
 
 ### 设计原则
 
@@ -41,10 +41,14 @@ Excel.vue (组件)
 ├── useHistory (历史记录)
 │   ├── historyStack (历史栈)
 │   └── undo/redo 功能
-└── useKeyboard (键盘处理)
-    ├── 导航键处理
-    ├── 撤销/重做
-    └── 直接输入
+├── useKeyboard (键盘处理)
+│   ├── 导航键处理
+│   ├── 撤销/重做
+│   └── 直接输入
+└── useColumnWidth (列宽管理)
+    ├── columnWidths (列宽状态)
+    ├── 拖拽调整
+    └── 自适应列宽
 ```
 
 ### 数据流向
@@ -63,6 +67,7 @@ src/composables/Excel/
 ├── useSelection.js       # 选择逻辑
 ├── useHistory.js         # 历史记录
 ├── useKeyboard.js        # 键盘处理
+├── useColumnWidth.js     # 列宽管理
 └── useExcelExport.js     # Excel 导出（独立功能）
 
 src/Components/Common/
@@ -225,6 +230,57 @@ useKeyboard(context);
 }
 ```
 
+### useColumnWidth
+
+列宽管理 Composable，负责管理 Excel 组件的列宽功能。
+
+#### 参数
+
+```javascript
+useColumnWidth({
+  defaultWidth?: number,  // 默认列宽，默认 100
+  minWidth?: number,     // 最小列宽，默认 50
+  maxWidth?: number,     // 最大列宽，默认 500
+  colsCount?: number     // 列数，默认 10
+})
+```
+
+#### 返回值
+
+```typescript
+{
+  columnWidths: Ref<Map<number, number>>,  // 列宽映射表
+  isResizingColumn: Ref<boolean>,          // 是否正在调整列宽
+  resizingColumnIndex: Ref<number | null>, // 正在调整的列索引
+  getColumnWidth: (colIndex: number) => number,  // 获取列宽
+  startColumnResize: (colIndex: number, event: MouseEvent) => void,  // 开始调整列宽
+  handleColumnResize: (event: MouseEvent) => void,  // 处理列宽调整
+  stopColumnResize: () => void,  // 停止调整列宽
+  handleDoubleClickResize: (colIndex: number, columns: string[], tableData: string[][], rowsCount: number) => void,  // 双击自适应列宽
+  autoFitColumn: (colIndex: number, columns: string[], tableData: string[][], rowsCount: number) => void  // 自适应列宽
+}
+```
+
+#### 使用示例
+
+```javascript
+const {
+  getColumnWidth,
+  startColumnResize,
+  handleColumnResize,
+  stopColumnResize,
+  handleDoubleClickResize,
+  isResizingColumn,
+} = useColumnWidth({
+  colsCount: columns.value.length,
+});
+
+// 在模板中使用
+// :style="{ width: getColumnWidth(index) + 'px' }"
+// @mousedown.stop="startColumnResize(index, $event)"
+// @dblclick.stop="handleDoubleClickResize(index)"
+```
+
 ## 使用方法
 
 ### 基础使用
@@ -287,6 +343,8 @@ const exportData = () => {
 - [x] **智能填充**: 拖拽填充手柄自动递增
 - [x] **删除内容**: Delete / Backspace 删除选中内容
 - [x] **历史记录**: 自动保存操作历史
+- [x] **列宽调整**: 拖拽列边界调整列宽
+- [x] **自适应列宽**: 双击列边界自动适应内容宽度
 
 ### 🔄 智能填充算法
 
@@ -301,6 +359,24 @@ const exportData = () => {
 - **行分隔符**: `\n` (换行符)
 - **列分隔符**: `\t` (制表符)
 - **兼容性**: 兼容 Excel、Google Sheets 等
+
+### 📏 列宽管理
+
+组件支持灵活的列宽管理功能：
+
+1. **拖拽调整**: 将鼠标悬停在列边界（header 单元格右边界），出现 resizer 后拖拽调整列宽
+
+   - 最小列宽: 50px
+   - 最大列宽: 500px
+   - 默认列宽: 100px
+
+2. **双击自适应**: 双击列边界（resizer），自动根据该列的内容宽度调整列宽
+
+   - 会检查 header 文本宽度
+   - 会检查该列所有单元格的内容宽度
+   - 自动计算合适的列宽（包含边距）
+
+3. **手动触发**: 可以通过 `autoFitColumn` 方法手动触发自适应
 
 ## 键盘快捷键
 
@@ -338,6 +414,13 @@ const exportData = () => {
 ### 直接输入
 
 - 选中单元格后直接输入字符，会自动开始编辑并替换内容
+
+### 列宽操作
+
+| 操作         | 功能         |
+| ------------ | ------------ |
+| `拖拽列边界` | 手动调整列宽 |
+| `双击列边界` | 自动适应列宽 |
 
 ## 开发指南
 
@@ -495,9 +578,38 @@ const columns = ref(
 
 A: 减少 `MAX_HISTORY_SIZE` 或使用更高效的深拷贝方案。
 
+### Q: 如何自定义列宽范围？
+
+A: 在使用 `useColumnWidth` 时传入自定义参数：
+
+```javascript
+const { getColumnWidth } = useColumnWidth({
+  defaultWidth: 120, // 自定义默认列宽
+  minWidth: 60, // 自定义最小列宽
+  maxWidth: 600, // 自定义最大列宽
+  colsCount: columns.value.length,
+});
+```
+
+### Q: 列宽会自动适应内容吗？
+
+A: 不会自动适应。组件采用手动触发的方式：
+
+- **双击列边界**: 自动适应该列的内容宽度
+- **拖拽调整**: 手动调整到任意宽度
+
+这样设计可以避免频繁的自动调整影响用户体验，同时保留了按需自适应的功能。
+
 ## 更新日志
 
-### v1.0.0 (当前版本)
+### v1.1.0 (当前版本)
+
+- ✅ 新增列宽管理功能 (`useColumnWidth`)
+- ✅ 支持拖拽调整列宽
+- ✅ 支持双击列边界自适应列宽
+- ✅ 组件化重构，提取列宽管理逻辑
+
+### v1.0.0
 
 - ✅ 基础功能实现
 - ✅ 模块化重构
