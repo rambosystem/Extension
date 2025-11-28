@@ -34,10 +34,6 @@
         <div
           class="excel-cell row-number"
           :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }"
-          :style="{
-            height: getRowHeight(rowIndex) + 'px',
-            minHeight: getRowHeight(rowIndex) + 'px',
-          }"
         >
           {{ rowIndex + 1 }}
           <div
@@ -960,6 +956,7 @@ $header-active-bg: #e2e6ea;
   font-weight: 600;
   color: #666;
   justify-content: center;
+  align-items: center; // 确保垂直居中
   text-align: center;
   cursor: default;
 
@@ -1019,6 +1016,12 @@ $header-active-bg: #e2e6ea;
 .row-number {
   min-width: 40px;
   width: 40px;
+}
+
+.row-number {
+  min-height: 28px !important;
+  align-items: center !important; // 确保垂直居中
+  display: flex !important; // 确保 flex 布局生效
 }
 .cell-input {
   overflow: hidden;
