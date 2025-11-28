@@ -1070,3 +1070,18 @@ A: 通过 `enableFillHandle` prop 控制：
 2. 添加 JSDoc 注释
 3. 更新相关文档
 4. 确保无 linter 错误
+
+## 后续计划
+
+1. 渲染性能 (Rendering Performance)
+   - 现状：文档提到大数据量建议使用虚拟滚动，但组件似乎默认是渲染所有 DOM。
+   - 风险：当单元格数量超过 1000-2000 个（例如 50 行 x 40 列）时，Vue 的响应式系统加上大量的 DOM 节点（每个单元格可能有多个监听器和样式绑定）会导致显著的卡顿。
+   - 建议：如果这是为了生产环境，**Virtual Scrolling (虚拟滚动)** 几乎是必选项。
+2. 数据模型限制 (Data Model Limitations)
+   - 现状：数据结构是 `string[][]`。
+   - 风险：这限制了单元格只能存储文本。如果未来需要支持**单元格样式**（背景色、加粗）、**公式**（`=SUM(A1:B2)`）或**数据类型**（货币、日期），二维字符串数组将不再适用。
+   - **建议**：考虑将数据模型扩展为对象数组结构，例如 `CellData[][]`，其中 `CellData = { value: string, style?: Object, formula?: string }`。
+3. 深拷贝性能 (Deep Copy)
+   - 现状：历史记录和 `getData` 使用 JSON 序列化进行深拷贝。
+   - 风险：`JSON.parse(JSON.stringify(data))` 在频繁操作（如拖拽调整大小时触发）或数据量大时极其消耗 CPU。
+   - 建议：对于纯数据结构，可以使用 `structuredClone`（如果环境支持）或手动实现的浅拷贝/Immutable 更新策略来优化撤销/重做栈的性能。
