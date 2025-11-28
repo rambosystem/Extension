@@ -970,6 +970,8 @@ $header-active-bg: #e2e6ea;
 .header-cell {
   position: relative;
   user-select: none;
+  height: 28px; // 与默认行高一致
+  min-height: 28px;
 }
 
 .column-resizer {
