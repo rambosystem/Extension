@@ -2,11 +2,26 @@
   <el-container class="common-layout">
     <el-aside width="240px" class="sidebar">
       <div class="sidebar-header">
-        <img src="@/assets/icon.svg" alt="Logo" class="adguard-logo" draggable="false" />
+        <img
+          src="@/assets/icon.svg"
+          alt="Logo"
+          class="adguard-logo"
+          draggable="false"
+        />
       </div>
-      <el-menu :default-active="selectedMenu" class="sidebar-menu" @select="handleMenuSelect" background-color="#f8f8f8"
-        text-color="#333" active-text-color="#409EFF">
-        <el-menu-item v-for="item in menuConfig" :key="item.index" :index="item.index">
+      <el-menu
+        :default-active="selectedMenu"
+        class="sidebar-menu"
+        @select="handleMenuSelect"
+        background-color="#f8f8f8"
+        text-color="#333"
+        active-text-color="#409EFF"
+      >
+        <el-menu-item
+          v-for="item in menuConfig"
+          :key="item.index"
+          :index="item.index"
+        >
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
@@ -15,7 +30,11 @@
     <el-container>
       <el-main class="main-content">
         <div class="content-placeholder">
-          <component v-if="currentComponent" :is="currentComponent" :title="currentTitle" />
+          <component
+            v-if="currentComponent"
+            :is="currentComponent"
+            :title="currentTitle"
+          />
         </div>
       </el-main>
     </el-container>
@@ -26,6 +45,7 @@
 import { ref, onMounted, computed } from "vue";
 import Settings from "./Views/Settings.vue";
 import Translation from "./Views/Translation.vue";
+import Demo from "./Views/Demo.vue";
 
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
@@ -66,12 +86,18 @@ const menuConfig = computed(() => [
       `,
     },
   },
+  {
+    index: "4",
+    label: t("menu.demo"),
+    title: t("menu.demo"),
+    component: Demo,
+  },
 ]);
 
 // 选中的菜单项 - 使用store中的状态
 const selectedMenu = computed({
   get: () => appStore.currentMenu,
-  set: (value) => appStore.setCurrentMenu(value)
+  set: (value) => appStore.setCurrentMenu(value),
 });
 
 // 计算应该显示的组件

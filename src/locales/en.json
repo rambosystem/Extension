@@ -19,7 +19,8 @@
     "tools": "Tools",
     "translation": "Translation",
     "settings": "Settings",
-    "about": "About"
+    "about": "About",
+    "demo": "Demo"
   },
   "translation": {
     "title": "Translation",
