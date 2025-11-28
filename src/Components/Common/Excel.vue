@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { useHistory } from "../../composables/Excel/useHistory";
 import { useSelection } from "../../composables/Excel/useSelection";
 import { useExcelData } from "../../composables/Excel/useExcelData";
@@ -149,7 +149,20 @@ const props = defineProps({
     type: Number,
     default: 28,
   },
+  /**
+   * v-model 绑定的表格数据
+   * @type {string[][]}
+   */
+  modelValue: {
+    type: Array,
+    default: null,
+  },
 });
+
+/**
+ * 组件 Emits
+ */
+const emit = defineEmits(["update:modelValue", "change"]);
 
 // --- 1. 核心逻辑组合 ---
 const {
@@ -159,7 +172,13 @@ const {
   getSmartValue,
   generateClipboardText,
   parsePasteData,
-} = useExcelData();
+  setData,
+  getData,
+  updateCell,
+  clearData,
+} = useExcelData({
+  initialData: props.modelValue,
+});
 const {
   activeCell,
   selectionStart,
@@ -487,6 +506,7 @@ const stopEdit = () => {
 
   if (beforeEditSnapshot !== tableData.value[row][col]) {
     saveHistory(tableData.value); // 数据变动保存历史
+    // 数据变化会自动通过 watch 触发 notifyDataChange
   }
 
   editingCell.value = null;
@@ -638,7 +658,101 @@ const { handleKeydown } = useKeyboard({
   getMaxCols: () => columns.value.length,
 });
 
-// --- 9. 生命周期管理 ---
+// --- 9. 数据同步和监听 ---
+/**
+ * 通知外部数据变化
+ */
+const notifyDataChange = () => {
+  if (props.modelValue !== null) {
+    // 只有在使用 v-model 时才 emit
+    const data = getData();
+    emit("update:modelValue", data);
+  }
+  emit("change", getData());
+};
+
+// 监听内部数据变化（深度监听，使用 nextTick 避免频繁触发）
+let isUpdatingFromExternal = false;
+watch(
+  tableData,
+  () => {
+    if (!isUpdatingFromExternal) {
+      nextTick(() => {
+        notifyDataChange();
+      });
+    }
+  },
+  { deep: true }
+);
+
+// 监听外部数据变化（props.modelValue）
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue && Array.isArray(newValue) && newValue.length > 0) {
+      // 只有当外部数据真正变化时才更新（避免循环更新）
+      const currentData = JSON.stringify(getData());
+      const newData = JSON.stringify(newValue);
+      if (currentData !== newData) {
+        isUpdatingFromExternal = true;
+        setData(newValue);
+        nextTick(() => {
+          isUpdatingFromExternal = false;
+        });
+      }
+    }
+  },
+  { deep: true, immediate: false }
+);
+
+// --- 10. 暴露方法给父组件 ---
+defineExpose({
+  /**
+   * 获取表格数据
+   * @returns {string[][]} 表格数据的深拷贝
+   */
+  getData,
+  /**
+   * 设置表格数据
+   * @param {string[][]} data - 新的表格数据
+   */
+  setData: (data) => {
+    isUpdatingFromExternal = true;
+    setData(data);
+    nextTick(() => {
+      isUpdatingFromExternal = false;
+      notifyDataChange();
+    });
+  },
+  /**
+   * 更新单个单元格
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @param {string} value - 新值
+   */
+  updateCell: (row, col, value) => {
+    updateCell(row, col, value);
+    nextTick(() => {
+      notifyDataChange();
+    });
+  },
+  /**
+   * 清空表格数据
+   */
+  clearData: () => {
+    clearData();
+    nextTick(() => {
+      notifyDataChange();
+    });
+  },
+  /**
+   * 获取当前表格数据（响应式引用）
+   * @returns {Ref<string[][]>} 表格数据引用
+   */
+  tableData,
+});
+
+// --- 11. 生命周期管理 ---
 onMounted(() => {
   initHistory(tableData.value);
 });

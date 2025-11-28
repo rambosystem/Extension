@@ -11,8 +11,10 @@ import { DEFAULT_CONFIG, CLIPBOARD_SEPARATORS } from "./constants.js";
  * - 每个组件实例拥有独立的状态，保证组件的可复用性
  * - 这是通用组件的标准做法，符合组件化设计原则
  *
- * @param {number} rowsCount - 行数，默认 15
- * @param {number} colsCount - 列数，默认 10
+ * @param {Object} options - 配置选项
+ * @param {number} options.rowsCount - 行数，默认 15
+ * @param {number} options.colsCount - 列数，默认 10
+ * @param {string[][]} options.initialData - 初始数据，可选
  * @returns {Object} 返回数据和方法
  * @returns {import('vue').Ref<string[]>} returns.columns - 列标题数组
  * @returns {import('vue').Ref<number[]>} returns.rows - 行索引数组
@@ -20,21 +22,53 @@ import { DEFAULT_CONFIG, CLIPBOARD_SEPARATORS } from "./constants.js";
  * @returns {Function} returns.getSmartValue - 智能填充值计算函数
  * @returns {Function} returns.generateClipboardText - 生成剪贴板文本
  * @returns {Function} returns.parsePasteData - 解析粘贴数据
+ * @returns {Function} returns.setData - 设置表格数据
+ * @returns {Function} returns.getData - 获取表格数据
+ * @returns {Function} returns.updateCell - 更新单个单元格
+ * @returns {Function} returns.clearData - 清空表格数据
  */
-export function useExcelData(
+export function useExcelData({
   rowsCount = DEFAULT_CONFIG.ROWS_COUNT,
-  colsCount = DEFAULT_CONFIG.COLS_COUNT
-) {
+  colsCount = DEFAULT_CONFIG.COLS_COUNT,
+  initialData = null,
+} = {}) {
   // 基础数据生成
   const columns = ref(
     Array.from({ length: colsCount }, (_, i) => String.fromCharCode(65 + i))
   );
   const rows = ref(Array.from({ length: rowsCount }, (_, i) => i));
-  const tableData = ref(
-    Array.from({ length: rowsCount }, () =>
+
+  // 初始化表格数据
+  const initializeTableData = () => {
+    if (initialData && Array.isArray(initialData) && initialData.length > 0) {
+      // 使用初始数据，确保数据格式正确
+      const data = initialData.map((row) => {
+        if (Array.isArray(row)) {
+          // 确保每行的列数一致
+          const rowData = [...row];
+          while (rowData.length < colsCount) {
+            rowData.push("");
+          }
+          return rowData.slice(0, colsCount);
+        }
+        return Array.from({ length: colsCount }, () => "");
+      });
+
+      // 确保行数足够
+      while (data.length < rowsCount) {
+        data.push(Array.from({ length: colsCount }, () => ""));
+      }
+
+      return data.slice(0, rowsCount);
+    }
+
+    // 默认创建空表格
+    return Array.from({ length: rowsCount }, () =>
       Array.from({ length: colsCount }, () => "")
-    )
-  );
+    );
+  };
+
+  const tableData = ref(initializeTableData());
 
   /**
    * 智能填充算法
@@ -115,6 +149,74 @@ export function useExcelData(
     }
   };
 
+  /**
+   * 设置表格数据
+   * @param {string[][]} data - 新的表格数据
+   */
+  const setData = (data) => {
+    if (!data || !Array.isArray(data)) {
+      console.warn("setData: Invalid data format");
+      return;
+    }
+
+    // 确保数据格式正确
+    const normalizedData = data.map((row) => {
+      if (Array.isArray(row)) {
+        const rowData = [...row];
+        while (rowData.length < colsCount) {
+          rowData.push("");
+        }
+        return rowData.slice(0, colsCount);
+      }
+      return Array.from({ length: colsCount }, () => "");
+    });
+
+    // 确保行数足够
+    while (normalizedData.length < rowsCount) {
+      normalizedData.push(Array.from({ length: colsCount }, () => ""));
+    }
+
+    tableData.value = normalizedData.slice(0, rowsCount);
+  };
+
+  /**
+   * 获取表格数据
+   * @returns {string[][]} 表格数据的深拷贝
+   */
+  const getData = () => {
+    return JSON.parse(JSON.stringify(tableData.value));
+  };
+
+  /**
+   * 更新单个单元格
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @param {string} value - 新值
+   */
+  const updateCell = (row, col, value) => {
+    if (
+      row < 0 ||
+      row >= rowsCount ||
+      col < 0 ||
+      col >= colsCount ||
+      !tableData.value[row]
+    ) {
+      console.warn(`updateCell: Invalid position row=${row}, col=${col}`);
+      return;
+    }
+
+    tableData.value[row][col] = String(value ?? "");
+  };
+
+  /**
+   * 清空表格数据
+   */
+  const clearData = () => {
+    tableData.value = Array.from({ length: rowsCount }, () =>
+      Array.from({ length: colsCount }, () => "")
+    );
+  };
+
   return {
     columns,
     rows,
@@ -122,5 +224,9 @@ export function useExcelData(
     getSmartValue,
     generateClipboardText,
     parsePasteData,
+    setData,
+    getData,
+    updateCell,
+    clearData,
   };
 }

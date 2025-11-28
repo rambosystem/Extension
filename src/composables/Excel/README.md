@@ -93,11 +93,12 @@ src/Components/Common/
 #### 参数
 
 ```javascript
-useExcelData(rowsCount?, colsCount?)
+useExcelData({
+  rowsCount?: number,      // 行数，默认 15
+  colsCount?: number,      // 列数，默认 10
+  initialData?: string[][] // 初始数据，可选
+})
 ```
-
-- `rowsCount` (number, 可选): 行数，默认 15
-- `colsCount` (number, 可选): 列数，默认 10
 
 #### 返回值
 
@@ -109,12 +110,17 @@ useExcelData(rowsCount?, colsCount?)
   getSmartValue: (value: string, step: number) => string,  // 智能填充
   generateClipboardText: (range: Range, data: string[][]) => string,  // 生成剪贴板文本
   parsePasteData: (text: string) => string[][]  // 解析粘贴数据
+  setData: (data: string[][]) => void,  // 设置表格数据
+  getData: () => string[][],  // 获取表格数据（深拷贝）
+  updateCell: (row: number, col: number, value: string) => void,  // 更新单个单元格
+  clearData: () => void  // 清空表格数据
 }
 ```
 
 #### 示例
 
 ```javascript
+// 使用默认配置
 const {
   columns,
   rows,
@@ -122,7 +128,22 @@ const {
   getSmartValue,
   generateClipboardText,
   parsePasteData,
-} = useExcelData(20, 15); // 20 行 15 列
+} = useExcelData();
+
+// 自定义行数和列数
+const { tableData } = useExcelData({
+  rowsCount: 20,
+  colsCount: 15,
+});
+
+// 使用初始数据
+const { tableData } = useExcelData({
+  initialData: [
+    ["姓名", "年龄", "城市"],
+    ["张三", "25", "北京"],
+    ["李四", "30", "上海"],
+  ],
+});
 ```
 
 ### useSelection
@@ -354,6 +375,86 @@ import Excel from "@/Components/Common/Excel.vue";
 </script>
 ```
 
+### 数据管理
+
+#### 1. v-model 双向绑定
+
+```vue
+<template>
+  <Excel v-model="excelData" />
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+const excelData = ref([
+  ["姓名", "年龄", "城市"],
+  ["张三", "25", "北京"],
+  ["李四", "30", "上海"],
+]);
+</script>
+```
+
+#### 2. 初始数据 + 监听变化
+
+```vue
+<template>
+  <Excel :model-value="initialData" @change="handleDataChange" />
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+const initialData = ref([
+  ["产品", "价格", "库存"],
+  ["商品A", "100", "50"],
+]);
+
+const handleDataChange = (data) => {
+  console.log("数据变化:", data);
+};
+</script>
+```
+
+#### 3. 通过方法操作数据
+
+```vue
+<template>
+  <Excel ref="excelRef" />
+  <button @click="updateData">更新数据</button>
+  <button @click="getData">获取数据</button>
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+const excelRef = ref(null);
+
+const updateData = () => {
+  if (excelRef.value) {
+    // 更新单个单元格
+    excelRef.value.updateCell(0, 0, "新值");
+
+    // 或设置整个表格数据
+    excelRef.value.setData([
+      ["列1", "列2", "列3"],
+      ["数据1", "数据2", "数据3"],
+    ]);
+  }
+};
+
+const getData = () => {
+  if (excelRef.value) {
+    const data = excelRef.value.getData();
+    console.log("当前数据:", data);
+  }
+};
+</script>
+```
+
 ### Props 配置
 
 Excel 组件支持以下 props：
@@ -416,12 +517,31 @@ export const DEFAULT_CONFIG = {
 
 ### 访问组件数据
 
-如果需要访问组件内部数据，可以通过 ref：
+组件支持多种方式访问和操作数据：
+
+#### 方式 1: v-model 双向绑定
+
+```vue
+<template>
+  <Excel v-model="excelData" />
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+const excelData = ref([["数据"]]);
+// excelData 会自动与组件内部数据同步
+</script>
+```
+
+#### 方式 2: 通过 ref 调用方法
 
 ```vue
 <template>
   <Excel ref="excelRef" />
-  <button @click="exportData">导出数据</button>
+  <button @click="getData">获取数据</button>
+  <button @click="setData">设置数据</button>
 </template>
 
 <script setup>
@@ -430,12 +550,45 @@ import Excel from "@/Components/Common/Excel.vue";
 
 const excelRef = ref(null);
 
-const exportData = () => {
-  // 注意：由于组件未暴露数据，需要通过其他方式访问
-  // 建议通过事件或 props 传递数据
+const getData = () => {
+  const data = excelRef.value?.getData();
+  console.log("当前数据:", data);
+};
+
+const setData = () => {
+  excelRef.value?.setData([["新", "数据"]]);
 };
 </script>
 ```
+
+#### 方式 3: 监听 change 事件
+
+```vue
+<template>
+  <Excel @change="handleDataChange" />
+</template>
+
+<script setup>
+import Excel from "@/Components/Common/Excel.vue";
+
+const handleDataChange = (data) => {
+  console.log("数据变化:", data);
+  // 处理数据变化
+};
+</script>
+```
+
+### 暴露的方法
+
+通过 `ref` 可以调用以下方法：
+
+| 方法                          | 参数                                      | 返回值            | 说明                         |
+| ----------------------------- | ----------------------------------------- | ----------------- | ---------------------------- |
+| `getData()`                   | -                                         | `string[][]`      | 获取表格数据的深拷贝         |
+| `setData(data)`               | `data: string[][]`                        | `void`            | 设置整个表格数据             |
+| `updateCell(row, col, value)` | `row: number, col: number, value: string` | `void`            | 更新单个单元格               |
+| `clearData()`                 | -                                         | `void`            | 清空所有单元格数据           |
+| `tableData`                   | -                                         | `Ref<string[][]>` | 表格数据的响应式引用（只读） |
 
 ## 功能特性
 
@@ -686,12 +839,70 @@ A: 修改 `constants.js` 中的 `DEFAULT_CONFIG`，或直接修改 `useExcelData
 const { tableData } = useExcelData(20, 15); // 20 行 15 列
 ```
 
-### Q: 如何获取表格数据？
+### Q: 如何获取和设置表格数据？
 
-A: 组件内部数据未暴露，建议通过以下方式：
+A: 有多种方式可以管理表格数据：
 
-- 添加 `@change` 事件在数据变化时通知父组件
-- 使用 `ref` 访问组件实例（需要组件暴露数据）
+1. **使用 v-model 双向绑定**（推荐）：
+
+```vue
+<template>
+  <Excel v-model="excelData" />
+</template>
+<script setup>
+const excelData = ref([["数据"]]);
+// excelData 会自动与组件内部数据同步
+</script>
+```
+
+2. **通过 ref 调用方法**：
+
+```vue
+<template>
+  <Excel ref="excelRef" />
+  <button @click="getData">获取数据</button>
+  <button @click="setData">设置数据</button>
+</template>
+<script setup>
+const excelRef = ref(null);
+
+const getData = () => {
+  const data = excelRef.value?.getData();
+  console.log("当前数据:", data);
+};
+
+const setData = () => {
+  excelRef.value?.setData([["新", "数据"]]);
+};
+</script>
+```
+
+3. **监听 change 事件**：
+
+```vue
+<template>
+  <Excel @change="handleChange" />
+</template>
+<script setup>
+const handleChange = (data) => {
+  console.log("数据变化:", data);
+};
+</script>
+```
+
+4. **传入初始数据**：
+
+```vue
+<template>
+  <Excel :model-value="initialData" />
+</template>
+<script setup>
+const initialData = ref([
+  ["姓名", "年龄"],
+  ["张三", "25"],
+]);
+</script>
+```
 
 ### Q: 如何支持更多列（超过 26 列）？
 
