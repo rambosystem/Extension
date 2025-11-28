@@ -38,21 +38,60 @@ export function useRowHeight({
   };
 
   /**
+   * 计算文本真实显示宽度（区分全角和半角字符）
+   * @param {string} text - 文本内容
+   * @returns {number} 文本宽度（像素）
+   */
+  const getTextDisplayWidth = (text) => {
+    let width = 0;
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      // ASCII 字符 (英文/数字) 算 8.5px，其他 (汉字等) 算 13.5px
+      width += code < 256 ? 8.5 : 13.5;
+    }
+    return width;
+  };
+
+  /**
    * 计算单元格内容所需高度
    * @param {string} text - 单元格文本
+   * @param {number} columnWidth - 列宽（像素）
    * @param {number} baseHeight - 基础高度
    * @returns {number} 计算后的高度
    */
-  const calculateCellHeight = (text, baseHeight = defaultHeight) => {
+  const calculateCellHeight = (
+    text,
+    columnWidth,
+    baseHeight = defaultHeight
+  ) => {
     if (!text || typeof text !== "string") {
       return baseHeight;
     }
-    // 估算：每行文本约20px，加上padding 6px
-    // 计算换行数（假设单元格宽度为100px，每个字符约8px）
-    const charsPerLine = 12; // 估算每行字符数
-    const lines = Math.ceil(text.length / charsPerLine) || 1;
-    const estimatedHeight = lines * 20 + 6;
-    return Math.max(minHeight, Math.min(maxHeight, estimatedHeight));
+
+    // 基础样式参数 (需与 CSS 保持一致)
+    const paddingH = 13; // 左右 padding (6+6) + border/buffer (1)
+    const fontSize = 13;
+    const lineHeightRatio = 1.4; // CSS line-height
+    const lineHeightPx = fontSize * lineHeightRatio; // ~18.2px
+
+    // 计算文本内容的真实宽度
+    const textWidth = getTextDisplayWidth(text);
+    const availableWidth = columnWidth - paddingH;
+
+    // 如果列宽足够，单行显示
+    if (textWidth <= availableWidth) {
+      return baseHeight;
+    }
+
+    // 列宽不够，计算需要折多少行
+    const lineContentWidth = availableWidth - 2; // 保守计算减去一点右侧 buffer
+    const linesNeeded =
+      Math.ceil(textWidth / Math.max(lineContentWidth, 1)) || 1;
+
+    // 计算所需高度 (行数 * 行高 + 上下 padding 4px)
+    const requiredHeight = linesNeeded * lineHeightPx + 4;
+
+    return Math.max(minHeight, Math.min(maxHeight, requiredHeight));
   };
 
   /**
@@ -60,8 +99,9 @@ export function useRowHeight({
    * @param {number} rowIndex - 行索引
    * @param {string[][]} tableData - 表格数据
    * @param {number} colsCount - 列数
+   * @param {Function} getColumnWidth - 获取列宽的函数 (colIndex) => number
    */
-  const autoFitRow = (rowIndex, tableData, colsCount) => {
+  const autoFitRow = (rowIndex, tableData, colsCount, getColumnWidth) => {
     if (rowIndex < 0 || rowIndex >= rowsCount) {
       return;
     }
@@ -73,7 +113,9 @@ export function useRowHeight({
       for (let c = 0; c < colsCount; c++) {
         if (tableData[rowIndex][c] !== undefined) {
           const cellValue = String(tableData[rowIndex][c] || "");
-          const cellHeight = calculateCellHeight(cellValue);
+          // 获取当前列的实际宽度
+          const columnWidth = getColumnWidth ? getColumnWidth(c) : 100; // 默认100px
+          const cellHeight = calculateCellHeight(cellValue, columnWidth);
           maxHeight = Math.max(maxHeight, cellHeight);
         }
       }
@@ -130,9 +172,15 @@ export function useRowHeight({
    * @param {number} rowIndex - 行索引
    * @param {string[][]} tableData - 表格数据
    * @param {number} colsCount - 列数
+   * @param {Function} getColumnWidth - 获取列宽的函数 (colIndex) => number
    */
-  const handleDoubleClickResize = (rowIndex, tableData, colsCount) => {
-    autoFitRow(rowIndex, tableData, colsCount);
+  const handleDoubleClickResize = (
+    rowIndex,
+    tableData,
+    colsCount,
+    getColumnWidth
+  ) => {
+    autoFitRow(rowIndex, tableData, colsCount, getColumnWidth);
   };
 
   return {
