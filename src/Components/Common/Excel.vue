@@ -15,14 +15,10 @@
           :key="col"
           class="excel-cell header-cell"
           :class="{ 'active-header': isInSelectionHeader(index, 'col') }"
-          :style="
-            enableColumnResize
-              ? {
-                  width: getColumnWidth(index) + 'px',
-                  minWidth: getColumnWidth(index) + 'px',
-                }
-              : {}
-          "
+          :style="{
+            width: getColumnWidth(index) + 'px',
+            minWidth: getColumnWidth(index) + 'px',
+          }"
         >
           {{ col }}
           <div
@@ -38,8 +34,18 @@
         <div
           class="excel-cell row-number"
           :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }"
+          :style="{
+            height: getRowHeight(rowIndex) + 'px',
+            minHeight: getRowHeight(rowIndex) + 'px',
+          }"
         >
           {{ rowIndex + 1 }}
+          <div
+            v-if="enableRowResize"
+            class="row-resizer"
+            @mousedown.stop="startRowResize(rowIndex, $event)"
+            @dblclick.stop="handleDoubleClickRowResize(rowIndex)"
+          ></div>
         </div>
 
         <div
@@ -51,14 +57,12 @@
             'in-selection': isInSelection(rowIndex, colIndex),
             'drag-target': isInDragArea(rowIndex, colIndex),
           }"
-          :style="
-            enableColumnResize
-              ? {
-                  width: getColumnWidth(colIndex) + 'px',
-                  minWidth: getColumnWidth(colIndex) + 'px',
-                }
-              : {}
-          "
+          :style="{
+            width: getColumnWidth(colIndex) + 'px',
+            minWidth: getColumnWidth(colIndex) + 'px',
+            height: getRowHeight(rowIndex) + 'px',
+            minHeight: getRowHeight(rowIndex) + 'px',
+          }"
           @mousedown="handleCellMouseDown(rowIndex, colIndex)"
           @dblclick="startEdit(rowIndex, colIndex)"
           @mouseenter="handleMouseEnter(rowIndex, colIndex)"
@@ -97,6 +101,7 @@ import { useSelection } from "../../composables/Excel/useSelection";
 import { useExcelData } from "../../composables/Excel/useExcelData";
 import { useKeyboard } from "../../composables/Excel/useKeyboard";
 import { useColumnWidth } from "../../composables/Excel/useColumnWidth";
+import { useRowHeight } from "../../composables/Excel/useRowHeight";
 import { useFillHandle } from "../../composables/Excel/useFillHandle";
 import { DEFAULT_CONFIG } from "../../composables/Excel/constants.js";
 
@@ -119,6 +124,30 @@ const props = defineProps({
   enableFillHandle: {
     type: Boolean,
     default: true,
+  },
+  /**
+   * 禁用列宽调整时的固定列宽（像素）
+   * @type {number}
+   */
+  defaultColumnWidth: {
+    type: Number,
+    default: 100,
+  },
+  /**
+   * 是否启用行高调整功能
+   * @type {boolean}
+   */
+  enableRowResize: {
+    type: Boolean,
+    default: true,
+  },
+  /**
+   * 禁用行高调整时的固定行高（像素）
+   * @type {number}
+   */
+  defaultRowHeight: {
+    type: Number,
+    default: 28,
   },
 });
 
@@ -166,11 +195,25 @@ const columnWidthComposable = props.enableColumnResize
     })
   : null;
 
+// 行高管理（仅在启用时使用）
+const rowHeightComposable = props.enableRowResize
+  ? useRowHeight({
+      rowsCount: rows.value.length,
+    })
+  : null;
+
 const getColumnWidth = (colIndex) => {
   if (props.enableColumnResize && columnWidthComposable) {
     return columnWidthComposable.getColumnWidth(colIndex);
   }
-  return 100; // 默认列宽
+  return props.defaultColumnWidth; // 禁用列宽调整时使用固定值
+};
+
+const getRowHeight = (rowIndex) => {
+  if (props.enableRowResize && rowHeightComposable) {
+    return rowHeightComposable.getRowHeight(rowIndex);
+  }
+  return props.defaultRowHeight; // 禁用行高调整时使用固定值
 };
 
 const startColumnResizeBase = (colIndex, event) => {
@@ -188,6 +231,35 @@ const handleColumnResize = (event) => {
 const stopColumnResize = () => {
   if (props.enableColumnResize && columnWidthComposable) {
     columnWidthComposable.stopColumnResize();
+  }
+};
+
+// 行高调整相关函数
+const startRowResizeBase = (rowIndex, event) => {
+  if (props.enableRowResize && rowHeightComposable) {
+    rowHeightComposable.startRowResize(rowIndex, event);
+  }
+};
+
+const handleRowResize = (event) => {
+  if (props.enableRowResize && rowHeightComposable) {
+    rowHeightComposable.handleRowResize(event);
+  }
+};
+
+const stopRowResize = () => {
+  if (props.enableRowResize && rowHeightComposable) {
+    rowHeightComposable.stopRowResize();
+  }
+};
+
+const handleDoubleClickRowResizeBase = (rowIndex) => {
+  if (props.enableRowResize && rowHeightComposable) {
+    rowHeightComposable.handleDoubleClickResize(
+      rowIndex,
+      tableData.value,
+      columns.value.length
+    );
   }
 };
 
@@ -235,9 +307,15 @@ const handleMouseUp = () => {
   ) {
     stopColumnResize();
   }
+  if (props.enableRowResize && rowHeightComposable?.isResizingRow.value) {
+    stopRowResize();
+  }
   window.removeEventListener("mouseup", handleMouseUp);
   if (props.enableColumnResize) {
     window.removeEventListener("mousemove", handleColumnResize);
+  }
+  if (props.enableRowResize) {
+    window.removeEventListener("mousemove", handleRowResize);
   }
 };
 
@@ -289,6 +367,27 @@ const startColumnResize = (colIndex, event) => {
   startColumnResizeBase(colIndex, event);
   window.addEventListener("mousemove", handleColumnResize);
   window.addEventListener("mouseup", handleMouseUp);
+};
+
+/**
+ * 开始调整行高（包装函数，添加事件监听）
+ * @param {number} rowIndex - 行索引
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const startRowResize = (rowIndex, event) => {
+  if (!props.enableRowResize) return;
+  startRowResizeBase(rowIndex, event);
+  window.addEventListener("mousemove", handleRowResize);
+  window.addEventListener("mouseup", handleMouseUp);
+};
+
+/**
+ * 处理双击行边界自适应
+ * @param {number} rowIndex - 行索引
+ */
+const handleDoubleClickRowResize = (rowIndex) => {
+  if (!props.enableRowResize) return;
+  handleDoubleClickRowResizeBase(rowIndex);
 };
 
 /**
@@ -550,6 +649,9 @@ onUnmounted(() => {
   if (props.enableColumnResize) {
     window.removeEventListener("mousemove", handleColumnResize);
   }
+  if (props.enableRowResize) {
+    window.removeEventListener("mousemove", handleRowResize);
+  }
   // 清理输入框引用
   cellInputRefs.clear();
 });
@@ -581,7 +683,6 @@ $header-active-bg: #e2e6ea;
   display: flex;
 }
 .excel-cell {
-  height: 28px;
   border-right: 1px solid $border-color;
   border-bottom: 1px solid $border-color;
   padding: 0 6px;
@@ -659,6 +760,27 @@ $header-active-bg: #e2e6ea;
     background-color: rgba($primary-color, 0.5);
   }
 }
+
+.row-resizer {
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 6px;
+  cursor: row-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba($primary-color, 0.3);
+  }
+
+  &:active {
+    background-color: rgba($primary-color, 0.5);
+  }
+}
+
 .corner-cell,
 .row-number {
   min-width: 40px;

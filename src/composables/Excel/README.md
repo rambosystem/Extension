@@ -49,6 +49,10 @@ Excel.vue (组件)
 │   ├── columnWidths (列宽状态)
 │   ├── 拖拽调整
 │   └── 自适应列宽
+├── useRowHeight (行高管理)
+│   ├── rowHeights (行高状态)
+│   ├── 拖拽调整
+│   └── 自适应行高
 └── useFillHandle (智能填充)
     ├── 填充手柄显示
     ├── 拖拽填充
@@ -72,6 +76,7 @@ src/composables/Excel/
 ├── useHistory.js         # 历史记录
 ├── useKeyboard.js        # 键盘处理
 ├── useColumnWidth.js     # 列宽管理
+├── useRowHeight.js       # 行高管理
 ├── useFillHandle.js      # 智能填充
 └── useExcelExport.js     # Excel 导出（独立功能）
 
@@ -356,7 +361,10 @@ Excel 组件支持以下 props：
 | Prop                 | 类型      | 默认值 | 说明                                         |
 | -------------------- | --------- | ------ | -------------------------------------------- |
 | `enableColumnResize` | `boolean` | `true` | 是否启用列宽调整功能（拖拽调整和双击自适应） |
+| `enableRowResize`    | `boolean` | `true` | 是否启用行高调整功能（拖拽调整和双击自适应） |
 | `enableFillHandle`   | `boolean` | `true` | 是否启用智能填充功能（填充手柄和拖拽填充）   |
+| `defaultColumnWidth` | `number`  | `100`  | 禁用列宽调整时的固定列宽（像素）             |
+| `defaultRowHeight`   | `number`  | `28`   | 禁用行高调整时的固定行高（像素）             |
 
 #### 使用示例
 
@@ -365,14 +373,27 @@ Excel 组件支持以下 props：
   <!-- 启用所有功能（默认） -->
   <Excel />
 
-  <!-- 禁用列宽调整 -->
+  <!-- 禁用列宽调整（使用默认100px） -->
   <Excel :enable-column-resize="false" />
+
+  <!-- 禁用列宽调整（自定义120px） -->
+  <Excel :enable-column-resize="false" :default-column-width="120" />
+
+  <!-- 禁用行高调整（使用默认28px） -->
+  <Excel :enable-row-resize="false" />
+
+  <!-- 禁用行高调整（自定义40px） -->
+  <Excel :enable-row-resize="false" :default-row-height="40" />
 
   <!-- 禁用智能填充 -->
   <Excel :enable-fill-handle="false" />
 
   <!-- 禁用所有扩展功能 -->
-  <Excel :enable-column-resize="false" :enable-fill-handle="false" />
+  <Excel
+    :enable-column-resize="false"
+    :enable-row-resize="false"
+    :enable-fill-handle="false"
+  />
 </template>
 
 <script setup>
@@ -428,8 +449,10 @@ const exportData = () => {
 - [x] **智能填充**: 拖拽填充手柄自动递增（可选）
 - [x] **删除内容**: Delete / Backspace 删除选中内容
 - [x] **历史记录**: 自动保存操作历史
-- [x] **列宽调整**: 拖拽列边界调整列宽
-- [x] **自适应列宽**: 双击列边界自动适应内容宽度
+- [x] **列宽调整**: 拖拽列边界调整列宽（可选）
+- [x] **自适应列宽**: 双击列边界自动适应内容宽度（可选）
+- [x] **行高调整**: 拖拽行边界调整行高（可选）
+- [x] **自适应行高**: 双击行边界自动适应内容高度（可选）
 
 ### 🔄 智能填充算法
 
@@ -462,6 +485,23 @@ const exportData = () => {
    - 自动计算合适的列宽（包含边距）
 
 3. **手动触发**: 可以通过 `autoFitColumn` 方法手动触发自适应
+
+### 📐 行高管理
+
+组件支持灵活的行高管理功能：
+
+1. **拖拽调整**: 将鼠标悬停在行边界（行号单元格下边界），出现 resizer 后拖拽调整行高
+
+   - 最小行高: 20px
+   - 最大行高: 200px
+   - 默认行高: 28px
+
+2. **双击自适应**: 双击行边界（resizer），自动根据该行的内容高度调整行高
+
+   - 会检查该行所有单元格的内容高度
+   - 自动计算合适的行高（包含边距）
+
+3. **手动触发**: 可以通过 `autoFitRow` 方法手动触发自适应
 
 ## 键盘快捷键
 
@@ -506,6 +546,13 @@ const exportData = () => {
 | ------------ | ------------ |
 | `拖拽列边界` | 手动调整列宽 |
 | `双击列边界` | 自动适应列宽 |
+
+### 行高操作
+
+| 操作         | 功能         |
+| ------------ | ------------ |
+| `拖拽行边界` | 手动调整行高 |
+| `双击行边界` | 自动适应行高 |
 
 ## 开发指南
 
@@ -691,12 +738,31 @@ A: 通过 `enableColumnResize` prop 控制：
 
 ```vue
 <template>
-  <!-- 禁用列宽调整 -->
+  <!-- 禁用列宽调整（使用默认100px） -->
   <Excel :enable-column-resize="false" />
+
+  <!-- 禁用列宽调整（自定义固定宽度） -->
+  <Excel :enable-column-resize="false" :default-column-width="120" />
 </template>
 ```
 
-禁用后，列宽将使用默认的固定宽度（100px），不会显示 resizer，也无法进行拖拽或双击自适应操作。
+禁用后，列宽将使用固定宽度（默认 100px，可通过 `defaultColumnWidth` prop 自定义），不会显示 resizer，也无法进行拖拽或双击自适应操作。
+
+### Q: 如何禁用行高调整功能？
+
+A: 通过 `enableRowResize` prop 控制：
+
+```vue
+<template>
+  <!-- 禁用行高调整（使用默认28px） -->
+  <Excel :enable-row-resize="false" />
+
+  <!-- 禁用行高调整（自定义固定高度） -->
+  <Excel :enable-row-resize="false" :default-row-height="40" />
+</template>
+```
+
+禁用后，行高将使用固定高度（默认 28px，可通过 `defaultRowHeight` prop 自定义），不会显示 resizer，也无法进行拖拽或双击自适应操作。
 
 ### Q: 如何禁用智能填充功能？
 
