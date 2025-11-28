@@ -15,13 +15,18 @@
           :key="col"
           class="excel-cell header-cell"
           :class="{ 'active-header': isInSelectionHeader(index, 'col') }"
-          :style="{
-            width: getColumnWidth(index) + 'px',
-            minWidth: getColumnWidth(index) + 'px',
-          }"
+          :style="
+            enableColumnResize
+              ? {
+                  width: getColumnWidth(index) + 'px',
+                  minWidth: getColumnWidth(index) + 'px',
+                }
+              : {}
+          "
         >
           {{ col }}
           <div
+            v-if="enableColumnResize"
             class="column-resizer"
             @mousedown.stop="startColumnResize(index, $event)"
             @dblclick.stop="handleDoubleClickResize(index)"
@@ -46,10 +51,14 @@
             'in-selection': isInSelection(rowIndex, colIndex),
             'drag-target': isInDragArea(rowIndex, colIndex),
           }"
-          :style="{
-            width: getColumnWidth(colIndex) + 'px',
-            minWidth: getColumnWidth(colIndex) + 'px',
-          }"
+          :style="
+            enableColumnResize
+              ? {
+                  width: getColumnWidth(colIndex) + 'px',
+                  minWidth: getColumnWidth(colIndex) + 'px',
+                }
+              : {}
+          "
           @mousedown="handleCellMouseDown(rowIndex, colIndex)"
           @dblclick="startEdit(rowIndex, colIndex)"
           @mouseenter="handleMouseEnter(rowIndex, colIndex)"
@@ -67,7 +76,11 @@
           <span v-else>{{ tableData[rowIndex][colIndex] }}</span>
 
           <div
-            v-if="shouldShowHandle(rowIndex, colIndex) && !editingCell"
+            v-if="
+              enableFillHandle &&
+              shouldShowHandle(rowIndex, colIndex) &&
+              !editingCell
+            "
             class="fill-handle"
             @mousedown.stop="startFillDrag(rowIndex, colIndex)"
           ></div>
@@ -84,7 +97,30 @@ import { useSelection } from "../../composables/Excel/useSelection";
 import { useExcelData } from "../../composables/Excel/useExcelData";
 import { useKeyboard } from "../../composables/Excel/useKeyboard";
 import { useColumnWidth } from "../../composables/Excel/useColumnWidth";
+import { useFillHandle } from "../../composables/Excel/useFillHandle";
 import { DEFAULT_CONFIG } from "../../composables/Excel/constants.js";
+
+/**
+ * 组件 Props
+ */
+const props = defineProps({
+  /**
+   * 是否启用列宽调整功能
+   * @type {boolean}
+   */
+  enableColumnResize: {
+    type: Boolean,
+    default: true,
+  },
+  /**
+   * 是否启用智能填充功能
+   * @type {boolean}
+   */
+  enableFillHandle: {
+    type: Boolean,
+    default: true,
+  },
+});
 
 // --- 1. 核心逻辑组合 ---
 const {
@@ -115,17 +151,116 @@ const {
   redo: redoHistory,
 } = useHistory();
 
-// 列宽管理
-const {
-  getColumnWidth,
-  startColumnResize: startColumnResizeBase,
-  handleColumnResize,
-  stopColumnResize,
-  handleDoubleClickResize: handleDoubleClickResizeBase,
-  isResizingColumn,
-} = useColumnWidth({
-  colsCount: columns.value.length,
-});
+// 智能填充管理（仅在启用时使用）
+const fillHandleComposable = props.enableFillHandle
+  ? useFillHandle({
+      getSmartValue,
+      saveHistory,
+    })
+  : null;
+
+// 列宽管理（仅在启用时使用）
+const columnWidthComposable = props.enableColumnResize
+  ? useColumnWidth({
+      colsCount: columns.value.length,
+    })
+  : null;
+
+const getColumnWidth = (colIndex) => {
+  if (props.enableColumnResize && columnWidthComposable) {
+    return columnWidthComposable.getColumnWidth(colIndex);
+  }
+  return 100; // 默认列宽
+};
+
+const startColumnResizeBase = (colIndex, event) => {
+  if (props.enableColumnResize && columnWidthComposable) {
+    columnWidthComposable.startColumnResize(colIndex, event);
+  }
+};
+
+const handleColumnResize = (event) => {
+  if (props.enableColumnResize && columnWidthComposable) {
+    columnWidthComposable.handleColumnResize(event);
+  }
+};
+
+const stopColumnResize = () => {
+  if (props.enableColumnResize && columnWidthComposable) {
+    columnWidthComposable.stopColumnResize();
+  }
+};
+
+// 智能填充相关函数
+const applyFill = () => {
+  if (!props.enableFillHandle || !fillHandleComposable) return;
+  fillHandleComposable.applyFill(
+    tableData.value,
+    rows.value.length,
+    columns.value.length
+  );
+};
+
+const shouldShowHandle = (row, col) => {
+  if (!props.enableFillHandle || !fillHandleComposable) return false;
+  return fillHandleComposable.shouldShowHandle(
+    row,
+    col,
+    normalizedSelection.value
+  );
+};
+
+const handleFillDragEnter = (row, col) => {
+  if (!props.enableFillHandle || !fillHandleComposable) return;
+  fillHandleComposable.handleFillDragEnter(row, col);
+};
+
+const isInDragArea = (row, col) => {
+  if (!props.enableFillHandle || !fillHandleComposable) return false;
+  return fillHandleComposable.isInDragArea(row, col);
+};
+
+// --- 4. 鼠标事件处理 ---
+/**
+ * 处理鼠标抬起事件
+ */
+const handleMouseUp = () => {
+  isSelecting.value = false;
+  if (props.enableFillHandle && fillHandleComposable?.isDraggingFill.value) {
+    applyFill();
+  }
+  if (
+    props.enableColumnResize &&
+    columnWidthComposable?.isResizingColumn.value
+  ) {
+    stopColumnResize();
+  }
+  window.removeEventListener("mouseup", handleMouseUp);
+  if (props.enableColumnResize) {
+    window.removeEventListener("mousemove", handleColumnResize);
+  }
+};
+
+const startFillDrag = (row, col) => {
+  if (!props.enableFillHandle || !fillHandleComposable) return;
+  fillHandleComposable.startFillDrag(
+    row,
+    col,
+    normalizedSelection.value,
+    handleMouseUp
+  );
+};
+
+const handleDoubleClickResizeBase = (colIndex) => {
+  if (props.enableColumnResize && columnWidthComposable) {
+    columnWidthComposable.handleDoubleClickResize(
+      colIndex,
+      columns.value,
+      tableData.value,
+      rows.value.length
+    );
+  }
+};
 
 // --- 2. 状态管理 ---
 const containerRef = ref(null);
@@ -144,18 +279,13 @@ const setInputRef = (el, row, col) => {
 const isEditing = (row, col) =>
   editingCell.value?.row === row && editingCell.value?.col === col;
 
-const shouldShowHandle = (row, col) => {
-  const range = normalizedSelection.value;
-  if (!range) return false;
-  return row === range.maxRow && col === range.maxCol;
-};
-
 /**
  * 开始调整列宽（包装函数，添加事件监听）
  * @param {number} colIndex - 列索引
  * @param {MouseEvent} event - 鼠标事件
  */
 const startColumnResize = (colIndex, event) => {
+  if (!props.enableColumnResize) return;
   startColumnResizeBase(colIndex, event);
   window.addEventListener("mousemove", handleColumnResize);
   window.addEventListener("mouseup", handleMouseUp);
@@ -166,12 +296,8 @@ const startColumnResize = (colIndex, event) => {
  * @param {number} colIndex - 列索引
  */
 const handleDoubleClickResize = (colIndex) => {
-  handleDoubleClickResizeBase(
-    colIndex,
-    columns.value,
-    tableData.value,
-    rows.value.length
-  );
+  if (!props.enableColumnResize) return;
+  handleDoubleClickResizeBase(colIndex);
 };
 
 // --- 4. 交互逻辑 (鼠标 & 编辑) ---
@@ -209,17 +335,12 @@ const handleCellMouseDown = (row, col) => {
 const handleMouseEnter = (row, col) => {
   if (isSelecting.value) {
     updateSelectionEnd(row, col);
-  } else if (isDraggingFill.value) {
+  } else if (
+    props.enableFillHandle &&
+    fillHandleComposable?.isDraggingFill.value
+  ) {
     handleFillDragEnter(row, col);
   }
-};
-
-const handleMouseUp = () => {
-  isSelecting.value = false;
-  if (isDraggingFill.value) applyFill();
-  if (isResizingColumn.value) stopColumnResize();
-  window.removeEventListener("mouseup", handleMouseUp);
-  window.removeEventListener("mousemove", handleColumnResize);
 };
 
 /**
@@ -309,70 +430,7 @@ const handleInputTab = (event) => {
 // --- 5. 列宽调整逻辑 ---
 
 // --- 6. 拖拽填充逻辑 (Drag Fill) ---
-const isDraggingFill = ref(false);
-const dragStartCell = ref(null);
-const dragEndCell = ref(null);
-
-const startFillDrag = (row, col) => {
-  const range = normalizedSelection.value;
-  if (!range) return;
-  isDraggingFill.value = true;
-  dragStartCell.value = { row: range.maxRow, col }; // 从选区底部开始
-  dragEndCell.value = { row, col };
-  window.addEventListener("mouseup", handleMouseUp);
-};
-
-const handleFillDragEnter = (row, col) => {
-  if (!dragStartCell.value) return;
-  if (col === dragStartCell.value.col && row >= dragStartCell.value.row) {
-    dragEndCell.value = { row, col };
-  }
-};
-
-const isInDragArea = (row, col) => {
-  if (!isDraggingFill.value || !dragStartCell.value || !dragEndCell.value)
-    return false;
-  return (
-    col === dragStartCell.value.col &&
-    row > dragStartCell.value.row &&
-    row <= dragEndCell.value.row
-  );
-};
-
-/**
- * 应用填充操作
- */
-const applyFill = () => {
-  if (!isDraggingFill.value || !dragStartCell.value || !dragEndCell.value) {
-    return;
-  }
-
-  const start = dragStartCell.value;
-  const end = dragEndCell.value;
-
-  if (end.row > start.row) {
-    saveHistory(tableData.value); // 填充前保存
-    const baseValue = tableData.value[start.row]?.[start.col] ?? "";
-    const colIndex = start.col;
-
-    // 边界检查
-    if (colIndex < 0 || colIndex >= columns.value.length) {
-      console.warn(`Invalid column index: ${colIndex}`);
-      return;
-    }
-
-    for (let r = start.row + 1; r <= end.row; r++) {
-      if (r >= 0 && r < rows.value.length) {
-        tableData.value[r][colIndex] = getSmartValue(baseValue, r - start.row);
-      }
-    }
-  }
-
-  // 清理状态
-  isDraggingFill.value = false;
-  dragStartCell.value = null;
-  dragEndCell.value = null;
-};
+// 已在上面定义，使用 fillHandleComposable
 
 // --- 7. 剪贴板逻辑 ---
 /**
@@ -489,7 +547,9 @@ onMounted(() => {
 onUnmounted(() => {
   // 清理事件监听器，防止内存泄漏
   window.removeEventListener("mouseup", handleMouseUp);
-  window.removeEventListener("mousemove", handleColumnResize);
+  if (props.enableColumnResize) {
+    window.removeEventListener("mousemove", handleColumnResize);
+  }
   // 清理输入框引用
   cellInputRefs.clear();
 });

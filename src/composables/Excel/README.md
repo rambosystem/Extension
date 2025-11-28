@@ -45,10 +45,14 @@ Excel.vue (组件)
 │   ├── 导航键处理
 │   ├── 撤销/重做
 │   └── 直接输入
-└── useColumnWidth (列宽管理)
-    ├── columnWidths (列宽状态)
-    ├── 拖拽调整
-    └── 自适应列宽
+├── useColumnWidth (列宽管理)
+│   ├── columnWidths (列宽状态)
+│   ├── 拖拽调整
+│   └── 自适应列宽
+└── useFillHandle (智能填充)
+    ├── 填充手柄显示
+    ├── 拖拽填充
+    └── 智能值计算
 ```
 
 ### 数据流向
@@ -68,6 +72,7 @@ src/composables/Excel/
 ├── useHistory.js         # 历史记录
 ├── useKeyboard.js        # 键盘处理
 ├── useColumnWidth.js     # 列宽管理
+├── useFillHandle.js      # 智能填充
 └── useExcelExport.js     # Excel 导出（独立功能）
 
 src/Components/Common/
@@ -281,6 +286,55 @@ const {
 // @dblclick.stop="handleDoubleClickResize(index)"
 ```
 
+### useFillHandle
+
+智能填充管理 Composable，负责管理 Excel 组件的智能填充功能。
+
+#### 参数
+
+```javascript
+useFillHandle({
+  getSmartValue: Function, // 智能值计算函数
+  saveHistory: Function, // 保存历史记录函数
+});
+```
+
+#### 返回值
+
+```typescript
+{
+  isDraggingFill: Ref<boolean>,  // 是否正在拖拽填充
+  dragStartCell: Ref<{ row: number, col: number } | null>,  // 拖拽起始单元格
+  dragEndCell: Ref<{ row: number, col: number } | null>,  // 拖拽结束单元格
+  shouldShowHandle: (row: number, col: number, normalizedSelection: Range | null) => boolean,  // 是否显示填充手柄
+  startFillDrag: (row: number, col: number, normalizedSelection: Range | null, onMouseUp: Function) => void,  // 开始填充拖拽
+  handleFillDragEnter: (row: number, col: number) => void,  // 处理填充拖拽进入
+  isInDragArea: (row: number, col: number) => boolean,  // 是否在拖拽填充区域内
+  applyFill: (tableData: string[][], maxRows: number, maxCols: number) => void,  // 应用填充操作
+  cleanup: () => void  // 清理填充状态
+}
+```
+
+#### 使用示例
+
+```javascript
+const {
+  shouldShowHandle,
+  startFillDrag,
+  handleFillDragEnter,
+  isInDragArea,
+  applyFill,
+  isDraggingFill,
+} = useFillHandle({
+  getSmartValue,
+  saveHistory,
+});
+
+// 在模板中使用
+// v-if="shouldShowHandle(rowIndex, colIndex) && !editingCell"
+// @mousedown.stop="startFillDrag(rowIndex, colIndex)"
+```
+
 ## 使用方法
 
 ### 基础使用
@@ -288,6 +342,37 @@ const {
 ```vue
 <template>
   <Excel />
+</template>
+
+<script setup>
+import Excel from "@/Components/Common/Excel.vue";
+</script>
+```
+
+### Props 配置
+
+Excel 组件支持以下 props：
+
+| Prop                 | 类型      | 默认值 | 说明                                         |
+| -------------------- | --------- | ------ | -------------------------------------------- |
+| `enableColumnResize` | `boolean` | `true` | 是否启用列宽调整功能（拖拽调整和双击自适应） |
+| `enableFillHandle`   | `boolean` | `true` | 是否启用智能填充功能（填充手柄和拖拽填充）   |
+
+#### 使用示例
+
+```vue
+<template>
+  <!-- 启用所有功能（默认） -->
+  <Excel />
+
+  <!-- 禁用列宽调整 -->
+  <Excel :enable-column-resize="false" />
+
+  <!-- 禁用智能填充 -->
+  <Excel :enable-fill-handle="false" />
+
+  <!-- 禁用所有扩展功能 -->
+  <Excel :enable-column-resize="false" :enable-fill-handle="false" />
 </template>
 
 <script setup>
@@ -340,7 +425,7 @@ const exportData = () => {
 - [x] **键盘导航**: 方向键、Tab、Enter 导航
 - [x] **复制粘贴**: 支持多单元格复制粘贴
 - [x] **撤销重做**: Ctrl+Z / Ctrl+Y
-- [x] **智能填充**: 拖拽填充手柄自动递增
+- [x] **智能填充**: 拖拽填充手柄自动递增（可选）
 - [x] **删除内容**: Delete / Backspace 删除选中内容
 - [x] **历史记录**: 自动保存操作历史
 - [x] **列宽调整**: 拖拽列边界调整列宽
@@ -600,14 +685,47 @@ A: 不会自动适应。组件采用手动触发的方式：
 
 这样设计可以避免频繁的自动调整影响用户体验，同时保留了按需自适应的功能。
 
+### Q: 如何禁用列宽调整功能？
+
+A: 通过 `enableColumnResize` prop 控制：
+
+```vue
+<template>
+  <!-- 禁用列宽调整 -->
+  <Excel :enable-column-resize="false" />
+</template>
+```
+
+禁用后，列宽将使用默认的固定宽度（100px），不会显示 resizer，也无法进行拖拽或双击自适应操作。
+
+### Q: 如何禁用智能填充功能？
+
+A: 通过 `enableFillHandle` prop 控制：
+
+```vue
+<template>
+  <!-- 禁用智能填充 -->
+  <Excel :enable-fill-handle="false" />
+</template>
+```
+
+禁用后，不会显示填充手柄，也无法进行拖拽填充操作。
+
 ## 更新日志
 
-### v1.1.0 (当前版本)
+### v1.2.0 (当前版本)
+
+- ✅ 新增智能填充管理功能 (`useFillHandle`)
+- ✅ 组件化重构，提取智能填充逻辑
+- ✅ 添加 `enableFillHandle` prop，支持可选启用/禁用智能填充功能（默认启用）
+
+### v1.1.0
 
 - ✅ 新增列宽管理功能 (`useColumnWidth`)
 - ✅ 支持拖拽调整列宽
 - ✅ 支持双击列边界自适应列宽
 - ✅ 组件化重构，提取列宽管理逻辑
+- ✅ 添加 `enableColumnResize` prop，支持可选启用/禁用列宽功能（默认启用）
 
 ### v1.0.0
 
@@ -623,12 +741,3 @@ A: 不会自动适应。组件采用手动触发的方式：
 2. 添加 JSDoc 注释
 3. 更新相关文档
 4. 确保无 linter 错误
-
-## 许可证
-
-本项目遵循项目主许可证。
-
----
-
-**最后更新**: 2024 年
-**维护者**: 开发团队
