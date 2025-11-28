@@ -15,8 +15,17 @@
           :key="col"
           class="excel-cell header-cell"
           :class="{ 'active-header': isInSelectionHeader(index, 'col') }"
+          :style="{
+            width: getColumnWidth(index) + 'px',
+            minWidth: getColumnWidth(index) + 'px',
+          }"
         >
           {{ col }}
+          <div
+            class="column-resizer"
+            @mousedown.stop="startColumnResize(index, $event)"
+            @dblclick.stop="handleDoubleClickResize(index)"
+          ></div>
         </div>
       </div>
 
@@ -36,6 +45,10 @@
             active: isActive(rowIndex, colIndex),
             'in-selection': isInSelection(rowIndex, colIndex),
             'drag-target': isInDragArea(rowIndex, colIndex),
+          }"
+          :style="{
+            width: getColumnWidth(colIndex) + 'px',
+            minWidth: getColumnWidth(colIndex) + 'px',
           }"
           @mousedown="handleCellMouseDown(rowIndex, colIndex)"
           @dblclick="startEdit(rowIndex, colIndex)"
@@ -70,6 +83,7 @@ import { useHistory } from "../../composables/Excel/useHistory";
 import { useSelection } from "../../composables/Excel/useSelection";
 import { useExcelData } from "../../composables/Excel/useExcelData";
 import { useKeyboard } from "../../composables/Excel/useKeyboard";
+import { useColumnWidth } from "../../composables/Excel/useColumnWidth";
 import { DEFAULT_CONFIG } from "../../composables/Excel/constants.js";
 
 // --- 1. 核心逻辑组合 ---
@@ -101,6 +115,18 @@ const {
   redo: redoHistory,
 } = useHistory();
 
+// 列宽管理
+const {
+  getColumnWidth,
+  startColumnResize: startColumnResizeBase,
+  handleColumnResize,
+  stopColumnResize,
+  handleDoubleClickResize: handleDoubleClickResizeBase,
+  isResizingColumn,
+} = useColumnWidth({
+  colsCount: columns.value.length,
+});
+
 // --- 2. 状态管理 ---
 const containerRef = ref(null);
 const editingCell = ref(null); // { row, col }
@@ -122,6 +148,30 @@ const shouldShowHandle = (row, col) => {
   const range = normalizedSelection.value;
   if (!range) return false;
   return row === range.maxRow && col === range.maxCol;
+};
+
+/**
+ * 开始调整列宽（包装函数，添加事件监听）
+ * @param {number} colIndex - 列索引
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const startColumnResize = (colIndex, event) => {
+  startColumnResizeBase(colIndex, event);
+  window.addEventListener("mousemove", handleColumnResize);
+  window.addEventListener("mouseup", handleMouseUp);
+};
+
+/**
+ * 处理双击列边界自适应
+ * @param {number} colIndex - 列索引
+ */
+const handleDoubleClickResize = (colIndex) => {
+  handleDoubleClickResizeBase(
+    colIndex,
+    columns.value,
+    tableData.value,
+    rows.value.length
+  );
 };
 
 // --- 4. 交互逻辑 (鼠标 & 编辑) ---
@@ -167,7 +217,9 @@ const handleMouseEnter = (row, col) => {
 const handleMouseUp = () => {
   isSelecting.value = false;
   if (isDraggingFill.value) applyFill();
+  if (isResizingColumn.value) stopColumnResize();
   window.removeEventListener("mouseup", handleMouseUp);
+  window.removeEventListener("mousemove", handleColumnResize);
 };
 
 /**
@@ -254,7 +306,9 @@ const handleInputTab = (event) => {
   nextTick(() => containerRef.value?.focus());
 };
 
-// --- 5. 拖拽填充逻辑 (Drag Fill) ---
+// --- 5. 列宽调整逻辑 ---
+
+// --- 6. 拖拽填充逻辑 (Drag Fill) ---
 const isDraggingFill = ref(false);
 const dragStartCell = ref(null);
 const dragEndCell = ref(null);
@@ -320,7 +374,7 @@ const applyFill = () => {
   dragEndCell.value = null;
 };
 
-// --- 6. 剪贴板逻辑 ---
+// --- 7. 剪贴板逻辑 ---
 /**
  * 处理复制操作
  *
@@ -394,7 +448,7 @@ const handlePaste = (event) => {
   }
 };
 
-// --- 7. 键盘主逻辑 ---
+// --- 8. 键盘主逻辑 ---
 /**
  * 删除选区内容
  *
@@ -427,7 +481,7 @@ const { handleKeydown } = useKeyboard({
   getMaxCols: () => columns.value.length,
 });
 
-// --- 8. 生命周期管理 ---
+// --- 9. 生命周期管理 ---
 onMounted(() => {
   initHistory(tableData.value);
 });
@@ -435,6 +489,7 @@ onMounted(() => {
 onUnmounted(() => {
   // 清理事件监听器，防止内存泄漏
   window.removeEventListener("mouseup", handleMouseUp);
+  window.removeEventListener("mousemove", handleColumnResize);
   // 清理输入框引用
   cellInputRefs.clear();
 });
@@ -466,8 +521,6 @@ $header-active-bg: #e2e6ea;
   display: flex;
 }
 .excel-cell {
-  min-width: 100px;
-  width: 100px;
   height: 28px;
   border-right: 1px solid $border-color;
   border-bottom: 1px solid $border-color;
@@ -479,6 +532,7 @@ $header-active-bg: #e2e6ea;
   position: relative;
   box-sizing: border-box;
   color: #333;
+  flex-shrink: 0;
 
   &.in-selection {
     background-color: $selection-bg;
@@ -518,6 +572,31 @@ $header-active-bg: #e2e6ea;
     background: $header-active-bg;
     color: $primary-color;
     font-weight: bold;
+  }
+}
+
+.header-cell {
+  position: relative;
+  user-select: none;
+}
+
+.column-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba($primary-color, 0.3);
+  }
+
+  &:active {
+    background-color: rgba($primary-color, 0.5);
   }
 }
 .corner-cell,
