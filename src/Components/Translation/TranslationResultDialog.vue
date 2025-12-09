@@ -175,9 +175,12 @@ const calculatedColumnWidth = computed(() => {
   // 精确计算可用宽度：
   // - excel-container 左右 padding: 10px * 2 = 20px
   // - 行号列宽度: 40px
+  // - 垂直滚动条宽度: 17px（预留，避免最右边列被遮挡）
   const containerPadding = 20; // excel-container 左右 padding
   const rowNumberWidth = 40; // 行号列宽度
-  const availableWidth = actualDialogWidth - containerPadding - rowNumberWidth;
+  const scrollbarWidth = 17; // 垂直滚动条宽度
+  const availableWidth =
+    actualDialogWidth - containerPadding - rowNumberWidth - scrollbarWidth;
 
   // Key列固定宽度
   const keyColumnWidth = 120;
