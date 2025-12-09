@@ -35,12 +35,7 @@
     </template>
     <el-form label-position="top">
       <el-form-item>
-        <div
-          ref="excelWrapperRef"
-          v-loading="translationCoreStore.loadingStates.translation"
-          :element-loading-text="translationCoreStore.getStatusText()"
-          class="excel-wrapper"
-        >
+        <div ref="excelWrapperRef" class="excel-wrapper">
           <Excel
             ref="excelRef"
             v-model="excelData"

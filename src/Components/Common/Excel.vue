@@ -157,7 +157,7 @@ const props = defineProps({
    */
   defaultRowHeight: {
     type: Number,
-    default: 28,
+    default: 36,
   },
   /**
    * v-model 绑定的表格数据
@@ -1140,12 +1140,18 @@ $cell-hover-bg: #f5f7fa;
   position: absolute;
   right: -4px;
   bottom: -4px;
-  width: 7px;
-  height: 7px;
-  background-color: $primary-color;
+  width: 6px;
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.15);
   border: 1px solid #fff;
+  border-radius: 3px;
   cursor: crosshair;
   z-index: 20;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.25);
+  }
 }
 
 .header-cell,
@@ -1170,8 +1176,8 @@ $cell-hover-bg: #f5f7fa;
 .header-cell {
   position: relative;
   user-select: none;
-  height: 28px; // 与默认行高一致
-  min-height: 28px;
+  height: 36px; // 与默认行高一致
+  min-height: 36px;
 }
 
 .column-resizer {
