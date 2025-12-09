@@ -987,11 +987,17 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-$border-color: #d0d7e5;
-$primary-color: #4a90e2;
-$selection-bg: rgba(74, 144, 226, 0.15);
-$header-bg: #f8f9fa;
-$header-active-bg: #e2e6ea;
+// 现代化的颜色方案
+$border-color: #e4e7ed;
+$primary-color: #409eff;
+$selection-bg: rgba(64, 158, 255, 0.12);
+$header-bg: #f5f7fa;
+$header-active-bg: #e4e7ed;
+$text-primary: #303133;
+$text-secondary: #606266;
+$text-placeholder: #909399;
+$cell-bg: #ffffff;
+$cell-hover-bg: #f5f7fa;
 
 .excel-container {
   padding: 10px;
@@ -999,7 +1005,9 @@ $header-active-bg: #e2e6ea;
   overflow-x: hidden;
   max-height: 600px;
   outline: none;
-  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   width: 100%;
   box-sizing: border-box;
 }
@@ -1007,14 +1015,45 @@ $header-active-bg: #e2e6ea;
 .excel-table {
   display: block;
   background: #fff;
-  font-size: 13px;
-  border-left: 1px solid $border-color;
-  border-top: 1px solid $border-color;
+  font-size: 14px;
+  border-radius: 8px;
+  overflow: hidden;
   user-select: none;
   width: 100%;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+
+  // 添加外边框：第一行顶部和第一列左侧
+  // 注意：每个单元格已有右边框和底边框，最后一列和最后一行不需要额外处理
+  .excel-row:first-child {
+    .excel-cell {
+      border-top: 1px solid $border-color;
+    }
+    // 左上角和右上角圆角
+    .excel-cell:first-child {
+      border-top-left-radius: 8px;
+    }
+    .excel-cell:last-child {
+      border-top-right-radius: 8px;
+    }
+  }
+
+  .excel-row {
+    .excel-cell:first-child {
+      border-left: 1px solid $border-color;
+    }
+  }
+
+  // 左下角和右下角圆角
+  .excel-row:last-child {
+    .excel-cell:first-child {
+      border-bottom-left-radius: 8px;
+    }
+    .excel-cell:last-child {
+      border-bottom-right-radius: 8px;
+    }
+  }
 }
 
 .excel-row {
@@ -1024,16 +1063,21 @@ $header-active-bg: #e2e6ea;
 .excel-cell {
   border-right: 1px solid $border-color;
   border-bottom: 1px solid $border-color;
-  padding: 0 6px;
+  padding: 0 12px;
   display: flex;
   // align-items 由 inline style 动态控制（默认垂直居中）
-  background: #fff;
+  background: $cell-bg;
   cursor: cell;
   position: relative;
   box-sizing: border-box;
-  color: #333;
+  color: #606266;
   flex-shrink: 0;
   overflow: hidden; // 隐藏超出单元格的内容
+  transition: background-color 0.15s ease;
+
+  &:hover:not(.active):not(.in-selection) {
+    background-color: $cell-hover-bg;
+  }
 
   // 单元格内容样式
   > span {
@@ -1041,8 +1085,10 @@ $header-active-bg: #e2e6ea;
     width: 100%;
 
     // [关键] 显式声明行高和字号，确保 JS 计算准确
-    font-size: 13px;
-    line-height: 1.4;
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 400;
+    color: #606266;
 
     // 默认/省略号模式：单行显示，超出显示省略号
     white-space: nowrap;
@@ -1068,6 +1114,9 @@ $header-active-bg: #e2e6ea;
   > input {
     width: 100%;
     height: 100%;
+    font-size: 14px;
+    font-weight: 400;
+    color: #606266;
   }
 
   &.in-selection {
@@ -1075,13 +1124,13 @@ $header-active-bg: #e2e6ea;
   }
 
   &.active {
-    background-color: #fff;
+    background-color: $cell-bg;
     box-shadow: inset 0 0 0 2px $primary-color;
     z-index: 10;
   }
 
   &.drag-target {
-    background-color: rgba($primary-color, 0.1);
+    background-color: rgba($primary-color, 0.08);
     border-bottom: 1px dashed $primary-color;
     border-right: 1px dashed $primary-color;
   }
@@ -1103,16 +1152,18 @@ $header-active-bg: #e2e6ea;
 .row-number {
   background: $header-bg;
   font-weight: 600;
-  color: #666;
-  justify-content: center;
+  font-size: 13px;
+  color: $text-secondary;
+  justify-content: flex-start;
   align-items: center; // 确保垂直居中
-  text-align: center;
+  text-align: left;
   cursor: default;
+  transition: background-color 0.15s ease, color 0.15s ease;
 
   &.active-header {
     background: $header-active-bg;
     color: $primary-color;
-    font-weight: bold;
+    font-weight: 600;
   }
 }
 
@@ -1185,7 +1236,9 @@ $header-active-bg: #e2e6ea;
   padding: 0;
   margin: 0;
   font-family: inherit;
-  font-size: inherit;
-  color: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: $text-primary;
+  line-height: 1.5;
 }
 </style>
