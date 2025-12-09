@@ -52,11 +52,16 @@
           v-for="(col, colIndex) in internalColumns"
           :key="colIndex"
           class="excel-cell"
-          :class="{
-            active: isActive(rowIndex, colIndex),
-            'in-selection': isInSelection(rowIndex, colIndex),
-            'drag-target': isInDragArea(rowIndex, colIndex),
-          }"
+          :class="[
+            {
+              // 仅在非多选状态下，才显示 active 样式
+              active: isActive(rowIndex, colIndex) && !isMultiSelect,
+              'in-selection': isInSelection(rowIndex, colIndex),
+              'drag-target': isInDragArea(rowIndex, colIndex),
+            },
+            getSelectionBorderClass(rowIndex, colIndex),
+            getDragTargetBorderClass(rowIndex, colIndex),
+          ]"
           :style="{
             width: getColumnWidth(colIndex) + 'px',
             minWidth: getColumnWidth(colIndex) + 'px',
@@ -78,8 +83,10 @@
             @keydown.esc="cancelEdit"
             :ref="(el) => setInputRef(el, rowIndex, colIndex)"
           />
+
           <span
             v-else
+            class="cell-content"
             :class="{
               'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
               'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
@@ -92,7 +99,7 @@
           <div
             v-if="
               enableFillHandle &&
-              shouldShowHandle(rowIndex, colIndex) &&
+              isSelectionBottomRight(rowIndex, colIndex) &&
               !editingCell
             "
             class="fill-handle"
@@ -228,6 +235,18 @@ const {
   isInSelectionHeader,
   moveActiveCell,
 } = useSelection();
+
+/**
+ * 判断当前是否处于多单元格选区状态
+ * 即 selectionStart 和 selectionEnd 不相等
+ */
+const isMultiSelect = computed(() => {
+  if (!selectionStart.value || !selectionEnd.value) return false;
+  const { row: sr, col: sc } = selectionStart.value;
+  const { row: er, col: ec } = selectionEnd.value;
+  return sr !== er || sc !== ec;
+});
+
 const {
   initHistory,
   saveHistory,
@@ -453,6 +472,66 @@ const shouldShowHandle = (row, col) => {
     col,
     normalizedSelection.value
   );
+};
+
+/**
+ * 获取选区边界的 Class
+ * 我们将返回具体的方位组合，以便 CSS 使用 box-shadow 渲染
+ */
+const getSelectionBorderClass = (row, col) => {
+  if (!isInSelection(row, col)) return [];
+
+  const selection = normalizedSelection.value;
+  if (!selection) return [];
+
+  const classes = [];
+  // 判断四个方向是否是边界
+  if (row === selection.minRow) classes.push("selection-top");
+  if (row === selection.maxRow) classes.push("selection-bottom");
+  if (col === selection.minCol) classes.push("selection-left");
+  if (col === selection.maxCol) classes.push("selection-right");
+
+  return classes;
+};
+
+/**
+ * 判断是否为选区的右下角（用于显示填充手柄）
+ * 替代原有的 shouldShowHandle，逻辑更直观
+ */
+const isSelectionBottomRight = (row, col) => {
+  if (!normalizedSelection.value) return false;
+  const { maxRow, maxCol } = normalizedSelection.value;
+  return row === maxRow && col === maxCol;
+};
+
+/**
+ * 获取拖拽填充区域边界的 Class
+ * 只在边界绘制虚线边框，避免相邻单元格边框重叠
+ */
+const getDragTargetBorderClass = (row, col) => {
+  if (!props.enableFillHandle || !fillHandleComposable) return [];
+  if (!isInDragArea(row, col)) return [];
+
+  const { dragStartCell, dragEndCell } = fillHandleComposable;
+  if (!dragStartCell.value || !dragEndCell.value) return [];
+
+  const startRow = dragStartCell.value.row;
+  const endRow = dragEndCell.value.row;
+  const colIndex = dragStartCell.value.col;
+
+  // 只处理拖拽列
+  if (col !== colIndex) return [];
+
+  const classes = [];
+  // 判断边界：顶部是第一个拖拽单元格，底部是最后一个拖拽单元格
+  // 注意：拖拽区域从 startRow + 1 开始
+  if (row === startRow + 1) classes.push("drag-target-top");
+  if (row === endRow) classes.push("drag-target-bottom");
+  // 左右边界都是该列
+  classes.push("drag-target-left");
+  classes.push("drag-target-right");
+
+  return classes;
 };
 
 const handleFillDragEnter = (row, col) => {
@@ -987,7 +1066,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-// 现代化的颜色方案
+// ==================== 变量定义 ====================
+// 颜色方案
 $border-color: #e4e7ed;
 $primary-color: #409eff;
 $selection-bg: rgba(64, 158, 255, 0.12);
@@ -998,239 +1078,350 @@ $text-secondary: #606266;
 $text-placeholder: #909399;
 $cell-bg: #ffffff;
 $cell-hover-bg: #f5f7fa;
+$white: #fff;
 
+// 尺寸
+$border-width: 1px;
+$selection-border-width: 2px;
+$border-radius: 8px;
+$cell-padding-h: 11px;
+$cell-padding-v: 1px;
+$container-padding: 10px 10px 20px 10px;
+$row-number-width: 40px;
+$default-row-height: 36px;
+$resizer-width: 6px;
+$resizer-offset: -3px;
+$fill-handle-size: 7px;
+$fill-handle-offset: -4px;
+
+// 字体
+$font-size-base: 14px;
+$font-size-header: 13px;
+$line-height: 1.5;
+$font-weight-normal: 400;
+$font-weight-bold: 600;
+
+// Z-index 层级
+$z-index-base: 1;
+$z-index-selection: 2;
+$z-index-drag-target: 3;
+$z-index-selection-overlay: 5;
+$z-index-resizer: 10;
+$z-index-active: 10;
+$z-index-fill-handle: 20;
+
+// 过渡动画
+$transition-fast: 0.05s ease;
+$transition-normal: 0.15s ease;
+$transition-slow: 0.2s;
+
+// 字体族
+$font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
+  "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+// ==================== 容器样式 ====================
 .excel-container {
-  padding: 10px 10px 20px 10px; // 上右下左：增加底部 padding 避免遮挡
+  padding: $container-padding;
   overflow-y: auto;
-  overflow-x: hidden;
-  height: 612px; // 固定高度：1 行表头(36px) + 15 行数据(15×36px) + 16 行边框(16×1px) + 容器 padding(上10px+下20px=30px) = 612px
+  overflow-x: hidden; // 隐藏横向滚动条
   outline: none;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: $font-family;
   width: 100%;
+  height: 100%; // 确保容器有高度，才能显示滚动条
   box-sizing: border-box;
 }
 
 .excel-table {
   display: block;
-  background: #fff;
-  font-size: 14px;
-  border-radius: 8px;
-  overflow: hidden;
+  background: transparent;
+  font-size: $font-size-base;
+  border-left: $border-width solid $border-color;
+  border-top-left-radius: $border-radius;
+  overflow: visible;
   user-select: none;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
   margin: 0;
   padding: 0;
 
-  // 添加外边框：第一行顶部和第一列左侧
-  // 注意：每个单元格已有右边框和底边框，最后一列和最后一行不需要额外处理
-  .excel-row:first-child {
-    .excel-cell {
-      border-top: 1px solid $border-color;
-    }
-    // 左上角和右上角圆角
-    .excel-cell:first-child {
-      border-top-left-radius: 8px;
-    }
-    .excel-cell:last-child {
-      border-top-right-radius: 8px;
-    }
+  // 圆角处理：其他三个角由单元格的边框形成
+  .excel-row:first-child .excel-cell:last-child {
+    border-top-right-radius: $border-radius;
   }
 
-  .excel-row {
-    .excel-cell:first-child {
-      border-left: 1px solid $border-color;
-    }
-  }
-
-  // 左下角和右下角圆角
   .excel-row:last-child {
     .excel-cell:first-child {
-      border-bottom-left-radius: 8px;
+      border-bottom-left-radius: $border-radius;
     }
     .excel-cell:last-child {
-      border-bottom-right-radius: 8px;
+      border-bottom-right-radius: $border-radius;
     }
   }
 }
 
 .excel-row {
   display: flex;
+  margin: 0;
+  padding: 0;
 }
 
+// ==================== 单元格样式 ====================
 .excel-cell {
-  border-right: 1px solid $border-color;
-  border-bottom: 1px solid $border-color;
-  padding: 0 12px;
+  // 基础样式
+  border-right: $border-width solid $border-color;
+  border-bottom: $border-width solid $border-color;
+  padding: 0 $cell-padding-v;
   display: flex;
-  // align-items 由 inline style 动态控制（默认垂直居中）
   background: $cell-bg;
   cursor: cell;
   position: relative;
   box-sizing: border-box;
-  color: #606266;
+  color: $text-secondary;
   flex-shrink: 0;
-  overflow: hidden; // 隐藏超出单元格的内容
-  transition: background-color 0.15s ease;
+  overflow: visible;
+  transition: background-color $transition-fast;
 
+  // 交互状态
   &:hover:not(.active):not(.in-selection) {
     background-color: $cell-hover-bg;
-  }
-
-  // 单元格内容样式
-  > span {
-    overflow: hidden;
-    width: 100%;
-
-    // [关键] 显式声明行高和字号，确保 JS 计算准确
-    font-size: 14px;
-    line-height: 1.5;
-    font-weight: 400;
-    color: #606266;
-
-    // 默认/省略号模式：单行显示，超出显示省略号
-    white-space: nowrap;
-    text-overflow: ellipsis;
-
-    // 换行模式：当列宽不够但行高足够时
-    &.cell-text-wrap {
-      white-space: normal;
-      word-wrap: break-word; // 兼容旧版
-      overflow-wrap: break-word; // 标准写法，防止长单词溢出
-      word-break: break-word; // 优化英文断行体验
-      text-overflow: clip;
-    }
-
-    // 省略号模式：当列宽和行高都不够时
-    &.cell-text-ellipsis {
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-  }
-
-  // 输入框样式
-  > input {
-    width: 100%;
-    height: 100%;
-    font-size: 14px;
-    font-weight: 400;
-    color: #606266;
   }
 
   &.in-selection {
     background-color: $selection-bg;
   }
 
-  &.active {
-    background-color: $cell-bg;
-    box-shadow: inset 0 0 0 2px $primary-color;
-    z-index: 10;
+  // 选中边框伪元素（统一管理）
+  &::after {
+    content: "";
+    position: absolute;
+    top: -$border-width;
+    left: -$border-width;
+    right: -$border-width;
+    bottom: -$border-width;
+    border: 0 solid $primary-color;
+    pointer-events: none;
+    z-index: $z-index-selection-overlay;
   }
 
+  // 选中边框方向控制
+  &.selection-top {
+    z-index: $z-index-selection;
+    &::after {
+      border-top-width: $selection-border-width;
+    }
+  }
+
+  &.selection-bottom {
+    border-bottom-color: transparent;
+    z-index: $z-index-selection;
+    &::after {
+      border-bottom-width: $selection-border-width;
+    }
+  }
+
+  &.selection-left {
+    z-index: $z-index-selection;
+    &::after {
+      border-left-width: $selection-border-width;
+    }
+  }
+
+  &.selection-right {
+    border-right-color: transparent;
+    z-index: $z-index-selection;
+    &::after {
+      border-right-width: $selection-border-width;
+    }
+  }
+
+  // 激活状态
+  &.active {
+    z-index: $z-index-active !important;
+    background-color: $white;
+    border-color: transparent;
+
+    &::after {
+      border: $selection-border-width solid $primary-color;
+    }
+  }
+
+  // 拖拽填充目标
   &.drag-target {
-    background-color: rgba($primary-color, 0.08);
-    border-bottom: 1px dashed $primary-color;
-    border-right: 1px dashed $primary-color;
+    z-index: $z-index-drag-target;
+    background-color: rgba($primary-color, 0.1);
+
+    // 默认不绘制边框，只在边界绘制虚线
+    &::after {
+      border: 0 dashed $primary-color;
+    }
+
+    // 顶部边界
+    &.drag-target-top {
+      &::after {
+        border-top-width: $border-width;
+      }
+    }
+
+    // 底部边界
+    &.drag-target-bottom {
+      border-bottom-color: transparent; // 避免与相邻单元格边框重叠
+      &::after {
+        border-bottom-width: $border-width;
+      }
+    }
+
+    // 左侧边界
+    &.drag-target-left {
+      &::after {
+        border-left-width: $border-width;
+      }
+    }
+
+    // 右侧边界
+    &.drag-target-right {
+      border-right-color: transparent; // 避免与相邻单元格边框重叠
+      &::after {
+        border-right-width: $border-width;
+      }
+    }
+  }
+
+  // 单元格内容
+  .cell-content {
+    display: block;
+    width: 100%;
+    padding: 0 $cell-padding-h;
+    overflow: hidden;
+    font-size: $font-size-base;
+    line-height: $line-height;
+    color: $text-secondary;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    &.cell-text-wrap {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    &.cell-text-ellipsis {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // 输入框
+  .cell-input {
+    padding: 0 $cell-padding-h;
+    width: 100%;
+    height: 100%;
+    font-size: $font-size-base;
+    font-weight: $font-weight-normal;
+    color: $text-secondary;
   }
 }
 
+// ==================== 填充手柄 ====================
 .fill-handle {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 6px;
-  height: 6px;
-  background-color: rgba(0, 0, 0, 0.15);
-  border: 1px solid #fff;
-  border-radius: 3px;
+  right: $fill-handle-offset;
+  bottom: $fill-handle-offset;
+  width: $fill-handle-size;
+  height: $fill-handle-size;
+  background-color: $primary-color;
+  border: $border-width solid $white;
   cursor: crosshair;
-  z-index: 20;
-  transition: background-color 0.2s;
+  z-index: $z-index-fill-handle;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.25);
+    transform: scale(1.2);
   }
 }
 
+// ==================== 表头和行号 ====================
 .header-cell,
 .row-number {
+  display: flex; // 确保是 flex 布局
   background: $header-bg;
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: $font-weight-bold;
+  font-size: $font-size-header;
   color: $text-secondary;
-  justify-content: flex-start;
-  align-items: center; // 确保垂直居中
-  text-align: left;
+  align-items: center;
   cursor: default;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color $transition-normal, color $transition-normal;
 
   &.active-header {
     background: $header-active-bg;
     color: $primary-color;
-    font-weight: 600;
   }
 }
 
 .header-cell {
   position: relative;
   user-select: none;
-  height: 36px; // 与默认行高一致
-  min-height: 36px;
+  height: $default-row-height;
+  min-height: $default-row-height;
+  padding: 0 $cell-padding-h; // 与数据单元格对齐
+  justify-content: flex-start; // 表头左对齐
+  text-align: left;
+}
+
+.row-number {
+  min-width: $row-number-width;
+  width: $row-number-width;
+  align-items: center !important;
+  display: flex !important;
+  justify-content: center;
+  text-align: center;
+}
+
+// 角单元格：占据行号列的宽度，确保表头与数据行对齐
+.corner-cell {
+  min-width: $row-number-width;
+  width: $row-number-width;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+// ==================== 调整器（Resizer） ====================
+%resizer-base {
+  position: absolute;
+  z-index: $z-index-resizer;
+  background: transparent;
+  transition: background-color $transition-slow;
+
+  &:hover {
+    background-color: rgba($primary-color, 0.3);
+  }
+
+  &:active {
+    background-color: rgba($primary-color, 0.5);
+  }
 }
 
 .column-resizer {
-  position: absolute;
+  @extend %resizer-base;
   top: 0;
-  right: -3px;
-  width: 6px;
+  right: $resizer-offset;
+  width: $resizer-width;
   height: 100%;
   cursor: col-resize;
-  z-index: 10;
-  background: transparent;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: rgba($primary-color, 0.3);
-  }
-
-  &:active {
-    background-color: rgba($primary-color, 0.5);
-  }
 }
 
 .row-resizer {
-  position: absolute;
+  @extend %resizer-base;
   left: 0;
-  bottom: -3px;
+  bottom: $resizer-offset;
   width: 100%;
-  height: 6px;
+  height: $resizer-width;
   cursor: row-resize;
-  z-index: 10;
-  background: transparent;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: rgba($primary-color, 0.3);
-  }
-
-  &:active {
-    background-color: rgba($primary-color, 0.5);
-  }
 }
 
-.corner-cell,
-.row-number {
-  min-width: 40px;
-  width: 40px;
-}
-
-.row-number {
-  align-items: center !important; // 确保垂直居中
-  display: flex !important; // 确保 flex 布局生效
-}
-
+// ==================== 输入框样式（独立定义） ====================
 .cell-input {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1239,12 +1430,11 @@ $cell-hover-bg: #f5f7fa;
   border: none;
   outline: none;
   background: transparent;
-  padding: 0;
   margin: 0;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
   color: $text-primary;
-  line-height: 1.5;
+  line-height: $line-height;
 }
 </style>

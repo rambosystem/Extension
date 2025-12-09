@@ -175,10 +175,10 @@ const calculatedColumnWidth = computed(() => {
   // 精确计算可用宽度：
   // - excel-container 左右 padding: 10px * 2 = 20px
   // - 行号列宽度: 40px
-  // - 垂直滚动条宽度: 17px（预留，避免最右边列被遮挡）
+  // - 垂直滚动条宽度: 17px（预留，避免最右边列被垂直滚动条遮挡）
   const containerPadding = 20; // excel-container 左右 padding
   const rowNumberWidth = 40; // 行号列宽度
-  const scrollbarWidth = 17; // 垂直滚动条宽度
+  const scrollbarWidth = 17; // 垂直滚动条宽度（预留位置）
   const availableWidth =
     actualDialogWidth - containerPadding - rowNumberWidth - scrollbarWidth;
 
@@ -218,8 +218,29 @@ const updateDialogWidth = () => {
       }
     } else if (dialogRef.value) {
       // 如果 excel-wrapper 还没有渲染，尝试从对话框获取
-      const dialogElement = dialogRef.value.$el || dialogRef.value;
-      if (dialogElement) {
+      let dialogElement = null;
+
+      // 处理 Vue 3 组件引用
+      if (dialogRef.value.$el) {
+        dialogElement = dialogRef.value.$el;
+      } else if (dialogRef.value instanceof HTMLElement) {
+        dialogElement = dialogRef.value;
+      } else if (dialogRef.value && typeof dialogRef.value === "object") {
+        // 尝试获取组件的根元素
+        const componentInstance = dialogRef.value;
+        if (componentInstance.$el) {
+          dialogElement = componentInstance.$el;
+        } else if (componentInstance.el) {
+          dialogElement = componentInstance.el;
+        }
+      }
+
+      // 确保 dialogElement 是 DOM 元素且有 querySelector 方法
+      if (
+        dialogElement &&
+        dialogElement instanceof HTMLElement &&
+        typeof dialogElement.querySelector === "function"
+      ) {
         const dialogBody = dialogElement.querySelector(".el-dialog__body");
         if (dialogBody) {
           dialogWidth.value = dialogBody.offsetWidth;
@@ -396,7 +417,8 @@ const handleExcelDataChange = (data) => {
   max-height: 600px;
   position: relative;
   width: 100%;
-  overflow: hidden;
+  overflow-y: auto; // 只允许垂直滚动条，禁止横向滚动条
+  overflow-x: hidden; // 隐藏横向滚动条
 }
 
 .dialog-button-container {
