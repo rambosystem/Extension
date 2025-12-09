@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
 import { validateDeepSeekApiKey } from "../../utils/apiValidation.js";
-import { getUserProjects } from "../../requests/lokalise.js";
 
 /**
  * API 设置管理状态
@@ -116,6 +115,50 @@ export const useApiStore = defineStore("api", {
     },
 
     /**
+     * 验证Lokalise API Token并获取项目列表
+     * @param {string} token - 待验证的API Token
+     * @returns {Promise<Array>} 项目列表
+     * @throws {Error} 验证失败时抛出错误
+     */
+    async validateLokaliseToken(token) {
+      if (!token?.trim()) {
+        throw new Error("Lokalise API token cannot be empty");
+      }
+
+      const response = await fetch("https://api.lokalise.com/api2/projects", {
+        method: "GET",
+        headers: {
+          "X-Api-Token": token.trim(),
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Failed to validate token: ${response.status} ${response.statusText}. ${
+            errorData.error?.message || "Please check your token permissions"
+          }`
+        );
+      }
+
+      const responseData = await response.json();
+
+      if (!responseData.projects || !Array.isArray(responseData.projects)) {
+        throw new Error("Invalid response format: projects array not found");
+      }
+
+      const projectList = responseData.projects
+        .filter((project) => project && project.project_id && project.name)
+        .map((project) => ({
+          project_id: project.project_id,
+          name: project.name.trim(),
+        }));
+
+      return projectList;
+    },
+
+    /**
      * 保存Lokalise API Token（兼容原有接口）
      * @param {Object} saveData - 保存数据对象 {value, onSuccess, onError}
      */
@@ -129,29 +172,38 @@ export const useApiStore = defineStore("api", {
 
       try {
         await this.withLoading("lokaliseApiToken", async () => {
-          // 先保存 API token 到 localStorage，这样 getUserProjects 就能读取到
+          // 先验证 token，验证成功后再保存
+          const projects = await this.validateLokaliseToken(value.trim());
+
+          // 验证成功后保存 token 到 localStorage
           const saved = this.saveToStorage("lokalise_api_token", value.trim());
           if (!saved) {
             throw new Error("Failed to save API Token");
           }
 
-          // 调用 getUserProjects 验证 token 并获取项目列表
-          const projects = await getUserProjects();
+          try {
+            // 保存项目列表
+            const projectsSaved = this.saveToStorage(
+              "lokalise_projects",
+              projects
+            );
+            if (!projectsSaved) {
+              throw new Error("Failed to save projects list");
+            }
 
-          // 保存项目列表
-          const projectsSaved = this.saveToStorage(
-            "lokalise_projects",
-            projects
-          );
-          if (!projectsSaved) {
-            throw new Error("Failed to save projects list");
+            this.lokaliseApiToken = value.trim();
+          } catch (saveError) {
+            // 如果保存项目列表失败，清除已保存的 token
+            localStorage.removeItem("lokalise_api_token");
+            throw saveError;
           }
-
-          this.lokaliseApiToken = value.trim();
         });
 
         onSuccess();
       } catch (error) {
+        // 验证失败或保存失败时，确保清除可能已保存的 token
+        localStorage.removeItem("lokalise_api_token");
+        this.lokaliseApiToken = "";
         console.error("Lokalise API Token validation failed:", error);
         onError(error.message || "API Token validation failed");
       }
@@ -166,19 +218,33 @@ export const useApiStore = defineStore("api", {
         throw new Error("Please enter Lokalise API Token");
       }
 
-      await this.withLoading("lokaliseApiToken", async () => {
-        // 先保存到localStorage
-        localStorage.setItem("lokalise_api_token", token.trim());
+      try {
+        await this.withLoading("lokaliseApiToken", async () => {
+          // 先验证 token，验证成功后再保存
+          const projects = await this.validateLokaliseToken(token.trim());
 
-        // 验证token并获取项目列表
-        const projects = await getUserProjects();
+          // 验证成功后保存 token 到 localStorage
+          localStorage.setItem("lokalise_api_token", token.trim());
 
-        // 保存项目列表
-        localStorage.setItem("lokalise_projects", JSON.stringify(projects));
-        this.lokaliseApiToken = token.trim();
-      });
+          try {
+            // 保存项目列表
+            localStorage.setItem("lokalise_projects", JSON.stringify(projects));
+            this.lokaliseApiToken = token.trim();
+          } catch (saveError) {
+            // 如果保存项目列表失败，清除已保存的 token
+            localStorage.removeItem("lokalise_api_token");
+            throw saveError;
+          }
+        });
 
-      ElMessage.success("Lokalise API Token saved successfully");
+        ElMessage.success("Lokalise API Token saved successfully");
+      } catch (error) {
+        // 验证失败或保存失败时，确保清除可能已保存的 token
+        localStorage.removeItem("lokalise_api_token");
+        this.lokaliseApiToken = "";
+        console.error("Lokalise API Token validation failed:", error);
+        throw error;
+      }
     },
 
     /**
