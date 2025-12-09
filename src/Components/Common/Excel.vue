@@ -1,58 +1,103 @@
 <template>
-  <div class="excel-container" @keydown="handleKeydown" @copy="handleCopy" @paste="handlePaste" tabindex="0"
-    ref="containerRef">
+  <div
+    class="excel-container"
+    @keydown="handleKeydown"
+    @copy="handleCopy"
+    @paste="handlePaste"
+    tabindex="0"
+    ref="containerRef"
+  >
     <div class="excel-table" @mouseleave="handleMouseUp">
       <div class="excel-row header-row">
         <div class="excel-cell header-cell corner-cell"></div>
-        <div v-for="(col, index) in displayColumns" :key="col" class="excel-cell header-cell"
-          :class="{ 'active-header': isInSelectionHeader(index, 'col') }" :style="{
+        <div
+          v-for="(col, index) in displayColumns"
+          :key="col"
+          class="excel-cell header-cell"
+          :class="{ 'active-header': isInSelectionHeader(index, 'col') }"
+          :style="{
             width: getColumnWidth(index) + 'px',
             minWidth: getColumnWidth(index) + 'px',
-          }">
+          }"
+        >
           {{ col }}
-          <div v-if="enableColumnResize" class="column-resizer" @mousedown.stop="startColumnResize(index, $event)"
-            @dblclick.stop="handleDoubleClickResize(index)"></div>
+          <div
+            v-if="enableColumnResize"
+            class="column-resizer"
+            @mousedown.stop="startColumnResize(index, $event)"
+            @dblclick.stop="handleDoubleClickResize(index)"
+          ></div>
         </div>
       </div>
 
       <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="excel-row">
-        <div class="excel-cell row-number" :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }" :style="{
-          height: getRowHeight(rowIndex) + 'px',
-          minHeight: getRowHeight(rowIndex) + 'px',
-        }">
+        <div
+          class="excel-cell row-number"
+          :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }"
+          :style="{
+            height: getRowHeight(rowIndex) + 'px',
+            minHeight: getRowHeight(rowIndex) + 'px',
+          }"
+        >
           {{ rowIndex + 1 }}
-          <div v-if="enableRowResize" class="row-resizer" @mousedown.stop="startRowResize(rowIndex, $event)"
-            @dblclick.stop="handleDoubleClickRowResize(rowIndex)"></div>
+          <div
+            v-if="enableRowResize"
+            class="row-resizer"
+            @mousedown.stop="startRowResize(rowIndex, $event)"
+            @dblclick.stop="handleDoubleClickRowResize(rowIndex)"
+          ></div>
         </div>
 
-        <div v-for="(col, colIndex) in internalColumns" :key="colIndex" class="excel-cell" :class="{
-          active: isActive(rowIndex, colIndex),
-          'in-selection': isInSelection(rowIndex, colIndex),
-          'drag-target': isInDragArea(rowIndex, colIndex),
-        }" :style="{
-          width: getColumnWidth(colIndex) + 'px',
-          minWidth: getColumnWidth(colIndex) + 'px',
-          height: getRowHeight(rowIndex) + 'px',
-          minHeight: getRowHeight(rowIndex) + 'px',
-          alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
-        }" @mousedown="handleCellMouseDown(rowIndex, colIndex)" @dblclick="startEdit(rowIndex, colIndex)"
-          @mouseenter="handleMouseEnter(rowIndex, colIndex)">
-          <input v-if="isEditing(rowIndex, colIndex)" v-model="tableData[rowIndex][colIndex]" class="cell-input"
-            @blur="stopEdit" @keydown.enter.prevent.stop="handleInputEnter" @keydown.tab.prevent.stop="handleInputTab"
-            @keydown.esc="cancelEdit" :ref="(el) => setInputRef(el, rowIndex, colIndex)" />
-          <span v-else :class="{
-            'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
-            'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
-              .ellipsis,
-          }">
+        <div
+          v-for="(col, colIndex) in internalColumns"
+          :key="colIndex"
+          class="excel-cell"
+          :class="{
+            active: isActive(rowIndex, colIndex),
+            'in-selection': isInSelection(rowIndex, colIndex),
+            'drag-target': isInDragArea(rowIndex, colIndex),
+          }"
+          :style="{
+            width: getColumnWidth(colIndex) + 'px',
+            minWidth: getColumnWidth(colIndex) + 'px',
+            height: getRowHeight(rowIndex) + 'px',
+            minHeight: getRowHeight(rowIndex) + 'px',
+            alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
+          }"
+          @mousedown="handleCellMouseDown(rowIndex, colIndex)"
+          @dblclick="startEdit(rowIndex, colIndex)"
+          @mouseenter="handleMouseEnter(rowIndex, colIndex)"
+        >
+          <input
+            v-if="isEditing(rowIndex, colIndex)"
+            v-model="tableData[rowIndex][colIndex]"
+            class="cell-input"
+            @blur="stopEdit"
+            @keydown.enter.prevent.stop="handleInputEnter"
+            @keydown.tab.prevent.stop="handleInputTab"
+            @keydown.esc="cancelEdit"
+            :ref="(el) => setInputRef(el, rowIndex, colIndex)"
+          />
+          <span
+            v-else
+            :class="{
+              'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
+              'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
+                .ellipsis,
+            }"
+          >
             {{ tableData[rowIndex][colIndex] }}
           </span>
 
-          <div v-if="
-            enableFillHandle &&
-            shouldShowHandle(rowIndex, colIndex) &&
-            !editingCell
-          " class="fill-handle" @mousedown.stop="startFillDrag(rowIndex, colIndex)"></div>
+          <div
+            v-if="
+              enableFillHandle &&
+              shouldShowHandle(rowIndex, colIndex) &&
+              !editingCell
+            "
+            class="fill-handle"
+            @mousedown.stop="startFillDrag(rowIndex, colIndex)"
+          ></div>
         </div>
       </div>
     </div>
@@ -91,11 +136,11 @@ const props = defineProps({
     default: true,
   },
   /**
-   * 禁用列宽调整时的固定列宽（像素）
-   * @type {number}
+   * 禁用列宽调整时的固定列宽（像素），支持数字或 { key: number, others: number }
+   * @type {number | Object}
    */
   defaultColumnWidth: {
-    type: Number,
+    type: [Number, Object],
     default: 100,
   },
   /**
@@ -155,12 +200,18 @@ const {
 
 // 使用自定义列标题或默认列标题（仅用于显示）
 const displayColumns = computed(() => {
-  if (props.columnNames && Array.isArray(props.columnNames) && props.columnNames.length > 0) {
+  if (
+    props.columnNames &&
+    Array.isArray(props.columnNames) &&
+    props.columnNames.length > 0
+  ) {
     // 如果提供了自定义列标题，使用自定义的，但确保数量匹配
-    return props.columnNames.slice(0, internalColumns.value.length).map((name, index) => {
-      // 如果自定义列标题数量不足，用默认的补齐
-      return name || internalColumns.value[index];
-    });
+    return props.columnNames
+      .slice(0, internalColumns.value.length)
+      .map((name, index) => {
+        // 如果自定义列标题数量不足，用默认的补齐
+        return name || internalColumns.value[index];
+      });
   }
   return internalColumns.value;
 });
@@ -187,32 +238,74 @@ const {
 // 智能填充管理（仅在启用时使用）
 const fillHandleComposable = props.enableFillHandle
   ? useFillHandle({
-    getSmartValue,
-    saveHistory,
-  })
+      getSmartValue,
+      saveHistory,
+    })
   : null;
 
 // 列宽管理（仅在启用时使用）
 // 传入初始列数，Map会自动处理新增列（使用默认宽度）
+// 注意：如果 defaultColumnWidth 是对象，useColumnWidth 的 defaultWidth 使用 others 值
+const getDefaultWidthForComposable = () => {
+  if (
+    typeof props.defaultColumnWidth === "object" &&
+    props.defaultColumnWidth !== null
+  ) {
+    return props.defaultColumnWidth.others || 100;
+  }
+  return props.defaultColumnWidth || 100;
+};
+
 const columnWidthComposable = props.enableColumnResize
   ? useColumnWidth({
-    colsCount: internalColumns.value.length,
-  })
+      defaultWidth: getDefaultWidthForComposable(),
+      colsCount: internalColumns.value.length,
+    })
   : null;
 
 // 行高管理（仅在启用时使用）
 // 传入初始行数，Map会自动处理新增行（使用默认高度）
 const rowHeightComposable = props.enableRowResize
   ? useRowHeight({
-    rowsCount: rows.value.length,
-  })
+      rowsCount: rows.value.length,
+    })
   : null;
 
 const getColumnWidth = (colIndex) => {
   if (props.enableColumnResize && columnWidthComposable) {
+    // 1. 如果用户已手动调整过宽度，以 map 中的值为准
+    const storedWidth = columnWidthComposable.columnWidths.value.get(colIndex);
+    if (storedWidth !== undefined) {
+      return storedWidth;
+    }
+
+    // 2. 如果未调整，检查 defaultColumnWidth 是否为对象（来自 TranslationResultDialog）
+    if (
+      typeof props.defaultColumnWidth === "object" &&
+      props.defaultColumnWidth !== null
+    ) {
+      // 传入的是 { key: 120, others: avgWidth } 对象
+      if (colIndex === 0) {
+        return props.defaultColumnWidth.key || 120; // 第 0 列使用 Key 宽度 (120px)
+      }
+      return props.defaultColumnWidth.others || 100; // 其他列使用平均宽度
+    }
+
+    // 3. 如果 defaultColumnWidth 是数字，使用 composable 的默认逻辑
     return columnWidthComposable.getColumnWidth(colIndex);
   }
-  return props.defaultColumnWidth; // 禁用列宽调整时使用固定值
+
+  // 4. 禁用列宽调整时或传入数字默认值时
+  if (
+    typeof props.defaultColumnWidth === "object" &&
+    props.defaultColumnWidth !== null
+  ) {
+    // 即使禁用了调整，也要应用 Key 列特殊宽度
+    return colIndex === 0
+      ? props.defaultColumnWidth.key || 120
+      : props.defaultColumnWidth.others || 100;
+  }
+  return props.defaultColumnWidth; // 默认值（Number类型）
 };
 
 const getRowHeight = (rowIndex) => {
@@ -700,7 +793,9 @@ const handlePaste = (event) => {
             }
             const first = Math.floor((index - 26) / 26);
             const second = (index - 26) % 26;
-            return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
+            return (
+              String.fromCharCode(65 + first) + String.fromCharCode(65 + second)
+            );
           };
           for (let i = currentLength; i <= c; i++) {
             internalColumns.value.push(generateColumnLabel(i));
@@ -804,6 +899,21 @@ watch(
   { deep: true, immediate: false }
 );
 
+// 注意：列宽初始化逻辑已移至 getColumnWidth 函数中处理
+// 当 defaultColumnWidth 为对象类型时，getColumnWidth 会自动处理 Key 列和其他列的宽度
+// 用户手动调整的宽度会保存在 columnWidthComposable.columnWidths Map 中，优先级最高
+
+/**
+ * 设置指定列的宽度
+ * @param {number} colIndex - 列索引
+ * @param {number} width - 宽度（像素）
+ */
+const setColumnWidth = (colIndex, width) => {
+  if (props.enableColumnResize && columnWidthComposable) {
+    columnWidthComposable.columnWidths.value.set(colIndex, width);
+  }
+};
+
 // --- 10. 暴露方法给父组件 ---
 defineExpose({
   /**
@@ -849,6 +959,12 @@ defineExpose({
    * @returns {Ref<string[][]>} 表格数据引用
    */
   tableData,
+  /**
+   * 设置指定列的宽度
+   * @param {number} colIndex - 列索引
+   * @param {number} width - 宽度（像素）
+   */
+  setColumnWidth,
 });
 
 // --- 11. 生命周期管理 ---
@@ -879,19 +995,26 @@ $header-active-bg: #e2e6ea;
 
 .excel-container {
   padding: 10px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   max-height: 600px;
   outline: none;
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .excel-table {
-  display: inline-block;
+  display: block;
   background: #fff;
   font-size: 13px;
   border-left: 1px solid $border-color;
   border-top: 1px solid $border-color;
   user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 .excel-row {
@@ -913,7 +1036,7 @@ $header-active-bg: #e2e6ea;
   overflow: hidden; // 隐藏超出单元格的内容
 
   // 单元格内容样式
-  >span {
+  > span {
     overflow: hidden;
     width: 100%;
 
@@ -942,7 +1065,7 @@ $header-active-bg: #e2e6ea;
   }
 
   // 输入框样式
-  >input {
+  > input {
     width: 100%;
     height: 100%;
   }

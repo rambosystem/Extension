@@ -1,8 +1,10 @@
 <template>
   <el-dialog
+    ref="dialogRef"
     :modelValue="translationCoreStore.dialogVisible"
     @update:modelValue="translationCoreStore.setDialogVisible"
     width="70%"
+    @opened="updateDialogWidth"
   >
     <template #header>
       <div class="dialog-header">
@@ -34,17 +36,19 @@
     <el-form label-position="top">
       <el-form-item>
         <div
+          ref="excelWrapperRef"
           v-loading="translationCoreStore.loadingStates.translation"
           :element-loading-text="translationCoreStore.getStatusText()"
           class="excel-wrapper"
         >
           <Excel
+            ref="excelRef"
             v-model="excelData"
             @change="handleExcelDataChange"
             :enableColumnResize="true"
             :enableRowResize="false"
             :enableFillHandle="true"
-            :defaultColumnWidth="200"
+            :defaultColumnWidth="calculatedColumnWidth"
             :columnNames="getColumnConfig.columnNames"
           />
         </div>
@@ -81,7 +85,7 @@ import { useTranslationCoreStore } from "../../stores/translation/core.js";
 import { useExportStore } from "../../stores/translation/export.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { Loading } from "@element-plus/icons-vue";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted, nextTick } from "vue";
 
 const { t } = useI18n();
 
@@ -90,6 +94,9 @@ const exportStore = useExportStore();
 const uploadStore = useUploadStore();
 
 const excelData = ref([]);
+const dialogRef = ref(null);
+const excelWrapperRef = ref(null);
+const dialogWidth = ref(0);
 
 /**
  * 将语言代码转换为字段名（与 prompt 中的格式一致）
@@ -153,6 +160,111 @@ const getColumnConfig = computed(() => {
   const fieldNames = extractFieldNames();
   const columnNames = fieldNames.map((field) => formatLanguageLabel(field));
   return { columnNames, fieldNames };
+});
+
+/**
+ * 计算每列的宽度，使表格总宽度匹配对话框宽度
+ * Key列固定120px，其他列平均分配剩余空间
+ */
+const calculatedColumnWidth = computed(() => {
+  const { fieldNames } = getColumnConfig.value;
+  const columnCount = fieldNames.length;
+
+  if (columnCount === 0) {
+    return 200; // 默认宽度
+  }
+
+  // 使用实际测量的对话框宽度
+  const actualDialogWidth = dialogWidth.value || window.innerWidth * 0.7;
+
+  // 精确计算可用宽度：
+  // - excel-container 左右 padding: 10px * 2 = 20px
+  // - 行号列宽度: 40px
+  const containerPadding = 20; // excel-container 左右 padding
+  const rowNumberWidth = 40; // 行号列宽度
+  const availableWidth = actualDialogWidth - containerPadding - rowNumberWidth;
+
+  // Key列固定宽度
+  const keyColumnWidth = 120;
+
+  // 计算其他列的可用宽度（减去Key列宽度）
+  const otherColumnsWidth = availableWidth - keyColumnWidth;
+  const otherColumnsCount = columnCount - 1; // 除了Key列之外的其他列数
+
+  // 如果只有Key列，返回Key列宽度
+  if (otherColumnsCount <= 0) {
+    return keyColumnWidth;
+  }
+
+  // 其他列平均分配剩余空间
+  const otherColumnsAverageWidth = otherColumnsWidth / otherColumnsCount;
+
+  // 返回一个对象，包含Key列和其他列的宽度
+  // 注意：这里返回的是其他列的宽度，Key列宽度需要在Excel组件中特殊处理
+  return {
+    key: keyColumnWidth,
+    others: otherColumnsAverageWidth,
+  };
+});
+
+/**
+ * 更新对话框宽度
+ */
+const updateDialogWidth = () => {
+  nextTick(() => {
+    if (excelWrapperRef.value) {
+      // 直接获取 excel-wrapper 的实际宽度
+      const wrapperWidth = excelWrapperRef.value.offsetWidth;
+      if (wrapperWidth > 0) {
+        dialogWidth.value = wrapperWidth;
+      }
+    } else if (dialogRef.value) {
+      // 如果 excel-wrapper 还没有渲染，尝试从对话框获取
+      const dialogElement = dialogRef.value.$el || dialogRef.value;
+      if (dialogElement) {
+        const dialogBody = dialogElement.querySelector(".el-dialog__body");
+        if (dialogBody) {
+          dialogWidth.value = dialogBody.offsetWidth;
+        }
+      }
+    }
+  });
+};
+
+/**
+ * 监听窗口大小变化
+ */
+const handleResize = () => {
+  updateDialogWidth();
+};
+
+onMounted(() => {
+  // 监听对话框打开
+  watch(
+    () => translationCoreStore.dialogVisible,
+    (visible) => {
+      if (visible) {
+        // 对话框打开后更新宽度，使用多个延迟确保 DOM 完全渲染
+        setTimeout(() => {
+          updateDialogWidth();
+        }, 50);
+        setTimeout(() => {
+          updateDialogWidth();
+        }, 200);
+        setTimeout(() => {
+          updateDialogWidth();
+        }, 500);
+      }
+    },
+    { immediate: true }
+  );
+
+  // 监听窗口大小变化
+  window.addEventListener("resize", handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", handleResize);
 });
 
 /**
@@ -251,8 +363,23 @@ watch(
     excelData.value = convertToExcelData(
       translationCoreStore.translationResult
     );
+    // 列数变化时重新计算宽度
+    updateDialogWidth();
   }
 );
+
+/**
+ * 监听列数变化，重新计算列宽
+ */
+watch(
+  () => getColumnConfig.value.fieldNames.length,
+  () => {
+    updateDialogWidth();
+  }
+);
+
+// Excel组件引用
+const excelRef = ref(null);
 
 /**
  * 处理Excel数据变化
@@ -270,6 +397,8 @@ const handleExcelDataChange = (data) => {
   min-height: 400px;
   max-height: 600px;
   position: relative;
+  width: 100%;
+  overflow: hidden;
 }
 
 .dialog-button-container {

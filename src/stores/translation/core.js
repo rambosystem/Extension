@@ -186,6 +186,8 @@ export const useTranslationCoreStore = defineStore("translationCore", {
      * @param {number} totalCount - 总翻译数量（可选）
      */
     startTranslation(totalCount = 0) {
+      // 清空上一次的翻译结果，避免流式展示时显示旧数据
+      this.clearTranslationResult();
       this.isTranslating = true;
       this.setLoading("translation", true);
       // 初始化进度计数器
