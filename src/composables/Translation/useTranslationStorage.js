@@ -13,39 +13,21 @@ export function useTranslationStorage() {
 
   /**
    * 从本地存储加载上次翻译结果
+   * 注意：此方法已废弃，请使用 store 中的 loadLastTranslation
+   * @deprecated 使用 translationCoreStore.loadLastTranslation() 代替
    */
   const loadLastTranslation = () => {
-    try {
-      const saved = localStorage.getItem("last_translation");
-      if (saved) {
-        const translationData = JSON.parse(saved);
-        translationCoreStore.setLastTranslation(translationData);
-      } else {
-        translationCoreStore.clearLastTranslation();
-      }
-    } catch (error) {
-      console.error(
-        "Failed to parse last translation from localStorage:",
-        error
-      );
-      translationCoreStore.clearLastTranslation();
-      ElMessage.warning(t("storage.loadFailed"));
-    }
+    translationCoreStore.loadLastTranslation();
   };
 
   /**
    * 保存翻译结果到本地存储
+   * 注意：此方法已废弃，请使用 store 中的 saveTranslationToLocal
+   * @deprecated 使用 translationCoreStore.saveTranslationToLocal() 代替
    * @param {Array} translationData - 翻译数据（不包含编辑状态）
    */
   const saveTranslationToLocal = (translationData) => {
-    try {
-      const dataToSave = JSON.stringify(translationData);
-      localStorage.setItem("last_translation", dataToSave);
-      translationCoreStore.setLastTranslation(translationData);
-    } catch (error) {
-      console.error("Failed to save translation to localStorage:", error);
-      ElMessage.warning(t("storage.saveFailed"));
-    }
+    translationCoreStore.saveTranslationToLocal(translationData);
   };
 
   /**
@@ -68,12 +50,24 @@ export function useTranslationStorage() {
       });
     }
 
-    // 如果没有从数据中提取到 key，则从配置中获取
+    // 如果没有从数据中提取到 key，则优先使用保存的 targetLanguages，否则使用当前配置
     if (languageKeys.size === 0) {
       try {
-        const targetLanguages = JSON.parse(
-          localStorage.getItem("target_languages") || "[]"
-        );
+        // 优先使用保存的 translationTargetLanguages
+        const savedTargetLanguages =
+          translationCoreStore.translationTargetLanguages || [];
+        let targetLanguages = [];
+
+        if (savedTargetLanguages.length > 0) {
+          // 使用保存的 targetLanguages
+          targetLanguages = savedTargetLanguages;
+        } else {
+          // 回退到当前配置
+          targetLanguages = JSON.parse(
+            localStorage.getItem("target_languages") || "[]"
+          );
+        }
+
         languageKeys.add("en");
         targetLanguages.forEach((lang) => {
           const key = lang.toLowerCase().replace(/\s+/g, "_");

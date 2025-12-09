@@ -32,11 +32,69 @@ export function useExcelData({
   colsCount = DEFAULT_CONFIG.COLS_COUNT,
   initialData = null,
 } = {}) {
-  // 基础数据生成
+  // 根据实际数据动态计算行列数
+  const calculateDimensions = (data, allowEmpty = false) => {
+    // 处理无效数据或空数组
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return allowEmpty
+        ? { rows: 0, cols: 0 }
+        : { rows: rowsCount, cols: colsCount };
+    }
+
+    const actualRows = data.length;
+    // 根据实际数据的列数计算，不使用默认 colsCount 作为最小值
+    const rowLengths = data.map((row) => (Array.isArray(row) ? row.length : 0));
+    const actualCols = Math.max(...rowLengths);
+
+    return { rows: actualRows, cols: actualCols };
+  };
+
+  // 初始化时根据数据计算维度（初始化时允许空数组）
+  const initialDimensions = calculateDimensions(initialData, true);
+  const actualRowsCount = initialDimensions.rows;
+  const actualColsCount = initialDimensions.cols;
+
+  // 生成列标题（支持超过26列：A-Z, AA-AZ, BA-BZ...）
+  const generateColumnLabel = (index) => {
+    if (index < 26) {
+      return String.fromCharCode(65 + index);
+    }
+    const first = Math.floor((index - 26) / 26);
+    const second = (index - 26) % 26;
+    return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
+  };
+
+  // 基础数据生成（动态）
   const columns = ref(
-    Array.from({ length: colsCount }, (_, i) => String.fromCharCode(65 + i))
+    Array.from({ length: actualColsCount }, (_, i) => generateColumnLabel(i))
   );
-  const rows = ref(Array.from({ length: rowsCount }, (_, i) => i));
+  const rows = ref(Array.from({ length: actualRowsCount }, (_, i) => i));
+
+  // 更新行列数
+  const updateDimensions = (data) => {
+    // setData 时允许空数组（保持空状态）
+    const { rows: newRows, cols: newCols } = calculateDimensions(data, true);
+
+    // 更新列
+    if (newCols > columns.value.length) {
+      const currentLength = columns.value.length;
+      for (let i = currentLength; i < newCols; i++) {
+        columns.value.push(generateColumnLabel(i));
+      }
+    } else if (newCols < columns.value.length) {
+      columns.value = columns.value.slice(0, newCols);
+    }
+
+    // 更新行
+    if (newRows > rows.value.length) {
+      const currentLength = rows.value.length;
+      for (let i = currentLength; i < newRows; i++) {
+        rows.value.push(i);
+      }
+    } else if (newRows < rows.value.length) {
+      rows.value = rows.value.slice(0, newRows);
+    }
+  };
 
   // 初始化表格数据
   const initializeTableData = () => {
@@ -44,27 +102,22 @@ export function useExcelData({
       // 使用初始数据，确保数据格式正确
       const data = initialData.map((row) => {
         if (Array.isArray(row)) {
-          // 确保每行的列数一致
           const rowData = [...row];
-          while (rowData.length < colsCount) {
+          // 确保每行的列数一致（补齐到最大列数）
+          while (rowData.length < actualColsCount) {
             rowData.push("");
           }
-          return rowData.slice(0, colsCount);
+          return rowData;
         }
-        return Array.from({ length: colsCount }, () => "");
+        return Array.from({ length: actualColsCount }, () => "");
       });
 
-      // 确保行数足够
-      while (data.length < rowsCount) {
-        data.push(Array.from({ length: colsCount }, () => ""));
-      }
-
-      return data.slice(0, rowsCount);
+      return data;
     }
 
     // 默认创建空表格
-    return Array.from({ length: rowsCount }, () =>
-      Array.from({ length: colsCount }, () => "")
+    return Array.from({ length: actualRowsCount }, () =>
+      Array.from({ length: actualColsCount }, () => "")
     );
   };
 
@@ -159,24 +212,30 @@ export function useExcelData({
       return;
     }
 
+    // 更新行列数（允许空数组）
+    updateDimensions(data);
+
+    // 处理空数组：如果数据为空，设置为空数组
+    if (data.length === 0) {
+      tableData.value = [];
+      return;
+    }
+
     // 确保数据格式正确
+    const currentCols = columns.value.length;
     const normalizedData = data.map((row) => {
       if (Array.isArray(row)) {
         const rowData = [...row];
-        while (rowData.length < colsCount) {
+        // 补齐到当前列数
+        while (rowData.length < currentCols) {
           rowData.push("");
         }
-        return rowData.slice(0, colsCount);
+        return rowData;
       }
-      return Array.from({ length: colsCount }, () => "");
+      return Array.from({ length: currentCols }, () => "");
     });
 
-    // 确保行数足够
-    while (normalizedData.length < rowsCount) {
-      normalizedData.push(Array.from({ length: colsCount }, () => ""));
-    }
-
-    tableData.value = normalizedData.slice(0, rowsCount);
+    tableData.value = normalizedData;
   };
 
   /**
@@ -194,13 +253,32 @@ export function useExcelData({
    * @param {string} value - 新值
    */
   const updateCell = (row, col, value) => {
-    if (
-      row < 0 ||
-      row >= rowsCount ||
-      col < 0 ||
-      col >= colsCount ||
-      !tableData.value[row]
-    ) {
+    const currentRows = rows.value.length;
+    const currentCols = columns.value.length;
+
+    // 如果超出范围，自动扩展
+    if (row >= currentRows) {
+      // 扩展行
+      for (let i = currentRows; i <= row; i++) {
+        rows.value.push(i);
+        tableData.value.push(Array.from({ length: currentCols }, () => ""));
+      }
+    }
+
+    if (col >= currentCols) {
+      // 扩展列
+      for (let i = currentCols; i <= col; i++) {
+        columns.value.push(generateColumnLabel(i));
+      }
+      // 为所有行补齐列
+      tableData.value.forEach((rowData) => {
+        while (rowData.length <= col) {
+          rowData.push("");
+        }
+      });
+    }
+
+    if (row < 0 || col < 0 || !tableData.value[row]) {
       console.warn(`updateCell: Invalid position row=${row}, col=${col}`);
       return;
     }
@@ -212,8 +290,10 @@ export function useExcelData({
    * 清空表格数据
    */
   const clearData = () => {
-    tableData.value = Array.from({ length: rowsCount }, () =>
-      Array.from({ length: colsCount }, () => "")
+    const currentRows = rows.value.length;
+    const currentCols = columns.value.length;
+    tableData.value = Array.from({ length: currentRows }, () =>
+      Array.from({ length: currentCols }, () => "")
     );
   };
 

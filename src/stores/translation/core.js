@@ -18,6 +18,9 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     // 翻译结果
     translationResult: [],
 
+    // 翻译时的目标语言配置（保存翻译时的 targetLanguages）
+    translationTargetLanguages: [],
+
     // 对话框状态
     dialogVisible: false,
 
@@ -261,27 +264,41 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
 
     /**
+     * 提取纯翻译数据（移除编辑状态字段）
+     * @param {Array} data - 包含编辑状态的翻译数据
+     * @returns {Array} 纯翻译数据
+     */
+    extractTranslationData(data) {
+      if (!data || !Array.isArray(data)) {
+        return [];
+      }
+      return data.map((item) => {
+        const result = {};
+        Object.keys(item).forEach((key) => {
+          if (!key.startsWith("editing_")) {
+            result[key] = item[key];
+          }
+        });
+        return result;
+      });
+    },
+
+    /**
      * 保存翻译结果到本地存储
-     * @param {Array} data - 翻译数据
+     * @param {Array} data - 翻译数据（可能包含编辑状态）
      */
     saveTranslationToLocal(data) {
       try {
-        // 直接保存传入的数据，支持动态字段
-        const translationData = data.map((item) => {
-          const result = {};
-          // 保存所有字段（包括动态语言字段）
-          Object.keys(item).forEach((key) => {
-            if (!key.startsWith("editing_")) {
-              result[key] = item[key];
-            }
-          });
-          return result;
-        });
+        // 提取纯数据（移除编辑状态字段）
+        const translationData = this.extractTranslationData(data);
 
-        localStorage.setItem(
-          "last_translation",
-          JSON.stringify(translationData)
-        );
+        // 将 translationData 和 targetLanguages 一起保存
+        const dataToSave = {
+          translationData,
+          targetLanguages: this.translationTargetLanguages || [],
+        };
+
+        localStorage.setItem("last_translation", JSON.stringify(dataToSave));
         this.setLastTranslation(translationData);
       } catch (error) {
         console.error("Failed to save translation to local storage:", error);
@@ -295,8 +312,9 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       try {
         const stored = localStorage.getItem("last_translation");
         if (stored) {
-          const translationData = JSON.parse(stored);
-          this.setLastTranslation(translationData);
+          const parsed = JSON.parse(stored);
+          this.setLastTranslation(parsed.translationData || []);
+          this.translationTargetLanguages = parsed.targetLanguages || [];
         }
       } catch (error) {
         console.error("Failed to load last translation from storage:", error);
@@ -368,6 +386,17 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         // 先弹出对话框，显示加载状态
         this.openDialog();
 
+        // 保存翻译时的 targetLanguages
+        try {
+          const targetLanguages = JSON.parse(
+            localStorage.getItem("target_languages") || "[]"
+          );
+          this.translationTargetLanguages = targetLanguages;
+        } catch (error) {
+          console.warn("Failed to save target languages:", error);
+          this.translationTargetLanguages = [];
+        }
+
         // 使用翻译模块执行翻译
         const translation = useTranslation();
 
@@ -405,68 +434,10 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
 
     /**
-     * 检查翻译结果的语言配置是否与当前配置匹配
-     * @param {Array} translationData - 翻译数据
-     * @returns {boolean} 是否匹配
-     */
-    checkTranslationConfigMatch(translationData) {
-      if (!translationData || translationData.length === 0) {
-        return false;
-      }
-
-      // 从翻译数据中提取所有语言 key（排除 editing_ 开头的 key）
-      const storedLanguageKeys = new Set();
-      Object.keys(translationData[0]).forEach((key) => {
-        if (!key.startsWith("editing_")) {
-          storedLanguageKeys.add(key);
-        }
-      });
-
-      // 获取当前配置的目标语言
-      try {
-        const targetLanguages = JSON.parse(
-          localStorage.getItem("target_languages") || "[]"
-        );
-
-        // 构建当前配置应该有的语言 key
-        const expectedLanguageKeys = new Set(["en"]);
-        targetLanguages.forEach((lang) => {
-          const key = lang.toLowerCase().replace(/\s+/g, "_");
-          expectedLanguageKeys.add(key);
-        });
-
-        // 比较两个集合是否匹配
-        if (storedLanguageKeys.size !== expectedLanguageKeys.size) {
-          return false;
-        }
-
-        // 检查所有期望的 key 是否都存在
-        for (const key of expectedLanguageKeys) {
-          if (!storedLanguageKeys.has(key)) {
-            return false;
-          }
-        }
-
-        return true;
-      } catch (error) {
-        console.error("Failed to parse target languages:", error);
-        return false;
-      }
-    },
-
-    /**
      * 显示上次翻译结果
      */
     showLastTranslation() {
       if (this.hasLastTranslation) {
-        // 检查翻译结果的语言配置是否与当前配置匹配
-        if (!this.checkTranslationConfigMatch(this.lastTranslation)) {
-          ElMessage.warning(
-            "The previous translation does not match the current language configuration. Please translate again."
-          );
-          return;
-        }
-
         // 为加载的数据添加编辑状态属性
         const storage = useTranslationStorage();
         const dataWithEditState = storage.addEditingStates(
@@ -512,17 +483,8 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       if (index > -1) {
         this.removeTranslationResult(index);
 
-        // 更新本地存储（支持动态字段）
-        const translationData = this.translationResult.map((item) => {
-          const result = {};
-          Object.keys(item).forEach((key) => {
-            if (!key.startsWith("editing_")) {
-              result[key] = item[key];
-            }
-          });
-          return result;
-        });
-        this.saveTranslationToLocal(translationData);
+        // 更新本地存储
+        this.saveTranslationToLocal(this.translationResult);
 
         // 如果删除后没有数据了，关闭对话框
         if (this.translationResult.length === 0) {
