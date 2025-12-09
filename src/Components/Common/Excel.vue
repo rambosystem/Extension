@@ -1000,10 +1000,10 @@ $cell-bg: #ffffff;
 $cell-hover-bg: #f5f7fa;
 
 .excel-container {
-  padding: 10px;
+  padding: 10px 10px 20px 10px; // 上右下左：增加底部 padding 避免遮挡
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: 600px;
+  height: 612px; // 固定高度：1 行表头(36px) + 15 行数据(15×36px) + 16 行边框(16×1px) + 容器 padding(上10px+下20px=30px) = 612px
   outline: none;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
