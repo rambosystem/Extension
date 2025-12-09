@@ -2,9 +2,35 @@
   <el-dialog
     :modelValue="translationCoreStore.dialogVisible"
     @update:modelValue="translationCoreStore.setDialogVisible"
-    :title="t('translation.translationResult')"
     width="70%"
   >
+    <template #header>
+      <div class="dialog-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-title">{{
+            t("translation.translationResult")
+          }}</span>
+          <div
+            v-if="translationCoreStore.loadingStates.translation"
+            class="loading-indicator"
+          >
+            <el-icon class="is-loading">
+              <Loading />
+            </el-icon>
+            <span class="loading-text">{{
+              translationCoreStore.getStatusText()
+            }}</span>
+            <span
+              v-if="translationCoreStore.translationProgress.total > 0"
+              class="progress-counter"
+            >
+              {{ translationCoreStore.translationProgress.finished }} /
+              {{ translationCoreStore.translationProgress.total }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </template>
     <el-form label-position="top">
       <el-form-item>
         <el-table
@@ -12,8 +38,6 @@
           style="width: 100%"
           height="450"
           empty-text=""
-          v-loading="translationCoreStore.loadingStates.translation"
-          :element-loading-text="translationCoreStore.getStatusText()"
         >
           <!-- 动态生成列 -->
           <el-table-column
@@ -137,7 +161,7 @@ import { useI18n } from "../../composables/Core/useI18n.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
 import { useExportStore } from "../../stores/translation/export.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
-import { MoreFilled } from "@element-plus/icons-vue";
+import { MoreFilled, Loading } from "@element-plus/icons-vue";
 import { computed } from "vue";
 import { getAvailableLanguages } from "../../config/languages.js";
 
@@ -375,5 +399,49 @@ const handleSaveTranslation = (index) => {
 
 :deep(.el-dialog__body) {
   padding: 0px;
+}
+
+/* 对话框标题样式 */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.dialog-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.dialog-title {
+  font-weight: 600;
+  font-size: 18px;
+  color: #303133;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #409eff;
+  font-size: 14px;
+  margin-left: 0;
+}
+
+.loading-indicator .el-icon {
+  font-size: 16px;
+}
+
+.loading-text {
+  color: #409eff;
+}
+
+.progress-counter {
+  color: #909399;
+  font-size: 13px;
+  margin-left: 4px;
 }
 </style>

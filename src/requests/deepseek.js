@@ -4,7 +4,8 @@ import { debugLog } from "../utils/debug.js";
 export async function translateWithDeepSeek(
   content,
   onStatusUpdate = null,
-  matchedTerms = null
+  matchedTerms = null,
+  onChunk = null
 ) {
   const apiKey = localStorage.getItem("deepseek_api_key");
 
@@ -102,12 +103,16 @@ ${copiesSection}  </copies>
     ? parseFloat(translationTemperature)
     : 0.1;
 
+  // 检查是否启用流式处理（默认启用）
+  const streamEnabled = localStorage.getItem("stream_translation") !== "false";
+
   // 构建完整的请求体
   const requestBody = {
     model: "deepseek-chat",
     messages: messages,
     temperature: temperature,
     response_format: { type: "text" },
+    stream: streamEnabled && onChunk !== null, // 如果有 onChunk 回调且流式处理启用，则使用流式
   };
 
   // 输出完整的DeepSeek请求信息
@@ -132,11 +137,57 @@ ${copiesSection}  </copies>
     );
   }
 
-  const data = await response.json();
-  debugLog("DeepSeek response:", JSON.stringify(data, null, 2));
-  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-    throw new Error("Invalid response format from API");
-  }
+  // 如果启用流式处理且有回调函数，处理流式响应
+  if (requestBody.stream && onChunk) {
+    let fullContent = "";
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
 
-  return data.choices[0].message.content;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.trim() === "") continue;
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              continue;
+            }
+
+            try {
+              const json = JSON.parse(data);
+              const delta = json.choices?.[0]?.delta?.content;
+              if (delta) {
+                fullContent += delta;
+                // 调用回调函数传递增量内容
+                onChunk(delta, fullContent);
+              }
+            } catch (e) {
+              // 忽略解析错误，继续处理下一行
+              debugLog("Failed to parse SSE data:", e, line);
+            }
+          }
+        }
+      }
+
+      debugLog("DeepSeek streaming response completed:", fullContent);
+      return fullContent;
+    } finally {
+      reader.releaseLock();
+    }
+  } else {
+    // 非流式处理（原有逻辑）
+    const data = await response.json();
+    debugLog("DeepSeek response:", JSON.stringify(data, null, 2));
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error("Invalid response format from API");
+    }
+
+    return data.choices[0].message.content;
+  }
 }

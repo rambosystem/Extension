@@ -2,7 +2,11 @@ import { fetchCurrentUserTerms } from "./terms.js";
 import { matchTerms } from "./termMatch.js";
 import { translateWithDeepSeek } from "./deepseek.js";
 
-export async function translate(content, onStatusUpdate = null) {
+export async function translate(
+  content,
+  onStatusUpdate = null,
+  onChunk = null
+) {
   const adTermsEnabled = localStorage.getItem("ad_terms_status");
 
   // 如果 ad_terms_status 不存在，默认开启术语匹配
@@ -97,7 +101,12 @@ export async function translate(content, onStatusUpdate = null) {
   }
 
   // 调用 DeepSeek 翻译服务
-  return await translateWithDeepSeek(content, onStatusUpdate, matchedTerms);
+  return await translateWithDeepSeek(
+    content,
+    onStatusUpdate,
+    matchedTerms,
+    onChunk
+  );
 }
 
 /**

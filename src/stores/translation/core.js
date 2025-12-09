@@ -29,6 +29,12 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       translation: false,
     },
 
+    // 翻译进度计数器
+    translationProgress: {
+      finished: 0,
+      total: 0,
+    },
+
     // 用户建议
     userSuggestion: "",
     userSuggestionVisible: false,
@@ -174,10 +180,16 @@ export const useTranslationCoreStore = defineStore("translationCore", {
 
     /**
      * 开始翻译
+     * @param {number} totalCount - 总翻译数量（可选）
      */
-    startTranslation() {
+    startTranslation(totalCount = 0) {
       this.isTranslating = true;
       this.setLoading("translation", true);
+      // 初始化进度计数器
+      this.translationProgress = {
+        finished: 0,
+        total: totalCount,
+      };
     },
 
     /**
@@ -186,6 +198,24 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     finishTranslation() {
       this.isTranslating = false;
       this.setLoading("translation", false);
+      // 重置进度计数器
+      this.translationProgress = {
+        finished: 0,
+        total: 0,
+      };
+    },
+
+    /**
+     * 更新翻译进度
+     * @param {number} finished - 已完成数量
+     */
+    updateTranslationProgress(finished) {
+      if (this.translationProgress.total > 0) {
+        this.translationProgress.finished = Math.min(
+          finished,
+          this.translationProgress.total
+        );
+      }
     },
 
     /**
@@ -325,7 +355,14 @@ export const useTranslationCoreStore = defineStore("translationCore", {
      * 继续翻译流程（在自动去重完成后调用）
      */
     async continueTranslation() {
-      this.startTranslation();
+      // 计算总翻译数量（按行数）
+      const textLines = this.codeContent
+        .trim()
+        .split("\n")
+        .filter((line) => line.trim());
+      const totalCount = textLines.length;
+
+      this.startTranslation(totalCount);
 
       try {
         // 先弹出对话框，显示加载状态
@@ -333,10 +370,26 @@ export const useTranslationCoreStore = defineStore("translationCore", {
 
         // 使用翻译模块执行翻译
         const translation = useTranslation();
-        const result = await translation.performTranslation(this.codeContent);
 
-        // 直接设置到store的translationResult
+        // 创建流式更新回调
+        const onProgress = (partialResult, fullText) => {
+          if (partialResult && Array.isArray(partialResult)) {
+            // 更新翻译结果（流式更新）
+            this.setTranslationResult(partialResult);
+            // 更新进度计数器
+            this.updateTranslationProgress(partialResult.length);
+          }
+        };
+
+        const result = await translation.performTranslation(
+          this.codeContent,
+          onProgress
+        );
+
+        // 最终设置完整结果
         this.setTranslationResult(result);
+        // 更新最终进度
+        this.updateTranslationProgress(result.length);
 
         // 提取纯数据并保存到存储
         const translationData = translation.extractTranslationData(result);
