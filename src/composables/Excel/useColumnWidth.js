@@ -1,155 +1,145 @@
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 
-/**
- * 列宽管理 Composable
- *
- * 负责管理 Excel 组件的列宽功能，包括：
- * - 列宽状态管理
- * - 列宽拖拽调整
- * - 自适应列宽（手动触发）
- *
- * @param {Object} options - 配置选项
- * @param {number} options.defaultWidth - 默认列宽，默认 100
- * @param {number} options.minWidth - 最小列宽，默认 50
- * @param {number} options.maxWidth - 最大列宽，默认 500
- * @param {number} options.colsCount - 列数
- * @returns {Object} 返回列宽管理相关的方法和状态
- */
+// 缓存 Canvas context 避免重复创建
+let cachedCtx = null;
+function getTextWidth(text, font = "13px sans-serif") {
+  if (!text) return 0;
+  if (!cachedCtx) {
+    const canvas = document.createElement("canvas");
+    cachedCtx = canvas.getContext("2d");
+  }
+  cachedCtx.font = font;
+  const metrics = cachedCtx.measureText(text);
+  return Math.ceil(metrics.width);
+}
+
 export function useColumnWidth({
   defaultWidth = 100,
   minWidth = 50,
   maxWidth = 500,
-  colsCount = 10,
+  fontStyle = "13px sans-serif",
 } = {}) {
-  // 列宽状态
-  const columnWidths = ref(new Map()); // Map<colIndex, width>
+  // 状态
+  const columnWidths = ref(new Map());
   const isResizingColumn = ref(false);
   const resizingColumnIndex = ref(null);
-  const resizeStartX = ref(0);
-  const resizeStartWidth = ref(0);
 
-  /**
-   * 获取列宽
-   * @param {number} colIndex - 列索引
-   * @returns {number} 列宽（像素）
-   */
+  // 临时变量
+  let resizeStartX = 0;
+  let resizeStartWidth = 0;
+  let animationFrameId = null;
+
   const getColumnWidth = (colIndex) => {
     return columnWidths.value.get(colIndex) ?? defaultWidth;
   };
 
   /**
-   * 计算单元格内容所需宽度
-   * @param {string} text - 单元格文本
-   * @returns {number} 计算后的宽度
-   */
-  const calculateCellWidth = (text) => {
-    if (!text || typeof text !== "string") {
-      return defaultWidth;
-    }
-    // 估算：每个字符约7-8px（13px字体），加上padding 12px
-    const estimatedWidth = text.length * 8 + 12;
-    return Math.max(minWidth, Math.min(maxWidth, estimatedWidth));
-  };
-
-  /**
-   * 自适应列宽（根据列内容计算）
-   * @param {number} colIndex - 列索引
-   * @param {string[]} columns - 列标题数组
-   * @param {string[][]} tableData - 表格数据
-   * @param {number} rowsCount - 行数
-   */
-  const autoFitColumn = (colIndex, columns, tableData, rowsCount) => {
-    if (colIndex < 0 || colIndex >= colsCount) {
-      return;
-    }
-
-    let maxWidth = defaultWidth;
-
-    // 检查header宽度
-    if (columns && columns[colIndex]) {
-      const headerText = columns[colIndex];
-      maxWidth = Math.max(maxWidth, calculateCellWidth(headerText));
-    }
-
-    // 检查该列所有单元格的宽度
-    if (tableData) {
-      for (let r = 0; r < rowsCount; r++) {
-        if (tableData[r] && tableData[r][colIndex] !== undefined) {
-          const cellValue = String(tableData[r][colIndex] || "");
-          const cellWidth = calculateCellWidth(cellValue);
-          maxWidth = Math.max(maxWidth, cellWidth);
-        }
-      }
-    }
-
-    // 设置列宽，添加一些边距
-    columnWidths.value.set(colIndex, maxWidth + 10);
-  };
-
-  /**
-   * 开始调整列宽
-   * @param {number} colIndex - 列索引
-   * @param {MouseEvent} event - 鼠标事件
-   */
-  const startColumnResize = (colIndex, event) => {
-    isResizingColumn.value = true;
-    resizingColumnIndex.value = colIndex;
-    resizeStartX.value = event.clientX;
-    resizeStartWidth.value = getColumnWidth(colIndex);
-
-    event.preventDefault();
-  };
-
-  /**
-   * 处理列宽调整
-   * @param {MouseEvent} event - 鼠标事件
+   * 处理拖拽逻辑
+   * 包含 requestAnimationFrame 节流优化
    */
   const handleColumnResize = (event) => {
-    if (!isResizingColumn.value || resizingColumnIndex.value === null) {
-      return;
-    }
+    if (!isResizingColumn.value) return;
 
-    const deltaX = event.clientX - resizeStartX.value;
-    const newWidth = Math.max(
-      minWidth,
-      Math.min(maxWidth, resizeStartWidth.value + deltaX)
-    );
+    // 这一步是为了防止模板里绑定的 @mousemove 和 window 监听同时触发导致计算错误
+    // 同时也为了性能
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-    columnWidths.value.set(resizingColumnIndex.value, newWidth);
+    animationFrameId = requestAnimationFrame(() => {
+      const deltaX = event.clientX - resizeStartX;
+      const newWidth = Math.max(
+        minWidth,
+        Math.min(maxWidth, resizeStartWidth + deltaX)
+      );
+
+      columnWidths.value.set(resizingColumnIndex.value, newWidth);
+    });
   };
 
   /**
-   * 停止调整列宽
+   * 停止拖拽
    */
   const stopColumnResize = () => {
     isResizingColumn.value = false;
     resizingColumnIndex.value = null;
-    resizeStartX.value = 0;
-    resizeStartWidth.value = 0;
+
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+
+    // 移除全局监听
+    window.removeEventListener("mousemove", handleColumnResize);
+    window.removeEventListener("mouseup", stopColumnResize);
+    document.body.style.cursor = ""; // 恢复鼠标样式
   };
 
   /**
-   * 处理双击列边界自适应
-   * @param {number} colIndex - 列索引
-   * @param {string[]} columns - 列标题数组
-   * @param {string[][]} tableData - 表格数据
-   * @param {number} rowsCount - 行数
+   * 开始调整
    */
-  const handleDoubleClickResize = (colIndex, columns, tableData, rowsCount) => {
-    autoFitColumn(colIndex, columns, tableData, rowsCount);
+  const startColumnResize = (colIndex, event) => {
+    event.preventDefault();
+    isResizingColumn.value = true;
+    resizingColumnIndex.value = colIndex;
+    resizeStartX = event.clientX;
+    resizeStartWidth = getColumnWidth(colIndex);
+
+    // 添加全局监听（即使鼠标移出表格也能继续拖拽）
+    window.addEventListener("mousemove", handleColumnResize);
+    window.addEventListener("mouseup", stopColumnResize);
+    document.body.style.cursor = "col-resize"; // 强制鼠标样式
   };
 
+  const autoFitColumn = (colIndex, columns, tableData) => {
+    let maxContentWidth = defaultWidth;
+
+    // 1. Header
+    if (columns && columns[colIndex]) {
+      const headerWidth = getTextWidth(String(columns[colIndex]), fontStyle);
+      maxContentWidth = Math.max(maxContentWidth, headerWidth + 24);
+    }
+
+    // 2. Data (采样前 100 行)
+    if (tableData && tableData.length > 0) {
+      const sampleLimit = Math.min(tableData.length, 100);
+      for (let r = 0; r < sampleLimit; r++) {
+        const row = tableData[r];
+        const cellValue = Array.isArray(row)
+          ? row[colIndex]
+          : row[Object.keys(row)[colIndex]];
+        if (cellValue) {
+          const strVal = String(cellValue);
+          if (strVal.length > 0) {
+            const width = getTextWidth(strVal, fontStyle);
+            maxContentWidth = Math.max(maxContentWidth, width + 20);
+          }
+        }
+      }
+    }
+    const finalWidth = Math.max(minWidth, Math.min(maxWidth, maxContentWidth));
+    columnWidths.value.set(colIndex, finalWidth);
+  };
+
+  const handleDoubleClickResize = (colIndex, columns, tableData) => {
+    autoFitColumn(colIndex, columns, tableData);
+  };
+
+  // 必须手动销毁监听，防止组件卸载后残留
+  onUnmounted(() => {
+    window.removeEventListener("mousemove", handleColumnResize);
+    window.removeEventListener("mouseup", stopColumnResize);
+  });
+
   return {
-    // 状态
     columnWidths,
     isResizingColumn,
     resizingColumnIndex,
-
-    // 方法
     getColumnWidth,
     startColumnResize,
+
+    // 关键修正：必须把这两个方法暴露出去，因为你的模板里绑定了它们
     handleColumnResize,
     stopColumnResize,
+
     handleDoubleClickResize,
     autoFitColumn,
   };

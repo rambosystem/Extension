@@ -15,14 +15,21 @@
           :key="col"
           class="excel-cell header-cell"
           :class="{ 'active-header': isInSelectionHeader(index, 'col') }"
-          :style="{
-            width: getColumnWidth(index) + 'px',
-            minWidth: getColumnWidth(index) + 'px',
-          }"
+          :style="
+            index === displayColumns.length - 1
+              ? {
+                  flex: 1,
+                  minWidth: getColumnWidth(index) + 'px',
+                }
+              : {
+                  width: getColumnWidth(index) + 'px',
+                  minWidth: getColumnWidth(index) + 'px',
+                }
+          "
         >
           {{ col }}
           <div
-            v-if="enableColumnResize"
+            v-if="enableColumnResize && index < displayColumns.length - 1"
             class="column-resizer"
             @mousedown.stop="startColumnResize(index, $event)"
             @dblclick.stop="handleDoubleClickResize(index)"
@@ -63,8 +70,12 @@
             getDragTargetBorderClass(rowIndex, colIndex),
           ]"
           :style="{
-            width: getColumnWidth(colIndex) + 'px',
-            minWidth: getColumnWidth(colIndex) + 'px',
+            ...(colIndex === internalColumns.length - 1
+              ? { flex: 1, minWidth: getColumnWidth(colIndex) + 'px' }
+              : {
+                  width: getColumnWidth(colIndex) + 'px',
+                  minWidth: getColumnWidth(colIndex) + 'px',
+                }),
             height: getRowHeight(rowIndex) + 'px',
             minHeight: getRowHeight(rowIndex) + 'px',
             alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
