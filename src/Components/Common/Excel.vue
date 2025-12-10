@@ -1136,8 +1136,8 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   display: block;
   background: transparent;
   font-size: $font-size-base;
-  border-left: $border-width solid $border-color;
-  border-top-left-radius: $border-radius;
+  border: $border-width solid $border-color;
+  border-radius: $border-radius;
   overflow: visible;
   user-select: none;
   width: 100%;
@@ -1146,18 +1146,51 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   margin: 0;
   padding: 0;
 
-  // 圆角处理：其他三个角由单元格的边框形成
-  .excel-row:first-child .excel-cell:last-child {
-    border-top-right-radius: $border-radius;
+  // 圆角处理：表头行的第一个和最后一个单元格需要圆角
+  // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边框
+  .excel-row:first-child {
+    .excel-cell:first-child {
+      border-top: none; // 移除上边框，避免与表格上边框重叠
+      border-left: none; // 移除左边框，避免与表格左边框重叠
+      border-top-left-radius: $border-radius;
+    }
+    .excel-cell:last-child {
+      border-top: none; // 移除上边框，避免与表格上边框重叠
+      border-right: none; // 移除右边框，避免与表格右边框重叠
+      border-top-right-radius: $border-radius;
+    }
+    // 表头行的其他单元格也移除上边框
+    .excel-cell {
+      border-top: none;
+    }
   }
 
+  // 底部圆角处理：最后一行的第一个和最后一个单元格需要圆角
   .excel-row:last-child {
     .excel-cell:first-child {
+      border-bottom: none; // 移除下边框，避免与表格下边框重叠
+      border-left: none; // 移除左边框，避免与表格左边框重叠
       border-bottom-left-radius: $border-radius;
     }
     .excel-cell:last-child {
+      border-bottom: none; // 移除下边框，避免与表格下边框重叠
+      border-right: none; // 移除右边框，避免与表格右边框重叠
       border-bottom-right-radius: $border-radius;
     }
+    // 最后一行的其他单元格也移除下边框
+    .excel-cell {
+      border-bottom: none;
+    }
+  }
+
+  // 所有行的第一个单元格移除左边框（由表格容器提供）
+  .excel-row .excel-cell:first-child {
+    border-left: none;
+  }
+
+  // 所有行的最后一个单元格移除右边框（由表格容器提供）
+  .excel-row .excel-cell:last-child {
+    border-right: none;
   }
 }
 
