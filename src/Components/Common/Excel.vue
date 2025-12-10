@@ -123,12 +123,17 @@ import { useFillHandle } from "../../composables/Excel/useFillHandle";
 import { DEFAULT_CONFIG } from "../../composables/Excel/constants.js";
 
 /**
- * 组件 Props
+ * Excel 组件 Props
+ *
+ * @component Excel
+ * @description 类 Excel 表格组件，支持单元格编辑、选择、复制粘贴、撤销重做、智能填充等功能
  */
 const props = defineProps({
   /**
    * 是否启用列宽调整功能
    * @type {boolean}
+   * @default true
+   * @description 启用后可以通过拖拽列边界调整列宽，双击列边界自动适应内容宽度
    */
   enableColumnResize: {
     type: Boolean,
@@ -137,14 +142,27 @@ const props = defineProps({
   /**
    * 是否启用智能填充功能
    * @type {boolean}
+   * @default true
+   * @description 启用后会在选区右下角显示填充手柄，支持拖拽填充（支持数字递增和末尾数字递增）
    */
   enableFillHandle: {
     type: Boolean,
     default: true,
   },
   /**
-   * 禁用列宽调整时的固定列宽（像素），支持数字或 { key: number, others: number }
+   * 默认列宽（像素）
    * @type {number | Object}
+   * @default 100
+   * @description
+   * - 数字类型：所有列使用相同的固定宽度
+   * - 对象类型：{ key: number, others: number }，第一列使用 key 宽度，其他列使用 others 宽度
+   * - 仅在禁用列宽调整时生效，或作为初始列宽
+   * @example
+   * // 所有列100px
+   * :default-column-width="100"
+   *
+   * // 第一列120px，其他列平均分配
+   * :default-column-width="{ key: 120, others: 150 }"
    */
   defaultColumnWidth: {
     type: [Number, Object],
@@ -153,14 +171,18 @@ const props = defineProps({
   /**
    * 是否启用行高调整功能
    * @type {boolean}
+   * @default true
+   * @description 启用后可以通过拖拽行边界调整行高，双击行边界自动适应内容高度
    */
   enableRowResize: {
     type: Boolean,
     default: true,
   },
   /**
-   * 禁用行高调整时的固定行高（像素）
+   * 默认行高（像素）
    * @type {number}
+   * @default 36
+   * @description 禁用行高调整时的固定行高，或作为初始行高
    */
   defaultRowHeight: {
     type: Number,
@@ -169,14 +191,31 @@ const props = defineProps({
   /**
    * v-model 绑定的表格数据
    * @type {string[][]}
+   * @default null
+   * @description
+   * - 二维字符串数组，每个元素代表一行，每行是一个字符串数组
+   * - 支持双向绑定，数据变化会自动同步
+   * - 如果传入数据，组件会根据数据自动计算行列数
+   * @example
+   * [
+   *   ["姓名", "年龄", "城市"],
+   *   ["张三", "25", "北京"],
+   *   ["李四", "30", "上海"]
+   * ]
    */
   modelValue: {
     type: Array,
     default: null,
   },
   /**
-   * 自定义列标题（可选，如果不提供则使用默认的A, B, C...）
+   * 自定义列标题
    * @type {string[]}
+   * @default null
+   * @description
+   * - 如果不提供，则使用默认的 A, B, C, ..., Z, AA, AB, ... 格式
+   * - 如果提供，会使用自定义的列标题（数量不足时用默认标题补齐）
+   * @example
+   * ["Key", "English", "Chinese", "Japanese"]
    */
   columnNames: {
     type: Array,
@@ -185,9 +224,23 @@ const props = defineProps({
 });
 
 /**
- * 组件 Emits
+ * Excel 组件 Emits
+ *
+ * @emits {string[][]} update:modelValue - v-model 更新事件，当表格数据变化时触发
+ * @emits {string[][]} change - 数据变化事件，返回当前表格数据的深拷贝
  */
-const emit = defineEmits(["update:modelValue", "change"]);
+const emit = defineEmits({
+  /**
+   * v-model 更新事件
+   * @param {string[][]} data - 更新后的表格数据
+   */
+  "update:modelValue": (data) => Array.isArray(data),
+  /**
+   * 数据变化事件
+   * @param {string[][]} data - 变化后的表格数据（深拷贝）
+   */
+  change: (data) => Array.isArray(data),
+});
 
 // --- 1. 核心逻辑组合 ---
 const {
@@ -994,15 +1047,40 @@ const setColumnWidth = (colIndex, width) => {
 };
 
 // --- 10. 暴露方法给父组件 ---
+/**
+ * Excel 组件暴露的方法和属性
+ *
+ * 通过 ref 可以访问以下方法和属性：
+ * - getData(): 获取表格数据的深拷贝
+ * - setData(data): 设置整个表格数据
+ * - updateCell(row, col, value): 更新单个单元格
+ * - clearData(): 清空所有单元格数据
+ * - setColumnWidth(colIndex, width): 设置指定列的宽度
+ * - tableData: 表格数据的响应式引用（只读）
+ *
+ * 使用示例请参考组件文档：src/composables/Excel/README.md
+ */
 defineExpose({
   /**
    * 获取表格数据
+   * @method getData
    * @returns {string[][]} 表格数据的深拷贝
+   * @description 返回当前表格数据的深拷贝，不会影响原始数据
+   * @example
+   * const data = excelRef.value.getData();
+   * console.log(data); // [["A1", "B1"], ["A2", "B2"]]
    */
   getData,
   /**
    * 设置表格数据
+   * @method setData
    * @param {string[][]} data - 新的表格数据
+   * @description 设置整个表格的数据，会自动调整行列数以匹配新数据
+   * @example
+   * excelRef.value.setData([
+   *   ["姓名", "年龄", "城市"],
+   *   ["张三", "25", "北京"]
+   * ]);
    */
   setData: (data) => {
     isUpdatingFromExternal = true;
@@ -1014,9 +1092,13 @@ defineExpose({
   },
   /**
    * 更新单个单元格
-   * @param {number} row - 行索引
-   * @param {number} col - 列索引
+   * @method updateCell
+   * @param {number} row - 行索引（从0开始）
+   * @param {number} col - 列索引（从0开始）
    * @param {string} value - 新值
+   * @description 更新指定单元格的值，如果超出当前范围会自动扩展行列
+   * @example
+   * excelRef.value.updateCell(0, 0, "新值");
    */
   updateCell: (row, col, value) => {
     updateCell(row, col, value);
@@ -1026,6 +1108,10 @@ defineExpose({
   },
   /**
    * 清空表格数据
+   * @method clearData
+   * @description 清空所有单元格的数据，但保持当前的行列数
+   * @example
+   * excelRef.value.clearData();
    */
   clearData: () => {
     clearData();
@@ -1035,13 +1121,21 @@ defineExpose({
   },
   /**
    * 获取当前表格数据（响应式引用）
-   * @returns {Ref<string[][]>} 表格数据引用
+   * 表格数据的响应式引用，可以直接访问但建议使用 getData() 获取深拷贝
+   * @readonly
+   * @example
+   * const data = excelRef.value.tableData;
+   * console.log(data.value);
    */
   tableData,
   /**
    * 设置指定列的宽度
-   * @param {number} colIndex - 列索引
+   * @method setColumnWidth
+   * @param {number} colIndex - 列索引（从0开始）
    * @param {number} width - 宽度（像素）
+   * @description 手动设置指定列的宽度，仅在启用列宽调整时生效
+   * @example
+   * excelRef.value.setColumnWidth(0, 150); // 设置第一列宽度为150px
    */
   setColumnWidth,
 });

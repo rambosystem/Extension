@@ -33,6 +33,7 @@ src/
 │   │   ├── CodeEditor.vue      # 代码编辑器
 │   │   ├── ConfirmDialog.vue   # 确认对话框
 │   │   ├── EditableCell.vue    # 可编辑单元格
+│   │   ├── Excel.vue           # Excel 表格组件（类 Excel 功能）
 │   │   ├── LoadingButton.vue   # 加载按钮
 │   │   └── SaveableInput.vue   # 可保存输入框
 │   ├── Terms/           # 术语相关组件
@@ -50,7 +51,16 @@ src/
 │   │   ├── useI18n.js           # 国际化
 │   │   └── useCacheValidation.js # 缓存验证
 │   ├── Excel/           # Excel 相关
-│   │   └── useExcelExport.js    # Excel 导出
+│   │   ├── README.md            # Excel 组件文档
+│   │   ├── constants.js         # Excel 组件常量
+│   │   ├── useColumnWidth.js   # 列宽管理
+│   │   ├── useExcelData.js     # 数据管理
+│   │   ├── useExcelExport.js   # Excel 导出
+│   │   ├── useFillHandle.js    # 智能填充
+│   │   ├── useHistory.js       # 历史记录
+│   │   ├── useKeyboard.js      # 键盘处理
+│   │   ├── useRowHeight.js     # 行高管理
+│   │   └── useSelection.js     # 选择逻辑
 │   ├── Translation/     # 翻译相关
 │   │   ├── useDeduplicate.js           # 去重逻辑
 │   │   ├── useDeduplicateDialog.js     # 去重对话框
@@ -554,6 +564,91 @@ if (result.success) {
   console.error("验证失败:", result.errors);
 }
 ```
+
+## Excel 组件
+
+### 概述
+
+Excel 组件是一个功能完整的类 Excel 表格组件，位于 `src/Components/Common/Excel.vue`。组件采用 Vue 3 Composition API 开发，通过 Composables 实现模块化设计。
+
+### 核心特性
+
+- ✅ **单元格编辑**: 双击或选中后直接输入编辑
+- ✅ **单元格选择**: 鼠标点击、拖拽选择
+- ✅ **键盘导航**: 方向键、Tab、Enter 导航
+- ✅ **复制粘贴**: 支持多单元格复制粘贴，自动扩展行列
+- ✅ **撤销重做**: Ctrl+Z / Ctrl+Y
+- ✅ **智能填充**: 拖拽填充手柄自动递增
+- ✅ **列宽/行高调整**: 拖拽调整和双击自适应
+- ✅ **动态行列**: 根据数据自动调整行列数
+- ✅ **v-model 双向绑定**: 数据变化自动同步
+
+### 快速开始
+
+```vue
+<template>
+  <Excel v-model="excelData" />
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+const excelData = ref([
+  ["姓名", "年龄", "城市"],
+  ["张三", "25", "北京"],
+  ["李四", "30", "上海"],
+]);
+</script>
+```
+
+### Props
+
+| Prop                 | 类型               | 默认值 | 说明                   |
+| -------------------- | ------------------ | ------ | ---------------------- |
+| `enableColumnResize` | `boolean`          | `true` | 是否启用列宽调整功能   |
+| `enableRowResize`    | `boolean`          | `true` | 是否启用行高调整功能   |
+| `enableFillHandle`   | `boolean`          | `true` | 是否启用智能填充功能   |
+| `defaultColumnWidth` | `number \| Object` | `100`  | 默认列宽（像素）       |
+| `defaultRowHeight`   | `number`           | `36`   | 默认行高（像素）       |
+| `modelValue`         | `string[][]`       | `null` | v-model 绑定的表格数据 |
+| `columnNames`        | `string[]`         | `null` | 自定义列标题           |
+
+### 方法
+
+通过 `ref` 可以调用以下方法：
+
+```vue
+<template>
+  <Excel ref="excelRef" v-model="excelData" />
+  <button @click="handleGetData">获取数据</button>
+  <button @click="handleSetData">设置数据</button>
+</template>
+
+<script setup>
+import { ref } from "vue";
+import Excel from "@/Components/Common/Excel.vue";
+
+const excelRef = ref(null);
+const excelData = ref([]);
+
+const handleGetData = () => {
+  const data = excelRef.value?.getData();
+  console.log("当前数据:", data);
+};
+
+const handleSetData = () => {
+  excelRef.value?.setData([
+    ["列1", "列2", "列3"],
+    ["数据1", "数据2", "数据3"],
+  ]);
+};
+</script>
+```
+
+### 详细文档
+
+完整的 API 文档和使用指南请参考：[Excel 组件文档](./src/composables/Excel/README.md)
 
 ### 1. 组件开发规范
 

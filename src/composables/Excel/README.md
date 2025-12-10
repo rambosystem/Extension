@@ -537,13 +537,15 @@ const getData = () => {
 
 Excel 组件支持以下 props：
 
-| Prop                 | 类型      | 默认值 | 说明                                         |
-| -------------------- | --------- | ------ | -------------------------------------------- |
-| `enableColumnResize` | `boolean` | `true` | 是否启用列宽调整功能（拖拽调整和双击自适应） |
-| `enableRowResize`    | `boolean` | `true` | 是否启用行高调整功能（拖拽调整和双击自适应） |
-| `enableFillHandle`   | `boolean` | `true` | 是否启用智能填充功能（填充手柄和拖拽填充）   |
-| `defaultColumnWidth` | `number`  | `100`  | 禁用列宽调整时的固定列宽（像素）             |
-| `defaultRowHeight`   | `number`  | `28`   | 禁用行高调整时的固定行高（像素）             |
+| Prop                 | 类型               | 默认值 | 说明                                                                |
+| -------------------- | ------------------ | ------ | ------------------------------------------------------------------- |
+| `enableColumnResize` | `boolean`          | `true` | 是否启用列宽调整功能（拖拽调整和双击自适应）                        |
+| `enableRowResize`    | `boolean`          | `true` | 是否启用行高调整功能（拖拽调整和双击自适应）                        |
+| `enableFillHandle`   | `boolean`          | `true` | 是否启用智能填充功能（填充手柄和拖拽填充）                          |
+| `defaultColumnWidth` | `number \| Object` | `100`  | 默认列宽（像素），支持数字或 `{ key: number, others: number }` 对象 |
+| `defaultRowHeight`   | `number`           | `36`   | 默认行高（像素）                                                    |
+| `modelValue`         | `string[][]`       | `null` | v-model 绑定的表格数据（二维字符串数组）                            |
+| `columnNames`        | `string[]`         | `null` | 自定义列标题，不提供则使用默认的 A, B, C...                         |
 
 #### 使用示例
 
@@ -660,17 +662,25 @@ const handleDataChange = (data) => {
 </script>
 ```
 
-### 暴露的方法
+### 暴露的方法和属性
 
-通过 `ref` 可以调用以下方法：
+通过 `ref` 可以调用以下方法和访问属性：
 
-| 方法                          | 参数                                      | 返回值            | 说明                         |
-| ----------------------------- | ----------------------------------------- | ----------------- | ---------------------------- |
-| `getData()`                   | -                                         | `string[][]`      | 获取表格数据的深拷贝         |
-| `setData(data)`               | `data: string[][]`                        | `void`            | 设置整个表格数据             |
-| `updateCell(row, col, value)` | `row: number, col: number, value: string` | `void`            | 更新单个单元格               |
-| `clearData()`                 | -                                         | `void`            | 清空所有单元格数据           |
-| `tableData`                   | -                                         | `Ref<string[][]>` | 表格数据的响应式引用（只读） |
+| 方法/属性                         | 参数                                      | 返回值            | 说明                                       |
+| --------------------------------- | ----------------------------------------- | ----------------- | ------------------------------------------ |
+| `getData()`                       | -                                         | `string[][]`      | 获取表格数据的深拷贝                       |
+| `setData(data)`                   | `data: string[][]`                        | `void`            | 设置整个表格数据                           |
+| `updateCell(row, col, value)`     | `row: number, col: number, value: string` | `void`            | 更新单个单元格                             |
+| `clearData()`                     | -                                         | `void`            | 清空所有单元格数据                         |
+| `setColumnWidth(colIndex, width)` | `colIndex: number, width: number`         | `void`            | 设置指定列的宽度（仅在启用列宽调整时生效） |
+| `tableData`                       | -                                         | `Ref<string[][]>` | 表格数据的响应式引用（只读）               |
+
+### 事件
+
+| 事件名              | 参数类型     | 说明                             |
+| ------------------- | ------------ | -------------------------------- |
+| `update:modelValue` | `string[][]` | v-model 更新事件，数据变化时触发 |
+| `change`            | `string[][]` | 数据变化事件，返回深拷贝的数据   |
 
 ## 功能特性
 
