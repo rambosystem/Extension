@@ -103,6 +103,10 @@ ${copiesSection}  </copies>
     ? parseFloat(translationTemperature)
     : 0.1;
 
+  // 获取最大输出token数设置（默认8192，支持最大输出）
+  const maxTokensSetting = localStorage.getItem("translation_max_tokens");
+  const maxTokens = maxTokensSetting ? parseInt(maxTokensSetting, 10) : 8192; // 默认8K，避免4K默认限制导致截断
+
   // 检查是否启用流式处理（默认启用）
   const streamEnabled = localStorage.getItem("stream_translation") !== "false";
 
@@ -111,6 +115,7 @@ ${copiesSection}  </copies>
     model: "deepseek-chat",
     messages: messages,
     temperature: temperature,
+    max_tokens: maxTokens, // 设置最大输出token数
     response_format: { type: "text" },
     stream: streamEnabled && onChunk !== null, // 如果有 onChunk 回调且流式处理启用，则使用流式
   };
@@ -140,6 +145,8 @@ ${copiesSection}  </copies>
   // 如果启用流式处理且有回调函数，处理流式响应
   if (requestBody.stream && onChunk) {
     let fullContent = "";
+    let finishReason = null;
+    let tokenUsage = null;
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
@@ -162,6 +169,13 @@ ${copiesSection}  </copies>
             try {
               const json = JSON.parse(data);
               const delta = json.choices?.[0]?.delta?.content;
+
+              // 检查是否有finish_reason（表示流结束）
+              if (json.choices?.[0]?.finish_reason) {
+                finishReason = json.choices[0].finish_reason;
+                tokenUsage = json.usage || null;
+              }
+
               if (delta) {
                 fullContent += delta;
                 // 调用回调函数传递增量内容
@@ -176,6 +190,16 @@ ${copiesSection}  </copies>
       }
 
       debugLog("DeepSeek streaming response completed:", fullContent);
+      debugLog("Finish reason:", finishReason);
+      debugLog("Token usage:", tokenUsage);
+
+      // 如果因为token限制而停止，在返回的内容中添加标记
+      if (finishReason === "length") {
+        debugLog("Warning: Translation stopped due to token limit");
+        // 可以在这里添加一个标记，让调用方知道输出被截断了
+        // 但为了不影响现有逻辑，暂时只记录日志
+      }
+
       return fullContent;
     } finally {
       reader.releaseLock();

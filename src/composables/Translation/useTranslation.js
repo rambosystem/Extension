@@ -35,10 +35,16 @@ export function useTranslation() {
         // 尝试直接查找 JSON 数组的开始和结束
         const arrayStart = cleanedData.indexOf("[");
         const arrayEnd = cleanedData.lastIndexOf("]");
-        if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
+
+        // 检查JSON是否完整（有开始和结束，且结束位置在开始之后）
+        const isCompleteJson =
+          arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart;
+
+        if (isCompleteJson) {
+          // JSON完整，直接使用
           cleanedData = cleanedData.substring(arrayStart, arrayEnd + 1);
-        } else if (allowPartial && arrayStart !== -1) {
-          // 流式处理：尝试提取部分 JSON
+        } else if (arrayStart !== -1) {
+          // JSON不完整：尝试提取最后一个完整的对象
           // 查找最后一个完整的对象（正确处理嵌套和字符串）
           let lastCompleteObject = -1;
           let braceCount = 0;
@@ -81,9 +87,70 @@ export function useTranslation() {
             // 提取到最后一个完整对象，并补全数组
             cleanedData =
               cleanedData.substring(arrayStart, lastCompleteObject + 1) + "]";
-          } else {
-            // 如果连一个完整对象都没有，返回 null
+          } else if (allowPartial) {
+            // 流式处理：如果连一个完整对象都没有，返回 null
             return null;
+          } else {
+            // 最终解析：如果JSON不完整且没有完整对象，尝试修复
+            // 检查是否在字符串中
+            if (inString) {
+              // 如果最后一个字符在字符串中，尝试闭合字符串和对象
+              let fixedData = cleanedData.substring(arrayStart);
+
+              // 重新扫描以确定需要修复的内容
+              let fixedBraceCount = 0;
+              let fixedInString = false;
+              let fixedEscapeNext = false;
+
+              for (let i = 0; i < fixedData.length; i++) {
+                const char = fixedData[i];
+
+                if (fixedEscapeNext) {
+                  fixedEscapeNext = false;
+                  continue;
+                }
+
+                if (char === "\\") {
+                  fixedEscapeNext = true;
+                  continue;
+                }
+
+                if (char === '"' && !fixedEscapeNext) {
+                  fixedInString = !fixedInString;
+                  continue;
+                }
+
+                if (!fixedInString) {
+                  if (char === "{") {
+                    fixedBraceCount++;
+                  } else if (char === "}") {
+                    fixedBraceCount--;
+                  }
+                }
+              }
+
+              // 如果还在字符串中，闭合字符串
+              if (fixedInString) {
+                fixedData += '"';
+              }
+
+              // 闭合所有未闭合的对象
+              while (fixedBraceCount > 0) {
+                fixedData += "}";
+                fixedBraceCount--;
+              }
+
+              // 闭合数组
+              fixedData += "]";
+              cleanedData = fixedData;
+            } else {
+              // 如果不在字符串中，但JSON不完整，尝试补全
+              cleanedData = cleanedData.substring(arrayStart);
+              // 确保数组闭合
+              if (!cleanedData.endsWith("]")) {
+                cleanedData += "]";
+              }
+            }
           }
         }
       }
@@ -162,6 +229,7 @@ export function useTranslation() {
       currentStatus.value = "idle";
 
       let accumulatedText = "";
+      let isTruncated = false;
 
       // 创建流式更新回调
       const onChunk = onProgress
@@ -183,6 +251,30 @@ export function useTranslation() {
         onChunk
       );
 
+      // 检查数据是否可能被截断（通过检查最后一个字符或JSON完整性）
+      const trimmedData = data.trim();
+      // 如果数据以不完整的JSON结束（比如字符串未闭合），可能被截断了
+      const arrayEnd = trimmedData.lastIndexOf("]");
+      const arrayStart = trimmedData.indexOf("[");
+      if (arrayStart !== -1 && (arrayEnd === -1 || arrayEnd <= arrayStart)) {
+        // JSON可能不完整，可能被截断了
+        isTruncated = true;
+      } else {
+        // 检查最后一个对象是否完整
+        const lastBrace = trimmedData.lastIndexOf("}");
+        if (lastBrace !== -1 && lastBrace < trimmedData.length - 1) {
+          // 最后一个}后面还有内容，可能不完整
+          const afterLastBrace = trimmedData.substring(lastBrace + 1).trim();
+          if (
+            afterLastBrace &&
+            !afterLastBrace.startsWith("]") &&
+            !afterLastBrace.startsWith(",")
+          ) {
+            isTruncated = true;
+          }
+        }
+      }
+
       // 最终解析完整结果
       const translationResult = parseTranslationResult(data);
 
@@ -191,7 +283,16 @@ export function useTranslation() {
         onProgress(translationResult, data);
       }
 
-      ElMessage.success(t("translation.translationCompleted"));
+      // 如果检测到可能被截断，显示警告
+      if (isTruncated) {
+        ElMessage.warning(
+          t("translation.translationTruncated") ||
+            "Translation may be incomplete due to token limit. Please check the results."
+        );
+      } else {
+        ElMessage.success(t("translation.translationCompleted"));
+      }
+
       return translationResult;
     } catch (error) {
       console.error("Translation error:", error);

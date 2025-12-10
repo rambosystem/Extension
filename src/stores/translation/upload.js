@@ -297,7 +297,16 @@ export const useUploadStore = defineStore("upload", {
 
       try {
         // 直接调用上传API，不依赖composable
-        await this.performUpload(translationResult);
+        const lastKey = await this.performUpload(translationResult);
+
+        // 上传成功后，更新baselineKey为最后一个key自增1
+        // 只有当lastKey存在且是有效格式（字母+数字）时才更新
+        if (lastKey && lastKey.match(/^[a-zA-Z]+\d+$/)) {
+          const newBaselineKey = this.incrementKey(lastKey);
+          const exportStore = useExportStore();
+          exportStore.saveExcelBaselineKey(newBaselineKey);
+        }
+
         this.setUploadSuccess(true, "Upload completed successfully");
       } catch (error) {
         console.error("Upload failed:", error);
@@ -315,8 +324,42 @@ export const useUploadStore = defineStore("upload", {
     },
 
     /**
+     * 生成自增key
+     * @param {string} baselineKey - 基准key（如"key1"）
+     * @param {number} index - 当前索引
+     * @returns {string} 生成的key
+     */
+    generateIncrementalKey(baselineKey, index) {
+      const match = baselineKey.match(/^([a-zA-Z]+)(\d+)$/);
+      if (!match) {
+        return baselineKey;
+      }
+      const [, prefix, numberStr] = match;
+      const baseNumber = parseInt(numberStr, 10);
+      const newNumber = baseNumber + index;
+      return `${prefix}${newNumber}`;
+    },
+
+    /**
+     * 从key中提取数字并自增1
+     * @param {string} key - 当前key（如"key5"）
+     * @returns {string} 自增后的key（如"key6"）
+     */
+    incrementKey(key) {
+      const match = key.match(/^([a-zA-Z]+)(\d+)$/);
+      if (!match) {
+        return key; // 如果格式不正确，返回原值
+      }
+      const [, prefix, numberStr] = match;
+      const currentNumber = parseInt(numberStr, 10);
+      const newNumber = currentNumber + 1;
+      return `${prefix}${newNumber}`;
+    },
+
+    /**
      * 执行实际的上传操作
      * @param {Array} translationResult - 翻译结果
+     * @returns {string} 返回最后一个生成的key
      */
     async performUpload(translationResult) {
       // 获取API token
@@ -382,27 +425,28 @@ export const useUploadStore = defineStore("upload", {
       // 获取baseline key
       const baselineKey = localStorage.getItem("excel_baseline_key") || "";
 
-      // 生成自增序列key的函数
-      const generateIncrementalKey = (baselineKey, index) => {
-        const match = baselineKey.match(/^([a-zA-Z]+)(\d+)$/);
-        if (!match) {
-          return baselineKey;
-        }
-        const [, prefix, numberStr] = match;
-        const baseNumber = parseInt(numberStr, 10);
-        const newNumber = baseNumber + index;
-        return `${prefix}${newNumber}`;
-      };
-
       // 准备上传数据
+      let lastGeneratedKey = null;
       const keys = translationResult.map((item, index) => {
         // 根据baseline key是否为空决定key的生成方式
         let keyName;
         if (baselineKey && baselineKey.trim()) {
-          keyName = generateIncrementalKey(baselineKey.trim(), index);
+          // 如果翻译结果中已经有key值，优先使用翻译结果中的key
+          if (item.key && item.key.trim() && item.key.match(/^[a-zA-Z]+\d+$/)) {
+            keyName = item.key.trim();
+          } else {
+            // 否则使用baseline key生成
+            keyName = this.generateIncrementalKey(baselineKey.trim(), index);
+          }
+          lastGeneratedKey = keyName; // 记录最后一个生成的key
         } else {
-          // 如果baseline key为空，使用en作为key
-          keyName = item.en;
+          // 如果baseline key为空，优先使用翻译结果中的key，否则使用en
+          keyName =
+            item.key && item.key.trim() ? item.key.trim() : item.en || "";
+          // 如果keyName是有效的key格式，也记录下来
+          if (keyName && keyName.match(/^[a-zA-Z]+\d+$/)) {
+            lastGeneratedKey = keyName;
+          }
         }
 
         // 构建translations数组：先添加英文，然后按顺序添加目标语言
@@ -439,6 +483,9 @@ export const useUploadStore = defineStore("upload", {
         this.uploadForm.tag ? [this.uploadForm.tag] : [],
         apiToken
       );
+
+      // 返回最后一个生成的key，用于更新baselineKey
+      return lastGeneratedKey;
     },
 
     /**
