@@ -315,8 +315,9 @@ export function useTranslation() {
       localStorage.getItem("target_languages") || "[]"
     );
 
-    // 构建列名数组
+    // 构建列名数组：包含key、en和目标语言
     const columns = [
+      "key", // 保留key字段
       "en",
       ...targetLanguages.map((lang) => {
         return lang.toLowerCase().replace(/\s+/g, "_");
