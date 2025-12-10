@@ -45,7 +45,6 @@
 import { ref, onMounted, computed } from "vue";
 import Settings from "./Views/Settings.vue";
 import Translation from "./Views/Translation.vue";
-import Demo from "./Views/Demo.vue";
 
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
@@ -85,12 +84,6 @@ const menuConfig = computed(() => [
         </div>
       `,
     },
-  },
-  {
-    index: "4",
-    label: t("menu.demo"),
-    title: t("menu.demo"),
-    component: Demo,
   },
 ]);
 
