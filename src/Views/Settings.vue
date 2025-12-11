@@ -1,170 +1,78 @@
 <template>
   <div class="setting_group">
     <h2 class="title">{{ t("settings.title") }}</h2>
-    <el-form
-      :model="translationSettingsStore"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
+    <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
-        <SaveableInput
-          v-model="apiStore.apiKey"
-          :label="t('settings.apiKeyForDeepSeek')"
-          :placeholder="t('settings.apiKeyForDeepSeek')"
-          @save="handleSaveAPIKey"
-          :loading="apiStore.loadingStates?.apiKey || false"
-        />
+        <SaveableInput v-model="apiStore.apiKey" :label="t('settings.apiKeyForDeepSeek')"
+          :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey"
+          :loading="apiStore.loadingStates?.apiKey || false" />
       </el-form-item>
-      <el-form-item
-        :label="t('settings.lokaliseApiToken')"
-        prop="lokaliseApiToken"
-      >
-        <SaveableInput
-          v-model="apiStore.lokaliseApiToken"
-          :label="t('settings.lokaliseApiToken')"
-          placeholder="Enter your Lokalise API token..."
-          @save="handleSaveLokaliseApiToken"
-          :loading="apiStore.loadingStates?.lokaliseApiToken || false"
-        />
+      <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken">
+        <SaveableInput v-model="apiStore.lokaliseApiToken" :label="t('settings.lokaliseApiToken')"
+          placeholder="Enter your Lokalise API token..." @save="handleSaveLokaliseApiToken"
+          :loading="apiStore.loadingStates?.lokaliseApiToken || false" />
       </el-form-item>
 
-      <el-form-item
-        :label="t('settings.autoDeduplication')"
-        label-position="top"
-      >
-        <el-card
-          shadow="never"
-          style="width: 100%"
-          body-style="padding: 16px 20px; cursor: pointer;"
-          @click="handleAutoDeduplicationClick"
-        >
+      <el-form-item v-if="hasLokaliseToken" :label="t('settings.autoDeduplication')" label-position="top">
+        <el-card shadow="never" style="width: 100%" body-style="padding: 16px 20px; cursor: pointer;"
+          @click="handleAutoDeduplicationClick">
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
             }}</span>
-            <el-switch
-              :model-value="translationSettingsStore.autoDeduplication"
-              @update:model-value="handleAutoDeduplicationChange"
-              @click.stop
-              width="45px"
-            />
+            <el-switch :model-value="translationSettingsStore.autoDeduplication"
+              @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>
         </el-card>
       </el-form-item>
       <div v-if="hasLokaliseToken" class="embedding-control">
-        <el-form-item
-          :label="t('settings.AdTerms')"
-          label-position="left"
-          class="addTermsDict-container"
-        >
+        <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
         </el-form-item>
         <div class="control-text">
-          <LoadingButton
-            :loading="refreshLoading"
-            :text="t('terms.Refresh')"
-            @click="handleRefreshTerms"
-          />
-          <LoadingButton
-            :loading="rebuildLoading"
-            :text="t('terms.BuildTermsEmbedding')"
-            @click="handleBuildTermsEmbedding"
-          />
+          <LoadingButton :loading="refreshLoading" :text="t('terms.Refresh')" @click="handleRefreshTerms" />
+          <LoadingButton :loading="rebuildLoading" :text="t('terms.BuildTermsEmbedding')"
+            @click="handleBuildTermsEmbedding" />
         </div>
       </div>
       <div v-if="hasLokaliseToken" class="terms-single">
-        <TermsCard
-          :title="termsStore.termsTitle"
-          :status="termsStore.termsStatus"
-          :total-terms="termsStore.totalTerms"
-          :loading="termsStore.termsLoading"
-          :error="termsStore.termsError"
-          :terms-data="editableTermsData"
-          :embedding-status="termsStore.embeddingStatus"
-          :last-embedding-time="termsStore.lastEmbeddingTime"
-          :refresh-loading="refreshLoading"
-          :library-loading="libraryLoading"
-          @update:status="termsStore.updateTermStatus"
-          @refresh="handleRefreshTerms"
-          @fetchTermsData="termsStore.fetchTermsData"
-          @addTerm="handleAddTerm"
-          @deleteTerm="handleDeleteTerm"
-          @updateTerm="handleUpdateTerm"
-        />
+        <TermsCard :title="termsStore.termsTitle" :status="termsStore.termsStatus" :total-terms="termsStore.totalTerms"
+          :loading="termsStore.termsLoading" :error="termsStore.termsError" :terms-data="editableTermsData"
+          :embedding-status="termsStore.embeddingStatus" :last-embedding-time="termsStore.lastEmbeddingTime"
+          :refresh-loading="refreshLoading" :library-loading="libraryLoading"
+          @update:status="termsStore.updateTermStatus" @refresh="handleRefreshTerms"
+          @fetchTermsData="termsStore.fetchTermsData" @addTerm="handleAddTerm" @deleteTerm="handleDeleteTerm"
+          @updateTerm="handleUpdateTerm" />
       </div>
     </el-form>
     <h2 class="title">{{ t("settings.advancedSettings") }}</h2>
-    <el-form-item
-      :label="t('settings.translationTemperature')"
-      label-position="left"
-    >
+    <el-form-item :label="t('settings.translationTemperature')" label-position="left">
       <div class="translation-temperature">
-        <el-input-number
-          controls-position="right"
-          v-model="translationSettingsStore.translationTemperature"
-          :step="0.1"
-          :min="0"
-          :max="2"
-          :precision="1"
-          @change="handleTranslationTemperatureChange"
-        />
+        <el-input-number controls-position="right" v-model="translationSettingsStore.translationTemperature" :step="0.1"
+          :min="0" :max="2" :precision="1" @change="handleTranslationTemperatureChange" />
       </div>
     </el-form-item>
-    <el-form
-      :model="translationSettingsStore"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
-      <el-form-item
-        :label="t('termMatch.similarityThreshold')"
-        label-position="left"
-      >
+    <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
+      <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
         <div class="similarity-threshold">
-          <el-input-number
-            controls-position="right"
-            v-model="translationSettingsStore.similarityThreshold"
-            :step="0.01"
-            :min="0.5"
-            :max="1"
-            :precision="2"
-            @change="handleSimilarityThresholdChange"
-          />
+          <el-input-number controls-position="right" v-model="translationSettingsStore.similarityThreshold" :step="0.01"
+            :min="0.5" :max="1" :precision="2" @change="handleSimilarityThresholdChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.topK')" label-position="left">
         <div class="top-k">
-          <el-input-number
-            controls-position="right"
-            v-model="translationSettingsStore.topK"
-            :step="1"
-            :min="1"
-            :max="50"
-            :precision="0"
-            @change="handleTopKChange"
-          />
+          <el-input-number controls-position="right" v-model="translationSettingsStore.topK" :step="1" :min="1"
+            :max="50" :precision="0" @change="handleTopKChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('termMatch.maxNGram')" label-position="left">
         <div class="max-ngram">
-          <el-input-number
-            controls-position="right"
-            v-model="translationSettingsStore.maxNGram"
-            :step="1"
-            :min="1"
-            :max="5"
-            :precision="0"
-            @change="handleMaxNGramChange"
-          />
+          <el-input-number controls-position="right" v-model="translationSettingsStore.maxNGram" :step="1" :min="1"
+            :max="5" :precision="0" @change="handleMaxNGramChange" />
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.language')" label-position="left">
         <div class="language-select">
-          <el-select
-            v-model="appStore.language"
-            @change="handleLanguageChange"
-            style="width: 160px"
-          >
+          <el-select v-model="appStore.language" @change="handleLanguageChange" style="width: 160px">
             <el-option label="English" value="en" />
             <el-option label="中文" value="zh_CN" />
           </el-select>
@@ -172,34 +80,20 @@
       </el-form-item>
       <el-form-item :label="t('settings.debugLogging')" label-position="left">
         <div class="debug-logging-setting">
-          <el-switch
-            v-model="translationSettingsStore.debugLogging"
-            @change="handleDebugLoggingChange"
-            width="45px"
-          />
+          <el-switch v-model="translationSettingsStore.debugLogging" @change="handleDebugLoggingChange" width="45px" />
         </div>
       </el-form-item>
-      <el-form-item
-        :label="t('settings.clearLocalStorage')"
-        label-position="left"
-      >
+      <el-form-item :label="t('settings.clearLocalStorage')" label-position="left">
         <div class="localStorageClear">
           <el-button type="primary" @click="handleClearLocalStorage">
             {{ t("common.clear") }}
           </el-button>
         </div>
-        <el-dialog
-          v-model="translationSettingsStore.dialogVisible"
-          :title="t('settings.clearLocalStorage')"
-          width="30%"
-          align-center
-        >
+        <el-dialog v-model="translationSettingsStore.dialogVisible" :title="t('settings.clearLocalStorage')" width="30%"
+          align-center>
           <span>{{ t("settings.clearLocalStorageConfirm") }}</span>
           <template #footer>
-            <el-button
-              @click="translationSettingsStore.dialogVisible = false"
-              >{{ t("common.cancel") }}</el-button
-            >
+            <el-button @click="translationSettingsStore.dialogVisible = false">{{ t("common.cancel") }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -209,13 +103,8 @@
     </el-form>
 
     <!-- 重建embedding确认框 -->
-    <ConfirmDialog
-      v-model="rebuildConfirmVisible"
-      :title="t('terms.rebuildEmbedding')"
-      :message="t('terms.rebuildEmbeddingCheck')"
-      @confirm="handleRebuildConfirm"
-      @cancel="handleRebuildCancel"
-    />
+    <ConfirmDialog v-model="rebuildConfirmVisible" :title="t('terms.rebuildEmbedding')"
+      :message="t('terms.rebuildEmbeddingCheck')" @confirm="handleRebuildConfirm" @cancel="handleRebuildCancel" />
   </div>
 </template>
 
@@ -555,5 +444,4 @@ onMounted(async () => {
   // 按钮样式由 LoadingButton 组件处理
 }
 
-// Loading 按钮样式由 LoadingButton 组件处理
-</style>
+// Loading 按钮样式由 LoadingButton 组件处理</style>
