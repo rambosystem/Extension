@@ -52,19 +52,19 @@
       </div>
     </el-form-item>
     <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
-      <el-form-item :label="t('termMatch.similarityThreshold')" label-position="left">
+      <el-form-item v-if="hasLokaliseToken" :label="t('termMatch.similarityThreshold')" label-position="left">
         <div class="similarity-threshold">
           <el-input-number controls-position="right" v-model="translationSettingsStore.similarityThreshold" :step="0.01"
             :min="0.5" :max="1" :precision="2" @change="handleSimilarityThresholdChange" />
         </div>
       </el-form-item>
-      <el-form-item :label="t('termMatch.topK')" label-position="left">
+      <el-form-item v-if="hasLokaliseToken" :label="t('termMatch.topK')" label-position="left">
         <div class="top-k">
           <el-input-number controls-position="right" v-model="translationSettingsStore.topK" :step="1" :min="1"
             :max="50" :precision="0" @change="handleTopKChange" />
         </div>
       </el-form-item>
-      <el-form-item :label="t('termMatch.maxNGram')" label-position="left">
+      <el-form-item v-if="hasLokaliseToken" :label="t('termMatch.maxNGram')" label-position="left">
         <div class="max-ngram">
           <el-input-number controls-position="right" v-model="translationSettingsStore.maxNGram" :step="1" :min="1"
             :max="5" :precision="0" @change="handleMaxNGramChange" />
