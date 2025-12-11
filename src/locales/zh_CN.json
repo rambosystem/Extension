@@ -18,6 +18,7 @@
   "menu": {
     "tools": "常用工具",
     "translation": "国际化翻译",
+    "update": "更新",
     "settings": "设置",
     "about": "关于",
     "demo": "Demo"
@@ -115,6 +116,10 @@
   "about": {
     "title": "关于",
     "content": "关于页面内容"
+  },
+  "update": {
+    "title": "更新",
+    "content": "更新页面内容"
   },
   "terms": {
     "defaultTerms": "公共术语库",

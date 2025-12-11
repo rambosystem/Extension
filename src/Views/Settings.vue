@@ -3,12 +3,12 @@
     <h2 class="title">{{ t("settings.title") }}</h2>
     <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
-        <SaveableInput v-model="apiStore.apiKey" :label="t('settings.apiKeyForDeepSeek')"
+        <SaveableInput v-model="localApiKey" :label="t('settings.apiKeyForDeepSeek')"
           :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey"
           :loading="apiStore.loadingStates?.apiKey || false" />
       </el-form-item>
       <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken">
-        <SaveableInput v-model="apiStore.lokaliseApiToken" :label="t('settings.lokaliseApiToken')"
+        <SaveableInput v-model="localLokaliseToken" :label="t('settings.lokaliseApiToken')"
           placeholder="Enter your Lokalise API token..." @save="handleSaveLokaliseApiToken"
           :loading="apiStore.loadingStates?.lokaliseApiToken || false" />
       </el-form-item>
@@ -132,8 +132,31 @@ const translationSettingsStore = useTranslationSettingsStore();
 const termsStore = useTermsStore();
 const appStore = useAppStore();
 
-// 检查是否配置了 Lokalise Token
+// 本地变量用于输入框，不直接绑定到store（避免输入时就显示功能）
+const localApiKey = ref(apiStore.apiKey || "");
+const localLokaliseToken = ref(apiStore.lokaliseApiToken || "");
+
+// 检查是否配置了 Lokalise Token（只有保存成功后才会有值）
 const hasLokaliseToken = computed(() => apiStore.hasLokaliseToken);
+
+// 监听store变化，同步到本地变量（当store从localStorage初始化时）
+watch(
+  () => apiStore.apiKey,
+  (newValue) => {
+    if (newValue !== localApiKey.value) {
+      localApiKey.value = newValue || "";
+    }
+  }
+);
+
+watch(
+  () => apiStore.lokaliseApiToken,
+  (newValue) => {
+    if (newValue !== localLokaliseToken.value) {
+      localLokaliseToken.value = newValue || "";
+    }
+  }
+);
 
 // 直接使用store实例，不进行解构以保持响应式
 
@@ -153,10 +176,14 @@ const formRef = ref();
 // 添加缺失的事件处理函数
 const handleSaveAPIKey = async (saveData) => {
   await apiStore.saveApiKey(saveData);
+  // 保存成功后，本地变量会自动通过watch同步，但为了确保一致性，也更新一下
+  localApiKey.value = apiStore.apiKey || "";
 };
 
 const handleSaveLokaliseApiToken = async (saveData) => {
   await apiStore.saveLokaliseApiToken(saveData);
+  // 保存成功后，本地变量会自动通过watch同步，但为了确保一致性，也更新一下
+  localLokaliseToken.value = apiStore.lokaliseApiToken || "";
 };
 
 const handleAutoDeduplicationChange = (value) => {
@@ -323,6 +350,10 @@ onMounted(async () => {
     // 初始化设置
     apiStore.initializeApiSettings();
     translationSettingsStore.initializeTranslationSettings();
+
+    // 初始化本地变量（从store读取已保存的值）
+    localApiKey.value = apiStore.apiKey || "";
+    localLokaliseToken.value = apiStore.lokaliseApiToken || "";
 
     // Debug: Log store state
     debugLog("API Store State:", {
