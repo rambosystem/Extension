@@ -52,7 +52,7 @@
           </div>
         </el-card>
       </el-form-item>
-      <div class="embedding-control">
+      <div v-if="hasLokaliseToken" class="embedding-control">
         <el-form-item
           :label="t('settings.AdTerms')"
           label-position="left"
@@ -72,7 +72,7 @@
           />
         </div>
       </div>
-      <div class="terms-single">
+      <div v-if="hasLokaliseToken" class="terms-single">
         <TermsCard
           :title="termsStore.termsTitle"
           :status="termsStore.termsStatus"
@@ -220,7 +220,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, computed } from "vue";
 import { ElDialog, ElMessage } from "element-plus";
 import SaveableInput from "../Components/Common/SaveableInput.vue";
 import ConfirmDialog from "../Components/Common/ConfirmDialog.vue";
@@ -242,6 +242,9 @@ const apiStore = useApiStore();
 const translationSettingsStore = useTranslationSettingsStore();
 const termsStore = useTermsStore();
 const appStore = useAppStore();
+
+// 检查是否配置了 Lokalise Token
+const hasLokaliseToken = computed(() => apiStore.hasLokaliseToken);
 
 // 直接使用store实例，不进行解构以保持响应式
 

@@ -22,7 +22,7 @@ export const useTermsStore = defineStore("terms", {
     termsData: [],
 
     // 术语状态
-    termsStatus: true, // 默认为true，避免初始化时的动画闪烁
+    termsStatus: false, // 默认为false（关闭），避免初始化时的动画闪烁
     termsTitle: "Terms Library",
 
     // 统计信息
@@ -405,10 +405,11 @@ export const useTermsStore = defineStore("terms", {
     initializeTermsStatus() {
       if (typeof window !== "undefined" && window.localStorage) {
         const savedStatus = localStorage.getItem("ad_terms_status");
-        this.termsStatus = savedStatus !== null ? savedStatus === "true" : true;
+        this.termsStatus =
+          savedStatus !== null ? savedStatus === "true" : false;
       } else {
-        // 如果没有localStorage，使用默认值true
-        this.termsStatus = true;
+        // 如果没有localStorage，使用默认值false（关闭）
+        this.termsStatus = false;
       }
     },
 
@@ -505,7 +506,7 @@ export const useTermsStore = defineStore("terms", {
     initializeToDefaults() {
       // 只重置开关状态，不重置术语数据
       // 术语数据通过 Pinia 持久化存储，用户希望保留
-      this.termsStatus = true; // 重置为默认开启状态
+      this.termsStatus = false; // 重置为默认关闭状态
       this.termsError = null;
       this.embeddingStatus = "pending";
       this.lastEmbeddingTime = "";
@@ -521,7 +522,7 @@ export const useTermsStore = defineStore("terms", {
 
       // 保存Ad Terms状态到localStorage（重置为默认值）
       if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("ad_terms_status", "true");
+        localStorage.setItem("ad_terms_status", "false");
       }
     },
   },
