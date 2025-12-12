@@ -9,10 +9,10 @@ export async function translate(
 ) {
   const adTermsEnabled = localStorage.getItem("ad_terms_status");
 
-  // 如果 ad_terms_status 不存在，默认开启术语匹配
+  // 如果 ad_terms_status 不存在，默认关闭术语匹配
   const isAdTermsEnabled =
     adTermsEnabled === null
-      ? true
+      ? false
       : adTermsEnabled === "true" || adTermsEnabled === true;
 
   let matchedTerms = null; // 初始化 matchedTerms 变量

@@ -16,7 +16,7 @@ import { useCacheValidation } from "../../composables/Core/useCacheValidation.js
 export const useTranslationSettingsStore = defineStore("translationSettings", {
   state: () => {
     // 在 state 初始化时同步读取 localStorage，避免组件渲染时的闪烁
-    let autoDeduplication = true; // 默认值
+    let autoDeduplication = false; // 默认值：关闭
     if (typeof window !== "undefined" && window.localStorage) {
       try {
         const storedValue = localStorage.getItem("auto_deduplication_enabled");
@@ -44,7 +44,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       deduplicateProject: "Common",
 
       // 公共术语库状态
-      adTerms: true,
+      adTerms: false,
 
       // 调试日志开关
       debugLogging: false,
@@ -263,7 +263,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
      */
     initializeToDefaults() {
       // 重置到默认值
-      this.autoDeduplication = true; // 重置为默认值
+      this.autoDeduplication = false; // 重置为默认值：关闭
       this.similarityThreshold = 0.7;
       this.topK = 10;
       this.maxNGram = 3;
@@ -276,7 +276,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       });
 
       // 同步重置的设置到localStorage
-      localStorage.setItem("auto_deduplication_enabled", "true");
+      localStorage.setItem("auto_deduplication_enabled", "false");
       localStorage.setItem("deduplicate_project_selection", "Common");
       localStorage.setItem("termMatch_similarity_threshold", "0.7");
       localStorage.setItem("termMatch_top_k", "10");
@@ -455,9 +455,9 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         const { validateCacheInitialization } = useCacheValidation();
 
         const expectedSettings = {
-          autoDeduplication: true, // 重置为默认值
+          autoDeduplication: false, // 重置为默认值：关闭
           deduplicateProject: "Common", // 重置为默认值
-          adTerms: true, // 重置为默认值
+          adTerms: false, // 重置为默认值：关闭
           debugLogging: this.debugLogging, // 保持当前设置
           similarityThreshold: 0.7, // 重置为默认值
           topK: 10, // 重置为默认值

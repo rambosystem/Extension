@@ -45,6 +45,7 @@
 import { ref, onMounted, computed } from "vue";
 import Settings from "./Views/Settings.vue";
 import Translation from "./Views/Translation.vue";
+import Update from "./Views/Update.vue";
 
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
@@ -66,12 +67,18 @@ const menuConfig = computed(() => [
   },
   {
     index: "2",
+    label: t("menu.update"),
+    title: t("menu.update"),
+    component: Update,
+  },
+  {
+    index: "3",
     label: t("menu.settings"),
     title: t("menu.settings"),
     component: Settings,
   },
   {
-    index: "3",
+    index: "4",
     label: t("menu.about"),
     title: t("menu.about"),
     component: {

@@ -55,7 +55,7 @@
         </div>
       </div>
     </el-form-item>
-    <el-form-item
+    <!-- <el-form-item
       :label="t('translationSetting.overwrite')"
       label-position="left"
     >
@@ -66,7 +66,7 @@
           width="45px"
         />
       </div>
-    </el-form-item>
+    </el-form-item> -->
   </div>
 </template>
 

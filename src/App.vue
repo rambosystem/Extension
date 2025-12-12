@@ -42,7 +42,7 @@ import WeightItem from "./Components/Terms/Weight-Item.vue";
 
 const handleSettingClick = () => {
   // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
-  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+  chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
     chrome.runtime.openOptionsPage(() => {
       window.close();
     });

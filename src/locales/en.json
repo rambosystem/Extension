@@ -18,6 +18,7 @@
   "menu": {
     "tools": "Tools",
     "translation": "Translation",
+    "update": "Update",
     "settings": "Settings",
     "about": "About"
   },
@@ -114,6 +115,10 @@
   "about": {
     "title": "About",
     "content": "About page content"
+  },
+  "update": {
+    "title": "Update",
+    "content": "Update page content"
   },
   "terms": {
     "defaultTerms": "Public Terms Library",
