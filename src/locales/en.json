@@ -18,7 +18,7 @@
   "menu": {
     "tools": "Tools",
     "translation": "Translation",
-    "update": "Update",
+    "library": "Library",
     "settings": "Settings",
     "about": "About"
   },
@@ -116,9 +116,24 @@
     "title": "About",
     "content": "About page content"
   },
-  "update": {
-    "title": "Update",
-    "content": "Update page content"
+  "library": {
+    "title": "Library",
+    "content": "Library page content",
+    "tableTitle": "Key & Translation Table",
+    "keyName": "Key Name",
+    "project": "Project",
+    "english": "English",
+    "chinese": "Chinese",
+    "spanish": "Spanish",
+    "loadFailed": "Failed to load translation keys",
+    "filterKeyName": "Key Name",
+    "filterKeyNamePlaceholder": "Input key names",
+    "keyNamePopupPlaceholder": "Please separate each item using either a line break or a comma",
+    "filterProject": "Project",
+    "filterProjectPlaceholder": "Select a project",
+    "selectAll": "Select All",
+    "search": "Search",
+    "clear": "Clear"
   },
   "terms": {
     "defaultTerms": "Public Terms Library",

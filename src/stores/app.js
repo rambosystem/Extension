@@ -24,7 +24,7 @@ export const useAppStore = defineStore("app", {
     currentMenuName: (state) => {
       const menuNames = {
         1: "Translation",
-        2: "Update",
+        2: "Library",
         3: "Settings",
         4: "About",
       };

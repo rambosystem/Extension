@@ -18,7 +18,7 @@
   "menu": {
     "tools": "常用工具",
     "translation": "国际化翻译",
-    "update": "更新",
+    "library": "Library",
     "settings": "设置",
     "about": "关于"
   },
@@ -116,9 +116,24 @@
     "title": "关于",
     "content": "关于页面内容"
   },
-  "update": {
-    "title": "更新",
-    "content": "更新页面内容"
+  "library": {
+    "title": "Library",
+    "content": "库页面内容",
+    "tableTitle": "键值 & 翻译表",
+    "keyName": "键名",
+    "project": "项目",
+    "english": "英文",
+    "chinese": "中文",
+    "spanish": "西班牙语",
+    "loadFailed": "加载翻译键失败",
+    "filterKeyName": "键名",
+    "filterKeyNamePlaceholder": "输入键名",
+    "keyNamePopupPlaceholder": "请使用换行或逗号分隔每个项目",
+    "filterProject": "项目",
+    "filterProjectPlaceholder": "选择项目",
+    "selectAll": "选择全部",
+    "search": "搜索",
+    "clear": "清除"
   },
   "terms": {
     "defaultTerms": "公共术语库",
