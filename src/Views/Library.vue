@@ -4,126 +4,78 @@
 
     <!-- 筛选区域 -->
     <div class="filter-section">
-      <!-- 工具提示标签 -->
-      <div v-if="showKeyNameTooltip" class="filter-tooltip">
-        {{ t("library.filterKeyName") }}
-        <div class="tooltip-arrow"></div>
-      </div>
-      <el-form :inline="true" class="filter-form">
-        <el-form-item :label="t('library.filterKeyName')">
-          <div class="filter-input-wrapper" ref="keyNameInputRef">
-            <div
-              class="filter-input-container"
-              :class="{ active: showKeyNamePopup }"
-              @click="handleKeyNameClick"
-            >
-              <div
-                class="filter-condition-selector"
-                @click.stop="showConditionDropdown = !showConditionDropdown"
-              >
-                <span class="condition-text">{{ filterConditionText }}</span>
-                <el-icon class="condition-icon"><ArrowDown /></el-icon>
-                <!-- 条件选择下拉 -->
-                <div
-                  v-if="showConditionDropdown"
-                  class="condition-dropdown"
-                  @click.stop
-                >
-                  <div
-                    v-for="condition in filterConditions"
-                    :key="condition.value"
-                    class="condition-option"
-                    :class="{ active: filterCondition === condition.value }"
-                    @click="selectCondition(condition.value)"
-                  >
-                    {{ condition.label }}
+      <!-- 筛选区 -->
+      <div class="filter-conditions">
+        <!-- 工具提示标签 -->
+        <div v-if="showKeyNameTooltip" class="filter-tooltip">
+          {{ t("library.filterKeyName") }}
+          <div class="tooltip-arrow"></div>
+        </div>
+        <el-row :gutter="20" class="filter-form">
+          <el-col :span="16">
+            <div class="filter-input-wrapper" ref="keyNameInputRef">
+              <div class="filter-input-container" :class="{ active: showKeyNamePopup }" @click="handleKeyNameClick">
+                <span class="filter-label">{{ t('library.filterKeyName') }}</span>
+                <span class="filter-separator">|</span>
+                <div class="filter-condition-selector" @click.stop="showConditionDropdown = !showConditionDropdown">
+                  <span class="condition-text">{{ filterConditionText }}</span>
+                  <el-icon class="condition-icon">
+                    <ArrowDown />
+                  </el-icon>
+                  <!-- 条件选择下拉 -->
+                  <div v-if="showConditionDropdown" class="condition-dropdown" @click.stop>
+                    <div v-for="condition in filterConditions" :key="condition.value" class="condition-option"
+                      :class="{ active: filterCondition === condition.value }"
+                      @click="selectCondition(condition.value)">
+                      {{ condition.label }}
+                    </div>
                   </div>
                 </div>
+                <input v-model="filterKeyNameDisplay" type="text" class="filter-text-input"
+                  :placeholder="t('library.filterKeyNamePlaceholder')" readonly @focus="showKeyNamePopup = true" />
               </div>
-              <input
-                v-model="filterKeyNameDisplay"
-                type="text"
-                class="filter-text-input"
-                :placeholder="t('library.filterKeyNamePlaceholder')"
-                readonly
-                @focus="showKeyNamePopup = true"
-              />
+              <!-- Key Name 多行输入弹窗 -->
+              <div v-if="showKeyNamePopup" class="key-name-popup" @click.stop>
+                <el-input v-model="filterKeyName" type="textarea" :rows="6"
+                  :placeholder="t('library.keyNamePopupPlaceholder')" class="popup-textarea"
+                  @blur="handleKeyNameBlur" />
+              </div>
             </div>
-            <!-- Key Name 多行输入弹窗 -->
-            <div v-if="showKeyNamePopup" class="key-name-popup" @click.stop>
-              <el-input
-                v-model="filterKeyName"
-                type="textarea"
-                :rows="6"
-                :placeholder="t('library.keyNamePopupPlaceholder')"
-                class="popup-textarea"
-                @blur="handleKeyNameBlur"
-              />
-            </div>
-          </div>
-        </el-form-item>
-        <el-form-item :label="t('library.filterProject')">
-          <el-select
-            v-model="filterProject"
-            :placeholder="t('library.filterProjectPlaceholder')"
-            clearable
-            filterable
-            style="width: 200px"
-          >
-            <el-option :label="t('library.selectAll')" value="" />
-            <el-option
-              v-for="project in projectList"
-              :key="project.project_id"
-              :label="project.name"
-              :value="project.name"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button @click="handleClear">{{ t("library.clear") }}</el-button>
-          <el-button type="primary" @click="handleSearch">
-            {{ t("library.search") }}
-          </el-button>
-        </el-form-item>
-      </el-form>
+          </el-col>
+          <el-col :span="8">
+            <el-select v-model="filterProject" :placeholder="t('library.filterProjectPlaceholder')" clearable filterable
+              style="width: 100%">
+              <template #prefix>
+                <span style="display: flex; align-items: center;">
+                  <span class="filter-label">{{ t('library.filterProject') }}</span>
+                  <span class="filter-separator">|</span>
+                </span>
+              </template>
+              <el-option :label="t('library.selectAll')" value="" />
+              <el-option v-for="project in projectList" :key="project.project_id" :label="project.name"
+                :value="project.name" />
+            </el-select>
+          </el-col>
+        </el-row>
+      </div>
+      <!-- 按钮区 -->
+      <div class="filter-buttons">
+        <el-button @click="handleClear">{{ t("library.clear") }}</el-button>
+        <el-button type="primary" @click="handleSearch">
+          {{ t("library.search") }}
+        </el-button>
+      </div>
     </div>
 
     <!-- 表格区域 -->
     <div class="table-section">
-      <h3 class="table-title">{{ t("library.tableTitle") }}</h3>
-      <el-table
-        :data="tableData"
-        style="width: 100%"
-        v-loading="loading"
-        :element-loading-text="t('common.loading')"
-        stripe
-        border
-      >
-        <el-table-column
-          prop="keyName"
-          :label="t('library.keyName')"
-          width="200"
-        />
-        <el-table-column
-          prop="project"
-          :label="t('library.project')"
-          width="150"
-        />
-        <el-table-column
-          prop="english"
-          :label="t('library.english')"
-          min-width="200"
-        />
-        <el-table-column
-          prop="chinese"
-          :label="t('library.chinese')"
-          min-width="200"
-        />
-        <el-table-column
-          prop="spanish"
-          :label="t('library.spanish')"
-          min-width="200"
-        />
+      <el-table :data="tableData" style="width: 100%" v-loading="loading" :element-loading-text="t('common.loading')"
+        stripe border>
+        <el-table-column prop="keyName" :label="t('library.keyName')" width="200" />
+        <el-table-column prop="project" :label="t('library.project')" width="150" />
+        <el-table-column prop="english" :label="t('library.english')" min-width="200" />
+        <el-table-column prop="chinese" :label="t('library.chinese')" min-width="200" />
+        <el-table-column prop="spanish" :label="t('library.spanish')" min-width="200" />
       </el-table>
     </div>
   </div>
@@ -391,9 +343,19 @@ onUnmounted(() => {
 }
 
 .filter-section {
-  margin-bottom: 24px;
-  padding: 20px 0;
+  padding-top: 10px;
   position: relative;
+}
+
+.filter-conditions {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
 }
 
 .filter-form {
@@ -402,7 +364,6 @@ onUnmounted(() => {
 
 .filter-form :deep(.el-form-item) {
   margin-bottom: 0;
-  margin-right: 20px;
 }
 
 .filter-form :deep(.el-form-item__label) {
@@ -415,7 +376,7 @@ onUnmounted(() => {
 }
 
 .filter-input-wrapper {
-  width: 300px;
+  width: 100%;
   position: relative;
 }
 
@@ -465,6 +426,20 @@ onUnmounted(() => {
 
 .filter-input-container.active {
   box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #606266;
+  white-space: nowrap;
+}
+
+.filter-separator {
+  margin: 0 8px;
+  color: #dcdfe6;
 }
 
 .filter-condition-selector {
@@ -585,13 +560,6 @@ onUnmounted(() => {
 
 .table-section {
   margin-top: 24px;
-}
-
-.table-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: #303133;
 }
 
 :deep(.el-table) {
