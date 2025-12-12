@@ -43,8 +43,7 @@
             </div>
           </el-col>
           <el-col :span="8">
-            <el-select v-model="filterProject" :placeholder="t('library.filterProjectPlaceholder')" clearable filterable
-              style="width: 100%">
+            <el-select v-model="filterProject" :placeholder="t('library.filterProjectPlaceholder')" style="width: 100%">
               <template #prefix>
                 <span style="display: flex; align-items: center;">
                   <span class="filter-label">{{ t('library.filterProject') }}</span>
