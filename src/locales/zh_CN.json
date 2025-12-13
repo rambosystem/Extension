@@ -129,6 +129,7 @@
     "filterKeyName": "键名",
     "filterKeyNamePlaceholder": "输入键名",
     "keyNamePopupPlaceholder": "一行一个键名",
+    "multipleKeyNames": "{count} 个键名",
     "filterProject": "项目",
     "filterProjectPlaceholder": "选择项目",
     "selectAll": "选择全部",

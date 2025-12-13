@@ -109,11 +109,18 @@ const filterConditionText = computed(() => {
 
 const filterKeyNameDisplay = computed(() => {
   if (!filterKeyName.value) return "";
-  const firstLine = filterKeyName.value.split("\n")[0].trim();
-  if (filterKeyName.value.split("\n").length > 1) {
-    return `${firstLine}...`;
-  }
-  return firstLine;
+
+  // 计算有效的 key name 数量（过滤空行和空白）
+  const keyNames = filterKeyName.value
+    .split(/[\n,]/)
+    .map((key) => key.trim())
+    .filter((key) => key.length > 0);
+
+  if (keyNames.length === 0) return "";
+  if (keyNames.length === 1) return keyNames[0];
+
+  // 多个 key name 时显示 "N Key Names"
+  return t("library.multipleKeyNames", { count: keyNames.length });
 });
 
 const loadProjectList = async () => {
@@ -475,6 +482,7 @@ onUnmounted(() => {
 
 .popup-textarea {
   width: 100%;
+  height: 100%;
 
   :deep(.el-textarea__inner) {
     font-family: inherit;
@@ -482,6 +490,14 @@ onUnmounted(() => {
     border: none;
     box-shadow: none;
     padding: 8px;
+
+    // 隐藏滚动条但保持滚动功能
+    scrollbar-width: none; // Firefox
+    -ms-overflow-style: none; // IE and Edge
+
+    &::-webkit-scrollbar {
+      display: none; // Chrome, Safari, Opera
+    }
   }
 }
 
