@@ -160,22 +160,17 @@ const handleProjectSelectVisibleChange = (visible) => {
 watch(
   filterProject,
   (newValue) => {
-    if (!Array.isArray(newValue)) return;
+    if (!Array.isArray(newValue) || projectList.value.length === 0) return;
 
     const hasSelectAll = newValue.includes("__SELECT_ALL__");
-    const allProjectNames = projectList.value.map((p) => p.name);
-    const allSelected = allProjectNames.length > 0 &&
-      allProjectNames.every((name) => newValue.includes(name));
 
-    if (hasSelectAll && !allSelected) {
-      // 如果选择了"Select All"，则选择所有项目
-      filterProject.value = allProjectNames;
-    } else if (!hasSelectAll && allSelected && allProjectNames.length > 0) {
-      // 如果所有项目都已选择，则添加"Select All"标记（可选，用于显示状态）
-      // 这里不自动添加，让用户手动选择"Select All"
-    } else if (hasSelectAll && allSelected) {
-      // 如果"Select All"被选中且所有项目都已选择，移除"Select All"标记，只保留项目名称
-      filterProject.value = allProjectNames;
+    if (hasSelectAll) {
+      // 如果选择了"Select All"，则选择所有项目（移除"__SELECT_ALL__"标记）
+      const allProjectNames = projectList.value.map((p) => p.name);
+      // 使用 nextTick 避免在 watch 中直接修改导致的问题
+      nextTick(() => {
+        filterProject.value = allProjectNames;
+      });
     }
   },
   { deep: true }
