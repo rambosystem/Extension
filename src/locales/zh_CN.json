@@ -128,7 +128,7 @@
     "loadFailed": "加载翻译键失败",
     "filterKeyName": "键名",
     "filterKeyNamePlaceholder": "输入键名",
-    "keyNamePopupPlaceholder": "请使用换行或逗号分隔每个项目",
+    "keyNamePopupPlaceholder": "一行一个键名",
     "filterProject": "项目",
     "filterProjectPlaceholder": "选择项目",
     "selectAll": "选择全部",
