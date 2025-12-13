@@ -2,17 +2,10 @@
   <div class="library_group">
     <h2 class="title">{{ t("library.title") }}</h2>
 
-    <!-- 筛选区域 -->
     <div class="filter-section">
-      <!-- 筛选区 -->
       <div class="filter-conditions">
-        <!-- 工具提示标签 -->
-        <div v-if="showKeyNameTooltip" class="filter-tooltip">
-          {{ t("library.filterKeyName") }}
-          <div class="tooltip-arrow"></div>
-        </div>
         <el-row :gutter="20" class="filter-form">
-          <el-col :span="16">
+          <el-col :span="12">
             <div class="filter-input-wrapper" ref="keyNameInputRef">
               <div class="filter-input-container" :class="{ active: showKeyNamePopup }" @click="handleKeyNameClick">
                 <span class="filter-label">{{ t('library.filterKeyName') }}</span>
@@ -22,7 +15,6 @@
                   <el-icon class="condition-icon">
                     <ArrowDown />
                   </el-icon>
-                  <!-- 条件选择下拉 -->
                   <div v-if="showConditionDropdown" class="condition-dropdown" @click.stop>
                     <div v-for="condition in filterConditions" :key="condition.value" class="condition-option"
                       :class="{ active: filterCondition === condition.value }"
@@ -34,7 +26,6 @@
                 <input v-model="filterKeyNameDisplay" type="text" class="filter-text-input"
                   :placeholder="t('library.filterKeyNamePlaceholder')" readonly @focus="showKeyNamePopup = true" />
               </div>
-              <!-- Key Name 多行输入弹窗 -->
               <div v-if="showKeyNamePopup" class="key-name-popup" @click.stop>
                 <el-input v-model="filterKeyName" type="textarea" :rows="6"
                   :placeholder="t('library.keyNamePopupPlaceholder')" class="popup-textarea"
@@ -42,22 +33,22 @@
               </div>
             </div>
           </el-col>
-          <el-col :span="8">
-            <el-select v-model="filterProject" :placeholder="t('library.filterProjectPlaceholder')" style="width: 100%">
+          <el-col :span="12">
+            <el-select ref="projectSelectRef" v-model="filterProject"
+              :placeholder="t('library.filterProjectPlaceholder')" style="width: 100%"
+              @visible-change="handleProjectSelectVisibleChange">
               <template #prefix>
                 <span style="display: flex; align-items: center;">
                   <span class="filter-label">{{ t('library.filterProject') }}</span>
                   <span class="filter-separator">|</span>
                 </span>
               </template>
-              <el-option :label="t('library.selectAll')" value="" />
               <el-option v-for="project in projectList" :key="project.project_id" :label="project.name"
                 :value="project.name" />
             </el-select>
           </el-col>
         </el-row>
       </div>
-      <!-- 按钮区 -->
       <div class="filter-buttons">
         <el-button @click="handleClear">{{ t("library.clear") }}</el-button>
         <el-button type="primary" @click="handleSearch">
@@ -66,7 +57,6 @@
       </div>
     </div>
 
-    <!-- 表格区域 -->
     <div class="table-section">
       <el-table :data="tableData" style="width: 100%" v-loading="loading" :element-loading-text="t('common.loading')"
         stripe border>
@@ -89,27 +79,16 @@ import { getUserProjects } from "../requests/lokalise.js";
 
 const { t } = useI18n();
 
-const props = defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-});
-
-// 状态管理
 const loading = ref(false);
 const tableData = ref([]);
 const projectList = ref([]);
-
-// 筛选条件
 const filterKeyName = ref("");
 const filterProject = ref("");
 const showKeyNamePopup = ref(false);
-const showKeyNameTooltip = ref(false);
 const showConditionDropdown = ref(false);
 const keyNameInputRef = ref(null);
+const projectSelectRef = ref(null);
 
-// 筛选条件选项
 const filterConditions = [
   { label: "Contains(or)", value: "contains_or" },
   { label: "Contains(and)", value: "contains_and" },
@@ -120,7 +99,6 @@ const filterConditions = [
 
 const filterCondition = ref("contains_or");
 
-// 获取当前筛选条件的显示文本
 const filterConditionText = computed(() => {
   const condition = filterConditions.find(
     (c) => c.value === filterCondition.value
@@ -128,7 +106,6 @@ const filterConditionText = computed(() => {
   return condition ? condition.label : "Contains(or)";
 });
 
-// Key Name 显示值（单行显示，截取第一行）
 const filterKeyNameDisplay = computed(() => {
   if (!filterKeyName.value) return "";
   const firstLine = filterKeyName.value.split("\n")[0].trim();
@@ -138,13 +115,8 @@ const filterKeyNameDisplay = computed(() => {
   return firstLine;
 });
 
-/**
- * 加载项目列表
- * 优先从 localStorage 读取，如果没有则从 API 获取
- */
 const loadProjectList = async () => {
   try {
-    // 先从 localStorage 获取已保存的项目列表
     const savedProjects = localStorage.getItem("lokalise_projects");
     if (savedProjects) {
       try {
@@ -158,11 +130,9 @@ const loadProjectList = async () => {
       }
     }
 
-    // 如果 localStorage 中没有，尝试从 API 获取
     try {
       const projects = await getUserProjects();
       projectList.value = projects;
-      // 保存到 localStorage
       localStorage.setItem("lokalise_projects", JSON.stringify(projects));
     } catch (error) {
       console.warn("Failed to fetch projects from API:", error);
@@ -174,18 +144,21 @@ const loadProjectList = async () => {
   }
 };
 
-/**
- * 加载表格数据
- * TODO: 后续替换为真实API调用
- */
+const handleProjectSelectVisibleChange = (visible) => {
+  if (visible && projectList.value.length === 0) {
+    nextTick(() => {
+      if (projectSelectRef.value) {
+        projectSelectRef.value.blur();
+      }
+    });
+    ElMessage.warning(t("library.pleaseAuthorizeLokaliseToken"));
+  }
+};
+
 const loadTableData = async () => {
   loading.value = true;
   try {
-    // 模拟数据，后续替换为真实API
-    // const data = await fetchTranslationKeys();
-    // tableData.value = data;
-
-    // 临时模拟数据
+    // TODO: Replace with real API call
     tableData.value = [
       {
         keyName: "common.welcome",
@@ -224,12 +197,8 @@ const loadTableData = async () => {
   }
 };
 
-/**
- * 处理 Key Name 输入框点击
- */
 const handleKeyNameClick = () => {
   showKeyNamePopup.value = true;
-  showKeyNameTooltip.value = true;
   showConditionDropdown.value = false;
 };
 
@@ -248,7 +217,6 @@ const handleKeyNameBlur = () => {
   // 延迟关闭弹窗，以便点击弹窗内部时不会立即关闭
   setTimeout(() => {
     showKeyNamePopup.value = false;
-    showKeyNameTooltip.value = false;
   }, 200);
 };
 
@@ -259,7 +227,6 @@ const handleClear = () => {
   filterKeyName.value = "";
   filterProject.value = "";
   showKeyNamePopup.value = false;
-  showKeyNameTooltip.value = false;
   showConditionDropdown.value = false;
 };
 
@@ -268,7 +235,6 @@ const handleClear = () => {
  */
 const handleSearch = async () => {
   showKeyNamePopup.value = false;
-  showKeyNameTooltip.value = false;
   showConditionDropdown.value = false;
 
   loading.value = true;
@@ -308,7 +274,6 @@ const handleClickOutside = (event) => {
     const element = keyNameInputRef.value;
     if (element && !element.contains(event.target)) {
       showKeyNamePopup.value = false;
-      showKeyNameTooltip.value = false;
       showConditionDropdown.value = false;
     }
   }
@@ -361,48 +326,9 @@ onUnmounted(() => {
   margin: 0;
 }
 
-.filter-form :deep(.el-form-item) {
-  margin-bottom: 0;
-}
-
-.filter-form :deep(.el-form-item__label) {
-  font-size: 13px;
-  font-weight: 600;
-  color: #606266;
-  padding: 0;
-  margin-right: 8px;
-  line-height: 32px;
-}
-
 .filter-input-wrapper {
   width: 100%;
   position: relative;
-}
-
-.filter-tooltip {
-  position: absolute;
-  top: -32px;
-  left: 0;
-  background-color: #606266;
-  color: #ffffff;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-  z-index: 1001;
-  pointer-events: none;
-}
-
-.tooltip-arrow {
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 4px solid #606266;
 }
 
 .filter-input-container {
@@ -417,18 +343,19 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 0 0 1px #dcdfe6 inset;
-}
 
-.filter-input-container:hover {
-  box-shadow: 0 0 0 1px #c0c4cc inset;
-}
+  &:hover {
+    box-shadow: 0 0 0 1px #c0c4cc inset;
+  }
 
-.filter-input-container.active {
-  box-shadow: 0 0 0 1px #409eff inset;
+  &.active {
+    box-shadow: 0 0 0 1px #409eff inset;
+  }
 }
 
 .filter-label {
   display: flex;
+  font-size: 14px;
   align-items: center;
   gap: 4px;
   font-weight: 600;
@@ -483,15 +410,15 @@ onUnmounted(() => {
   color: #606266;
   cursor: pointer;
   transition: background-color 0.2s;
-}
 
-.condition-option:hover {
-  background-color: #f5f7fa;
-}
+  &:hover {
+    background-color: #f5f7fa;
+  }
 
-.condition-option.active {
-  background-color: #ecf5ff;
-  color: #409eff;
+  &.active {
+    background-color: #ecf5ff;
+    color: #409eff;
+  }
 }
 
 .filter-text-input {
@@ -502,27 +429,10 @@ onUnmounted(() => {
   color: #606266;
   background: transparent;
   cursor: pointer;
-}
 
-.filter-text-input::placeholder {
-  color: #c0c4cc;
-}
-
-.filter-input {
-  width: 100%;
-}
-
-.filter-input :deep(.el-input__inner) {
-  cursor: pointer;
-}
-
-.filter-select {
-  width: 100%;
-}
-
-.input-icon {
-  cursor: pointer;
-  color: #909399;
+  &::placeholder {
+    color: #c0c4cc;
+  }
 }
 
 .key-name-popup {
@@ -540,20 +450,13 @@ onUnmounted(() => {
 
 .popup-textarea {
   width: 100%;
-}
 
-.popup-textarea :deep(.el-textarea__inner) {
-  font-family: inherit;
-  resize: vertical;
-  border: none;
-  box-shadow: none;
-  padding: 8px;
-}
-
-@media (max-width: 768px) {
-  .filter-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  :deep(.el-textarea__inner) {
+    font-family: inherit;
+    resize: vertical;
+    border: none;
+    box-shadow: none;
+    padding: 8px;
   }
 }
 
@@ -563,19 +466,15 @@ onUnmounted(() => {
 
 :deep(.el-table) {
   border: 1px solid #ebeef5;
-}
 
-:deep(.el-table th) {
-  background-color: #f5f7fa;
-  font-weight: 600;
-  color: #303133;
-}
+  th {
+    background-color: #f5f7fa;
+    font-weight: 600;
+    color: #303133;
+  }
 
-:deep(.el-table td) {
-  padding: 12px 0;
-}
-
-.filter-input-wrapper {
-  position: relative;
+  td {
+    padding: 12px 0;
+  }
 }
 </style>

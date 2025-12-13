@@ -133,7 +133,8 @@
     "filterProjectPlaceholder": "选择项目",
     "selectAll": "选择全部",
     "search": "搜索",
-    "clear": "清除"
+    "clear": "清除",
+    "pleaseAuthorizeLokaliseToken": "请先授权Lokalise Token"
   },
   "terms": {
     "defaultTerms": "公共术语库",
