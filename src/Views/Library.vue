@@ -34,7 +34,7 @@
             </div>
           </el-col>
           <el-col :span="12">
-            <el-select ref="projectSelectRef" v-model="filterProject"
+            <el-select ref="projectSelectRef" v-model="filterProject" multiple
               :placeholder="t('library.filterProjectPlaceholder')" style="width: 100%"
               @visible-change="handleProjectSelectVisibleChange">
               <template #prefix>
@@ -43,6 +43,7 @@
                   <span class="filter-separator">|</span>
                 </span>
               </template>
+              <el-option :label="t('library.selectAll')" value="__SELECT_ALL__" />
               <el-option v-for="project in projectList" :key="project.project_id" :label="project.name"
                 :value="project.name" />
             </el-select>
@@ -71,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
 import { useI18n } from "../composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";
 import { ArrowDown } from "@element-plus/icons-vue";
@@ -83,7 +84,7 @@ const loading = ref(false);
 const tableData = ref([]);
 const projectList = ref([]);
 const filterKeyName = ref("");
-const filterProject = ref("");
+const filterProject = ref([]);
 const showKeyNamePopup = ref(false);
 const showConditionDropdown = ref(false);
 const keyNameInputRef = ref(null);
@@ -155,6 +156,31 @@ const handleProjectSelectVisibleChange = (visible) => {
   }
 };
 
+// 监听项目选择变化，处理"Select All"逻辑
+watch(
+  filterProject,
+  (newValue) => {
+    if (!Array.isArray(newValue)) return;
+
+    const hasSelectAll = newValue.includes("__SELECT_ALL__");
+    const allProjectNames = projectList.value.map((p) => p.name);
+    const allSelected = allProjectNames.length > 0 &&
+      allProjectNames.every((name) => newValue.includes(name));
+
+    if (hasSelectAll && !allSelected) {
+      // 如果选择了"Select All"，则选择所有项目
+      filterProject.value = allProjectNames;
+    } else if (!hasSelectAll && allSelected && allProjectNames.length > 0) {
+      // 如果所有项目都已选择，则添加"Select All"标记（可选，用于显示状态）
+      // 这里不自动添加，让用户手动选择"Select All"
+    } else if (hasSelectAll && allSelected) {
+      // 如果"Select All"被选中且所有项目都已选择，移除"Select All"标记，只保留项目名称
+      filterProject.value = allProjectNames;
+    }
+  },
+  { deep: true }
+);
+
 const loadTableData = async () => {
   loading.value = true;
   try {
@@ -225,7 +251,7 @@ const handleKeyNameBlur = () => {
  */
 const handleClear = () => {
   filterKeyName.value = "";
-  filterProject.value = "";
+  filterProject.value = [];
   showKeyNamePopup.value = false;
   showConditionDropdown.value = false;
 };
@@ -239,6 +265,11 @@ const handleSearch = async () => {
 
   loading.value = true;
   try {
+    // 处理项目筛选：移除"__SELECT_ALL__"标记，保留实际项目名称
+    const selectedProjects = filterProject.value.filter(
+      (p) => p !== "__SELECT_ALL__"
+    );
+
     // TODO: 调用后端API，传递筛选条件
     // const params = {
     //   keyNames: filterKeyName.value
@@ -246,7 +277,7 @@ const handleSearch = async () => {
     //     .map((key) => key.trim())
     //     .filter((key) => key.length > 0),
     //   condition: filterCondition.value,
-    //   project: filterProject.value || null,
+    //   projects: selectedProjects.length > 0 ? selectedProjects : null,
     // };
     // const data = await fetchTranslationKeys(params);
     // tableData.value = data;
