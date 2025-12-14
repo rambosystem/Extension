@@ -79,7 +79,7 @@
                 </el-row>
             </div>
             <div class="table-section">
-                <el-table :data="paginatedTermsData" style="width: 100%" height="450" empty-text="" v-loading="loading"
+                <el-table :data="paginatedTermsData" style="width: 100%" empty-text="" v-loading="loading"
                     :element-loading-text="t('common.loading')">
                     <el-table-column prop="en" label="EN">
                         <template #default="{ row, $index }">

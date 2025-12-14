@@ -9,9 +9,10 @@
     </div>
 
     <div class="table-section">
-      <LibraryTableConfig @lineHeight="handleLineHeight" @columnConfig="handleColumnConfig" />
+      <LibraryTableConfig :initial-row-height="rowHeight" :initial-visible-columns="visibleColumns"
+        @lineHeight="handleLineHeight" @columnConfig="handleColumnConfig" />
       <LibraryTable :data="tableData" :loading="loading" :loading-text="t('common.loading')" :row-height="rowHeight"
-        @operation="handleOperation" />
+        :visible-columns="visibleColumns" @operation="handleOperation" @selection-change="handleSelectionChange" />
     </div>
   </div>
 </template>
@@ -29,11 +30,8 @@ const { t } = useI18n();
 const libraryStore = useLibraryStore();
 
 // 使用 storeToRefs 保持响应式
-const { filterKeyName, filterProject, filterCondition, filterConditions, projectList, tableData, loading } =
+const { filterKeyName, filterProject, filterCondition, filterConditions, projectList, tableData, loading, rowHeight, visibleColumns } =
   storeToRefs(libraryStore);
-
-// 行高状态
-const rowHeight = ref(50); // 默认 50px
 
 
 
@@ -64,15 +62,21 @@ const handleOperation = (row) => {
  * 处理行高配置选择
  */
 const handleLineHeight = (value) => {
-  rowHeight.value = value;
+  libraryStore.setRowHeight(value);
 };
 
 /**
- * 处理自定义列配置点击
+ * 处理自定义列配置更改
  */
-const handleColumnConfig = () => {
-  // TODO: 实现自定义列配置逻辑
-  console.log("Column config clicked");
+const handleColumnConfig = (columns) => {
+  libraryStore.setVisibleColumns(columns);
+};
+
+/**
+ * 处理表格选中变化
+ */
+const handleSelectionChange = (selection) => {
+  console.log("Selected rows:", selection);
 };
 
 onMounted(() => {

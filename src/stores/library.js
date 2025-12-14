@@ -32,6 +32,10 @@ export const useLibraryStore = defineStore("library", {
       { label: "Starts with", value: "starts_with" },
       { label: "Ends with", value: "ends_with" },
     ],
+
+    // 表格配置
+    rowHeight: 50, // 默认 50px
+    visibleColumns: ["english", "chinese", "japanese"], // 默认不包含 Project 和 Spanish
   }),
 
   getters: {
@@ -168,6 +172,7 @@ export const useLibraryStore = defineStore("library", {
             project: "Common",
             english: "Welcome",
             chinese: "欢迎",
+            japanese: "ようこそ",
             spanish: "Bienvenido",
           },
           {
@@ -175,6 +180,7 @@ export const useLibraryStore = defineStore("library", {
             project: "Common",
             english: "Save",
             chinese: "保存",
+            japanese: "保存",
             spanish: "Guardar",
           },
           {
@@ -182,6 +188,7 @@ export const useLibraryStore = defineStore("library", {
             project: "AmazonSearch",
             english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
             chinese: "搜索产品",
+            japanese: "商品を検索",
             spanish: "Buscar Productos",
           },
           {
@@ -189,6 +196,103 @@ export const useLibraryStore = defineStore("library", {
             project: "Commerce",
             english: "Add to Cart",
             chinese: "加入购物车",
+            japanese: "カートに追加",
+            spanish: "Añadir al carrito",
+          },
+                    {
+            keyName: "common.welcome",
+            project: "Common",
+            english: "Welcome",
+            chinese: "欢迎",
+            japanese: "ようこそ",
+            spanish: "Bienvenido",
+          },
+          {
+            keyName: "common.save",
+            project: "Common",
+            english: "Save",
+            chinese: "保存",
+            japanese: "保存",
+            spanish: "Guardar",
+          },
+          {
+            keyName: "search.title",
+            project: "AmazonSearch",
+            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
+            chinese: "搜索产品",
+            japanese: "商品を検索",
+            spanish: "Buscar Productos",
+          },
+          {
+            keyName: "commerce.addToCart",
+            project: "Commerce",
+            english: "Add to Cart",
+            chinese: "加入购物车",
+            japanese: "カートに追加",
+            spanish: "Añadir al carrito",
+          },
+                    {
+            keyName: "common.welcome",
+            project: "Common",
+            english: "Welcome",
+            chinese: "欢迎",
+            japanese: "ようこそ",
+            spanish: "Bienvenido",
+          },
+          {
+            keyName: "common.save",
+            project: "Common",
+            english: "Save",
+            chinese: "保存",
+            japanese: "保存",
+            spanish: "Guardar",
+          },
+          {
+            keyName: "search.title",
+            project: "AmazonSearch",
+            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
+            chinese: "搜索产品",
+            japanese: "商品を検索",
+            spanish: "Buscar Productos",
+          },
+          {
+            keyName: "commerce.addToCart",
+            project: "Commerce",
+            english: "Add to Cart",
+            chinese: "加入购物车",
+            japanese: "カートに追加",
+            spanish: "Añadir al carrito",
+          },
+                    {
+            keyName: "common.welcome",
+            project: "Common",
+            english: "Welcome",
+            chinese: "欢迎",
+            japanese: "ようこそ",
+            spanish: "Bienvenido",
+          },
+          {
+            keyName: "common.save",
+            project: "Common",
+            english: "Save",
+            chinese: "保存",
+            japanese: "保存",
+            spanish: "Guardar",
+          },
+          {
+            keyName: "search.title",
+            project: "AmazonSearch",
+            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
+            chinese: "搜索产品",
+            japanese: "商品を検索",
+            spanish: "Buscar Productos",
+          },
+          {
+            keyName: "commerce.addToCart",
+            project: "Commerce",
+            english: "Add to Cart",
+            chinese: "加入购物车",
+            japanese: "カートに追加",
             spanish: "Añadir al carrito",
           },
         ];
@@ -229,5 +333,54 @@ export const useLibraryStore = defineStore("library", {
         this.loading = false;
       }
     },
+
+    /**
+     * 设置表格行高
+     * @param {number} height - 行高（像素）
+     */
+    setRowHeight(height) {
+      this.rowHeight = height;
+    },
+
+    /**
+     * 设置可见列
+     * @param {Array<string>} columns - 列名数组
+     */
+    setVisibleColumns(columns) {
+      this.visibleColumns = columns;
+    },
+
+    /**
+     * 初始化到默认值（缓存清除时使用）
+     */
+    initializeToDefaults() {
+      this.rowHeight = 50;
+      this.visibleColumns = ["english", "chinese", "japanese"];
+    },
+  },
+
+  // 启用持久化存储
+  persist: {
+    key: "library-store",
+    storage: {
+      getItem: (key) => {
+        if (typeof window !== "undefined" && window.localStorage) {
+          return localStorage.getItem(key);
+        }
+        return null;
+      },
+      setItem: (key, value) => {
+        if (typeof window !== "undefined" && window.localStorage) {
+          localStorage.setItem(key, value);
+        }
+      },
+      removeItem: (key) => {
+        if (typeof window !== "undefined" && window.localStorage) {
+          localStorage.removeItem(key);
+        }
+      },
+    },
+    // 只持久化表格配置，不持久化筛选条件和数据
+    paths: ["rowHeight", "visibleColumns"],
   },
 });
