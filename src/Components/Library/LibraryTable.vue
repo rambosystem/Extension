@@ -56,6 +56,9 @@
 import { computed, ref, watch, onMounted, nextTick, onUnmounted } from "vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
 
+// 存储跨页选中的行（用于"全选所有页"模式）
+const allPagesSelectedRows = ref([]);
+
 // Tooltip 配置选项（Element Plus 2.2.28+ 支持对象配置）
 const tooltipOptions = {
   placement: "top",
@@ -108,6 +111,15 @@ const props = defineProps({
     type: Array,
     default: () => ["english", "chinese", "japanese"],
   },
+  /**
+   * 选择范围：'current' 表示当前页，'all' 表示所有页，null 表示未选择
+   * @type {String|null}
+   * @default null
+   */
+  selectionScope: {
+    type: String,
+    default: null,
+  },
 });
 
 const { t } = useI18n();
@@ -116,12 +128,29 @@ const emit = defineEmits(["operation", "selection-change"]);
 
 const tableRef = ref(null);
 
+// 创建一个 WeakMap 来存储每行数据的唯一标识
+const rowKeyMap = new WeakMap();
+let rowKeyCounter = 0;
+
 /**
  * 获取行的唯一标识
+ * 使用 WeakMap 为每行数据分配唯一的 key，确保即使 keyName 相同，每一行也有唯一的标识
  */
 const getRowKey = (row) => {
-  // 使用 keyName 作为唯一标识
-  return row.keyName || row.id || Math.random();
+  // 首先尝试使用 id（如果存在）
+  if (row.id) {
+    return row.id;
+  }
+
+  // 如果 WeakMap 中已有该行的 key，直接返回
+  if (rowKeyMap.has(row)) {
+    return rowKeyMap.get(row);
+  }
+
+  // 如果还没有，为该行分配一个新的唯一 key
+  const uniqueKey = `row-${rowKeyCounter++}`;
+  rowKeyMap.set(row, uniqueKey);
+  return uniqueKey;
 };
 
 // 分页相关状态
@@ -179,8 +208,102 @@ const handleOperation = (row) => {
  * 处理选中变化
  */
 const handleSelectionChange = (selection) => {
-  emit("selection-change", selection);
+  if (props.selectionScope === "all") {
+    // 如果选择范围是"所有页"，需要维护跨页选中状态
+    // 获取当前页的行 key
+    const currentPageKeys = new Set(paginatedData.value.map((row) => getRowKey(row)));
+
+    // 移除当前页之前选中的项
+    allPagesSelectedRows.value = allPagesSelectedRows.value.filter(
+      (row) => !currentPageKeys.has(getRowKey(row))
+    );
+
+    // 添加当前页新选中的项
+    allPagesSelectedRows.value.push(...selection);
+
+    // 发送所有页的选中项
+    emit("selection-change", [...allPagesSelectedRows.value]);
+  } else {
+    // 如果选择范围是"当前页"或未选择，只发送当前页的选中项
+    allPagesSelectedRows.value = [];
+    emit("selection-change", selection);
+  }
 };
+
+// 用于标记是否正在执行全选操作，避免与 watch 冲突
+const isSelectingAll = ref(false);
+
+/**
+ * 处理全选（暴露给父组件调用）
+ * @param {string} scope - 'current' 或 'all'
+ */
+const handleSelectAll = (scope) => {
+  if (!tableRef.value) return;
+
+  isSelectingAll.value = true;
+
+  if (scope === "current") {
+    // 全选当前页
+    allPagesSelectedRows.value = [];
+    nextTick(() => {
+      tableRef.value.clearSelection();
+      paginatedData.value.forEach((row) => {
+        tableRef.value.toggleRowSelection(row, true);
+      });
+      // 发送当前页的选中项
+      emit("selection-change", [...paginatedData.value]);
+      isSelectingAll.value = false;
+    });
+  } else if (scope === "all") {
+    // 全选所有页：选择所有数据
+    allPagesSelectedRows.value = [...props.data];
+    nextTick(() => {
+      // 选择当前页的所有行（视觉反馈）
+      tableRef.value.clearSelection();
+      paginatedData.value.forEach((row) => {
+        tableRef.value.toggleRowSelection(row, true);
+      });
+      // 发送所有数据作为选中项
+      emit("selection-change", [...props.data]);
+      isSelectingAll.value = false;
+    });
+  }
+};
+
+// 监听分页变化，恢复当前页的选中状态（用于"全选所有页"模式）
+watch(
+  () => [currentPage.value, props.selectionScope],
+  (newVal, oldVal) => {
+    // 如果正在执行全选操作，跳过 watch 逻辑
+    if (isSelectingAll.value) return;
+
+    const [newPage, newScope] = newVal;
+    const [oldPage, oldScope] = oldVal || [1, "current"];
+
+    // 只在分页变化时恢复选中状态（选择范围变化由 handleSelectAll 处理）
+    if (newPage !== oldPage && props.selectionScope === "all" && tableRef.value) {
+      nextTick(() => {
+        tableRef.value.clearSelection();
+        const currentPageKeys = new Set(paginatedData.value.map((row) => getRowKey(row)));
+        // 恢复当前页的选中状态
+        paginatedData.value.forEach((row) => {
+          const rowKey = getRowKey(row);
+          const isSelected = allPagesSelectedRows.value.some(
+            (selectedRow) => getRowKey(selectedRow) === rowKey
+          );
+          if (isSelected) {
+            tableRef.value.toggleRowSelection(row, true);
+          }
+        });
+      });
+    }
+  }
+);
+
+// 暴露方法给父组件
+defineExpose({
+  handleSelectAll,
+});
 
 /**
  * 移除页面大小选择器中的 "/page" 文本，只显示数字
@@ -306,7 +429,7 @@ onUnmounted(() => {
   --table-row-height: 50px;
   display: flex;
   flex-direction: column;
-  height: 500px;
+  height: 450px;
 }
 
 :deep(.el-table) {

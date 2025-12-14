@@ -36,6 +36,12 @@ export const useLibraryStore = defineStore("library", {
     // 表格配置
     rowHeight: 50, // 默认 50px
     visibleColumns: ["english", "chinese", "japanese"], // 默认不包含 Project 和 Spanish
+
+    // 选中的行数据
+    selectedRows: [],
+
+    // 选择范围：'current' 表示当前页，'all' 表示所有页，null 表示未选择
+    selectionScope: null,
   }),
 
   getters: {
@@ -164,6 +170,8 @@ export const useLibraryStore = defineStore("library", {
      */
     async loadTableData() {
       this.loading = true;
+      // 清除选中状态，因为数据即将更新
+      this.clearSelectedRows();
       try {
         // TODO: Replace with real API call
         this.tableData = [
@@ -310,6 +318,8 @@ export const useLibraryStore = defineStore("library", {
      */
     async search() {
       this.loading = true;
+      // 清除选中状态，因为搜索结果即将更新
+      this.clearSelectedRows();
       try {
         // TODO: 调用后端API，传递筛选条件
         // const params = {
@@ -351,11 +361,36 @@ export const useLibraryStore = defineStore("library", {
     },
 
     /**
+     * 设置选中的行数据
+     * @param {Array<Object>} rows - 选中的行数据数组
+     */
+    setSelectedRows(rows) {
+      this.selectedRows = rows;
+    },
+
+    /**
+     * 清除选中的行数据
+     */
+    clearSelectedRows() {
+      this.selectedRows = [];
+    },
+
+    /**
+     * 设置选择范围
+     * @param {string} scope - 'current' 或 'all'
+     */
+    setSelectionScope(scope) {
+      this.selectionScope = scope;
+    },
+
+    /**
      * 初始化到默认值（缓存清除时使用）
      */
     initializeToDefaults() {
       this.rowHeight = 50;
       this.visibleColumns = ["english", "chinese", "japanese"];
+      this.selectedRows = [];
+      this.selectionScope = null;
     },
   },
 

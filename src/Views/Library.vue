@@ -10,15 +10,18 @@
 
     <div class="table-section">
       <LibraryTableConfig :initial-row-height="rowHeight" :initial-visible-columns="visibleColumns"
-        @lineHeight="handleLineHeight" @columnConfig="handleColumnConfig" />
-      <LibraryTable :data="tableData" :loading="loading" :loading-text="t('common.loading')" :row-height="rowHeight"
-        :visible-columns="visibleColumns" @operation="handleOperation" @selection-change="handleSelectionChange" />
+        :selected-rows="selectedRows" :selection-scope="selectionScope" @lineHeight="handleLineHeight"
+        @columnConfig="handleColumnConfig" @bulkOperation="handleBulkOperation"
+        @selection-scope-change="handleSelectionScopeChange" />
+      <LibraryTable ref="tableRef" :data="tableData" :loading="loading" :loading-text="t('common.loading')"
+        :row-height="rowHeight" :visible-columns="visibleColumns" :selection-scope="selectionScope"
+        @operation="handleOperation" @selection-change="handleSelectionChange" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "../composables/Core/useI18n.js";
 import LibraryFilter from "../Components/Library/LibraryFilter.vue";
@@ -28,9 +31,10 @@ import { useLibraryStore } from "../stores/library.js";
 
 const { t } = useI18n();
 const libraryStore = useLibraryStore();
+const tableRef = ref(null);
 
 // 使用 storeToRefs 保持响应式
-const { filterKeyName, filterProject, filterCondition, filterConditions, projectList, tableData, loading, rowHeight, visibleColumns } =
+const { filterKeyName, filterProject, filterCondition, filterConditions, projectList, tableData, loading, rowHeight, visibleColumns, selectedRows, selectionScope } =
   storeToRefs(libraryStore);
 
 
@@ -55,7 +59,7 @@ const handleSearch = async () => {
  */
 const handleOperation = (row) => {
   // TODO: 实现操作菜单或操作逻辑
-  console.log("Operation clicked for row:", row);
+  // console.log("Operation clicked for row:", row);
 };
 
 /**
@@ -76,7 +80,19 @@ const handleColumnConfig = (columns) => {
  * 处理表格选中变化
  */
 const handleSelectionChange = (selection) => {
-  console.log("Selected rows:", selection);
+  libraryStore.setSelectedRows(selection);
+  // console.log("Selected rows:", selection);
+};
+
+/**
+ * 处理选择范围变化
+ */
+const handleSelectionScopeChange = (scope) => {
+  libraryStore.setSelectionScope(scope);
+  // 根据选择范围执行全选
+  if (tableRef.value) {
+    tableRef.value.handleSelectAll(scope);
+  }
 };
 
 onMounted(() => {

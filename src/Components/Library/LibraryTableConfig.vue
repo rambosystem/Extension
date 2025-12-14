@@ -1,5 +1,20 @@
 <template>
   <div class="table-config-bar">
+    <div class="bulk-operation-section">
+      <el-button type="primary" :disabled="!hasSelection" @click="handleBulkOperation">
+        {{ t("library.bulkOperation") }}
+        <el-icon class="dropdown-arrow">
+          <ArrowDown />
+        </el-icon>
+      </el-button>
+      <div v-if="hasSelection" class="selection-scope-group">
+        <el-radio-group :model-value="props.selectionScope" @change="handleSelectionScopeChange" size="small">
+          <el-radio label="all">{{ t("library.selectAllPage") }}</el-radio>
+          <el-radio label="current">{{ t("library.selectCurrentPage") }}</el-radio>
+        </el-radio-group>
+      </div>
+      <span v-if="selectedCount > 0" class="selection-count-text">{{ selectedCount }} {{ t("library.selected") }}</span>
+    </div>
     <div class="config-items">
       <div class="config-item line-height-config" @click.stop="toggleLineHeightDropdown">
         <img src="@/assets/line_height.svg" alt="行高" class="config-icon" />
@@ -64,11 +79,12 @@
  * @example
  * <LibraryTableConfig @lineHeight="handleLineHeight" @columnConfig="handleColumnConfig" />
  */
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
+import { ArrowDown } from "@element-plus/icons-vue";
 
 const { t } = useI18n();
-const emit = defineEmits(["lineHeight", "columnConfig"]);
+const emit = defineEmits(["lineHeight", "columnConfig", "bulkOperation", "selectionScopeChange"]);
 
 const props = defineProps({
   /**
@@ -88,6 +104,24 @@ const props = defineProps({
   initialVisibleColumns: {
     type: Array,
     default: () => ["english", "chinese", "japanese"],
+  },
+  /**
+   * 选中的行数据
+   * @type {Array<Object>}
+   * @default []
+   */
+  selectedRows: {
+    type: Array,
+    default: () => [],
+  },
+  /**
+   * 选择范围：'current' 表示当前页，'all' 表示所有页
+   * @type {String}
+   * @default "current"
+   */
+  selectionScope: {
+    type: String,
+    default: "current",
   },
 });
 
@@ -190,6 +224,32 @@ const canToggleColumn = (column) => {
   return selectedColumns.value.length > 1;
 };
 
+/**
+ * 计算选中数量
+ */
+const selectedCount = computed(() => props.selectedRows.length);
+
+/**
+ * 是否有选中项
+ */
+const hasSelection = computed(() => selectedCount.value > 0);
+
+/**
+ * 处理批量操作按钮点击
+ */
+const handleBulkOperation = () => {
+  if (hasSelection.value) {
+    emit("bulkOperation", props.selectedRows);
+  }
+};
+
+/**
+ * 处理选择范围变化
+ */
+const handleSelectionScopeChange = (scope) => {
+  emit("selectionScopeChange", scope);
+};
+
 // 点击外部关闭下拉菜单
 const handleClickOutside = (event) => {
   if (!event.target.closest(".line-height-config")) {
@@ -212,10 +272,70 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .table-config-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 12px 0;
   margin-bottom: 0;
+}
+
+.bulk-operation-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bulk-operation-section :deep(.el-button) {
+  width: 140px;
+}
+
+.bulk-operation-section :deep(.el-button.is-disabled) {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #c0c4cc;
+  cursor: not-allowed;
+}
+
+.bulk-operation-section .dropdown-arrow {
+  margin-left: 4px;
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+
+.bulk-operation-section :deep(.el-button.is-disabled .dropdown-arrow) {
+  color: #c0c4cc;
+}
+
+.selection-scope-group {
+  display: flex;
+  align-items: center;
+}
+
+.selection-scope-group :deep(.el-radio-group) {
+  display: flex;
+  gap: 16px;
+}
+
+.selection-scope-group :deep(.el-radio) {
+  margin-right: 0;
+  color: #606266;
+  font-size: 14px;
+}
+
+.selection-scope-group :deep(.el-radio__label) {
+  padding-left: 8px;
+  color: #606266;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.selection-scope-group :deep(.el-radio.is-checked .el-radio__label) {
+  font-weight: 500;
+}
+
+.selection-count-text {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 400;
 }
 
 .config-items {
