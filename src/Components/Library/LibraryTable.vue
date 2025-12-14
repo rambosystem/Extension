@@ -48,7 +48,7 @@
  * @example
  * <LibraryTable :data="tableData" :loading="loading" />
  */
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted, nextTick, onUnmounted } from "vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
 
 const props = defineProps({
@@ -170,6 +170,90 @@ const handleOperation = (row) => {
 const handleSelectionChange = (selection) => {
   emit("selection-change", selection);
 };
+
+/**
+ * 移除页面大小选择器中的 "/page" 文本，只显示数字
+ */
+const removePageText = () => {
+  nextTick(() => {
+    // 移除选中项中的 "/page" 文本
+    const wrapper = document.querySelector(".library-table-wrapper");
+    if (!wrapper) return;
+
+    // 处理选中项
+    const selectedItems = wrapper.querySelectorAll(
+      ".el-pagination .el-select .el-select__selected-item"
+    );
+    selectedItems.forEach((item) => {
+      if (item.textContent && item.textContent.includes("/page")) {
+        item.textContent = item.textContent.replace("/page", "");
+      }
+    });
+
+    // 处理下拉选项（包括 body 中的下拉菜单，因为 Element Plus 的 dropdown 可能被 teleport 到 body）
+    const allDropdownItems = document.querySelectorAll(
+      ".el-select-dropdown__item"
+    );
+    allDropdownItems.forEach((item) => {
+      // 只处理包含数字的选项（如 "5/page", "10/page" 等）
+      const text = item.textContent?.trim() || "";
+      if (text && /^\d+\/page$/.test(text)) {
+        item.textContent = text.replace("/page", "");
+      }
+    });
+  });
+};
+
+// 监听页面大小变化，更新文本
+watch(pageSize, () => {
+  removePageText();
+});
+
+let observer = null;
+let intervalId = null;
+
+onMounted(() => {
+  removePageText();
+
+  // 使用 MutationObserver 监听 DOM 变化
+  // 同时监听 body，因为 Element Plus 的下拉菜单可能被 teleport 到 body
+  nextTick(() => {
+    const wrapper = document.querySelector(".library-table-wrapper");
+    if (wrapper) {
+      observer = new MutationObserver(() => {
+        removePageText();
+      });
+
+      // 监听 wrapper 内的变化
+      observer.observe(wrapper, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      // 监听 body 的变化（用于下拉菜单）
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
+  });
+
+  // 定期检查（作为备用方案，确保下拉菜单打开时也能处理）
+  intervalId = setInterval(() => {
+    removePageText();
+  }, 100);
+});
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect();
+  }
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -286,5 +370,13 @@ const handleSelectionChange = (selection) => {
   font-size: 14px;
   color: #606266;
   padding-left: 4px;
+}
+
+/* 页面大小选择器样式优化 */
+:deep(.el-pagination .el-select) {
+  .el-select__selected-item {
+    /* 确保文本正确显示 */
+    text-align: left;
+  }
 }
 </style>
