@@ -9,23 +9,20 @@
     </div>
 
     <div class="table-section">
-      <el-table :data="tableData" style="width: 100%" v-loading="loading" :element-loading-text="t('common.loading')"
-        stripe border>
-        <el-table-column prop="keyName" :label="t('library.keyName')" width="200" />
-        <el-table-column prop="project" :label="t('library.project')" width="150" />
-        <el-table-column prop="english" :label="t('library.english')" min-width="200" />
-        <el-table-column prop="chinese" :label="t('library.chinese')" min-width="200" />
-        <el-table-column prop="spanish" :label="t('library.spanish')" min-width="200" />
-      </el-table>
+      <LibraryTableConfig @lineHeight="handleLineHeight" @columnConfig="handleColumnConfig" />
+      <LibraryTable :data="tableData" :loading="loading" :loading-text="t('common.loading')" :row-height="rowHeight"
+        @operation="handleOperation" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "../composables/Core/useI18n.js";
 import LibraryFilter from "../Components/Library/LibraryFilter.vue";
+import LibraryTable from "../Components/Library/LibraryTable.vue";
+import LibraryTableConfig from "../Components/Library/LibraryTableConfig.vue";
 import { useLibraryStore } from "../stores/library.js";
 
 const { t } = useI18n();
@@ -34,6 +31,9 @@ const libraryStore = useLibraryStore();
 // 使用 storeToRefs 保持响应式
 const { filterKeyName, filterProject, filterCondition, filterConditions, projectList, tableData, loading } =
   storeToRefs(libraryStore);
+
+// 行高状态
+const rowHeight = ref(50); // 默认 50px
 
 
 
@@ -50,6 +50,29 @@ const handleClear = () => {
  */
 const handleSearch = async () => {
   await libraryStore.search();
+};
+
+/**
+ * 处理操作按钮点击
+ */
+const handleOperation = (row) => {
+  // TODO: 实现操作菜单或操作逻辑
+  console.log("Operation clicked for row:", row);
+};
+
+/**
+ * 处理行高配置选择
+ */
+const handleLineHeight = (value) => {
+  rowHeight.value = value;
+};
+
+/**
+ * 处理自定义列配置点击
+ */
+const handleColumnConfig = () => {
+  // TODO: 实现自定义列配置逻辑
+  console.log("Column config clicked");
 };
 
 onMounted(() => {
@@ -77,19 +100,5 @@ onMounted(() => {
 
 .table-section {
   margin-top: 24px;
-}
-
-:deep(.el-table) {
-  border: 1px solid #ebeef5;
-
-  th {
-    background-color: #f5f7fa;
-    font-weight: 600;
-    color: #303133;
-  }
-
-  td {
-    padding: 12px 0;
-  }
 }
 </style>

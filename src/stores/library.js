@@ -180,7 +180,7 @@ export const useLibraryStore = defineStore("library", {
           {
             keyName: "search.title",
             project: "AmazonSearch",
-            english: "Search Products",
+            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
             chinese: "搜索产品",
             spanish: "Buscar Productos",
           },

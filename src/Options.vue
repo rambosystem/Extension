@@ -2,26 +2,11 @@
   <el-container class="common-layout">
     <el-aside width="240px" class="sidebar">
       <div class="sidebar-header">
-        <img
-          src="@/assets/icon.svg"
-          alt="Logo"
-          class="adguard-logo"
-          draggable="false"
-        />
+        <img src="@/assets/icon.svg" alt="Logo" class="adguard-logo" draggable="false" />
       </div>
-      <el-menu
-        :default-active="selectedMenu"
-        class="sidebar-menu"
-        @select="handleMenuSelect"
-        background-color="#f8f8f8"
-        text-color="#333"
-        active-text-color="#409EFF"
-      >
-        <el-menu-item
-          v-for="item in menuConfig"
-          :key="item.index"
-          :index="item.index"
-        >
+      <el-menu :default-active="selectedMenu" class="sidebar-menu" @select="handleMenuSelect" background-color="#f8f8f8"
+        text-color="#333" active-text-color="#409EFF">
+        <el-menu-item v-for="item in menuConfig" :key="item.index" :index="item.index">
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
@@ -29,12 +14,8 @@
 
     <el-container>
       <el-main class="main-content">
-        <div class="content-placeholder">
-          <component
-            v-if="currentComponent"
-            :is="currentComponent"
-            :title="currentTitle"
-          />
+        <div class="content-placeholder" :class="{ 'library-page': isLibraryPage }">
+          <component v-if="currentComponent" :is="currentComponent" :title="currentTitle" />
         </div>
       </el-main>
     </el-container>
@@ -113,6 +94,11 @@ const currentTitle = computed(() => {
     (item) => item.index === selectedMenu.value
   );
   return item ? item.title : "";
+});
+
+// 判断是否为 Library 页面
+const isLibraryPage = computed(() => {
+  return currentComponent.value === Library;
 });
 
 // 菜单选择事件处理
@@ -201,7 +187,7 @@ onMounted(() => {
 .content-placeholder {
   padding: 40px 0;
   min-height: 400px;
-  width: 60%;
+  width: 70%;
 }
 
 /* 关于页面样式 */
