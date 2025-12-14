@@ -4,13 +4,18 @@
       :element-loading-text="loadingText" @selection-change="handleSelectionChange" :row-key="getRowKey"
       max-height="600">
       <el-table-column type="selection" width="55" fixed="left" />
-      <el-table-column prop="keyName" :label="labelKeyName" width="200" fixed="left" />
-      <el-table-column v-if="visibleColumns.includes('project')" prop="project" :label="labelProject" width="150" />
-      <el-table-column v-if="visibleColumns.includes('english')" prop="english" :label="labelEnglish" min-width="300" />
-      <el-table-column v-if="visibleColumns.includes('chinese')" prop="chinese" :label="labelChinese" min-width="300" />
-      <el-table-column v-if="visibleColumns.includes('japanese')" prop="japanese" :label="labelJapanese"
-        min-width="300" />
-      <el-table-column v-if="visibleColumns.includes('spanish')" prop="spanish" :label="labelSpanish" min-width="300" />
+      <el-table-column prop="keyName" :label="labelKeyName" width="200" fixed="left"
+        :show-overflow-tooltip="tooltipOptions" />
+      <el-table-column v-if="visibleColumns.includes('project')" prop="project" :label="labelProject" width="150"
+        :show-overflow-tooltip="tooltipOptions" />
+      <el-table-column v-if="visibleColumns.includes('english')" prop="english" :label="labelEnglish" min-width="300"
+        :show-overflow-tooltip="tooltipOptions" />
+      <el-table-column v-if="visibleColumns.includes('chinese')" prop="chinese" :label="labelChinese" min-width="300"
+        :show-overflow-tooltip="tooltipOptions" />
+      <el-table-column v-if="visibleColumns.includes('japanese')" prop="japanese" :label="labelJapanese" min-width="300"
+        :show-overflow-tooltip="tooltipOptions" />
+      <el-table-column v-if="visibleColumns.includes('spanish')" prop="spanish" :label="labelSpanish" min-width="300"
+        :show-overflow-tooltip="tooltipOptions" />
       <el-table-column fixed="right" width="50" align="center">
         <template #default="{ row }">
           <div class="operation-container">
@@ -50,6 +55,12 @@
  */
 import { computed, ref, watch, onMounted, nextTick, onUnmounted } from "vue";
 import { useI18n } from "../../composables/Core/useI18n.js";
+
+// Tooltip 配置选项（Element Plus 2.2.28+ 支持对象配置）
+const tooltipOptions = {
+  placement: "top",
+  openDelay: 500,
+};
 
 const props = defineProps({
   /**
@@ -175,12 +186,13 @@ const handleSelectionChange = (selection) => {
  * 移除页面大小选择器中的 "/page" 文本，只显示数字
  */
 const removePageText = () => {
-  nextTick(() => {
+  // 使用 requestAnimationFrame 优化性能
+  requestAnimationFrame(() => {
     // 移除选中项中的 "/page" 文本
     const wrapper = document.querySelector(".library-table-wrapper");
     if (!wrapper) return;
 
-    // 处理选中项
+    // 处理选中项（只查询 wrapper 内的，减少查询范围）
     const selectedItems = wrapper.querySelectorAll(
       ".el-pagination .el-select .el-select__selected-item"
     );
@@ -190,9 +202,9 @@ const removePageText = () => {
       }
     });
 
-    // 处理下拉选项（包括 body 中的下拉菜单，因为 Element Plus 的 dropdown 可能被 teleport 到 body）
+    // 处理下拉选项（只查询当前可见的下拉菜单）
     const allDropdownItems = document.querySelectorAll(
-      ".el-select-dropdown__item"
+      ".el-select-dropdown:not([style*='display: none']) .el-select-dropdown__item"
     );
     allDropdownItems.forEach((item) => {
       // 只处理包含数字的选项（如 "5/page", "10/page" 等）
@@ -210,48 +222,80 @@ watch(pageSize, () => {
 });
 
 let observer = null;
+let bodyObserver = null;
 let intervalId = null;
+let removePageTextTimer = null;
+
+// 防抖版本的 removePageText
+const debouncedRemovePageText = () => {
+  if (removePageTextTimer) {
+    clearTimeout(removePageTextTimer);
+  }
+  removePageTextTimer = setTimeout(() => {
+    removePageText();
+  }, 150);
+};
 
 onMounted(() => {
   removePageText();
 
   // 使用 MutationObserver 监听 DOM 变化
-  // 同时监听 body，因为 Element Plus 的下拉菜单可能被 teleport 到 body
+  // 只监听 wrapper 内的变化，避免监听整个 body
   nextTick(() => {
     const wrapper = document.querySelector(".library-table-wrapper");
     if (wrapper) {
       observer = new MutationObserver(() => {
-        removePageText();
+        debouncedRemovePageText();
       });
 
-      // 监听 wrapper 内的变化
+      // 只监听 wrapper 内的变化
       observer.observe(wrapper, {
         childList: true,
         subtree: true,
         characterData: true,
       });
-
-      // 监听 body 的变化（用于下拉菜单）
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
     }
+
+    // 单独监听 body 中下拉菜单的出现（更精确的监听）
+    bodyObserver = new MutationObserver((mutations) => {
+      // 只处理下拉菜单相关的变化
+      const hasDropdown = mutations.some((mutation) => {
+        return Array.from(mutation.addedNodes).some(
+          (node) =>
+            node.nodeType === 1 &&
+            node.classList?.contains("el-select-dropdown")
+        );
+      });
+      if (hasDropdown) {
+        debouncedRemovePageText();
+      }
+    });
+
+    // 只监听 body 的直接子元素变化，减少监听范围
+    bodyObserver.observe(document.body, {
+      childList: true,
+      subtree: false, // 不监听深层变化
+    });
   });
 
-  // 定期检查（作为备用方案，确保下拉菜单打开时也能处理）
+  // 降低检查频率，从 100ms 改为 300ms，减少性能开销
   intervalId = setInterval(() => {
     removePageText();
-  }, 100);
+  }, 300);
 });
 
 onUnmounted(() => {
   if (observer) {
     observer.disconnect();
   }
+  if (bodyObserver) {
+    bodyObserver.disconnect();
+  }
   if (intervalId) {
     clearInterval(intervalId);
+  }
+  if (removePageTextTimer) {
+    clearTimeout(removePageTextTimer);
   }
 });
 </script>
