@@ -110,10 +110,10 @@ export function useExcelExport() {
   /**
    * 清空baseline key
    */
-  const clearBaselineKey = () => {
+  const clearBaselineKey = async () => {
     try {
       // 使用 store 的方法清空 baseline key
-      exportStore.saveExcelBaselineKey("");
+      await exportStore.saveExcelBaselineKey("");
     } catch (error) {
       console.error("Failed to clear baseline key:", error);
     }

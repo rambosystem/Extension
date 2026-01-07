@@ -1,5 +1,9 @@
 import { ref } from "vue";
-import { searchKeysByNames } from "../../requests/deduplicate.js";
+import {
+  fetchCdnTranslations,
+  extractEnglishTexts,
+  isTextInCdn,
+} from "../../requests/cdn.js";
 
 /**
  * 去重功能管理Hook
@@ -8,60 +12,35 @@ export function useDeduplicate() {
   const isProcessing = ref(false);
 
   /**
-   * 执行去重操作
-   * @param {string} projectId - 项目ID
+   * 执行去重操作（基于CDN）
+   * @param {string} project - 项目名称 (AmazonSearch, Common 或 Commerce)
    * @param {string} textContent - 待翻译的文本内容
    * @returns {Promise<Object>} 去重结果
    */
-  const deduplicateTranslation = async (projectId, textContent) => {
-    if (!projectId || !projectId.trim()) {
-      throw new Error("Project ID is required for deduplication");
-    }
-
-    if (!textContent?.trim()) {
-      throw new Error("Text content is required for deduplication");
+  const deduplicateTranslation = async (project, textContent) => {
+    if (!project || !textContent?.trim()) {
+      throw new Error("Invalid parameters for deduplication");
     }
 
     isProcessing.value = true;
 
     try {
-      // 1. 分割待翻译文本，每行作为一个 key_name
+      // 1. 获取CDN翻译数据
+      const translations = await fetchCdnTranslations(project);
+
+      // 2. 提取所有英文文本
+      const cdnTexts = extractEnglishTexts(translations);
+
+      // 3. 分割待翻译文本
       const textLines = textContent
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
 
-      if (textLines.length === 0) {
-        return {
-          originalCount: 0,
-          duplicateCount: 0,
-          remainingCount: 0,
-          duplicateTexts: [],
-          remainingTexts: [],
-          totalFound: 0,
-        };
-      }
+      // 4. 执行去重
+      const result = performDeduplication(textLines, cdnTexts);
 
-      // 2. 调用 API 搜索这些 key_names（大小写敏感）
-      const searchResult = await searchKeysByNames(projectId, textLines);
-
-      // 3. 构建已存在的 key_name 集合（从 API 返回的 results 中提取）
-      const existingKeyNames = new Set();
-      if (searchResult.success && Array.isArray(searchResult.results)) {
-        searchResult.results.forEach((result) => {
-          if (result.key_name) {
-            existingKeyNames.add(result.key_name);
-          }
-        });
-      }
-
-      // 4. 执行去重逻辑
-      const result = performDeduplication(textLines, existingKeyNames);
-
-      return {
-        ...result,
-        totalFound: searchResult.total_found || 0,
-      };
+      return result;
     } catch (error) {
       console.error("Deduplication failed:", error);
       throw error;
@@ -72,25 +51,25 @@ export function useDeduplicate() {
 
   /**
    * 执行去重逻辑
-   * @param {Array<string>} textLines - 待翻译的文本行（作为 key_names）
-   * @param {Set<string>} existingKeyNames - API 返回的已存在的 key_name 集合（大小写敏感）
+   * @param {Array<string>} textLines - 待翻译的文本行
+   * @param {Set<string>} cdnTexts - CDN中的文本集合
    * @returns {Object} 去重结果
    */
-  const performDeduplication = (textLines, existingKeyNames) => {
+  const performDeduplication = (textLines, cdnTexts) => {
     const originalCount = textLines.length;
     const duplicateTexts = [];
     const remainingTexts = [];
-    const seenTexts = new Set(); // 用于跟踪已处理的文本（内部去重）
+    const seenTexts = new Set(); // 用于跟踪已处理的文本
 
     for (const text of textLines) {
       // 检查是否在输入文本中重复（内部重复）
       const isInternalDuplicate = seenTexts.has(text);
 
-      // 检查是否在 API 返回的结果中存在（大小写敏感匹配）
-      const isExistingInApi = existingKeyNames.has(text);
+      // 检查是否在CDN中重复
+      const isCdnDuplicate = isTextInCdn(text, cdnTexts);
 
-      // 如果文本重复（内部重复或 API 中存在），则标记为重复
-      const isDuplicate = isInternalDuplicate || isExistingInApi;
+      // 如果文本重复（内部重复或CDN重复），则标记为重复
+      const isDuplicate = isInternalDuplicate || isCdnDuplicate;
 
       if (isDuplicate) {
         duplicateTexts.push(text);
@@ -106,11 +85,35 @@ export function useDeduplicate() {
       remainingCount: remainingTexts.length,
       duplicateTexts,
       remainingTexts,
+      cdnTextCount: cdnTexts.size,
     };
+  };
+
+  /**
+   * 获取CDN数据统计信息
+   * @param {string} project - 项目名称
+   * @returns {Promise<Object>} CDN数据统计
+   */
+  const getCdnStats = async (project) => {
+    try {
+      const translations = await fetchCdnTranslations(project);
+      const cdnTexts = extractEnglishTexts(translations);
+
+      return {
+        project,
+        totalKeys: Object.keys(translations).length,
+        totalTexts: cdnTexts.size,
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Failed to get CDN stats:", error);
+      throw error;
+    }
   };
 
   return {
     isProcessing,
     deduplicateTranslation,
+    getCdnStats,
   };
 }

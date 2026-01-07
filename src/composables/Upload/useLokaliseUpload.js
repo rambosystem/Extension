@@ -2,12 +2,14 @@ import { ElMessage } from "element-plus";
 import { useI18n } from "../Core/useI18n.js";
 import { useApiStore } from "../../stores/settings/api.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
+import { useExportStore } from "../../stores/translation/export.js";
 import {
   getAvailableLanguages,
   getLanguageIso,
 } from "../../config/languages.js";
 import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
+import { searchKeysByNames } from "../../requests/deduplicate.js";
 
 const { t } = useI18n();
 
@@ -146,10 +148,11 @@ export function useLokaliseUpload() {
   /**
    * 清空baseline key
    */
-  const clearBaselineKey = () => {
+  const clearBaselineKey = async () => {
     try {
       // 使用 store 的方法清空 baseline key
-      uploadStore.saveExcelBaselineKey("");
+      const exportStore = useExportStore();
+      await exportStore.saveExcelBaselineKey("");
 
       // 触发事件通知其他组件baseline key已被清空
       if (typeof window !== "undefined") {
@@ -208,9 +211,6 @@ export function useLokaliseUpload() {
         );
       }
 
-      // 获取baseline key
-      const baselineKey = localStorage.getItem("excel_baseline_key") || "";
-
       // 获取选中的目标语言（从 localStorage 获取，与翻译逻辑保持一致）
       let targetLanguages = [];
       try {
@@ -226,16 +226,12 @@ export function useLokaliseUpload() {
       );
 
       // 构建请求体
-      const keys = translationResult.map((row, index) => {
-        // 根据baseline key是否为空决定key的生成方式
-        let keyName;
-        if (baselineKey && baselineKey.trim()) {
-          // 如果baseline key不为空，使用自增序列
-          keyName = generateIncrementalKey(baselineKey.trim(), index);
-        } else {
-          // 如果baseline key为空，使用en作为key
-          keyName = row.en;
-        }
+      // key的生成已经在翻译完成后通过applyAutoKeyGeneration完成
+      // 这里直接使用translationResult中已存在的key值
+      const keys = translationResult.map((row) => {
+        // 直接使用翻译结果中已生成的key，如果没有则使用en
+        const keyName =
+          row.key && row.key.trim() ? row.key.trim() : row.en || "";
 
         // 构建translations数组：先添加英文，然后按顺序添加目标语言
         const translations = [
@@ -269,6 +265,48 @@ export function useLokaliseUpload() {
 
         return keyData;
       });
+
+      // 在上传前检查Key是否重复（强制校验）
+      const keyNames = keys.map((key) => key.key_name);
+      try {
+        const searchResult = await searchKeysByNames(
+          uploadStore.uploadForm.projectId,
+          keyNames
+        );
+
+        // 构建已存在的 key_name 集合
+        const existingKeyNames = new Set();
+        if (searchResult.success && Array.isArray(searchResult.results)) {
+          searchResult.results.forEach((result) => {
+            if (result.key_name) {
+              existingKeyNames.add(result.key_name);
+            }
+          });
+        }
+
+        // 检查是否有重复的Key
+        const duplicateKeys = keyNames.filter((keyName) =>
+          existingKeyNames.has(keyName)
+        );
+
+        if (duplicateKeys.length > 0) {
+          throw new Error(
+            `The following keys already exist in the project and cannot be uploaded: ${duplicateKeys.join(
+              ", "
+            )}`
+          );
+        }
+      } catch (error) {
+        // 如果是我们主动抛出的重复Key错误，直接抛出
+        if (error.message.includes("already exist")) {
+          throw error;
+        }
+        // 如果是API调用失败，记录警告但继续上传（让Lokalise API处理）
+        console.warn("Failed to check duplicate keys before upload:", error);
+        ElMessage.warning(
+          "Warning: Could not verify duplicate keys. Upload will proceed, but may fail if keys already exist."
+        );
+      }
 
       // 准备tags数组（作为第三个参数传递给API）
       const tags =

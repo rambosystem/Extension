@@ -131,17 +131,17 @@ const defaultProjectId = computed({
 /**
  * 处理Baseline Key失焦事件 - 失焦时进行校验和保存
  */
-const handleExcelBaselineKeyBlur = () => {
+const handleExcelBaselineKeyBlur = async () => {
   const currentValue = excelBaselineKey.value || "";
 
   // 如果值为空，直接清空存储
   if (!currentValue.trim()) {
-    exportStore.saveExcelBaselineKey("");
+    await exportStore.saveExcelBaselineKey("");
     return;
   }
 
-  // 调用store的保存方法，它会进行格式校验并显示提示
-  const success = exportStore.saveExcelBaselineKey(currentValue.trim());
+  // 调用store的保存方法，它会进行格式校验和唯一性校验并显示提示
+  const success = await exportStore.saveExcelBaselineKey(currentValue.trim());
 
   // 如果校验失败，清空输入框
   if (!success) {

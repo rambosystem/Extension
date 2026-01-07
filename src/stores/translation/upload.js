@@ -5,6 +5,7 @@ import {
   getLanguageIso,
 } from "../../config/languages.js";
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
+import { searchKeysByNames } from "../../requests/deduplicate.js";
 import { useExportStore } from "./export.js";
 
 /**
@@ -304,7 +305,8 @@ export const useUploadStore = defineStore("upload", {
         if (lastKey && lastKey.match(/^[a-zA-Z]+\d+$/)) {
           const newBaselineKey = this.incrementKey(lastKey);
           const exportStore = useExportStore();
-          exportStore.saveExcelBaselineKey(newBaselineKey);
+          // 注意：这里不等待校验，因为上传成功后key应该是唯一的
+          await exportStore.saveExcelBaselineKey(newBaselineKey);
         }
 
         this.setUploadSuccess(true, "Upload completed successfully");
@@ -422,31 +424,18 @@ export const useUploadStore = defineStore("upload", {
         targetLanguages.includes(availLang.code)
       );
 
-      // 获取baseline key
-      const baselineKey = localStorage.getItem("excel_baseline_key") || "";
-
       // 准备上传数据
+      // key的生成已经在翻译完成后通过applyAutoKeyGeneration完成
+      // 这里直接使用translationResult中已存在的key值
       let lastGeneratedKey = null;
-      const keys = translationResult.map((item, index) => {
-        // 根据baseline key是否为空决定key的生成方式
-        let keyName;
-        if (baselineKey && baselineKey.trim()) {
-          // 如果翻译结果中已经有key值，优先使用翻译结果中的key
-          if (item.key && item.key.trim() && item.key.match(/^[a-zA-Z]+\d+$/)) {
-            keyName = item.key.trim();
-          } else {
-            // 否则使用baseline key生成
-            keyName = this.generateIncrementalKey(baselineKey.trim(), index);
-          }
-          lastGeneratedKey = keyName; // 记录最后一个生成的key
-        } else {
-          // 如果baseline key为空，优先使用翻译结果中的key，否则使用en
-          keyName =
-            item.key && item.key.trim() ? item.key.trim() : item.en || "";
-          // 如果keyName是有效的key格式，也记录下来
-          if (keyName && keyName.match(/^[a-zA-Z]+\d+$/)) {
-            lastGeneratedKey = keyName;
-          }
+      const keys = translationResult.map((item) => {
+        // 直接使用翻译结果中已生成的key，如果没有则使用en
+        const keyName =
+          item.key && item.key.trim() ? item.key.trim() : item.en || "";
+
+        // 如果keyName是有效的key格式，记录下来（用于更新baseline key）
+        if (keyName && keyName.match(/^[a-zA-Z]+\d+$/)) {
+          lastGeneratedKey = keyName;
         }
 
         // 构建translations数组：先添加英文，然后按顺序添加目标语言
@@ -475,6 +464,45 @@ export const useUploadStore = defineStore("upload", {
           tags: this.uploadForm.tag ? [this.uploadForm.tag] : [],
         };
       });
+
+      // 在上传前检查Key是否重复（强制校验）
+      const keyNames = keys.map((key) => key.key_name);
+      try {
+        const searchResult = await searchKeysByNames(
+          selectedProject.project_id,
+          keyNames
+        );
+
+        // 构建已存在的 key_name 集合
+        const existingKeyNames = new Set();
+        if (searchResult.success && Array.isArray(searchResult.results)) {
+          searchResult.results.forEach((result) => {
+            if (result.key_name) {
+              existingKeyNames.add(result.key_name);
+            }
+          });
+        }
+
+        // 检查是否有重复的Key
+        const duplicateKeys = keyNames.filter((keyName) =>
+          existingKeyNames.has(keyName)
+        );
+
+        if (duplicateKeys.length > 0) {
+          throw new Error(
+            `The following keys already exist in the project and cannot be uploaded: ${duplicateKeys.join(
+              ", "
+            )}`
+          );
+        }
+      } catch (error) {
+        // 如果是我们主动抛出的重复Key错误，直接抛出
+        if (error.message.includes("already exist")) {
+          throw error;
+        }
+        // 如果是API调用失败，记录警告但继续上传（让Lokalise API处理）
+        console.warn("Failed to check duplicate keys before upload:", error);
+      }
 
       // 执行上传
       await uploadTranslationKeys(

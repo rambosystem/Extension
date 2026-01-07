@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
 import { useDeduplicate } from "../../composables/Translation/useDeduplicate.js";
+import { useTranslationSettingsStore } from "../settings/translation.js";
 import { useExportStore } from "./export.js";
 import { useTranslationCoreStore } from "./core.js";
 import { debugLog, debugError } from "../../utils/debug.js";
@@ -122,31 +123,53 @@ export const useDeduplicateStore = defineStore("deduplicate", {
      * @returns {Promise<Object>} 去重结果
      */
     async executeDeduplicate(codeContent, continueTranslation, clearCache) {
-      // 获取全局 Default Project 的 project_id
+      // 根据Default Project判断CDN项目名称
       const exportStore = useExportStore();
       const defaultProjectId = exportStore.defaultProjectId;
 
-      if (!defaultProjectId) {
-        ElMessage.warning("Please configure Default Project first");
-        return { success: false, error: "No default project configured" };
+      let cdnProjectName = null;
+
+      // 优先使用Default Project来判断CDN地址
+      if (defaultProjectId) {
+        cdnProjectName = this.getCdnProjectName(defaultProjectId, null);
+      }
+
+      // 如果无法从Default Project判断，则使用设置中的去重项目名称
+      if (!cdnProjectName) {
+        const translationSettingsStore = useTranslationSettingsStore();
+        const deduplicateProject = translationSettingsStore.deduplicateProject;
+        if (deduplicateProject) {
+          cdnProjectName = this.getCdnProjectName(null, deduplicateProject);
+        }
+      }
+
+      if (!cdnProjectName) {
+        ElMessage.warning(
+          "Please configure Default Project or deduplicate project in Settings first"
+        );
+        return { success: false, error: "No CDN project configured" };
       }
 
       debugLog(
-        "[DeduplicateStore] Executing deduplicate with project_id:",
+        "[DeduplicateStore] Executing deduplicate with CDN project:",
+        cdnProjectName,
+        "from default project ID:",
         defaultProjectId
       );
       this.setDeduplicating(true);
 
       try {
         const deduplicate = useDeduplicate();
-        // 使用 project_id 而不是项目名称
+        // 使用CDN项目名称（根据Project判断）
         const result = await deduplicate.deduplicateTranslation(
-          defaultProjectId,
+          cdnProjectName,
           codeContent
         );
 
         // 无论是否有剩余文本，都要更新文本框内容
-        const remainingTexts = result.remainingTexts.join("\n");
+        const remainingTexts = Array.isArray(result.remainingTexts)
+          ? result.remainingTexts.join("\n")
+          : "";
 
         if (result.remainingCount > 0) {
           ElMessage.success(
@@ -191,29 +214,116 @@ export const useDeduplicateStore = defineStore("deduplicate", {
     },
 
     /**
+     * 根据项目ID或项目名称获取CDN项目名称
+     * @param {string} projectId - 项目ID
+     * @param {string} projectName - 项目名称
+     * @returns {string|null} CDN项目名称 (Common, AmazonSearch, Commerce)
+     */
+    getCdnProjectName(projectId, projectName) {
+      // 如果提供了项目名称，直接尝试匹配
+      if (projectName) {
+        const normalizedName = projectName.trim();
+        // 检查是否是CDN支持的项目名称
+        if (["Common", "AmazonSearch", "Commerce"].includes(normalizedName)) {
+          return normalizedName;
+        }
+        // 尝试通过项目名称匹配（不区分大小写）
+        const lowerName = normalizedName.toLowerCase();
+        if (lowerName.includes("common")) return "Common";
+        if (lowerName.includes("amazon") || lowerName.includes("search"))
+          return "AmazonSearch";
+        if (lowerName.includes("commerce")) return "Commerce";
+      }
+
+      // 如果提供了项目ID，尝试从项目列表中找到项目并获取名称
+      if (projectId) {
+        try {
+          const projects = localStorage.getItem("lokalise_projects");
+          if (projects) {
+            const parsedProjects = JSON.parse(projects);
+            if (Array.isArray(parsedProjects)) {
+              const project = parsedProjects.find(
+                (p) => p.project_id === projectId
+              );
+              if (project && project.name) {
+                const normalizedName = project.name.trim();
+                // 检查是否是CDN支持的项目名称
+                if (
+                  ["Common", "AmazonSearch", "Commerce"].includes(
+                    normalizedName
+                  )
+                ) {
+                  return normalizedName;
+                }
+                // 尝试通过项目名称匹配（不区分大小写）
+                const lowerName = normalizedName.toLowerCase();
+                if (lowerName.includes("common")) return "Common";
+                if (
+                  lowerName.includes("amazon") ||
+                  lowerName.includes("search")
+                )
+                  return "AmazonSearch";
+                if (lowerName.includes("commerce")) return "Commerce";
+              }
+            }
+          }
+        } catch (error) {
+          debugError("[DeduplicateStore] Failed to get project name:", error);
+        }
+      }
+
+      return null;
+    },
+
+    /**
      * 初始化去重设置
-     * 使用全局 Default Project 的 project_id
+     * 根据Default Project判断CDN地址
      */
     initializeDeduplicateSettings() {
       try {
         debugLog("[DeduplicateStore] Initializing deduplicate settings...");
+        const translationSettingsStore = useTranslationSettingsStore();
         const exportStore = useExportStore();
 
-        // 获取默认项目ID
+        // 确保设置已初始化
+        translationSettingsStore.initializeTranslationSettings();
+
+        // 优先使用Default Project来判断CDN地址
         const defaultProjectId = exportStore.defaultProjectId;
+        let cdnProjectName = null;
+
         if (defaultProjectId) {
+          // 根据Default Project获取项目信息并判断CDN项目名称
+          cdnProjectName = this.getCdnProjectName(defaultProjectId, null);
           debugLog(
-            "[DeduplicateStore] Using default project_id:",
-            defaultProjectId
+            "[DeduplicateStore] Got CDN project name from default project:",
+            cdnProjectName
           );
-          // 不再需要 selectedProject，因为直接使用 defaultProjectId
-          // 但为了向后兼容，仍然设置 selectedProject 为项目名称（如果有的话）
-          const projectName = this.getProjectNameById(defaultProjectId);
-          if (projectName) {
-            this.selectedProject = projectName;
+        }
+
+        // 如果无法从Default Project判断，则使用设置中的去重项目名称
+        if (!cdnProjectName) {
+          const deduplicateProject =
+            translationSettingsStore.deduplicateProject;
+          if (deduplicateProject) {
+            cdnProjectName = this.getCdnProjectName(null, deduplicateProject);
+            debugLog(
+              "[DeduplicateStore] Using deduplicate project from settings:",
+              deduplicateProject,
+              "-> CDN project:",
+              cdnProjectName
+            );
           }
+        }
+
+        if (cdnProjectName) {
+          this.selectedProject = cdnProjectName;
+          debugLog(
+            "[DeduplicateStore] Final CDN project name:",
+            cdnProjectName
+          );
         } else {
-          debugLog("[DeduplicateStore] No default project ID found");
+          debugLog("[DeduplicateStore] No CDN project name found");
         }
       } catch (error) {
         debugError(

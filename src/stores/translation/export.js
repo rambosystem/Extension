@@ -4,6 +4,7 @@ import { useExcelExport } from "../../composables/Excel/useExcelExport.js";
 import { useI18n } from "../../composables/Core/useI18n.js";
 import { debugLog, debugError } from "../../utils/debug.js";
 import { getAvailableLanguages } from "../../config/languages.js";
+import { searchKeysByNames } from "../../requests/deduplicate.js";
 
 /**
  * 导出功能状态管理
@@ -66,8 +67,9 @@ export const useExportStore = defineStore("export", {
     /**
      * 保存Excel基线键
      * @param {string} key - 基线键
+     * @returns {Promise<boolean>} 是否保存成功
      */
-    saveExcelBaselineKey(key) {
+    async saveExcelBaselineKey(key) {
       const { t } = useI18n();
 
       if (!key?.trim()) {
@@ -83,8 +85,63 @@ export const useExportStore = defineStore("export", {
         return false;
       }
 
-      localStorage.setItem("excel_baseline_key", key.trim());
-      this.excelBaselineKey = key.trim();
+      // 校验key唯一性
+      const trimmedKey = key.trim();
+      const projectId = this.defaultProjectId;
+
+      if (projectId) {
+        try {
+          debugLog(
+            "[ExportStore] Checking key uniqueness for:",
+            trimmedKey,
+            "in project:",
+            projectId
+          );
+
+          const searchResult = await searchKeysByNames(projectId, [trimmedKey]);
+
+          // 构建已存在的 key_name 集合
+          const existingKeyNames = new Set();
+          if (searchResult.success && Array.isArray(searchResult.results)) {
+            searchResult.results.forEach((result) => {
+              if (result.key_name) {
+                existingKeyNames.add(result.key_name);
+              }
+            });
+          }
+
+          // 检查key是否已存在
+          if (existingKeyNames.has(trimmedKey)) {
+            ElMessage.warning(
+              `The key "${trimmedKey}" already exists in the project. Please use a different key.`
+            );
+            return false;
+          }
+
+          debugLog("[ExportStore] Key uniqueness check passed:", trimmedKey);
+        } catch (error) {
+          // 如果API调用失败，记录警告但允许保存（避免网络问题阻止保存）
+          console.warn("Failed to check key uniqueness:", error);
+          debugError(
+            "[ExportStore] Failed to check key uniqueness, proceeding with save:",
+            error
+          );
+          ElMessage.warning(
+            "Could not verify key uniqueness. The key will be saved, but please ensure it is unique."
+          );
+        }
+      } else {
+        // 如果没有项目ID，提示用户配置项目
+        debugLog(
+          "[ExportStore] No default project ID configured, skipping key uniqueness check"
+        );
+        ElMessage.warning(
+          "Please configure Default Project first to verify key uniqueness."
+        );
+      }
+
+      localStorage.setItem("excel_baseline_key", trimmedKey);
+      this.excelBaselineKey = trimmedKey;
       ElMessage.success(t("translationSetting.exportBaselineKeySaveSuccess"));
       return true;
     },
