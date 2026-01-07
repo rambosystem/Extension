@@ -49,7 +49,22 @@ export function useAutocomplete(options = {}) {
   };
 
   /**
+   * 将 key +1（如 key1 -> key2）
+   */
+  const incrementKey = (key) => {
+    const match = key.match(/^([a-zA-Z]+)(\d+)$/);
+    if (!match) {
+      return key; // 如果格式不正确，返回原值
+    }
+    const [, prefix, numberStr] = match;
+    const currentNumber = parseInt(numberStr, 10);
+    const newNumber = currentNumber + 1;
+    return `${prefix}${newNumber}`;
+  };
+
+  /**
    * 获取自动补全建议（默认实现）
+   * 从接口获取到 key 后，自动将其 +1 再返回
    */
   const defaultFetchSuggestions = async (queryString, projectId) => {
     try {
@@ -66,7 +81,16 @@ export function useAutocomplete(options = {}) {
       // 获取第一条建议
       const firstResult = response?.results?.[0];
       if (firstResult && firstResult.key_name) {
-        return firstResult.key_name;
+        const originalKey = firstResult.key_name;
+        // 从接口获取到的 key 直接 +1
+        const incrementedKey = incrementKey(originalKey);
+        debugLog(
+          "[Autocomplete] Incremented key:",
+          originalKey,
+          "->",
+          incrementedKey
+        );
+        return incrementedKey;
       }
       return null;
     } catch (error) {
