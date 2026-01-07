@@ -65,6 +65,32 @@ export const useExportStore = defineStore("export", {
     },
 
     /**
+     * 根据项目ID获取项目名称
+     * @param {string} projectId - 项目ID
+     * @returns {string|null} 项目名称
+     */
+    getProjectNameById(projectId) {
+      try {
+        const projects = localStorage.getItem("lokalise_projects");
+        if (projects) {
+          const parsedProjects = JSON.parse(projects);
+          if (Array.isArray(parsedProjects)) {
+            const project = parsedProjects.find(
+              (p) => p.project_id === projectId
+            );
+            if (project && project.name) {
+              return project.name;
+            }
+          }
+        }
+        return null;
+      } catch (error) {
+        debugError("[ExportStore] Failed to get project name by ID:", error);
+        return null;
+      }
+    },
+
+    /**
      * 保存Excel基线键
      * @param {string} key - 基线键
      * @returns {Promise<boolean>} 是否保存成功
@@ -88,6 +114,8 @@ export const useExportStore = defineStore("export", {
       // 校验key唯一性
       const trimmedKey = key.trim();
       const projectId = this.defaultProjectId;
+      const projectName = projectId ? this.getProjectNameById(projectId) : null;
+      const displayProjectName = projectName || "Default Project";
 
       if (projectId) {
         try {
@@ -113,7 +141,7 @@ export const useExportStore = defineStore("export", {
           // 检查key是否已存在
           if (existingKeyNames.has(trimmedKey)) {
             ElMessage.warning(
-              `The key "${trimmedKey}" already exists in the project. Please use a different key.`
+              `The key "${trimmedKey}" already exists in "${displayProjectName}". Please use a different key.`
             );
             return false;
           }
@@ -127,7 +155,7 @@ export const useExportStore = defineStore("export", {
             error
           );
           ElMessage.warning(
-            "Could not verify key uniqueness. The key will be saved, but please ensure it is unique."
+            `Could not verify key uniqueness in "${displayProjectName}". The key will be saved, but please ensure it is unique.`
           );
         }
       } else {
