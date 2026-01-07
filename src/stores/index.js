@@ -15,4 +15,3 @@ export * from "./translation/upload.js";
 export * from "./translation/export.js";
 export * from "./translation/deduplicate.js";
 export * from "./terms.js";
-export * from "./library.js";

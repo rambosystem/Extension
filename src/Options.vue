@@ -2,11 +2,26 @@
   <el-container class="common-layout">
     <el-aside width="240px" class="sidebar">
       <div class="sidebar-header">
-        <img src="@/assets/icon.svg" alt="Logo" class="adguard-logo" draggable="false" />
+        <img
+          src="@/assets/icon.svg"
+          alt="Logo"
+          class="adguard-logo"
+          draggable="false"
+        />
       </div>
-      <el-menu :default-active="selectedMenu" class="sidebar-menu" @select="handleMenuSelect" background-color="#f8f8f8"
-        text-color="#333" active-text-color="#409EFF">
-        <el-menu-item v-for="item in menuConfig" :key="item.index" :index="item.index">
+      <el-menu
+        :default-active="selectedMenu"
+        class="sidebar-menu"
+        @select="handleMenuSelect"
+        background-color="#f8f8f8"
+        text-color="#333"
+        active-text-color="#409EFF"
+      >
+        <el-menu-item
+          v-for="item in menuConfig"
+          :key="item.index"
+          :index="item.index"
+        >
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
@@ -14,8 +29,12 @@
 
     <el-container>
       <el-main class="main-content">
-        <div class="content-placeholder" :class="{ 'library-page': isLibraryPage }">
-          <component v-if="currentComponent" :is="currentComponent" :title="currentTitle" />
+        <div class="content-placeholder">
+          <component
+            v-if="currentComponent"
+            :is="currentComponent"
+            :title="currentTitle"
+          />
         </div>
       </el-main>
     </el-container>
@@ -26,7 +45,6 @@
 import { ref, onMounted, computed } from "vue";
 import Settings from "./Views/Settings.vue";
 import Translation from "./Views/Translation.vue";
-import Library from "./Views/Library.vue";
 
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
@@ -48,18 +66,12 @@ const menuConfig = computed(() => [
   },
   {
     index: "2",
-    label: t("menu.library"),
-    title: t("menu.library"),
-    component: Library,
-  },
-  {
-    index: "3",
     label: t("menu.settings"),
     title: t("menu.settings"),
     component: Settings,
   },
   {
-    index: "4",
+    index: "3",
     label: t("menu.about"),
     title: t("menu.about"),
     component: {
@@ -94,11 +106,6 @@ const currentTitle = computed(() => {
     (item) => item.index === selectedMenu.value
   );
   return item ? item.title : "";
-});
-
-// 判断是否为 Library 页面
-const isLibraryPage = computed(() => {
-  return currentComponent.value === Library;
 });
 
 // 菜单选择事件处理
