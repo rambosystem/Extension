@@ -7,6 +7,7 @@ import {
 import { uploadTranslationKeys } from "../../requests/lokalise.js";
 import { searchKeysByNames } from "../../requests/deduplicate.js";
 import { useExportStore } from "./export.js";
+import { useTranslationCoreStore } from "./core.js";
 
 /**
  * 上传功能状态管理
@@ -489,11 +490,34 @@ export const useUploadStore = defineStore("upload", {
         );
 
         if (duplicateKeys.length > 0) {
-          throw new Error(
-            `The following keys already exist in the project and cannot be uploaded: ${duplicateKeys.join(
-              ", "
-            )}`
-          );
+          // 只清空重复key的key字段，保留整条翻译记录
+          const translationCoreStore = useTranslationCoreStore();
+          const updatedResult = translationResult.map((item) => {
+            const keyName =
+              item.key && item.key.trim() ? item.key.trim() : item.en || "";
+            // 如果key已存在，清空key字段但保留其他翻译内容
+            if (existingKeyNames.has(keyName)) {
+              return {
+                ...item,
+                key: "", // 只清空key字段
+              };
+            }
+            return item;
+          });
+
+          // 更新store中的翻译结果
+          translationCoreStore.setTranslationResult(updatedResult);
+
+          // 同步更新localStorage中的last_translation，确保下次加载时显示清空后的key
+          translationCoreStore.saveTranslationToLocal(updatedResult);
+
+          // 显示错误消息（只显示一次）
+          const errorMessage = `The following ${
+            duplicateKeys.length
+          } key(s) already exist in the project. Their key values have been cleared from translation results: ${duplicateKeys.join(
+            ", "
+          )}`;
+          throw new Error(errorMessage);
         }
       } catch (error) {
         // 如果是我们主动抛出的重复Key错误，直接抛出
