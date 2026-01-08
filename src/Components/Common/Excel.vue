@@ -155,6 +155,7 @@ import { useSelectionStyle } from "../../composables/Excel/useSelectionStyle";
 import { useMouseEvents } from "../../composables/Excel/useMouseEvents";
 import { useDataSync } from "../../composables/Excel/useDataSync";
 import { useCellMenu } from "../../composables/Excel/useCellMenu";
+import { useRowOperations } from "../../composables/Excel/useRowOperations";
 import { useResizeHandlers } from "../../composables/Excel/useResizeHandlers";
 import CellMenu from "../Excel/CellMenu.vue";
 import FillHandle from "../Excel/FillHandle.vue";
@@ -617,17 +618,23 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
 // 初始化数据同步监听
 initDataSync();
 
-// --- Cell Menu 管理 ---
-const { handleCellMenuCommand } = useCellMenu({
+// --- 行操作管理（统一的插入/删除行逻辑）---
+const { handleInsertRowBelow, handleDeleteRow } = useRowOperations({
   tableData,
   rows,
   activeCell,
   columns: internalColumns,
   saveHistory,
-  deleteRow,
   insertRowBelow,
+  deleteRow,
   setSelection,
   notifyDataChange,
+});
+
+// --- Cell Menu 管理 ---
+const { handleCellMenuCommand } = useCellMenu({
+  handleInsertRowBelow,
+  handleDeleteRow,
 });
 
 // 使用键盘处理 composable
@@ -641,6 +648,8 @@ const { handleKeydown } = useKeyboard({
   redoHistory,
   startEdit,
   deleteSelection,
+  handleInsertRowBelow, // 使用统一的插入行处理函数
+  handleDeleteRow, // 使用统一的删除行处理函数
   tableData,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,

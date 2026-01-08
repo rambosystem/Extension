@@ -14,6 +14,8 @@ import { KEY_CODES, MODIFIER_KEYS, NAV_DIRECTION } from "./constants.js";
  * @param {Function} context.redoHistory - 重做函数
  * @param {Function} context.startEdit - 开始编辑函数
  * @param {Function} context.deleteSelection - 删除选区函数
+ * @param {Function} context.handleInsertRowBelow - 统一的插入行处理函数（与下拉菜单一致）
+ * @param {Function} context.handleDeleteRow - 统一的删除行处理函数（与下拉菜单一致）
  * @param {Object} context.tableData - 表格数据
  * @param {Function} context.getMaxRows - 获取最大行数的函数
  * @param {Function} context.getMaxCols - 获取最大列数的函数
@@ -30,6 +32,8 @@ export function useKeyboard(context) {
     redoHistory,
     startEdit,
     deleteSelection,
+    handleInsertRowBelow,
+    handleDeleteRow,
     tableData,
     getMaxRows,
     getMaxCols,
@@ -131,12 +135,71 @@ export function useKeyboard(context) {
   };
 
   /**
-   * 处理删除键
+   * 处理 Ctrl+Enter 插入行
+   *
+   * 使用统一的插入行处理函数，与下拉菜单的插入逻辑完全一致
+   *
+   * @param {KeyboardEvent} event - 键盘事件
+   * @returns {boolean} 是否已处理
+   */
+  const handleInsertRow = (event) => {
+    // 检查是否为 Ctrl+Enter (Windows/Linux) 或 Cmd+Enter (Mac)
+    const isCtrlEnter =
+      (event.ctrlKey || event.metaKey) &&
+      event.key === KEY_CODES.ENTER &&
+      !event.shiftKey;
+
+    if (!isCtrlEnter || !handleInsertRowBelow || !activeCell.value) {
+      return false;
+    }
+
+    event.preventDefault();
+
+    // 使用统一的插入行处理函数（与下拉菜单一致）
+    const rowIndex = activeCell.value.row;
+    handleInsertRowBelow(rowIndex);
+
+    return true;
+  };
+
+  /**
+   * 处理 Ctrl+Delete 删除行
+   *
+   * @param {KeyboardEvent} event - 键盘事件
+   * @returns {boolean} 是否已处理
+   */
+  const handleDeleteRowKey = (event) => {
+    // 检查是否为 Ctrl+Delete (Windows/Linux) 或 Cmd+Delete (Mac)
+    const isCtrlDelete =
+      (event.ctrlKey || event.metaKey) &&
+      event.key === KEY_CODES.DELETE &&
+      !event.shiftKey;
+
+    if (!isCtrlDelete || !handleDeleteRow || !activeCell.value) {
+      return false;
+    }
+
+    event.preventDefault();
+
+    // 使用统一的删除行处理函数（与下拉菜单一致）
+    const rowIndex = activeCell.value.row;
+    handleDeleteRow(rowIndex);
+
+    return true;
+  };
+
+  /**
+   * 处理删除键（删除选区内容）
    *
    * @param {KeyboardEvent} event - 键盘事件
    * @returns {boolean} 是否已处理
    */
   const handleDelete = (event) => {
+    // 如果按了 Ctrl/Cmd，不处理（可能是删除行）
+    if (event.ctrlKey || event.metaKey) {
+      return false;
+    }
+
     if (event.key !== KEY_CODES.DELETE && event.key !== KEY_CODES.BACKSPACE) {
       return false;
     }
@@ -210,8 +273,10 @@ export function useKeyboard(context) {
     // 按优先级处理各种键盘事件
     if (handleUndoRedo(event)) return;
     if (editingCell.value) return; // 编辑模式下不处理其他键
+    if (handleInsertRow(event)) return; // Ctrl+Enter 插入行
+    if (handleDeleteRowKey(event)) return; // Ctrl+Delete 删除行
     if (handleNavigation(event)) return;
-    if (handleDelete(event)) return;
+    if (handleDelete(event)) return; // Delete/Backspace 删除选区内容
     if (handleDirectTyping(event)) return;
   };
 
