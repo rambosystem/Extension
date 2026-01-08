@@ -9,12 +9,28 @@ import { ref, computed } from "vue";
  * - 通用组件（Components/Common/）应该自包含，不依赖 Store
  * - 每个组件实例拥有独立的选择状态，保证组件的可复用性
  * - 这是通用组件的标准做法，符合组件化设计原则
+ *
+ * 模式说明：
+ * - SINGLE 模式：普通选择（点击、拖选），只有一个选区
+ * - MULTIPLE 模式：Ctrl+选择（点击、拖选），可以有多个选区
+ *
+ * 模式切换规则：
+ * 1. 两种模式完全独立，互不干扰
+ * 2. 从 MULTIPLE 模式切换到 SINGLE 模式时，清空多选列表（multiSelections）
+ * 3. 从 SINGLE 模式切换到 MULTIPLE 模式时，保留之前 SINGLE 模式的选区（加入 multiSelections）
+ *
+ * 选择状态记录：
+ * - SINGLE 模式：使用 selectionStart 和 selectionEnd（通过 normalizedSelection 计算）
+ * - MULTIPLE 模式：使用 multiSelections 数组
+ * - 两种模式通过 isInSelection 函数统一检查，使用同一个"矩阵"记录选择状态
  */
 export function useSelection() {
   const activeCell = ref(null); // { row, col }
   const selectionStart = ref(null);
   const selectionEnd = ref(null);
   const isSelecting = ref(false);
+  const multiSelections = ref([]); // 存储多个独立选区 [{ minRow, maxRow, minCol, maxCol }, ...]
+  const isMultipleMode = ref(false); // 当前选择模式：true = MULTIPLE 模式，false = SINGLE 模式
 
   // 计算归一化后的选区（始终确保 min <= max）
   const normalizedSelection = computed(() => {
@@ -27,11 +43,289 @@ export function useSelection() {
     };
   });
 
-  const setSelection = (row, col) => {
-    activeCell.value = { row, col };
-    selectionStart.value = { row, col };
+  /**
+   * 判断单元格是否在选区范围内
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @param {Object} range - 选区范围 { minRow, maxRow, minCol, maxCol }
+   * @returns {boolean}
+   */
+  const isCellInRange = (row, col, range) => {
+    return (
+      row >= range.minRow &&
+      row <= range.maxRow &&
+      col >= range.minCol &&
+      col <= range.maxCol
+    );
+  };
+
+  // ==================== SINGLE 模式：普通选择 ====================
+
+  /**
+   * SINGLE 模式：开始选择（点击）
+   *
+   * 行为说明：
+   * - 从 MULTIPLE 模式切换到 SINGLE 模式时，清空多选列表
+   * - 设置新的单一选区
+   *
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   */
+  const startSingleSelection = (row, col) => {
+    // 切换到 SINGLE 模式
+    isMultipleMode.value = false;
+
+    // 清除多选列表（从 MULTIPLE 模式切换到 SINGLE 模式）
+    multiSelections.value = [];
+
+    // 设置新的单一选区
+    const newPos = { row, col };
+    activeCell.value = newPos;
+    selectionStart.value = newPos;
+    selectionEnd.value = newPos;
+  };
+
+  /**
+   * SINGLE 模式：更新选择终点（拖选）
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   */
+  const updateSingleSelectionEnd = (row, col) => {
     selectionEnd.value = { row, col };
   };
+
+  // ==================== MULTIPLE 模式：Ctrl+选择 ====================
+
+  /**
+   * MULTIPLE 模式：开始选择（Ctrl+点击）
+   *
+   * 行为说明：
+   * - 从 SINGLE 模式切换到 MULTIPLE 模式时，保留之前 SINGLE 模式的选区（加入多选列表）
+   * - 如果当前选区不在多选列表中，先将其加入多选列表
+   * - 然后添加新的单格选区
+   *
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @returns {Object|null} 如果单元格已在多选列表中，返回包含选区索引的对象，否则返回 null
+   */
+  const startMultipleSelection = (row, col) => {
+    // 切换到 MULTIPLE 模式
+    isMultipleMode.value = true;
+
+    // 检查这个单元格是否已经在多选列表中
+    const containingSelectionIndex = multiSelections.value.findIndex((sel) =>
+      isCellInRange(row, col, sel)
+    );
+
+    if (containingSelectionIndex >= 0) {
+      // 如果已经在多选列表中，设置为拖选起点（不立即取消，等 mouseUp 时处理）
+      const newPos = { row, col };
+      activeCell.value = newPos;
+      selectionStart.value = newPos;
+      selectionEnd.value = newPos;
+      // 返回选区索引，供 mouseUp 时使用
+      return { containingSelectionIndex };
+    }
+
+    // 如果不在多选列表中，准备添加新选区
+    // 重要：如果当前选区存在（SINGLE 模式的选区），但不在多选列表中，先把当前选区加入多选列表
+    // 这样可以保留从 SINGLE 模式切换到 MULTIPLE 模式时的选区
+    const currentSelection = normalizedSelection.value;
+    if (currentSelection) {
+      const currentIndex = multiSelections.value.findIndex(
+        (sel) =>
+          sel.minRow === currentSelection.minRow &&
+          sel.maxRow === currentSelection.maxRow &&
+          sel.minCol === currentSelection.minCol &&
+          sel.maxCol === currentSelection.maxCol
+      );
+      if (currentIndex < 0) {
+        // 保留之前 SINGLE 模式的选区
+        multiSelections.value.push({ ...currentSelection });
+      }
+    }
+
+    // 优化：不在 mousedown 时立即 push 单格选区到 multiSelections
+    // 而是只设置 selectionStart/End，让拖拽过程能够实时显示
+    // 最终的选区将在 mouseup 时通过 endMultipleSelectionClick 或 endMultipleSelectionDrag 添加到 multiSelections
+    const newPos = { row, col };
+    activeCell.value = newPos;
+    selectionStart.value = newPos;
+    selectionEnd.value = newPos;
+    return null;
+  };
+
+  /**
+   * MULTIPLE 模式：更新选择终点（Ctrl+拖选）
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   */
+  const updateMultipleSelectionEnd = (row, col) => {
+    selectionEnd.value = { row, col };
+  };
+
+  /**
+   * 将大选区拆分成多个单格选区
+   * @param {Object} selection - 原选区 { minRow, maxRow, minCol, maxCol }
+   * @param {number} excludeRow - 要排除的行索引（可选）
+   * @param {number} excludeCol - 要排除的列索引（可选）
+   * @returns {Array} 拆分后的单格选区数组
+   */
+  const splitSelectionIntoCells = (
+    selection,
+    excludeRow = null,
+    excludeCol = null
+  ) => {
+    const { minRow, maxRow, minCol, maxCol } = selection;
+    const cells = [];
+
+    // 遍历选区中的每个单元格
+    for (let r = minRow; r <= maxRow; r++) {
+      for (let c = minCol; c <= maxCol; c++) {
+        // 如果指定了要排除的单元格，跳过它
+        if (
+          excludeRow !== null &&
+          excludeCol !== null &&
+          r === excludeRow &&
+          c === excludeCol
+        ) {
+          continue;
+        }
+        // 添加单格选区
+        cells.push({
+          minRow: r,
+          maxRow: r,
+          minCol: c,
+          maxCol: c,
+        });
+      }
+    }
+
+    return cells;
+  };
+
+  /**
+   * MULTIPLE 模式：结束选择（Ctrl+单击）
+   *
+   * 行为说明：
+   * - 如果单元格已在多选列表中，将其拆分成单格选区，然后移除该单元格
+   * - 如果单元格不在多选列表中，添加该单元格为单格选区
+   *
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   */
+  const endMultipleSelectionClick = (row, col) => {
+    // 检查这个单元格是否已经在多选列表中
+    const containingSelectionIndex = multiSelections.value.findIndex((sel) =>
+      isCellInRange(row, col, sel)
+    );
+
+    if (containingSelectionIndex >= 0) {
+      // 1. 如果已经在多选列表中，将该选区拆分成单格选区，然后移除该单元格
+      const containingSelection =
+        multiSelections.value[containingSelectionIndex];
+
+      // 如果该选区是单格选区，直接移除
+      if (
+        containingSelection.minRow === containingSelection.maxRow &&
+        containingSelection.minCol === containingSelection.maxCol
+      ) {
+        multiSelections.value.splice(containingSelectionIndex, 1);
+      } else {
+        // 将大选区拆分成多个单格选区（排除目标单元格）
+        const newCells = splitSelectionIntoCells(containingSelection, row, col);
+
+        // 移除原选区
+        multiSelections.value.splice(containingSelectionIndex, 1);
+
+        // 添加拆分后的单格选区
+        newCells.forEach((cell) => {
+          multiSelections.value.push(cell);
+        });
+      }
+
+      // 更新 activeCell 指向列表中的最后一个，或者清空
+      if (multiSelections.value.length > 0) {
+        const last = multiSelections.value[multiSelections.value.length - 1];
+        activeCell.value = { row: last.minRow, col: last.minCol };
+        selectionStart.value = { row: last.minRow, col: last.minCol };
+        selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+      } else {
+        // 多选列表为空，切换到 SINGLE 模式
+        isMultipleMode.value = false;
+        activeCell.value = null;
+        selectionStart.value = null;
+        selectionEnd.value = null;
+      }
+    } else {
+      // 2. 如果不在列表中，则添加该单元格为单格选区
+      const newSelection = {
+        minRow: row,
+        maxRow: row,
+        minCol: col,
+        maxCol: col,
+      };
+      multiSelections.value.push(newSelection);
+
+      // 确保活动单元格状态正确
+      activeCell.value = { row, col };
+      selectionStart.value = { row, col };
+      selectionEnd.value = { row, col };
+    }
+  };
+
+  /**
+   * MULTIPLE 模式：结束选择（Ctrl+拖选）
+   *
+   * Excel 逻辑：
+   * - 如果从已选中的单元格开始拖拽，应该先移除原选区，然后添加新选区
+   * - 如果从未选中的单元格开始拖拽，直接添加新选区
+   * - Ctrl 拖选永远是"添加"（并集），即使重叠也添加
+   *
+   * @param {Object} options - 选项
+   * @param {Object} options.removeSingleCell - 要移除的单个单元格 { row, col }（可选）
+   * @param {number} options.removeSelectionIndex - 要移除的选区索引（可选，用于处理从已选中单元格拖拽的情况）
+   * @returns {boolean} 是否成功添加（true=新增，false=取消）
+   */
+  const endMultipleSelectionDrag = (options = {}) => {
+    const selection = normalizedSelection.value;
+    if (!selection) return false;
+
+    const { removeSingleCell, removeSelectionIndex } = options;
+
+    // 如果指定了要移除的选区索引（从已选中单元格拖拽的情况），先移除它
+    if (removeSelectionIndex !== undefined && removeSelectionIndex >= 0) {
+      multiSelections.value.splice(removeSelectionIndex, 1);
+    }
+    // 否则，如果指定了要移除的单个单元格（处理 startMultipleSelection 留下的单格选区痕迹），先移除它
+    else if (removeSingleCell) {
+      const { row, col } = removeSingleCell;
+      const singleCellIndex = multiSelections.value.findIndex(
+        (sel) =>
+          sel.minRow === row &&
+          sel.maxRow === row &&
+          sel.minCol === col &&
+          sel.maxCol === col
+      );
+      if (singleCellIndex >= 0) {
+        multiSelections.value.splice(singleCellIndex, 1);
+      }
+    }
+
+    // 【修复】移除重叠检测逻辑，允许重叠（Excel 标准行为）
+    // Excel 逻辑：Ctrl 拖选永远是"添加"（并集），即使重叠也添加。
+    // 简单的做法是直接 push，视觉上由样式层处理重叠颜色加深。
+    multiSelections.value.push({ ...selection });
+
+    // 更新 activeCell 指向新添加的选区
+    activeCell.value = { row: selection.minRow, col: selection.minCol };
+    selectionStart.value = { row: selection.minRow, col: selection.minCol };
+    selectionEnd.value = { row: selection.maxRow, col: selection.maxCol };
+
+    return true;
+  };
+
+  // ==================== 通用函数 ====================
 
   const updateSelectionEnd = (row, col) => {
     selectionEnd.value = { row, col };
@@ -41,23 +335,123 @@ export function useSelection() {
     return activeCell.value?.row === row && activeCell.value?.col === col;
   };
 
+  /**
+   * 判断单元格是否在任意选区内（包括当前选区和多选列表）
+   *
+   * 多选模式下的行为：
+   * - 如果存在多选列表，优先检查多选列表（已归档的选区）
+   * - 即使存在多选列表，如果正在进行选择（isSelecting），也要检查当前正在拖拽的临时选区（normalizedSelection）
+   * - 这样可以确保在拖拽过程中，选区能够实时跟随鼠标
+   *
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @returns {boolean}
+   */
   const isInSelection = (row, col) => {
+    // 1. 检查已归档的多选列表
+    if (multiSelections.value && multiSelections.value.length > 0) {
+      const inMultiSelection = multiSelections.value.some(
+        (sel) =>
+          row >= sel.minRow &&
+          row <= sel.maxRow &&
+          col >= sel.minCol &&
+          col <= sel.maxCol
+      );
+      if (inMultiSelection) {
+        return true;
+      }
+    }
+
+    // 2. 修正：即使在多选模式下，如果正在进行选择（isSelecting），
+    // 也要检查当前正在拖拽的临时选区（normalizedSelection）
+    // 这样可以确保在拖拽过程中，选区能够实时跟随鼠标，提供视觉反馈
     const range = normalizedSelection.value;
-    if (!range) return false;
-    return (
-      row >= range.minRow &&
-      row <= range.maxRow &&
-      col >= range.minCol &&
-      col <= range.maxCol
+    if (range) {
+      if (
+        row >= range.minRow &&
+        row <= range.maxRow &&
+        col >= range.minCol &&
+        col <= range.maxCol
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  /**
+   * 判断单元格是否在多选列表中（但不在当前选区中）
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @returns {boolean}
+   */
+  const isInMultiSelectionOnly = (row, col) => {
+    // 先检查是否在当前选区中
+    const range = normalizedSelection.value;
+    if (range) {
+      if (
+        row >= range.minRow &&
+        row <= range.maxRow &&
+        col >= range.minCol &&
+        col <= range.maxCol
+      ) {
+        return false; // 在当前选区中，不是"仅多选"
+      }
+    }
+
+    // 检查是否在多选列表中
+    return multiSelections.value.some(
+      (sel) =>
+        row >= sel.minRow &&
+        row <= sel.maxRow &&
+        col >= sel.minCol &&
+        col <= sel.maxCol
     );
   };
 
+  /**
+   * 判断单元格是否应该使用多选背景色
+   * 当存在多选时，当前选区也应该使用多选背景色
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @returns {boolean}
+   */
+  const shouldUseMultiSelectionStyle = (row, col) => {
+    // 如果存在多选，检查是否在任意选区内（包括当前选区）
+    if (
+      multiSelections &&
+      multiSelections.value &&
+      multiSelections.value.length > 0
+    ) {
+      return isInSelection(row, col);
+    }
+    return false;
+  };
+
+  /**
+   * 判断表头是否在任意选区内
+   * @param {number} index - 行或列索引
+   * @param {string} type - 'row' 或 'col'
+   * @returns {boolean}
+   */
   const isInSelectionHeader = (index, type) => {
+    // 检查当前选区
     const range = normalizedSelection.value;
-    if (!range) return false;
-    return type === "row"
-      ? index >= range.minRow && index <= range.maxRow
-      : index >= range.minCol && index <= range.maxCol;
+    if (range) {
+      const inCurrentSelection =
+        type === "row"
+          ? index >= range.minRow && index <= range.maxRow
+          : index >= range.minCol && index <= range.maxCol;
+      if (inCurrentSelection) return true;
+    }
+
+    // 检查多选列表
+    return multiSelections.value.some((sel) => {
+      return type === "row"
+        ? index >= sel.minRow && index <= sel.maxRow
+        : index >= sel.minCol && index <= sel.maxCol;
+    });
   };
 
   // 移动活动单元格（用于键盘导航）
@@ -92,17 +486,66 @@ export function useSelection() {
     }
   };
 
+  /**
+   * 清除所有多选
+   */
+  const clearMultiSelections = () => {
+    multiSelections.value = [];
+  };
+
+  // ==================== 兼容性函数（保持向后兼容） ====================
+
+  /**
+   * @deprecated 使用 startSingleSelection 或 startMultipleSelection 代替
+   */
+  const setSelection = (row, col, addToMultiSelect = false) => {
+    if (addToMultiSelect) {
+      startMultipleSelection(row, col);
+    } else {
+      startSingleSelection(row, col);
+    }
+  };
+
+  /**
+   * @deprecated 使用 endMultipleSelectionClick 代替
+   */
+  const toggleSelectionAtCell = (row, col) => {
+    endMultipleSelectionClick(row, col);
+  };
+
+  /**
+   * @deprecated 使用 endMultipleSelectionDrag 代替
+   */
+  const addCurrentSelectionToMulti = (options = {}) => {
+    return endMultipleSelectionDrag(options);
+  };
+
   return {
     activeCell,
     selectionStart,
     selectionEnd,
     isSelecting,
     normalizedSelection,
-    setSelection,
+    multiSelections,
+    // 新模式 API
+    startSingleSelection,
+    updateSingleSelectionEnd,
+    startMultipleSelection,
+    updateMultipleSelectionEnd,
+    endMultipleSelectionClick,
+    endMultipleSelectionDrag,
+    // 通用函数
     updateSelectionEnd,
     isActive,
     isInSelection,
+    isInMultiSelectionOnly,
+    shouldUseMultiSelectionStyle,
     isInSelectionHeader,
     moveActiveCell,
+    clearMultiSelections,
+    // 兼容性函数
+    setSelection,
+    toggleSelectionAtCell,
+    addCurrentSelectionToMulti,
   };
 }

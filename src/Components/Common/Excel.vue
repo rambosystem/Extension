@@ -79,7 +79,15 @@
             minHeight: getRowHeight(rowIndex) + 'px',
             alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
           }"
-          @mousedown="handleCellMouseDown(rowIndex, colIndex)"
+          @mousedown="
+            handleCellMouseDown(
+              rowIndex,
+              colIndex,
+              rows.length,
+              internalColumns.length,
+              $event
+            )
+          "
           @dblclick="startEdit(rowIndex, colIndex)"
           @mouseenter="handleMouseEnter(rowIndex, colIndex)"
         >
@@ -130,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
 import { useHistory } from "../../composables/Excel/useHistory";
 import { useSelection } from "../../composables/Excel/useSelection";
 import { useExcelData } from "../../composables/Excel/useExcelData";
@@ -313,12 +321,23 @@ const {
   selectionEnd,
   isSelecting,
   normalizedSelection,
-  setSelection,
+  multiSelections,
+  isMultipleMode,
+  startSingleSelection,
+  updateSingleSelectionEnd,
+  startMultipleSelection,
+  updateMultipleSelectionEnd,
+  endMultipleSelectionClick,
+  endMultipleSelectionDrag,
   updateSelectionEnd,
   isActive,
   isInSelection,
   isInSelectionHeader,
   moveActiveCell,
+  // 兼容性函数
+  setSelection,
+  toggleSelectionAtCell,
+  addCurrentSelectionToMulti,
 } = useSelection();
 
 /**
@@ -441,6 +460,8 @@ const {
   getDragTargetBorderClass,
 } = useSelectionStyle({
   normalizedSelection,
+  multiSelections,
+  isMultipleMode,
   isInSelection,
   isInDragArea,
   fillHandleComposable,
@@ -483,8 +504,15 @@ handleRowResizeRef = handleRowResizeMove;
 const { handleMouseUp, handleCellMouseDown, handleMouseEnter } = useMouseEvents(
   {
     isSelecting,
-    setSelection,
-    updateSelectionEnd,
+    selectionStart,
+    selectionEnd,
+    startSingleSelection,
+    updateSingleSelectionEnd,
+    startMultipleSelection,
+    updateMultipleSelectionEnd,
+    endMultipleSelectionClick,
+    endMultipleSelectionDrag,
+    multiSelections,
     isEditing,
     stopEdit,
     handleFillDragEnter,
