@@ -16,10 +16,10 @@
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item :command="{ action: 'insertRowBelow', rowIndex }">
-          向下插入行
+          Insert Row Below
         </el-dropdown-item>
-        <el-dropdown-item :command="{ action: 'deleteRow', rowIndex }" divided>
-          删除行
+        <el-dropdown-item :command="{ action: 'deleteRow', rowIndex }">
+          Delete Row
         </el-dropdown-item>
       </el-dropdown-menu>
     </template>

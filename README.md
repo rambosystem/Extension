@@ -812,8 +812,8 @@ export async function apiFunction() {
 {
   "vue": "^3.4.0",
   "pinia": "^2.1.0",
-  "element-plus": "^2.4.0",
-  "@element-plus/icons-vue": "^2.3.0"
+  "element-plus": "^2.13.0",
+  "@element-plus/icons-vue": "^2.3.2"
 }
 ```
 
