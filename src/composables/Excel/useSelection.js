@@ -820,6 +820,175 @@ export function useSelection() {
     isMultipleMode.value = false;
   };
 
+  /**
+   * 全选指定行
+   * @param {number} rowIndex - 行索引
+   * @param {number} maxCols - 最大列数
+   * @param {boolean} addToMultiSelect - 是否添加到多选（Ctrl+点击）
+   */
+  const selectRow = (rowIndex, maxCols, addToMultiSelect = false) => {
+    if (addToMultiSelect) {
+      // MULTIPLE 模式：添加到多选列表
+      isMultipleMode.value = true;
+      const newSelection = {
+        minRow: rowIndex,
+        maxRow: rowIndex,
+        minCol: 0,
+        maxCol: maxCols - 1,
+      };
+
+      // 检查是否已存在相同的行选区
+      const existingIndex = multiSelections.value.findIndex(
+        (sel) =>
+          sel.minRow === newSelection.minRow &&
+          sel.maxRow === newSelection.maxRow &&
+          sel.minCol === newSelection.minCol &&
+          sel.maxCol === newSelection.maxCol
+      );
+
+      if (existingIndex >= 0) {
+        // 如果已存在，移除它（切换选择）
+        multiSelections.value.splice(existingIndex, 1);
+        // 更新 activeCell
+        if (multiSelections.value.length > 0) {
+          const last = multiSelections.value[multiSelections.value.length - 1];
+          activeCell.value = { row: last.minRow, col: last.minCol };
+          selectionStart.value = { row: last.minRow, col: last.minCol };
+          selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+        } else {
+          isMultipleMode.value = false;
+          activeCell.value = null;
+          selectionStart.value = null;
+          selectionEnd.value = null;
+        }
+      } else {
+        // 如果不存在，添加新选区
+        multiSelections.value.push(newSelection);
+        // 优化选区
+        multiSelections.value = optimizeSelections(multiSelections.value);
+        // 更新 activeCell
+        activeCell.value = { row: rowIndex, col: 0 };
+        selectionStart.value = { row: rowIndex, col: 0 };
+        selectionEnd.value = { row: rowIndex, col: maxCols - 1 };
+      }
+    } else {
+      // SINGLE 模式：设置新的单一选区
+      isMultipleMode.value = false;
+      multiSelections.value = [];
+      activeCell.value = { row: rowIndex, col: 0 };
+      selectionStart.value = { row: rowIndex, col: 0 };
+      selectionEnd.value = { row: rowIndex, col: maxCols - 1 };
+    }
+  };
+
+  /**
+   * 全选指定列
+   * @param {number} colIndex - 列索引
+   * @param {number} maxRows - 最大行数
+   * @param {boolean} addToMultiSelect - 是否添加到多选（Ctrl+点击）
+   */
+  const selectColumn = (colIndex, maxRows, addToMultiSelect = false) => {
+    if (addToMultiSelect) {
+      // MULTIPLE 模式：添加到多选列表
+      isMultipleMode.value = true;
+      const newSelection = {
+        minRow: 0,
+        maxRow: maxRows - 1,
+        minCol: colIndex,
+        maxCol: colIndex,
+      };
+
+      // 检查是否已存在相同的列选区
+      const existingIndex = multiSelections.value.findIndex(
+        (sel) =>
+          sel.minRow === newSelection.minRow &&
+          sel.maxRow === newSelection.maxRow &&
+          sel.minCol === newSelection.minCol &&
+          sel.maxCol === newSelection.maxCol
+      );
+
+      if (existingIndex >= 0) {
+        // 如果已存在，移除它（切换选择）
+        multiSelections.value.splice(existingIndex, 1);
+        // 更新 activeCell
+        if (multiSelections.value.length > 0) {
+          const last = multiSelections.value[multiSelections.value.length - 1];
+          activeCell.value = { row: last.minRow, col: last.minCol };
+          selectionStart.value = { row: last.minRow, col: last.minCol };
+          selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+        } else {
+          isMultipleMode.value = false;
+          activeCell.value = null;
+          selectionStart.value = null;
+          selectionEnd.value = null;
+        }
+      } else {
+        // 如果不存在，添加新选区
+        multiSelections.value.push(newSelection);
+        // 优化选区
+        multiSelections.value = optimizeSelections(multiSelections.value);
+        // 更新 activeCell
+        activeCell.value = { row: 0, col: colIndex };
+        selectionStart.value = { row: 0, col: colIndex };
+        selectionEnd.value = { row: maxRows - 1, col: colIndex };
+      }
+    } else {
+      // SINGLE 模式：设置新的单一选区
+      isMultipleMode.value = false;
+      multiSelections.value = [];
+      activeCell.value = { row: 0, col: colIndex };
+      selectionStart.value = { row: 0, col: colIndex };
+      selectionEnd.value = { row: maxRows - 1, col: colIndex };
+    }
+  };
+
+  /**
+   * 全选多行（拖选）
+   * @param {number} startRow - 起始行索引
+   * @param {number} endRow - 结束行索引
+   * @param {number} maxCols - 最大列数
+   */
+  const selectRows = (startRow, endRow, maxCols) => {
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+
+    isMultipleMode.value = false;
+    multiSelections.value = [];
+    activeCell.value = { row: minRow, col: 0 };
+    selectionStart.value = { row: minRow, col: 0 };
+    selectionEnd.value = { row: maxRow, col: maxCols - 1 };
+  };
+
+  /**
+   * 全选多列（拖选）
+   * @param {number} startCol - 起始列索引
+   * @param {number} endCol - 结束列索引
+   * @param {number} maxRows - 最大行数
+   */
+  const selectColumns = (startCol, endCol, maxRows) => {
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+
+    isMultipleMode.value = false;
+    multiSelections.value = [];
+    activeCell.value = { row: 0, col: minCol };
+    selectionStart.value = { row: 0, col: minCol };
+    selectionEnd.value = { row: maxRows - 1, col: maxCol };
+  };
+
+  /**
+   * 全选整个表格
+   * @param {number} maxRows - 最大行数
+   * @param {number} maxCols - 最大列数
+   */
+  const selectAll = (maxRows, maxCols) => {
+    isMultipleMode.value = false;
+    multiSelections.value = [];
+    activeCell.value = { row: 0, col: 0 };
+    selectionStart.value = { row: 0, col: 0 };
+    selectionEnd.value = { row: maxRows - 1, col: maxCols - 1 };
+  };
+
   // ==================== 兼容性函数（保持向后兼容） ====================
 
   /**
@@ -872,6 +1041,12 @@ export function useSelection() {
     moveActiveCell,
     clearMultiSelections,
     clearSelection, // 清除选择函数
+    // 全选行/列函数
+    selectRow,
+    selectColumn,
+    selectRows,
+    selectColumns,
+    selectAll,
     // 兼容性函数
     setSelection,
     toggleSelectionAtCell,

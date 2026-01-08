@@ -11,7 +11,10 @@
   >
     <div class="excel-table" @mouseleave="handleMouseUp">
       <div class="excel-row header-row">
-        <div class="excel-cell header-cell corner-cell"></div>
+        <div
+          class="excel-cell header-cell corner-cell"
+          @mousedown="handleCornerCellClick"
+        ></div>
         <div
           v-for="(col, index) in displayColumns"
           :key="col"
@@ -28,11 +31,13 @@
                   minWidth: getColumnWidth(index) + 'px',
                 }
           "
+          @mousedown="handleColumnHeaderMouseDown(index, $event)"
+          @mouseenter="handleColumnHeaderMouseEnter(index)"
         >
           {{ col }}
           <ColumnResizer
             v-if="enableColumnResize && index < displayColumns.length - 1"
-            @mousedown="startColumnResize(index, $event)"
+            @mousedown.stop="startColumnResize(index, $event)"
             @dblclick="handleDoubleClickResize(index)"
           />
         </div>
@@ -46,11 +51,13 @@
             height: getRowHeight(rowIndex) + 'px',
             minHeight: getRowHeight(rowIndex) + 'px',
           }"
+          @mousedown="handleRowNumberMouseDown(rowIndex, $event)"
+          @mouseenter="handleRowNumberMouseEnter(rowIndex)"
         >
           {{ rowIndex + 1 }}
           <RowResizer
             v-if="enableRowResize"
-            @mousedown="startRowResize(rowIndex, $event)"
+            @mousedown.stop="startRowResize(rowIndex, $event)"
             @dblclick="handleDoubleClickRowResize(rowIndex)"
           />
         </div>
@@ -373,6 +380,11 @@ const {
   isInSelectionHeader,
   moveActiveCell,
   clearSelection, // 清除选择函数
+  selectRow,
+  selectColumn,
+  selectRows,
+  selectColumns,
+  selectAll,
   // 兼容性函数
   setSelection,
   toggleSelectionAtCell,
@@ -711,6 +723,143 @@ const handleContainerClick = (event) => {
   ) {
     clearSelection();
   }
+};
+
+// 行号和列标题选择状态
+const headerSelectState = ref({
+  isSelecting: false,
+  type: null, // 'row' 或 'col'
+  startIndex: null,
+  isMultipleMode: false,
+});
+
+/**
+ * 处理行号鼠标按下事件
+ * @param {number} rowIndex - 行索引
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const handleRowNumberMouseDown = (rowIndex, event) => {
+  // 如果正在调整行高，不处理选择
+  if (props.enableRowResize && rowHeightComposable?.isResizingRow.value) {
+    return;
+  }
+
+  if (stopEdit) {
+    stopEdit();
+  }
+
+  const isCtrlClick = event && (event.ctrlKey || event.metaKey);
+  headerSelectState.value = {
+    isSelecting: true,
+    type: "row",
+    startIndex: rowIndex,
+    isMultipleMode: isCtrlClick,
+  };
+
+  // 全选该行
+  selectRow(rowIndex, internalColumns.value.length, isCtrlClick);
+
+  // 注册全局事件
+  window.addEventListener("mouseup", handleHeaderMouseUp);
+};
+
+/**
+ * 处理列标题鼠标按下事件
+ * @param {number} colIndex - 列索引
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const handleColumnHeaderMouseDown = (colIndex, event) => {
+  // 如果正在调整列宽，不处理选择
+  if (
+    props.enableColumnResize &&
+    columnWidthComposable?.isResizingColumn.value
+  ) {
+    return;
+  }
+
+  if (stopEdit) {
+    stopEdit();
+  }
+
+  const isCtrlClick = event && (event.ctrlKey || event.metaKey);
+  headerSelectState.value = {
+    isSelecting: true,
+    type: "col",
+    startIndex: colIndex,
+    isMultipleMode: isCtrlClick,
+  };
+
+  // 全选该列
+  selectColumn(colIndex, rows.value.length, isCtrlClick);
+
+  // 注册全局事件
+  window.addEventListener("mouseup", handleHeaderMouseUp);
+};
+
+/**
+ * 处理行号鼠标进入事件（拖选时）
+ * @param {number} rowIndex - 行索引
+ */
+const handleRowNumberMouseEnter = (rowIndex) => {
+  if (
+    !headerSelectState.value.isSelecting ||
+    headerSelectState.value.type !== "row"
+  ) {
+    return;
+  }
+
+  const startRow = headerSelectState.value.startIndex;
+  const endRow = rowIndex;
+  selectRows(startRow, endRow, internalColumns.value.length);
+};
+
+/**
+ * 处理列标题鼠标进入事件（拖选时）
+ * @param {number} colIndex - 列索引
+ */
+const handleColumnHeaderMouseEnter = (colIndex) => {
+  if (
+    !headerSelectState.value.isSelecting ||
+    headerSelectState.value.type !== "col"
+  ) {
+    return;
+  }
+
+  const startCol = headerSelectState.value.startIndex;
+  const endCol = colIndex;
+  selectColumns(startCol, endCol, rows.value.length);
+};
+
+/**
+ * 处理行号/列标题鼠标抬起事件
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const handleHeaderMouseUp = (event) => {
+  if (!headerSelectState.value.isSelecting) return;
+
+  // 清理状态
+  headerSelectState.value = {
+    isSelecting: false,
+    type: null,
+    startIndex: null,
+    isMultipleMode: false,
+  };
+
+  // 移除事件监听
+  window.removeEventListener("mouseup", handleHeaderMouseUp);
+};
+
+/**
+ * 处理角单元格点击事件（全选整个表格）
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const handleCornerCellClick = (event) => {
+  if (stopEdit) {
+    stopEdit();
+  }
+
+  // 全选整个表格
+  selectAll(rows.value.length, internalColumns.value.length);
 };
 
 // 使用键盘处理 composable
