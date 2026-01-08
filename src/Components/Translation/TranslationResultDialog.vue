@@ -428,7 +428,7 @@ const customMenuItems = computed(() => {
   return [
     {
       id: "auto-increment-key",
-      label: "自增填充",
+      label: "Auto Increment",
       shortcut: "Ctrl+Alt+A",
       validate: (ctx) => {
         // 验证：列名必须为 "Key"，且选区必须在第一列（Key列）
