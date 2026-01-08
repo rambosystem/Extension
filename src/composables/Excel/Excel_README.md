@@ -96,9 +96,16 @@ Excel.vue (组件)
 │       ├── 拖拽填充
 │       └── 智能值计算
 ├── 菜单功能
-│   └── useCellMenu (单元格菜单)
-│       ├── 删除行
-│       └── 插入行
+│   ├── useCellMenu (单元格菜单)
+│   │   ├── 删除行
+│   │   └── 插入行
+│   └── useCellMenuPosition (菜单位置管理)
+│       ├── 菜单显示位置计算
+│       └── 菜单上下文创建
+├── 行操作
+│   └── useRowOperations (行操作管理)
+│       ├── 统一插入行处理
+│       └── 统一删除行处理（支持多行）
 └── 历史记录
     └── useHistory (历史记录)
         ├── historyStack (历史栈)
@@ -134,6 +141,8 @@ src/composables/Excel/
 ├── useMouseEvents.js      # 鼠标事件管理
 ├── useDataSync.js         # 数据同步管理
 ├── useCellMenu.js         # 单元格菜单管理
+├── useCellMenuPosition.js # 单元格菜单位置管理
+├── useRowOperations.js    # 行操作管理
 └── useResizeHandlers.js   # 尺寸调整处理器
 
 src/Components/Common/
@@ -194,14 +203,48 @@ useExcelData({
   selectionEnd: Ref<{ row: number, col: number } | null>,  // 选区终点
   isSelecting: Ref<boolean>,  // 是否正在选择
   normalizedSelection: ComputedRef<Range | null>,  // 归一化选区
-  startSingleSelection: (row: number, col: number) => void,  // 开始单格选择
-  updateSelectionEnd: (row: number, col: number) => void,  // 更新选区终点
+  multiSelections: Ref<Array<Range>>,  // 多选列表（MULTIPLE模式）
+  isMultipleMode: Ref<boolean>,  // 是否处于多选模式
+  startSingleSelection: (row: number, col: number) => void,  // 开始单格选择（SINGLE模式）
+  updateSingleSelectionEnd: (row: number, col: number) => void,  // 更新单格选择终点
+  startMultipleSelection: (row: number, col: number) => void,  // 开始多选（MULTIPLE模式）
+  updateMultipleSelectionEnd: (row: number, col: number) => void,  // 更新多选终点
+  endMultipleSelectionClick: (row: number, col: number) => void,  // 结束多选（Ctrl+点击）
+  endMultipleSelectionDrag: (options: Object) => void,  // 结束多选（Ctrl+拖选）
+  updateSelectionEnd: (row: number, col: number) => void,  // 更新选区终点（通用）
   isActive: (row: number, col: number) => boolean,  // 是否为活动单元格
   isInSelection: (row: number, col: number) => boolean,  // 是否在选区内
   isInSelectionHeader: (index: number, type: 'row' | 'col') => boolean,  // 是否在选区表头
-  moveActiveCell: (rOffset: number, cOffset: number, maxRows: number, maxCols: number, extendSelection?: boolean) => void  // 移动活动单元格
+  moveActiveCell: (rOffset: number, cOffset: number, maxRows: number, maxCols: number, extendSelection?: boolean) => void,  // 移动活动单元格
+  clearSelection: () => void,  // 清除选择
+  selectRow: (rowIndex: number, colsCount: number, isMultiple?: boolean) => void,  // 选择整行
+  selectColumn: (colIndex: number, rowsCount: number, isMultiple?: boolean) => void,  // 选择整列
+  selectRows: (startRow: number, endRow: number, colsCount: number) => void,  // 选择多行
+  selectColumns: (startCol: number, endCol: number, rowsCount: number) => void,  // 选择多列
+  selectAll: (rowsCount: number, colsCount: number) => void  // 全选
 }
 ```
+
+#### 选择模式说明
+
+组件支持两种选择模式：
+
+1. **SINGLE 模式**（普通选择）：
+
+   - 点击或拖选单元格，只有一个选区
+   - 使用 `selectionStart` 和 `selectionEnd` 记录选区
+   - 通过 `normalizedSelection` 计算属性获取归一化选区
+
+2. **MULTIPLE 模式**（Ctrl+选择）：
+   - 按住 Ctrl/Cmd 键点击或拖选，可以有多个独立选区
+   - 使用 `multiSelections` 数组存储多个选区
+   - 支持 Ctrl+点击添加/移除选区
+   - 支持 Ctrl+拖选添加/移除选区范围
+
+**模式切换规则**：
+
+- 从 MULTIPLE 模式切换到 SINGLE 模式时，清空多选列表
+- 从 SINGLE 模式切换到 MULTIPLE 模式时，保留之前 SINGLE 模式的选区（加入 multiSelections）
 
 ### useHistory
 
@@ -479,6 +522,9 @@ useSizeManager({
 ```javascript
 useSelectionStyle({
   normalizedSelection: ComputedRef<Range | null>,
+  multiSelections: Ref<Array<Range>>,
+  isMultipleMode: Ref<boolean>,
+  isSelecting: Ref<boolean>,
   isInSelection: Function,
   isInDragArea: Function,
   fillHandleComposable: Object | null,
@@ -492,9 +538,16 @@ useSelectionStyle({
 {
   getSelectionBorderClass: (row: number, col: number) => string[],  // 获取选区边框样式类
   isSelectionBottomRight: (row: number, col: number) => boolean,    // 判断是否为选区右下角
-  getDragTargetBorderClass: (row: number, col: number) => string[]  // 获取拖拽区域边框样式类
+  getDragTargetBorderClass: (row: number, col: number) => string[],  // 获取拖拽区域边框样式类
+  getMultipleDragBorderClass: (row: number, col: number) => string[]  // 获取多选模式下拖选边框样式类
 }
 ```
+
+**样式渲染规则**：
+
+- **SINGLE 模式**：显示选区边框和背景色
+- **MULTIPLE 模式**：只显示背景色，不显示边框（拖选过程中除外）
+- **拖选过程**：多选模式下拖选时，显示当前拖选区域的边框
 
 ### useMouseEvents
 
@@ -621,6 +674,80 @@ useResizeHandlers({
 }
 ```
 
+### useCellMenuPosition
+
+单元格菜单位置管理 Composable，负责计算和管理单元格菜单按钮的显示位置和上下文。
+
+#### 参数
+
+```javascript
+useCellMenuPosition({
+  editingCell: Ref<{ row: number, col: number } | null>,
+  isSelecting: Ref<boolean>,
+  isMultipleMode: Ref<boolean>,
+  activeCell: Ref<{ row: number, col: number } | null>,
+  normalizedSelection: ComputedRef<Range | null>,
+  multiSelections: Ref<Array<Range>>,
+  tableData: Ref<string[][]>,
+  updateCell: Function,
+  notifyDataChange: Function,
+  getData: Function,
+  setDataWithSync: Function
+});
+```
+
+#### 返回值
+
+```typescript
+{
+  cellMenuPosition: ComputedRef<{ row: number, col: number } | null>,  // 菜单按钮显示位置
+  shouldShowCellMenu: (rowIndex: number, colIndex: number) => boolean,  // 是否显示菜单按钮
+  createMenuContext: (rowIndex: number) => Object  // 创建菜单上下文对象
+}
+```
+
+**显示逻辑**：
+
+- 单选模式：显示在选区的最后一个单元格（右下角）
+- 多选模式：显示在最后一个选区的最后一个单元格（右下角）
+- 不在编辑状态且不在选择过程中时显示
+
+### useRowOperations
+
+行操作管理 Composable，负责处理行操作（插入行、删除行等）的统一逻辑。
+
+#### 参数
+
+```javascript
+useRowOperations({
+  tableData: Ref<string[][]>,
+  rows: Ref<number[]>,
+  activeCell: Ref<{ row: number, col: number } | null>,
+  columns: Ref<string[]>,
+  saveHistory: Function,
+  insertRowBelow: Function,
+  deleteRow: Function,
+  startSingleSelection: Function,
+  notifyDataChange: Function
+});
+```
+
+#### 返回值
+
+```typescript
+{
+  handleInsertRowBelow: (rowIndex: number) => void,  // 在指定行下方插入行
+  handleDeleteRow: (rowIndexOrIndices: number | number[]) => void,  // 删除行（支持单行或多行）
+  handleDeleteRows: (rowIndices: number[]) => void  // 删除多行
+}
+```
+
+**功能说明**：
+
+- 统一的插入/删除行处理，自动处理历史记录和数据同步
+- 删除行后自动调整活动单元格位置
+- 支持单行删除和多行删除（传入数组）
+
 ## 使用方法
 
 ### 基础使用
@@ -728,6 +855,46 @@ Excel 组件支持以下 props：
 | `defaultRowHeight`   | `number`           | `36`   | 默认行高（像素）                                                    |
 | `modelValue`         | `string[][]`       | `null` | v-model 绑定的表格数据（二维字符串数组）                            |
 | `columnNames`        | `string[]`         | `null` | 自定义列标题，不提供则使用默认的 A, B, C...                         |
+| `customMenuItems`    | `Array`            | `[]`   | 自定义菜单项配置数组（详见下方说明）                                |
+
+#### customMenuItems 配置说明
+
+自定义菜单项配置数组，每个配置项包含以下属性：
+
+```typescript
+{
+  id: string,                    // 唯一标识
+  label: string,                 // 显示文本
+  shortcut?: string,              // 快捷键（可选，如 'Ctrl+Alt+A'）
+  validate?: (context) => boolean,  // 验证函数，返回是否显示该菜单项（可选）
+  disabled?: (context) => boolean  // 禁用函数，返回是否禁用该菜单项（可选）
+}
+```
+
+**context 对象包含**：
+
+- `normalizedSelection`: 当前选区
+- `multiSelections`: 多选列表
+- `isMultipleMode`: 是否处于多选模式
+- `activeCell`: 活动单元格
+- `rowIndex`: 行索引
+- `tableData`: 表格数据
+- `updateCell(row, col, value)`: 更新单元格函数
+- `getData()`: 获取数据函数
+- `setData(data)`: 设置数据函数
+
+**示例**：
+
+```javascript
+const customMenuItems = [
+  {
+    id: "auto-increment",
+    label: "自增填充",
+    shortcut: "Ctrl+Alt+A",
+    validate: (ctx) => ctx.normalizedSelection?.minCol === 0, // 只在第一列显示
+  },
+];
+```
 
 ### 暴露的方法和属性
 
@@ -744,10 +911,11 @@ Excel 组件支持以下 props：
 
 ### 事件
 
-| 事件名              | 参数类型     | 说明                             |
-| ------------------- | ------------ | -------------------------------- |
-| `update:modelValue` | `string[][]` | v-model 更新事件，数据变化时触发 |
-| `change`            | `string[][]` | 数据变化事件，返回深拷贝的数据   |
+| 事件名              | 参数类型     | 说明                                                           |
+| ------------------- | ------------ | -------------------------------------------------------------- |
+| `update:modelValue` | `string[][]` | v-model 更新事件，数据变化时触发                               |
+| `change`            | `string[][]` | 数据变化事件，返回深拷贝的数据                                 |
+| `custom-action`     | `Object`     | 自定义菜单项点击事件，参数为 `{ id: string, context: Object }` |
 
 ## 功能特性
 
@@ -770,6 +938,11 @@ Excel 组件支持以下 props：
 - [x] **数据管理**: 支持 v-model 双向绑定、初始数据、方法调用
 - [x] **列标题生成**: 支持超过 26 列（A-Z, AA-AZ, BA-BZ...）
 - [x] **单元格菜单**: 支持删除行、插入行功能
+- [x] **多选模式**: 支持 Ctrl/Cmd+点击或拖选创建多个独立选区
+- [x] **行/列选择**: 支持点击行号选择整行，点击列标题选择整列
+- [x] **全选功能**: 支持点击角单元格全选整个表格
+- [x] **自定义菜单项**: 支持通过 `customMenuItems` prop 添加自定义菜单项
+- [x] **多行删除**: 支持一次删除多行（通过菜单或键盘快捷键）
 
 ### 🔄 智能填充算法
 
@@ -848,6 +1021,23 @@ Excel 组件支持以下 props：
 | `Enter`                 | 向下移动       |
 | `Shift + Enter`         | 向上移动       |
 
+### 选择操作
+
+| 操作                     | 功能                      |
+| ------------------------ | ------------------------- |
+| `点击单元格`             | 选择单个单元格            |
+| `拖拽单元格`             | 选择单元格范围            |
+| `Ctrl/Cmd + 点击单元格`  | 添加/移除单元格到多选     |
+| `Ctrl/Cmd + 拖拽单元格`  | 添加/移除单元格范围到多选 |
+| `点击行号`               | 选择整行                  |
+| `Ctrl/Cmd + 点击行号`    | 添加/移除行到多选         |
+| `拖拽行号`               | 选择多行                  |
+| `点击列标题`             | 选择整列                  |
+| `Ctrl/Cmd + 点击列标题`  | 添加/移除列到多选         |
+| `拖拽列标题`             | 选择多列                  |
+| `点击角单元格（左上角）` | 全选整个表格              |
+| `点击空白区域`           | 清除选择                  |
+
 ### 编辑键
 
 | 快捷键                 | 功能               |
@@ -860,13 +1050,14 @@ Excel 组件支持以下 props：
 
 ### 操作键
 
-| 快捷键                                 | 功能        |
-| -------------------------------------- | ----------- |
-| `Ctrl + Z` / `Cmd + Z`                 | 撤销        |
-| `Ctrl + Y` / `Cmd + Y`                 | 重做        |
-| `Ctrl + Shift + Z` / `Cmd + Shift + Z` | 重做（Mac） |
-| `Ctrl + C` / `Cmd + C`                 | 复制        |
-| `Ctrl + V` / `Cmd + V`                 | 粘贴        |
+| 快捷键                                 | 功能         |
+| -------------------------------------- | ------------ |
+| `Ctrl + Z` / `Cmd + Z`                 | 撤销         |
+| `Ctrl + Y` / `Cmd + Y`                 | 重做         |
+| `Ctrl + Shift + Z` / `Cmd + Shift + Z` | 重做（Mac）  |
+| `Ctrl + C` / `Cmd + C`                 | 复制         |
+| `Ctrl + V` / `Cmd + V`                 | 粘贴         |
+| `Delete` / `Backspace`                 | 删除选中内容 |
 
 ### 直接输入
 
@@ -981,7 +1172,80 @@ $header-active-bg: #e4e7ed;
 
 ## 更新日志
 
-### v2.0.0 (当前版本)
+### v2.2.0 (当前版本)
+
+- ✅ **新增多选模式支持**
+
+  - 支持 Ctrl/Cmd+点击或拖选创建多个独立选区
+  - 新增 `multiSelections` 和 `isMultipleMode` 状态管理
+  - 支持从多选模式切换到单选模式，自动清空多选列表
+  - 支持从单选模式切换到多选模式，保留之前选区
+
+- ✅ **新增行/列选择功能**
+
+  - 支持点击行号选择整行，支持拖拽行号选择多行
+  - 支持点击列标题选择整列，支持拖拽列标题选择多列
+  - 支持 Ctrl/Cmd+点击行号/列标题添加到多选
+  - 支持点击角单元格（左上角）全选整个表格
+  - 支持点击空白区域清除选择
+
+- ✅ **新增自定义菜单项功能**
+
+  - 新增 `customMenuItems` prop，支持自定义菜单项配置
+  - 支持菜单项显示/隐藏验证函数
+  - 支持菜单项禁用状态函数
+  - 支持快捷键配置
+  - 新增 `custom-action` 事件，用于处理自定义菜单项点击
+
+- ✅ **新增行操作管理 Composable**
+
+  - 新增 `useRowOperations` composable，统一管理插入/删除行逻辑
+  - 支持单行删除和多行删除（传入数组）
+  - 自动处理历史记录和数据同步
+  - 删除行后自动调整活动单元格位置
+
+- ✅ **新增单元格菜单位置管理 Composable**
+
+  - 新增 `useCellMenuPosition` composable，统一管理菜单按钮显示位置
+  - 支持单选模式和多选模式的菜单位置计算
+  - 提供菜单上下文创建函数，供自定义菜单项使用
+
+- ✅ **优化选择逻辑**
+
+  - 优化多选模式的选区合并算法
+  - 改进活动单元格在多选模式下的显示逻辑
+  - 优化选区边框样式，区分单选和多选状态
+
+### v2.1.0
+
+- ✅ **修复翻译功能错误**
+
+  - 修复 `continueTranslation` 函数中 `finalResultWithKeys` 未定义的错误
+  - 将 `finalResultWithKeys` 替换为正确的 `result` 变量
+  - 确保翻译结果能够正确保存到本地存储
+
+- ✅ **增强 Auto Increment 功能验证**
+
+  - 添加 baseline key 存在性检查，未配置 baseline key 时禁止执行 auto increment
+  - 添加 baseline key 格式验证，格式不正确时显示警告提示
+  - 新增国际化提示信息：
+    - `autoIncrementBaselineKeyRequired`: 提示用户需要先配置 baseline key
+    - `autoIncrementBaselineKeyInvalid`: 提示 baseline key 格式无效
+  - 提升用户体验，避免因配置缺失导致的错误
+
+- ✅ **优化翻译处理状态样式**
+
+  - 进度计数器样式优化，采用 Excel menu 中快捷键 label 的样式设计
+    - 背景色：`#f0f1f2`
+    - 圆角：`4px`
+    - 内边距：`2px 6px`
+    - 字体大小：`12px`
+    - 字体颜色：`#4a4b4d`
+    - 使用系统字体栈，保持视觉一致性
+  - "Translating..." 文本颜色优化，从蓝色 (`#409eff`) 改为正文字体颜色 (`#303133`)
+  - 加载图标颜色同步调整为正文字体颜色，保持整体视觉统一
+
+### v2.0.0
 
 - ✅ **重大重构：模块化架构优化**
 

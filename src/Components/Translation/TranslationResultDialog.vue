@@ -955,22 +955,34 @@ const handleCustomAction = ({ id, context }) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #409eff;
+  color: #303133;
   font-size: 14px;
   margin-left: 0;
 }
 
 .loading-indicator .el-icon {
   font-size: 16px;
+  color: #303133;
 }
 
 .loading-text {
-  color: #409eff;
+  color: #303133;
 }
 
 .progress-counter {
-  color: #909399;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background-color: #f0f1f2;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #4a4b4d;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  white-space: nowrap;
+  min-width: fit-content;
+  line-height: 1.4;
   margin-left: 4px;
+  transition: background-color 0.05s ease;
 }
 </style>
