@@ -205,6 +205,126 @@ export function useSelection() {
   };
 
   /**
+   * 矩阵切割算法：将多个选区（特别是单格选区）合并成尽可能大的矩形选区
+   *
+   * 算法思路：
+   * 1. 收集所有选区中的所有单元格
+   * 2. 使用贪心算法将相邻单元格合并成矩形选区
+   * 3. 优先合并行，然后合并列
+   *
+   * @param {Array} selections - 选区数组 [{ minRow, maxRow, minCol, maxCol }, ...]
+   * @returns {Array} 优化后的选区数组
+   */
+  const optimizeSelections = (selections) => {
+    if (!selections || selections.length === 0) {
+      return [];
+    }
+
+    // 1. 收集所有单元格（去重）
+    const cellSet = new Set();
+    selections.forEach((sel) => {
+      for (let r = sel.minRow; r <= sel.maxRow; r++) {
+        for (let c = sel.minCol; c <= sel.maxCol; c++) {
+          cellSet.add(`${r},${c}`);
+        }
+      }
+    });
+
+    if (cellSet.size === 0) {
+      return [];
+    }
+
+    // 2. 将单元格转换为坐标数组并排序
+    const cells = Array.from(cellSet)
+      .map((key) => {
+        const [row, col] = key.split(",").map(Number);
+        return { row, col };
+      })
+      .sort((a, b) => {
+        // 先按行排序，再按列排序
+        if (a.row !== b.row) return a.row - b.row;
+        return a.col - b.col;
+      });
+
+    // 3. 使用贪心算法合并单元格成矩形
+    const optimized = [];
+    const used = new Set();
+
+    for (let i = 0; i < cells.length; i++) {
+      if (used.has(`${cells[i].row},${cells[i].col}`)) {
+        continue;
+      }
+
+      // 从当前单元格开始，尝试扩展成尽可能大的矩形
+      let minRow = cells[i].row;
+      let maxRow = cells[i].row;
+      let minCol = cells[i].col;
+      let maxCol = cells[i].col;
+
+      // 尝试向下扩展行
+      let canExpandRow = true;
+      while (canExpandRow) {
+        const nextRow = maxRow + 1;
+        let rowComplete = true;
+
+        // 检查下一行的所有列是否都存在且未被使用
+        for (let c = minCol; c <= maxCol; c++) {
+          const key = `${nextRow},${c}`;
+          if (!cellSet.has(key) || used.has(key)) {
+            rowComplete = false;
+            break;
+          }
+        }
+
+        if (rowComplete) {
+          maxRow = nextRow;
+        } else {
+          canExpandRow = false;
+        }
+      }
+
+      // 尝试向右扩展列
+      let canExpandCol = true;
+      while (canExpandCol) {
+        const nextCol = maxCol + 1;
+        let colComplete = true;
+
+        // 检查下一列的所有行是否都存在且未被使用
+        for (let r = minRow; r <= maxRow; r++) {
+          const key = `${r},${nextCol}`;
+          if (!cellSet.has(key) || used.has(key)) {
+            colComplete = false;
+            break;
+          }
+        }
+
+        if (colComplete) {
+          maxCol = nextCol;
+        } else {
+          canExpandCol = false;
+        }
+      }
+
+      // 标记这个矩形内的所有单元格为已使用
+      for (let r = minRow; r <= maxRow; r++) {
+        for (let c = minCol; c <= maxCol; c++) {
+          used.add(`${r},${c}`);
+        }
+      }
+
+      // 添加优化后的矩形选区
+      optimized.push({
+        minRow,
+        maxRow,
+        minCol,
+        maxCol,
+      });
+    }
+
+    return optimized;
+  };
+
+  /**
    * MULTIPLE 模式：结束选择（Ctrl+单击）
    *
    * 行为说明：
@@ -242,6 +362,9 @@ export function useSelection() {
         newCells.forEach((cell) => {
           multiSelections.value.push(cell);
         });
+
+        // 优化选区：将单格选区合并成矩形选区
+        multiSelections.value = optimizeSelections(multiSelections.value);
       }
 
       // 更新 activeCell 指向列表中的最后一个，或者清空
@@ -266,6 +389,9 @@ export function useSelection() {
         maxCol: col,
       };
       multiSelections.value.push(newSelection);
+
+      // 优化选区：尝试将新添加的单元格与相邻选区合并
+      multiSelections.value = optimizeSelections(multiSelections.value);
 
       // 确保活动单元格状态正确
       activeCell.value = { row, col };
@@ -356,6 +482,9 @@ export function useSelection() {
         multiSelections.value.push(cell);
       });
 
+      // 优化选区：将单格选区合并成矩形选区
+      multiSelections.value = optimizeSelections(multiSelections.value);
+
       // 更新 activeCell 指向列表中的最后一个，或者清空
       if (multiSelections.value.length > 0) {
         const last = multiSelections.value[multiSelections.value.length - 1];
@@ -392,10 +521,34 @@ export function useSelection() {
     // 添加新选区
     multiSelections.value.push({ ...selection });
 
-    // 更新 activeCell 指向新添加的选区
-    activeCell.value = { row: selection.minRow, col: selection.minCol };
-    selectionStart.value = { row: selection.minRow, col: selection.minCol };
-    selectionEnd.value = { row: selection.maxRow, col: selection.maxCol };
+    // 优化选区：尝试将新添加的选区与相邻选区合并
+    multiSelections.value = optimizeSelections(multiSelections.value);
+
+    // 更新 activeCell：查找包含原选区起始单元格的选区
+    // 如果找不到（可能被合并了），使用最后一个选区
+    const targetSelection = multiSelections.value.find((sel) =>
+      isCellInRange(selection.minRow, selection.minCol, sel)
+    );
+    if (targetSelection) {
+      activeCell.value = {
+        row: targetSelection.minRow,
+        col: targetSelection.minCol,
+      };
+      selectionStart.value = {
+        row: targetSelection.minRow,
+        col: targetSelection.minCol,
+      };
+      selectionEnd.value = {
+        row: targetSelection.maxRow,
+        col: targetSelection.maxCol,
+      };
+    } else if (multiSelections.value.length > 0) {
+      // 如果找不到，使用最后一个选区
+      const last = multiSelections.value[multiSelections.value.length - 1];
+      activeCell.value = { row: last.minRow, col: last.minCol };
+      selectionStart.value = { row: last.minRow, col: last.minCol };
+      selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+    }
 
     return true;
   };
