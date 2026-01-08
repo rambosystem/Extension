@@ -69,8 +69,37 @@ export function useMouseEvents({
   const handleMouseUp = (event) => {
     // MULTIPLE 模式：处理结束
     if (isSelecting.value && isMultipleMode && multipleStartCell) {
-      if (hasMultipleDragged && selectionStart?.value && selectionEnd?.value) {
-        // MULTIPLE 模式：拖选结束
+      // 确保 selectionEnd 已经更新（处理鼠标在最后一个单元格上抬起的情况）
+      // 如果 selectionEnd 和 selectionStart 相同，说明是单击，否则是拖选
+      const isClick =
+        !hasMultipleDragged ||
+        (selectionStart?.value &&
+          selectionEnd?.value &&
+          selectionStart.value.row === selectionEnd.value.row &&
+          selectionStart.value.col === selectionEnd.value.col);
+
+      // 检查是否拖拽回到了起始位置（取消操作）
+      const isBackToStart =
+        selectionEnd?.value &&
+        selectionEnd.value.row === multipleStartCell.row &&
+        selectionEnd.value.col === multipleStartCell.col;
+
+      if (isClick || isBackToStart) {
+        // MULTIPLE 模式：单击结束 或 拖拽回到起始位置
+        // 现在 startMultipleSelection 不再立即添加单格选区，而是在 mouseup 时通过 endMultipleSelectionClick 添加
+        // 所以总是需要调用 endMultipleSelectionClick 来处理
+        if (endMultipleSelectionClick) {
+          endMultipleSelectionClick(
+            multipleStartCell.row,
+            multipleStartCell.col
+          );
+        }
+      } else if (
+        hasMultipleDragged &&
+        selectionStart?.value &&
+        selectionEnd?.value
+      ) {
+        // MULTIPLE 模式：拖选结束（拖拽到了其他位置）
         if (endMultipleSelectionDrag) {
           // 如果起始单元格已在多选列表中，这是取消模式（移除拖选范围内的单元格）
           // 否则是添加模式（添加新选区）
@@ -82,16 +111,6 @@ export function useMouseEvents({
           } else {
             endMultipleSelectionDrag({ removeSingleCell: multipleStartCell });
           }
-        }
-      } else if (!hasMultipleDragged) {
-        // MULTIPLE 模式：单击结束
-        // 现在 startMultipleSelection 不再立即添加单格选区，而是在 mouseup 时通过 endMultipleSelectionClick 添加
-        // 所以总是需要调用 endMultipleSelectionClick 来处理
-        if (endMultipleSelectionClick) {
-          endMultipleSelectionClick(
-            multipleStartCell.row,
-            multipleStartCell.col
-          );
         }
       }
     }
@@ -187,6 +206,7 @@ export function useMouseEvents({
     if (isSelecting.value) {
       if (isMultipleMode) {
         // MULTIPLE 模式：检查是否发生了拖拽
+        // 只要鼠标移动到了不同的单元格，就认为发生了拖拽
         if (
           multipleStartCell &&
           (row !== multipleStartCell.row || col !== multipleStartCell.col)
@@ -194,7 +214,7 @@ export function useMouseEvents({
           hasMultipleDragged = true;
         }
 
-        // MULTIPLE 模式：更新选择终点
+        // MULTIPLE 模式：更新选择终点（确保最后一个单元格也被正确更新）
         if (updateMultipleSelectionEnd) {
           updateMultipleSelectionEnd(row, col);
         }
