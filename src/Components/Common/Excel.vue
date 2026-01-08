@@ -788,6 +788,9 @@ const { handleKeydown } = useKeyboard({
   tableData,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
+  customMenuItems: props.customMenuItems, // 传递自定义菜单项配置
+  handleCustomAction, // 传递自定义菜单项处理函数
+  createMenuContext: (rowIndex) => createMenuContext(rowIndex), // 传递创建上下文函数
 });
 
 // 注意：列宽初始化逻辑已移至 getColumnWidth 函数中处理

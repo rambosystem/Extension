@@ -1,6 +1,84 @@
 import { KEY_CODES, MODIFIER_KEYS, NAV_DIRECTION } from "./constants.js";
 
 /**
+ * 解析快捷键字符串
+ * 支持格式：Ctrl+Alt+A, Cmd+Shift+B, Ctrl+A 等
+ * @param {string} shortcut - 快捷键字符串，如 "Ctrl+Alt+A"
+ * @returns {Object} 解析后的快捷键对象 { ctrl: boolean, alt: boolean, shift: boolean, meta: boolean, key: string }
+ */
+const parseShortcut = (shortcut) => {
+  if (!shortcut || typeof shortcut !== "string") {
+    return null;
+  }
+
+  const parts = shortcut.split("+").map((p) => p.trim());
+  const result = {
+    ctrl: false,
+    alt: false,
+    shift: false,
+    meta: false,
+    key: null,
+  };
+
+  for (const part of parts) {
+    const lowerPart = part.toLowerCase();
+    if (lowerPart === "ctrl" || lowerPart === "control") {
+      result.ctrl = true;
+    } else if (lowerPart === "cmd" || lowerPart === "meta") {
+      result.meta = true;
+    } else if (lowerPart === "alt") {
+      result.alt = true;
+    } else if (lowerPart === "shift") {
+      result.shift = true;
+    } else {
+      // 最后一个非修饰键部分作为主键
+      result.key = part.toLowerCase();
+    }
+  }
+
+  return result.key ? result : null;
+};
+
+/**
+ * 检查键盘事件是否匹配快捷键配置
+ * 支持 Mac 系统：Ctrl 和 Cmd 可以互转
+ * @param {KeyboardEvent} event - 键盘事件
+ * @param {Object} shortcutConfig - 解析后的快捷键配置
+ * @returns {boolean}
+ */
+const matchShortcut = (event, shortcutConfig) => {
+  if (!shortcutConfig) return false;
+
+  // 检测是否为 Mac 系统
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+
+  // 检查修饰键
+  // Mac 系统：Ctrl 和 Cmd 可以互转（视为等价）
+  let modifierMatch;
+  if (isMac) {
+    // Mac: Ctrl 和 Cmd 可以互转
+    const wantsCtrlOrCmd = shortcutConfig.ctrl || shortcutConfig.meta;
+    const hasCtrlOrCmd = event.ctrlKey || event.metaKey;
+    modifierMatch = wantsCtrlOrCmd ? hasCtrlOrCmd : !hasCtrlOrCmd;
+  } else {
+    // Windows/Linux: 严格匹配
+    const ctrlMatch = shortcutConfig.ctrl ? event.ctrlKey : !event.ctrlKey;
+    const metaMatch = shortcutConfig.meta ? event.metaKey : !event.metaKey;
+    modifierMatch = ctrlMatch && metaMatch;
+  }
+
+  const altMatch = shortcutConfig.alt ? event.altKey : !event.altKey;
+  const shiftMatch = shortcutConfig.shift ? event.shiftKey : !event.shiftKey;
+
+  // 检查主键（不区分大小写）
+  const keyMatch =
+    event.key.toLowerCase() === shortcutConfig.key ||
+    event.code.toLowerCase() === shortcutConfig.key.toLowerCase();
+
+  return modifierMatch && altMatch && shiftMatch && keyMatch;
+};
+
+/**
  * Excel 键盘处理 Composable
  * 将键盘逻辑从组件中分离，提升可维护性
  *
@@ -19,6 +97,9 @@ import { KEY_CODES, MODIFIER_KEYS, NAV_DIRECTION } from "./constants.js";
  * @param {Object} context.tableData - 表格数据
  * @param {Function} context.getMaxRows - 获取最大行数的函数
  * @param {Function} context.getMaxCols - 获取最大列数的函数
+ * @param {Array} context.customMenuItems - 自定义菜单项配置数组（可选）
+ * @param {Function} context.handleCustomAction - 处理自定义菜单项的函数（可选）
+ * @param {Function} context.createMenuContext - 创建菜单上下文的函数（可选）
  * @returns {Function} handleKeydown 函数
  */
 export function useKeyboard(context) {
@@ -37,6 +118,9 @@ export function useKeyboard(context) {
     tableData,
     getMaxRows,
     getMaxCols,
+    customMenuItems = [],
+    handleCustomAction,
+    createMenuContext,
   } = context;
 
   /**
@@ -216,6 +300,62 @@ export function useKeyboard(context) {
   };
 
   /**
+   * 处理自定义菜单项快捷键
+   *
+   * @param {KeyboardEvent} event - 键盘事件
+   * @returns {boolean} 是否已处理
+   */
+  const handleCustomShortcuts = (event) => {
+    if (!customMenuItems || customMenuItems.length === 0) {
+      return false;
+    }
+
+    if (!handleCustomAction || !createMenuContext || !activeCell.value) {
+      return false;
+    }
+
+    // 遍历所有自定义菜单项，检查是否有匹配的快捷键
+    for (const item of customMenuItems) {
+      if (!item.shortcut) continue;
+
+      // 解析快捷键
+      const shortcutConfig = parseShortcut(item.shortcut);
+      if (!shortcutConfig) continue;
+
+      // 检查是否匹配
+      if (matchShortcut(event, shortcutConfig)) {
+        // 创建上下文并验证菜单项是否应该显示
+        const context = createMenuContext(activeCell.value.row);
+
+        // 如果有 validate 函数，检查是否通过验证
+        if (typeof item.validate === "function") {
+          try {
+            if (!item.validate(context)) {
+              continue; // 验证失败，跳过这个菜单项
+            }
+          } catch (error) {
+            console.warn(
+              `useKeyboard: validate function error for menu item "${item.id}":`,
+              error
+            );
+            continue;
+          }
+        }
+
+        // 触发自定义菜单项操作
+        event.preventDefault();
+        handleCustomAction({
+          id: item.id,
+          context,
+        });
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  /**
    * 处理直接输入
    *
    * @param {KeyboardEvent} event - 键盘事件
@@ -275,6 +415,7 @@ export function useKeyboard(context) {
     if (editingCell.value) return; // 编辑模式下不处理其他键
     if (handleInsertRow(event)) return; // Ctrl+Enter 插入行
     if (handleDeleteRowKey(event)) return; // Ctrl+Delete 删除行
+    if (handleCustomShortcuts(event)) return; // 自定义菜单项快捷键
     if (handleNavigation(event)) return;
     if (handleDelete(event)) return; // Delete/Backspace 删除选区内容
     if (handleDirectTyping(event)) return;
