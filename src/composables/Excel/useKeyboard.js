@@ -248,6 +248,7 @@ export function useKeyboard(context) {
 
   /**
    * 处理 Ctrl+Delete 删除行
+   * 优化：如果选区包含多行，则一次删除所有选中的行
    *
    * @param {KeyboardEvent} event - 键盘事件
    * @returns {boolean} 是否已处理
@@ -265,9 +266,21 @@ export function useKeyboard(context) {
 
     event.preventDefault();
 
-    // 使用统一的删除行处理函数（与下拉菜单一致）
-    const rowIndex = activeCell.value.row;
-    handleDeleteRow(rowIndex);
+    // 检查是否有选区，且选区包含多行
+    const range = normalizedSelection.value;
+    if (range && range.minRow !== range.maxRow) {
+      // 选区包含多行，获取所有需要删除的行索引
+      const rowIndices = [];
+      for (let row = range.minRow; row <= range.maxRow; row++) {
+        rowIndices.push(row);
+      }
+      // 使用多行删除函数
+      handleDeleteRow(rowIndices);
+    } else {
+      // 单行删除：使用活动单元格所在的行
+      const rowIndex = activeCell.value.row;
+      handleDeleteRow(rowIndex);
+    }
 
     return true;
   };

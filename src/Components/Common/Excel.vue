@@ -158,6 +158,7 @@ import { useSelectionStyle } from "../../composables/Excel/useSelectionStyle";
 import { useMouseEvents } from "../../composables/Excel/useMouseEvents";
 import { useDataSync } from "../../composables/Excel/useDataSync";
 import { useCellMenu } from "../../composables/Excel/useCellMenu";
+import { useCellMenuPosition } from "../../composables/Excel/useCellMenuPosition";
 import { useRowOperations } from "../../composables/Excel/useRowOperations";
 import { useResizeHandlers } from "../../composables/Excel/useResizeHandlers";
 import CellMenu from "../Excel/CellMenu.vue";
@@ -671,152 +672,21 @@ const { handleCellMenuCommand } = useCellMenu({
   handleDeleteRow,
 });
 
-/**
- * 获取多选模式下菜单按钮应该显示的位置
- *
- * 多选模式：显示在最后一个选区的最后一个单元格（maxRow, maxCol）
- *
- * @returns {Object|null} { row, col } 或 null
- * @description 只考虑 multiSelections，不考虑当前选区
- */
-const getLastCellInMultiSelections = computed(() => {
-  // 只考虑多选列表中的选区，不合并当前选区
-  if (!multiSelections.value || multiSelections.value.length === 0) {
-    return null;
-  }
-
-  // 获取多选列表中的最后一个选区
-  const lastSelection = multiSelections.value[multiSelections.value.length - 1];
-
-  // 返回该选区的最后一个cell（右下角）
-  return {
-    row: lastSelection.maxRow,
-    col: lastSelection.maxCol,
-  };
-});
-
-/**
- * 计算菜单按钮应该显示的位置
- *
- * 返回 { row, col } 或 null
- *
- * 显示条件：
- * 1. 不在编辑状态
- * 2. 不在选择过程中（isSelecting === false）
- *
- * 显示逻辑：
- * - 单选模式：显示在选区的最后一个单元格（右下角）
- *   - 如果框选了多个单元格，菜单显示在选区右下角（maxRow, maxCol）
- *   - 如果是单单元格，显示在活动单元格
- * - 多选模式：显示在最后一个选区的最后一个单元格（maxRow, maxCol）
- */
-const cellMenuPosition = computed(() => {
-  // 如果正在编辑，不显示菜单
-  if (editingCell.value) {
-    return null;
-  }
-
-  // 如果正在选择过程中，隐藏菜单按钮（避免位置不正确）
-  if (isSelecting.value) {
-    return null;
-  }
-
-  // ==================== 多选模式 ====================
-  if (isMultipleMode.value) {
-    // 多选模式：显示在最后一个选区的最后一个单元格
-    const lastCell = getLastCellInMultiSelections.value;
-    if (lastCell) {
-      return lastCell;
-    }
-    // 如果多选模式下没有选区，回退到活动单元格
-    if (activeCell.value) {
-      return {
-        row: activeCell.value.row,
-        col: activeCell.value.col,
-      };
-    }
-    return null;
-  }
-
-  // ==================== 单选模式 ====================
-  // 单选模式：显示在选区的最后一个单元格（右下角）
-  const selection = normalizedSelection.value;
-  if (selection) {
-    // 检查是否是多个单元格的选区
-    const isMultiCellSelection =
-      selection.minRow !== selection.maxRow ||
-      selection.minCol !== selection.maxCol;
-
-    // 如果是多个单元格的选区，菜单显示在右下角（maxRow, maxCol）
-    if (isMultiCellSelection) {
-      return {
-        row: selection.maxRow,
-        col: selection.maxCol,
-      };
-    }
-  }
-
-  // 单单元格或没有选区时，显示在活动单元格
-  if (activeCell.value) {
-    return {
-      row: activeCell.value.row,
-      col: activeCell.value.col,
-    };
-  }
-
-  return null;
-});
-
-/**
- * 判断是否应该显示单元格菜单按钮
- *
- * @param {number} rowIndex - 行索引
- * @param {number} colIndex - 列索引
- * @returns {boolean}
- */
-const shouldShowCellMenu = (rowIndex, colIndex) => {
-  const position = cellMenuPosition.value;
-  if (!position) {
-    return false;
-  }
-  return position.row === rowIndex && position.col === colIndex;
-};
-
-/**
- * 创建菜单上下文对象
- * 提供给自定义菜单项的验证和执行函数使用
- */
-const createMenuContext = (rowIndex) => {
-  // 在多选模式下，使用最后一个选区；否则使用当前选区
-  let effectiveSelection = normalizedSelection.value;
-
-  if (
-    isMultipleMode.value &&
-    multiSelections.value &&
-    multiSelections.value.length > 0
-  ) {
-    // 使用多选列表中的最后一个选区
-    effectiveSelection =
-      multiSelections.value[multiSelections.value.length - 1];
-  }
-
-  return {
-    normalizedSelection: effectiveSelection,
-    activeCell: activeCell.value,
-    rowIndex,
-    tableData: tableData.value,
-    updateCell: (row, col, value) => {
-      updateCell(row, col, value);
-      nextTick(() => {
-        notifyDataChange();
-      });
-    },
-    getData: () => getData(),
-    setData: (data) => {
-      setDataWithSync(data);
-    },
-  };
-};
+// --- Cell Menu Position 管理 ---
+const { cellMenuPosition, shouldShowCellMenu, createMenuContext } =
+  useCellMenuPosition({
+    editingCell,
+    isSelecting,
+    isMultipleMode,
+    activeCell,
+    normalizedSelection,
+    multiSelections,
+    tableData,
+    updateCell,
+    notifyDataChange,
+    getData,
+    setDataWithSync,
+  });
 
 /**
  * 处理自定义菜单项点击事件
