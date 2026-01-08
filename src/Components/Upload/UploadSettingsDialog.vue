@@ -17,7 +17,7 @@
     <el-form v-else :model="uploadStore.uploadForm" label-position="top" @submit.prevent="handleUpload">
       <el-form-item label="Tag">
         <AutocompleteInput :modelValue="uploadStore.uploadForm.tag" @update:modelValue="uploadStore.handleTagChange"
-          placeholder="Enter tag (optional)" :fetch-suggestions="fetchTagSuggestions" :get-project-id="getProjectId"
+          placeholder="Enter or select tag" :fetch-suggestions="fetchTagSuggestions" :get-project-id="getProjectId"
           :show-dropdown="true" :dropdown-limit="10" :fetch-suggestions-list="fetchTagSuggestionsList" />
       </el-form-item>
     </el-form>

@@ -24,8 +24,8 @@
         <div class="input-container">
           <AutocompleteInput v-model="excelBaselineKey"
             :placeholder="t('translationSetting.exportKeySettingPlaceholder')" :get-project-id="getProjectId"
-            :show-dropdown="true" :dropdown-limit="10" :fetch-suggestions-list="fetchBaselineKeySuggestions"
-            @blur="handleExcelBaselineKeyBlur" />
+            :show-dropdown="true" :dropdown-limit="10" :fetch-suggestions="fetchBaselineKeySuggestion"
+            :fetch-suggestions-list="fetchBaselineKeySuggestions" @blur="handleExcelBaselineKeyBlur" />
         </div>
       </div>
     </el-form-item>
@@ -144,6 +144,48 @@ const getProjectId = () => {
     "[TranslationSetting] No default project ID set, autocomplete will use fallback"
   );
   return null;
+};
+
+/**
+ * 获取Baseline Key单个建议（用于内联建议文本，会+1）
+ * @param {string} queryString - 搜索关键词
+ * @param {string} projectId - 项目ID
+ * @returns {Promise<string|null>} 建议的key名称（+1后）
+ */
+const fetchBaselineKeySuggestion = async (queryString, projectId) => {
+  try {
+    debugLog("[Baseline Key Autocomplete] Calling API with:", {
+      projectId,
+      query: queryString.trim(),
+      limit: 1,
+    });
+
+    const response = await autocompleteKeys(projectId, queryString.trim(), 1);
+
+    debugLog("[Baseline Key Autocomplete] API response:", response);
+
+    // 获取第一条建议并+1
+    const firstResult = response?.results?.[0];
+    if (firstResult && firstResult.key_name) {
+      const originalKey = firstResult.key_name;
+      // 将key +1（如 key1 -> key2）
+      const match = originalKey.match(/^([a-zA-Z]+)(\d+)$/);
+      if (match) {
+        const [, prefix, numberStr] = match;
+        const currentNumber = parseInt(numberStr, 10);
+        const newNumber = currentNumber + 1;
+        const incrementedKey = `${prefix}${newNumber}`;
+        debugLog("[Baseline Key Autocomplete] Incremented key:", originalKey, "->", incrementedKey);
+        return incrementedKey;
+      }
+      // 如果格式不正确，返回原值
+      return originalKey;
+    }
+    return null;
+  } catch (error) {
+    debugError("[Baseline Key Autocomplete] Error occurred:", error);
+    return null;
+  }
 };
 
 /**
