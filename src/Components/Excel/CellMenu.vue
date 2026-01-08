@@ -1,16 +1,7 @@
 <template>
-  <el-dropdown
-    trigger="click"
-    placement="right-start"
-    :show-arrow="false"
-    @command="handleCommand"
-    @visible-change="handleVisibleChange"
-  >
-    <div
-      class="cell-menu-button"
-      :class="{ 'is-active': isMenuOpen }"
-      @mousedown.stop
-    >
+  <el-dropdown trigger="click" placement="right-start" :show-arrow="false" @command="handleCommand"
+    @visible-change="handleVisibleChange">
+    <div class="cell-menu-button" :class="{ 'is-active': isMenuOpen }" @mousedown.stop>
       <img src="@/assets/down_arrow.svg" alt="Menu" class="cell-menu-icon" />
     </div>
     <template #dropdown>
@@ -29,16 +20,12 @@
         </el-dropdown-item>
         <!-- 自定义菜单项 -->
         <template v-if="validatedCustomMenuItems.length > 0">
-          <el-dropdown-item
-            v-for="item in validatedCustomMenuItems"
-            :key="item.id"
-            :command="{ action: 'custom', id: item.id, rowIndex }"
-            :disabled="isCustomItemDisabled(item)"
-          >
+          <el-dropdown-item v-for="item in validatedCustomMenuItems" :key="item.id"
+            :command="{ action: 'custom', id: item.id, rowIndex }" :disabled="isCustomItemDisabled(item)">
             <div class="menu-item-content">
               <span class="menu-item-text">{{ item.label }}</span>
               <span v-if="item.shortcut" class="menu-item-shortcut">{{
-                item.shortcut
+                normalizeShortcut(item.shortcut)
               }}</span>
             </div>
           </el-dropdown-item>
@@ -50,6 +37,11 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import {
+  normalizeShortcutForPlatform,
+  getModifierKey,
+  buildShortcut,
+} from "../../composables/Excel/useKeyboard.js";
 
 /**
  * CellMenu - 单元格菜单组件
@@ -130,15 +122,20 @@ const emit = defineEmits(["command", "custom-action"]);
 
 const isMenuOpen = ref(false);
 
-// 检测是否为 Mac 系统
-const isMac = computed(() => {
-  return navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-});
+// 使用统一的跨平台快捷键工具函数
+const insertRowShortcut = computed(() => buildShortcut("Enter"));
+const deleteRowShortcut = computed(() => buildShortcut("Delete"));
 
-// 根据平台显示正确的修饰键
-const modifierKey = computed(() => (isMac.value ? "Cmd" : "Ctrl"));
-const insertRowShortcut = computed(() => `${modifierKey.value}+Enter`);
-const deleteRowShortcut = computed(() => `${modifierKey.value}+Delete`);
+/**
+ * 规范化自定义菜单项的快捷键显示
+ * 根据平台自动转换 Ctrl/Cmd
+ * @param {string} shortcut - 原始快捷键字符串
+ * @returns {string} 规范化后的快捷键字符串
+ */
+const normalizeShortcut = (shortcut) => {
+  if (!shortcut) return "";
+  return normalizeShortcutForPlatform(shortcut);
+};
 
 /**
  * 验证并过滤自定义菜单项
@@ -271,8 +268,7 @@ $transition-fast: 0.05s ease;
     .cell-menu-icon {
       // 使用 filter 将灰色图标变为蓝色
       // 将 #505258 (灰色) 转换为 $primary-color (蓝色)
-      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
-        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
     }
   }
 
@@ -282,8 +278,7 @@ $transition-fast: 0.05s ease;
     background-color: rgba($primary-color, 0.1);
 
     .cell-menu-icon {
-      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
-        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
     }
   }
 }

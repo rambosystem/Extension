@@ -1,6 +1,104 @@
 import { KEY_CODES, MODIFIER_KEYS, NAV_DIRECTION } from "./constants.js";
 
 /**
+ * 检测是否为 Mac 平台
+ * @returns {boolean}
+ */
+export const isMacPlatform = () => {
+  return navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+};
+
+/**
+ * 获取当前平台的修饰键符号
+ * Mac 平台返回 ⌘，Windows/Linux 平台返回 Ctrl
+ * @returns {string} 修饰键符号
+ */
+export const getModifierKey = () => {
+  return isMacPlatform() ? "⌘" : "Ctrl";
+};
+
+/**
+ * 获取 Alt 键的显示符号
+ * Mac 平台返回 ⌥，Windows/Linux 平台返回 Alt
+ * @returns {string} Alt 键符号
+ */
+export const getAltKey = () => {
+  return isMacPlatform() ? "⌥" : "Alt";
+};
+
+/**
+ * 获取 Shift 键的显示符号
+ * Mac 平台返回 ⇧，Windows/Linux 平台返回 Shift
+ * @returns {string} Shift 键符号
+ */
+export const getShiftKey = () => {
+  return isMacPlatform() ? "⇧" : "Shift";
+};
+
+/**
+ * 获取 Delete 键的显示符号
+ * Mac 平台返回 ⌫，Windows/Linux 平台返回 Delete
+ * @returns {string} Delete 键符号
+ */
+export const getDeleteKey = () => {
+  return isMacPlatform() ? "⌫" : "Delete";
+};
+
+/**
+ * 规范化主键显示符号（根据平台）
+ * @param {string} key - 主键，如 "Enter", "Delete", "A" 等
+ * @returns {string} 规范化后的主键符号
+ */
+const normalizeKeySymbol = (key) => {
+  if (!key) return key;
+
+  const keyLower = key.toLowerCase();
+  const isMac = isMacPlatform();
+
+  // Mac 平台特殊键符号映射
+  if (isMac) {
+    if (keyLower === "delete" || keyLower === "backspace") {
+      return "⌫";
+    }
+    // 其他特殊键可以在这里添加
+  }
+
+  // Windows/Linux 平台保持原样
+  return key;
+};
+
+/**
+ * 构建快捷键字符串（用于显示）
+ * 根据平台自动使用正确的修饰键符号
+ * @param {string} key - 主键，如 "Enter", "Delete", "A" 等
+ * @param {Object} options - 选项
+ * @param {boolean} options.alt - 是否包含 Alt 键
+ * @param {boolean} options.shift - 是否包含 Shift 键
+ * @returns {string} 格式化后的快捷键字符串，如 "⌘+⌥+A" 或 "Ctrl+Alt+A"
+ */
+export const buildShortcut = (key, options = {}) => {
+  const parts = [];
+
+  // 添加修饰键（Mac 使用 ⌘，其他平台使用 Ctrl）
+  parts.push(getModifierKey());
+
+  // 添加 Alt 键（Mac 使用 ⌥，其他平台使用 Alt）
+  if (options.alt) {
+    parts.push(getAltKey());
+  }
+
+  // 添加 Shift 键（Mac 使用 ⇧，其他平台使用 Shift）
+  if (options.shift) {
+    parts.push(getShiftKey());
+  }
+
+  // 添加主键（根据平台规范化）
+  parts.push(normalizeKeySymbol(key));
+
+  return parts.join("+");
+};
+
+/**
  * 解析快捷键字符串
  * 支持格式：Ctrl+Alt+A, Cmd+Shift+B, Ctrl+A 等
  * @param {string} shortcut - 快捷键字符串，如 "Ctrl+Alt+A"
@@ -40,6 +138,78 @@ const parseShortcut = (shortcut) => {
 };
 
 /**
+ * 规范化快捷键字符串，根据平台显示正确的修饰键
+ * Mac 平台：将 Ctrl 转换为 ⌘，Alt 转换为 ⌥，Shift 转换为 ⇧，Delete 转换为 ⌫
+ * Windows/Linux 平台：将 Cmd 转换为 Ctrl，保持 Alt、Shift 和 Delete 不变
+ *
+ * 例如：
+ * - "Ctrl+Alt+A" 在 Mac 上显示为 "⌘+⌥+A"
+ * - "Cmd+Alt+A" 在 Windows 上显示为 "Ctrl+Alt+A"
+ * - "Ctrl+Shift+Z" 在 Mac 上显示为 "⌘+⇧+Z"
+ * - "Ctrl+Delete" 在 Mac 上显示为 "⌘+⌫"
+ *
+ * @param {string} shortcut - 原始快捷键字符串，如 "Ctrl+Alt+A"
+ * @returns {string} 规范化后的快捷键字符串
+ */
+export const normalizeShortcutForPlatform = (shortcut) => {
+  if (!shortcut || typeof shortcut !== "string") {
+    return shortcut;
+  }
+
+  const isMac = isMacPlatform();
+  const parts = shortcut.split("+").map((p) => p.trim());
+
+  return parts
+    .map((part) => {
+      const lowerPart = part.toLowerCase();
+      if (isMac) {
+        // Mac 平台：将 Ctrl 转换为 ⌘ 符号
+        if (lowerPart === "ctrl" || lowerPart === "control") {
+          return "⌘";
+        }
+        // 将 Cmd 转换为 ⌘ 符号
+        if (lowerPart === "cmd" || lowerPart === "meta") {
+          return "⌘";
+        }
+        // 将 Alt 转换为 ⌥ 符号
+        if (lowerPart === "alt" || lowerPart === "option") {
+          return "⌥";
+        }
+        // 将 Shift 转换为 ⇧ 符号
+        if (lowerPart === "shift") {
+          return "⇧";
+        }
+        // 将 Delete/Backspace 转换为 ⌫ 符号
+        if (lowerPart === "delete" || lowerPart === "backspace") {
+          return "⌫";
+        }
+      } else {
+        // Windows/Linux 平台：将 Cmd 转换为 Ctrl
+        if (lowerPart === "cmd" || lowerPart === "meta") {
+          return "Ctrl";
+        }
+        // 保持 Ctrl 不变
+        if (lowerPart === "ctrl" || lowerPart === "control") {
+          return "Ctrl";
+        }
+        // Alt、Shift 和 Delete 保持不变
+        if (lowerPart === "alt" || lowerPart === "option") {
+          return "Alt";
+        }
+        if (lowerPart === "shift") {
+          return "Shift";
+        }
+        if (lowerPart === "delete" || lowerPart === "backspace") {
+          return "Delete";
+        }
+      }
+      // 其他修饰键和主键保持不变
+      return part;
+    })
+    .join("+");
+};
+
+/**
  * 检查键盘事件是否匹配快捷键配置
  * 支持 Mac 系统：Ctrl 和 Cmd 可以互转
  * @param {KeyboardEvent} event - 键盘事件
@@ -50,7 +220,7 @@ const matchShortcut = (event, shortcutConfig) => {
   if (!shortcutConfig) return false;
 
   // 检测是否为 Mac 系统
-  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const isMac = isMacPlatform();
 
   // 检查修饰键
   // Mac 系统：Ctrl 和 Cmd 可以互转（视为等价）
@@ -71,9 +241,25 @@ const matchShortcut = (event, shortcutConfig) => {
   const shiftMatch = shortcutConfig.shift ? event.shiftKey : !event.shiftKey;
 
   // 检查主键（不区分大小写）
-  const keyMatch =
-    event.key.toLowerCase() === shortcutConfig.key ||
-    event.code.toLowerCase() === shortcutConfig.key.toLowerCase();
+  // 支持 event.key 和 event.code 两种匹配方式
+  // event.key 是实际按下的字符（如 "a", "A"）
+  // event.code 是物理按键代码（如 "KeyA"）
+  const eventKeyLower = event.key?.toLowerCase() || "";
+  const eventCodeLower = event.code?.toLowerCase() || "";
+  const configKeyLower = shortcutConfig.key?.toLowerCase() || "";
+
+  // 匹配 event.key（直接字符匹配）
+  const keyMatchByKey = eventKeyLower === configKeyLower;
+
+  // 匹配 event.code（物理按键匹配，如 "KeyA" -> "a"）
+  // 从 "KeyA" 中提取 "a"，从 "Digit1" 中提取 "1"
+  const codeKeyMatch =
+    eventCodeLower.replace(/^key/, "").replace(/^digit/, "") === configKeyLower;
+
+  // 完整 code 匹配（如 "Enter", "Delete" 等特殊键）
+  const codeFullMatch = eventCodeLower === configKeyLower;
+
+  const keyMatch = keyMatchByKey || codeKeyMatch || codeFullMatch;
 
   return modifierMatch && altMatch && shiftMatch && keyMatch;
 };
@@ -228,16 +414,17 @@ export function useKeyboard(context) {
    */
   const handleInsertRow = (event) => {
     // 检查是否为 Ctrl+Enter (Windows/Linux) 或 Cmd+Enter (Mac)
-    const isCtrlEnter =
-      (event.ctrlKey || event.metaKey) &&
-      event.key === KEY_CODES.ENTER &&
-      !event.shiftKey;
+    // 同时检查 event.key 和 event.code，确保跨平台兼容性
+    const isEnterKey = event.key === KEY_CODES.ENTER || event.code === "Enter";
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    const isCtrlEnter = isCtrlOrCmd && isEnterKey && !event.shiftKey;
 
     if (!isCtrlEnter || !handleInsertRowBelow || !activeCell.value) {
       return false;
     }
 
     event.preventDefault();
+    event.stopPropagation();
 
     // 使用统一的插入行处理函数（与下拉菜单一致）
     const rowIndex = activeCell.value.row;
@@ -255,16 +442,27 @@ export function useKeyboard(context) {
    */
   const handleDeleteRowKey = (event) => {
     // 检查是否为 Ctrl+Delete (Windows/Linux) 或 Cmd+Delete (Mac)
+    // 同时检查 event.key 和 event.code，确保跨平台兼容性
+    // event.key 是逻辑键值（可能因平台而异）
+    // event.code 是物理按键代码（更可靠）
+    // 注意：在 Mac 上，Delete 键实际上是 Backspace 的功能
+    // 真正的删除键是 Fn+Delete，但 Cmd+Delete 应该也能工作
+    const isDeleteKey =
+      event.key === KEY_CODES.DELETE ||
+      event.code === "Delete" ||
+      event.key === KEY_CODES.BACKSPACE ||
+      event.code === "Backspace";
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
     const isCtrlDelete =
-      (event.ctrlKey || event.metaKey) &&
-      event.key === KEY_CODES.DELETE &&
-      !event.shiftKey;
+      isCtrlOrCmd && isDeleteKey && !event.shiftKey && !event.altKey;
 
     if (!isCtrlDelete || !handleDeleteRow || !activeCell.value) {
       return false;
     }
 
     event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
 
     // 检查是否有选区，且选区包含多行
     const range = normalizedSelection.value;
@@ -333,7 +531,12 @@ export function useKeyboard(context) {
 
       // 解析快捷键
       const shortcutConfig = parseShortcut(item.shortcut);
-      if (!shortcutConfig) continue;
+      if (!shortcutConfig) {
+        console.warn(
+          `useKeyboard: Failed to parse shortcut "${item.shortcut}" for menu item "${item.id}"`
+        );
+        continue;
+      }
 
       // 检查是否匹配
       if (matchShortcut(event, shortcutConfig)) {
@@ -357,6 +560,7 @@ export function useKeyboard(context) {
 
         // 触发自定义菜单项操作
         event.preventDefault();
+        event.stopPropagation();
         handleCustomAction({
           id: item.id,
           context,
