@@ -7,6 +7,7 @@
  * @param {import('vue').ComputedRef} context.normalizedSelection - 归一化选区
  * @param {import('vue').Ref} context.multiSelections - 多选列表
  * @param {import('vue').Ref} context.isMultipleMode - 当前选择模式（true = MULTIPLE，false = SINGLE）
+ * @param {import('vue').Ref} context.isSelecting - 是否正在选择
  * @param {Function} context.isInSelection - 判断是否在选区内
  * @param {Function} context.isInMultiSelectionOnly - 判断是否仅在多选列表中（不在当前选区）
  * @param {Function} context.shouldUseMultiSelectionStyle - 判断是否应该使用多选背景色
@@ -19,6 +20,7 @@ export function useSelectionStyle({
   normalizedSelection,
   multiSelections,
   isMultipleMode,
+  isSelecting,
   isInSelection,
   isInMultiSelectionOnly,
   shouldUseMultiSelectionStyle,
@@ -108,6 +110,59 @@ export function useSelectionStyle({
   };
 
   /**
+   * 获取多选模式下拖选边界的 Class
+   *
+   * 在多选模式下，当正在拖选时（isSelecting），显示拖选区域的边框
+   * 类似单选模式的边框渲染，但只在拖选过程中显示
+   *
+   * @param {number} row - 行索引
+   * @param {number} col - 列索引
+   * @returns {Array<string>} 样式类数组
+   */
+  const getMultipleDragBorderClass = (row, col) => {
+    const classes = [];
+
+    // 只在多选模式且正在拖选时显示边框
+    const isInMultipleMode =
+      isMultipleMode?.value === true || multiSelections?.value?.length > 0;
+
+    if (!isInMultipleMode || !isSelecting?.value) {
+      return classes;
+    }
+
+    // 获取当前拖选的选区
+    const selection = normalizedSelection.value;
+    if (!selection) {
+      return classes;
+    }
+
+    // 检查单元格是否在当前拖选选区内
+    const inCurrentDragSelection =
+      row >= selection.minRow &&
+      row <= selection.maxRow &&
+      col >= selection.minCol &&
+      col <= selection.maxCol;
+
+    if (!inCurrentDragSelection) {
+      return classes;
+    }
+
+    // 单元格在拖选选区内，判断边界
+    const isTop = row === selection.minRow;
+    const isBottom = row === selection.maxRow;
+    const isLeft = col === selection.minCol;
+    const isRight = col === selection.maxCol;
+
+    // 只有边界单元格才添加边框类，内部单元格不添加任何边框类
+    if (isTop) classes.push("selection-top");
+    if (isBottom) classes.push("selection-bottom");
+    if (isLeft) classes.push("selection-left");
+    if (isRight) classes.push("selection-right");
+
+    return classes;
+  };
+
+  /**
    * 获取拖拽填充区域边界的 Class
    * 只在边界绘制虚线边框，避免相邻单元格边框重叠
    * @param {number} row - 行索引
@@ -144,5 +199,6 @@ export function useSelectionStyle({
     getSelectionBorderClass,
     isSelectionBottomRight,
     getDragTargetBorderClass,
+    getMultipleDragBorderClass,
   };
 }

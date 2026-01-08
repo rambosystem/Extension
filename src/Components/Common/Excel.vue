@@ -66,6 +66,7 @@
               'drag-target': isInDragArea(rowIndex, colIndex),
             },
             getSelectionBorderClass(rowIndex, colIndex),
+            getMultipleDragBorderClass(rowIndex, colIndex),
             getDragTargetBorderClass(rowIndex, colIndex),
           ]"
           :style="{
@@ -488,10 +489,12 @@ const {
   getSelectionBorderClass,
   isSelectionBottomRight,
   getDragTargetBorderClass,
+  getMultipleDragBorderClass,
 } = useSelectionStyle({
   normalizedSelection,
   multiSelections,
   isMultipleMode,
+  isSelecting,
   isInSelection,
   isInDragArea,
   fillHandleComposable,

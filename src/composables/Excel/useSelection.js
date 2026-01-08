@@ -275,30 +275,107 @@ export function useSelection() {
   };
 
   /**
+   * 从选区中移除拖选范围内的所有单元格
+   * @param {Object} selection - 原选区 { minRow, maxRow, minCol, maxCol }
+   * @param {Object} dragRange - 拖选范围 { minRow, maxRow, minCol, maxCol }
+   * @returns {Array} 移除后的剩余选区数组
+   */
+  const removeDragRangeFromSelection = (selection, dragRange) => {
+    const { minRow, maxRow, minCol, maxCol } = selection;
+    const {
+      minRow: dragMinRow,
+      maxRow: dragMaxRow,
+      minCol: dragMinCol,
+      maxCol: dragMaxCol,
+    } = dragRange;
+    const remainingCells = [];
+
+    // 遍历选区中的每个单元格
+    for (let r = minRow; r <= maxRow; r++) {
+      for (let c = minCol; c <= maxCol; c++) {
+        // 如果单元格不在拖选范围内，保留它
+        if (
+          r < dragMinRow ||
+          r > dragMaxRow ||
+          c < dragMinCol ||
+          c > dragMaxCol
+        ) {
+          remainingCells.push({
+            minRow: r,
+            maxRow: r,
+            minCol: c,
+            maxCol: c,
+          });
+        }
+        // 否则，该单元格在拖选范围内，被移除（不添加到 remainingCells）
+      }
+    }
+
+    return remainingCells;
+  };
+
+  /**
    * MULTIPLE 模式：结束选择（Ctrl+拖选）
    *
    * Excel 逻辑：
-   * - 如果从已选中的单元格开始拖拽，应该先移除原选区，然后添加新选区
+   * - 如果从已选中的单元格开始拖拽，应该取消拖选范围内的单元格（移除）
    * - 如果从未选中的单元格开始拖拽，直接添加新选区
-   * - Ctrl 拖选永远是"添加"（并集），即使重叠也添加
+   * - Ctrl 拖选从已选中单元格开始 = 取消选择，从未选中单元格开始 = 添加选择
    *
    * @param {Object} options - 选项
    * @param {Object} options.removeSingleCell - 要移除的单个单元格 { row, col }（可选）
    * @param {number} options.removeSelectionIndex - 要移除的选区索引（可选，用于处理从已选中单元格拖拽的情况）
-   * @returns {boolean} 是否成功添加（true=新增，false=取消）
+   * @param {boolean} options.isCancelMode - 是否为取消模式（从已选中单元格开始拖拽）
+   * @returns {boolean} 是否成功处理（true=处理成功，false=处理失败）
    */
   const endMultipleSelectionDrag = (options = {}) => {
     const selection = normalizedSelection.value;
     if (!selection) return false;
 
-    const { removeSingleCell, removeSelectionIndex } = options;
+    const { removeSingleCell, removeSelectionIndex, isCancelMode } = options;
 
-    // 如果指定了要移除的选区索引（从已选中单元格拖拽的情况），先移除它
-    if (removeSelectionIndex !== undefined && removeSelectionIndex >= 0) {
+    // 如果是从已选中的单元格开始拖拽（取消模式）
+    if (
+      isCancelMode &&
+      removeSelectionIndex !== undefined &&
+      removeSelectionIndex >= 0
+    ) {
+      const originalSelection = multiSelections.value[removeSelectionIndex];
+
+      // 将原选区拆分成单格选区，然后移除拖选范围内的单元格
+      const remainingCells = removeDragRangeFromSelection(
+        originalSelection,
+        selection
+      );
+
+      // 移除原选区
       multiSelections.value.splice(removeSelectionIndex, 1);
+
+      // 添加剩余的单元格（作为单格选区）
+      remainingCells.forEach((cell) => {
+        multiSelections.value.push(cell);
+      });
+
+      // 更新 activeCell 指向列表中的最后一个，或者清空
+      if (multiSelections.value.length > 0) {
+        const last = multiSelections.value[multiSelections.value.length - 1];
+        activeCell.value = { row: last.minRow, col: last.minCol };
+        selectionStart.value = { row: last.minRow, col: last.minCol };
+        selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+      } else {
+        // 多选列表为空，切换到 SINGLE 模式
+        isMultipleMode.value = false;
+        activeCell.value = null;
+        selectionStart.value = null;
+        selectionEnd.value = null;
+      }
+
+      return true;
     }
-    // 否则，如果指定了要移除的单个单元格（处理 startMultipleSelection 留下的单格选区痕迹），先移除它
-    else if (removeSingleCell) {
+
+    // 如果是从未选中的单元格开始拖拽（添加模式）
+    // 如果指定了要移除的单个单元格（处理 startMultipleSelection 留下的单格选区痕迹），先移除它
+    if (removeSingleCell) {
       const { row, col } = removeSingleCell;
       const singleCellIndex = multiSelections.value.findIndex(
         (sel) =>
@@ -312,9 +389,7 @@ export function useSelection() {
       }
     }
 
-    // 【修复】移除重叠检测逻辑，允许重叠（Excel 标准行为）
-    // Excel 逻辑：Ctrl 拖选永远是"添加"（并集），即使重叠也添加。
-    // 简单的做法是直接 push，视觉上由样式层处理重叠颜色加深。
+    // 添加新选区
     multiSelections.value.push({ ...selection });
 
     // 更新 activeCell 指向新添加的选区

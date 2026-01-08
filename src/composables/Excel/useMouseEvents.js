@@ -72,11 +72,12 @@ export function useMouseEvents({
       if (hasMultipleDragged && selectionStart?.value && selectionEnd?.value) {
         // MULTIPLE 模式：拖选结束
         if (endMultipleSelectionDrag) {
-          // 如果起始单元格已在多选列表中，传递选区索引以便正确移除
-          // 否则传递单格单元格信息（用于移除可能存在的单格选区）
+          // 如果起始单元格已在多选列表中，这是取消模式（移除拖选范围内的单元格）
+          // 否则是添加模式（添加新选区）
           if (multipleStartSelectionIndex !== null) {
             endMultipleSelectionDrag({
               removeSelectionIndex: multipleStartSelectionIndex,
+              isCancelMode: true, // 标记为取消模式
             });
           } else {
             endMultipleSelectionDrag({ removeSingleCell: multipleStartCell });
