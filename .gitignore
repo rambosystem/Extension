@@ -48,3 +48,4 @@ coverage/
 # Temporary folders
 tmp/
 temp/ 
+GIT_SSH_PROXY_SETUP.md
