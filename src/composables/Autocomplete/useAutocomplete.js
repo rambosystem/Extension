@@ -9,15 +9,21 @@ import { debugLog, debugError } from "../../utils/debug.js";
 export function useAutocomplete(options = {}) {
   const {
     fetchSuggestions = null, // 自定义获取建议的函数
+    fetchSuggestionsList = null, // 自定义获取建议列表的函数（用于下拉菜单）
     debounce = 300, // 防抖延迟
     defaultProjectId = null, // 默认项目ID（全局统一使用 Default Project 的值）
     getProjectId = null, // 自定义获取项目ID的函数
+    showDropdown = false, // 是否显示下拉菜单
+    dropdownLimit = 10, // 下拉菜单显示的最大结果数
   } = options;
 
   // 状态
   const suggestionText = ref("");
   const fullSuggestion = ref("");
   const suggestionStyle = ref({});
+  const dropdownSuggestions = ref([]); // 下拉菜单建议列表
+  const showDropdownMenu = ref(false); // 是否显示下拉菜单
+  const selectedIndex = ref(-1); // 当前选中的下拉菜单项索引
 
   // 内部状态
   let autocompleteTimer = null;
@@ -32,7 +38,7 @@ export function useAutocomplete(options = {}) {
       if (measureRef && suggestionText.value && inputValue) {
         const width = measureRef.offsetWidth;
         suggestionStyle.value = {
-          left: `${12 + width}px`,
+          left: `${11 + width}px`,
         };
         debugLog("[Autocomplete] Suggestion position updated:", width);
       } else {
@@ -100,6 +106,45 @@ export function useAutocomplete(options = {}) {
   };
 
   /**
+   * 获取自动补全建议列表（用于下拉菜单）
+   * 返回多个建议结果，不进行+1操作
+   */
+  const defaultFetchSuggestionsList = async (
+    queryString,
+    projectId,
+    limit = 10
+  ) => {
+    try {
+      debugLog("[Autocomplete] Calling API for dropdown with:", {
+        projectId,
+        query: queryString.trim(),
+        limit,
+      });
+
+      const response = await autocompleteKeys(
+        projectId,
+        queryString.trim(),
+        limit
+      );
+
+      debugLog("[Autocomplete] API response for dropdown:", response);
+
+      // 返回所有结果的key_name列表
+      if (response?.results && Array.isArray(response.results)) {
+        const suggestions = response.results
+          .map((result) => result.key_name)
+          .filter((key) => key); // 过滤掉空值
+        debugLog("[Autocomplete] Dropdown suggestions:", suggestions);
+        return suggestions;
+      }
+      return [];
+    } catch (error) {
+      debugError("[Autocomplete] Error occurred fetching dropdown:", error);
+      return [];
+    }
+  };
+
+  /**
    * 获取自动补全建议
    */
   const fetchAutocompleteSuggestion = async (
@@ -118,6 +163,10 @@ export function useAutocomplete(options = {}) {
         currentValue
       );
       suggestionText.value = "";
+      if (showDropdown) {
+        dropdownSuggestions.value = [];
+        showDropdownMenu.value = false;
+      }
       return;
     }
 
@@ -133,6 +182,10 @@ export function useAutocomplete(options = {}) {
     if (!projectId) {
       debugLog("[Autocomplete] No project ID available, skipping autocomplete");
       suggestionText.value = "";
+      if (showDropdown) {
+        dropdownSuggestions.value = [];
+        showDropdownMenu.value = false;
+      }
       return;
     }
 
@@ -144,33 +197,105 @@ export function useAutocomplete(options = {}) {
     );
     debugLog("[Autocomplete] Project ID:", projectId);
 
-    // 使用自定义函数或默认实现
-    const fetchFn = fetchSuggestions || defaultFetchSuggestions;
-    const suggestion = await fetchFn(queryString, projectId);
+    // 如果启用下拉菜单，获取建议列表
+    if (showDropdown) {
+      const fetchListFn = fetchSuggestionsList || defaultFetchSuggestionsList;
+      const suggestions = await fetchListFn(
+        queryString,
+        projectId,
+        dropdownLimit
+      );
 
-    // 再次验证查询是否仍然有效
-    if (queryId !== currentQueryId) {
-      debugLog("[Autocomplete] Query outdated after API call, ignoring result");
-      suggestionText.value = "";
-      return;
-    }
+      // 再次验证查询是否仍然有效
+      if (queryId !== currentQueryId) {
+        debugLog(
+          "[Autocomplete] Query outdated after API call, ignoring result"
+        );
+        dropdownSuggestions.value = [];
+        showDropdownMenu.value = false;
+        return;
+      }
 
-    if (suggestion) {
-      const query = queryString.trim();
-      // 只显示用户还未输入的部分
-      if (suggestion.startsWith(query)) {
-        fullSuggestion.value = suggestion;
-        suggestionText.value = suggestion.substring(query.length);
-        debugLog("[Autocomplete] Full suggestion:", suggestion);
-        debugLog("[Autocomplete] Displaying suffix:", suggestionText.value);
+      dropdownSuggestions.value = suggestions;
+      showDropdownMenu.value = suggestions.length > 0;
+      selectedIndex.value = -1;
+
+      // 如果有建议，设置第一个为内联建议
+      // 如果提供了fetchSuggestions，使用它来获取内联建议（保持原有逻辑，如key会+1）
+      // 否则直接使用下拉菜单的第一个建议（如tag不需要+1）
+      if (suggestions.length > 0) {
+        if (fetchSuggestions) {
+          // 使用fetchSuggestions获取内联建议（会进行+1等处理）
+          const fetchFn = fetchSuggestions;
+          const suggestion = await fetchFn(queryString, projectId);
+
+          // 再次验证查询是否仍然有效
+          if (queryId !== currentQueryId) {
+            suggestionText.value = "";
+            fullSuggestion.value = "";
+            return;
+          }
+
+          if (suggestion) {
+            const query = queryString.trim();
+            if (suggestion.startsWith(query)) {
+              fullSuggestion.value = suggestion;
+              suggestionText.value = suggestion.substring(query.length);
+            } else {
+              suggestionText.value = "";
+              fullSuggestion.value = "";
+            }
+          } else {
+            suggestionText.value = "";
+            fullSuggestion.value = "";
+          }
+        } else {
+          // 没有fetchSuggestions，直接使用第一个下拉建议（不进行+1处理）
+          const firstSuggestion = suggestions[0];
+          const query = queryString.trim();
+          if (firstSuggestion.startsWith(query)) {
+            fullSuggestion.value = firstSuggestion;
+            suggestionText.value = firstSuggestion.substring(query.length);
+          } else {
+            suggestionText.value = "";
+            fullSuggestion.value = "";
+          }
+        }
       } else {
         suggestionText.value = "";
         fullSuggestion.value = "";
       }
     } else {
-      suggestionText.value = "";
-      fullSuggestion.value = "";
-      debugLog("[Autocomplete] No suggestion found");
+      // 原有逻辑：只获取单个建议
+      const fetchFn = fetchSuggestions || defaultFetchSuggestions;
+      const suggestion = await fetchFn(queryString, projectId);
+
+      // 再次验证查询是否仍然有效
+      if (queryId !== currentQueryId) {
+        debugLog(
+          "[Autocomplete] Query outdated after API call, ignoring result"
+        );
+        suggestionText.value = "";
+        return;
+      }
+
+      if (suggestion) {
+        const query = queryString.trim();
+        // 只显示用户还未输入的部分
+        if (suggestion.startsWith(query)) {
+          fullSuggestion.value = suggestion;
+          suggestionText.value = suggestion.substring(query.length);
+          debugLog("[Autocomplete] Full suggestion:", suggestion);
+          debugLog("[Autocomplete] Displaying suffix:", suggestionText.value);
+        } else {
+          suggestionText.value = "";
+          fullSuggestion.value = "";
+        }
+      } else {
+        suggestionText.value = "";
+        fullSuggestion.value = "";
+        debugLog("[Autocomplete] No suggestion found");
+      }
     }
   };
 
@@ -183,10 +308,15 @@ export function useAutocomplete(options = {}) {
       clearTimeout(autocompleteTimer);
     }
 
-    // 如果输入为空，立即清除建议文本
+    // 如果输入为空，立即清除建议文本和下拉菜单
     if (!value || !value.trim()) {
       suggestionText.value = "";
       fullSuggestion.value = "";
+      if (showDropdown) {
+        dropdownSuggestions.value = [];
+        showDropdownMenu.value = false;
+        selectedIndex.value = -1;
+      }
       currentQueryId++;
       updateSuggestionPosition("");
       return;
@@ -213,6 +343,9 @@ export function useAutocomplete(options = {}) {
       suggestionText.value = "";
       fullSuggestion.value = "";
       updateSuggestionPosition(value);
+      if (showDropdown) {
+        showDropdownMenu.value = false;
+      }
       return;
     }
 
@@ -235,6 +368,51 @@ export function useAutocomplete(options = {}) {
    * 处理键盘事件
    */
   const handleKeyDown = (event, currentValue, onUpdate) => {
+    // 如果启用下拉菜单，处理下拉菜单的键盘导航
+    if (
+      showDropdown &&
+      showDropdownMenu.value &&
+      dropdownSuggestions.value.length > 0
+    ) {
+      // ArrowDown: 向下选择
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        selectedIndex.value = Math.min(
+          selectedIndex.value + 1,
+          dropdownSuggestions.value.length - 1
+        );
+        return;
+      }
+      // ArrowUp: 向上选择
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        selectedIndex.value = Math.max(selectedIndex.value - 1, -1);
+        return;
+      }
+      // Enter: 选择当前项
+      if (event.key === "Enter" && selectedIndex.value >= 0) {
+        event.preventDefault();
+        const selectedSuggestion =
+          dropdownSuggestions.value[selectedIndex.value];
+        if (onUpdate && selectedSuggestion) {
+          onUpdate(selectedSuggestion);
+        }
+        dropdownSuggestions.value = [];
+        showDropdownMenu.value = false;
+        selectedIndex.value = -1;
+        suggestionText.value = "";
+        fullSuggestion.value = "";
+        return;
+      }
+      // Escape: 关闭下拉菜单
+      if (event.key === "Escape") {
+        event.preventDefault();
+        showDropdownMenu.value = false;
+        selectedIndex.value = -1;
+        return;
+      }
+    }
+
     // Tab 或 Right Arrow 键：接受建议
     if (event.key === "Tab" || event.key === "ArrowRight") {
       if (suggestionText.value) {
@@ -253,6 +431,10 @@ export function useAutocomplete(options = {}) {
         }
         suggestionText.value = "";
         fullSuggestion.value = "";
+        if (showDropdown) {
+          showDropdownMenu.value = false;
+          selectedIndex.value = -1;
+        }
         debugLog("[Autocomplete] Accepted suggestion via", event.key);
       }
     }
@@ -265,6 +447,10 @@ export function useAutocomplete(options = {}) {
       }
       suggestionText.value = "";
       fullSuggestion.value = "";
+      if (showDropdown) {
+        showDropdownMenu.value = false;
+        selectedIndex.value = -1;
+      }
     }
   };
 
@@ -278,13 +464,35 @@ export function useAutocomplete(options = {}) {
     }
     suggestionText.value = "";
     fullSuggestion.value = "";
+    if (showDropdown) {
+      dropdownSuggestions.value = [];
+      showDropdownMenu.value = false;
+      selectedIndex.value = -1;
+    }
     currentQueryId++;
+  };
+
+  /**
+   * 选择下拉菜单项
+   */
+  const selectSuggestion = (suggestion, onUpdate) => {
+    if (onUpdate && suggestion) {
+      onUpdate(suggestion);
+    }
+    dropdownSuggestions.value = [];
+    showDropdownMenu.value = false;
+    selectedIndex.value = -1;
+    suggestionText.value = "";
+    fullSuggestion.value = "";
   };
 
   return {
     // 状态
     suggestionText,
     suggestionStyle,
+    dropdownSuggestions,
+    showDropdownMenu,
+    selectedIndex,
 
     // 方法
     handleInput,
@@ -292,5 +500,6 @@ export function useAutocomplete(options = {}) {
     clearSuggestion,
     setMeasureRef,
     updateSuggestionPosition,
+    selectSuggestion,
   };
 }

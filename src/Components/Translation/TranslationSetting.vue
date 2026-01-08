@@ -24,6 +24,7 @@
         <div class="input-container">
           <AutocompleteInput v-model="excelBaselineKey"
             :placeholder="t('translationSetting.exportKeySettingPlaceholder')" :get-project-id="getProjectId"
+            :show-dropdown="true" :dropdown-limit="10" :fetch-suggestions-list="fetchBaselineKeySuggestions"
             @blur="handleExcelBaselineKeyBlur" />
         </div>
       </div>
@@ -53,6 +54,7 @@ import { ElMessage } from "element-plus";
 import AutocompleteInput from "../Common/AutocompleteInput.vue";
 import { debugLog, debugError } from "../../utils/debug.js";
 import { getAvailableLanguages } from "../../config/languages.js";
+import { autocompleteKeys } from "../../requests/autocomplete.js";
 
 const { t } = useI18n();
 
@@ -142,6 +144,40 @@ const getProjectId = () => {
     "[TranslationSetting] No default project ID set, autocomplete will use fallback"
   );
   return null;
+};
+
+/**
+ * 获取Baseline Key建议列表（用于下拉菜单）
+ * @param {string} queryString - 搜索关键词
+ * @param {string} projectId - 项目ID
+ * @param {number} limit - 返回结果数量限制
+ * @returns {Promise<Array<string>>} 建议的key名称列表
+ */
+const fetchBaselineKeySuggestions = async (queryString, projectId, limit = 10) => {
+  try {
+    debugLog("[Baseline Key Dropdown] Calling API with:", {
+      projectId,
+      query: queryString.trim(),
+      limit,
+    });
+
+    const response = await autocompleteKeys(projectId, queryString.trim(), limit);
+
+    debugLog("[Baseline Key Dropdown] API response:", response);
+
+    // 返回所有结果的key_name列表
+    if (response?.results && Array.isArray(response.results)) {
+      const suggestions = response.results
+        .map((result) => result.key_name)
+        .filter((key) => key); // 过滤掉空值
+      debugLog("[Baseline Key Dropdown] Suggestions:", suggestions);
+      return suggestions;
+    }
+    return [];
+  } catch (error) {
+    debugError("[Baseline Key Dropdown] Error occurred:", error);
+    return [];
+  }
 };
 
 const handleOverwriteChange = (value) => {

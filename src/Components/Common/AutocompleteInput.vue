@@ -1,24 +1,20 @@
 <template>
   <div class="autocomplete-wrapper">
-    <el-input
-      :model-value="modelValue"
-      :placeholder="placeholder"
-      @update:model-value="handleUpdate"
-      @blur="handleBlur"
-      @focus="handleFocus"
-      @input="handleInput"
-      @keydown="handleKeyDown"
-      :clearable="clearable"
-      ref="inputRef"
-    />
-    <span
-      v-if="suggestionText"
-      class="autocomplete-suggestion"
-      :style="suggestionStyle"
-    >
+    <el-input :model-value="modelValue" :placeholder="placeholder" @update:model-value="handleUpdate" @blur="handleBlur"
+      @focus="handleFocus" @input="handleInput" @keydown="handleKeyDown" :clearable="clearable" ref="inputRef" />
+    <span v-if="suggestionText && modelValue" class="autocomplete-suggestion" :style="suggestionStyle">
       {{ suggestionText }}
     </span>
     <span ref="measureRef" class="text-measure">{{ modelValue }}</span>
+    <!-- 下拉菜单 -->
+    <div v-if="showDropdown && showDropdownMenu && dropdownSuggestions.length > 0" class="autocomplete-dropdown"
+      ref="dropdownRef">
+      <div v-for="(suggestion, index) in dropdownSuggestions" :key="index" class="dropdown-item"
+        :class="{ 'is-selected': index === selectedIndex }" @click="handleSelectSuggestion(suggestion)"
+        @mouseenter="selectedIndex = index">
+        {{ suggestion }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -44,6 +40,10 @@ const props = defineProps({
     type: Function,
     default: null,
   },
+  fetchSuggestionsList: {
+    type: Function,
+    default: null,
+  },
   getProjectId: {
     type: Function,
     default: null,
@@ -56,27 +56,43 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  showDropdown: {
+    type: Boolean,
+    default: false,
+  },
+  dropdownLimit: {
+    type: Number,
+    default: 10,
+  },
 });
 
 const emit = defineEmits(["update:modelValue", "blur", "focus"]);
 
 const inputRef = ref(null);
 const measureRef = ref(null);
+const dropdownRef = ref(null);
 
 // 使用自动补全 composable
 const {
   suggestionText,
   suggestionStyle,
+  dropdownSuggestions,
+  showDropdownMenu,
+  selectedIndex,
   handleInput: handleAutocompleteInput,
   handleKeyDown: handleAutocompleteKeyDown,
   clearSuggestion,
   setMeasureRef,
   updateSuggestionPosition,
+  selectSuggestion,
 } = useAutocomplete({
   fetchSuggestions: props.fetchSuggestions,
+  fetchSuggestionsList: props.fetchSuggestionsList,
   getProjectId: props.getProjectId,
   debounce: props.debounce,
   defaultProjectId: props.defaultProjectId,
+  showDropdown: props.showDropdown,
+  dropdownLimit: props.dropdownLimit,
 });
 
 // 设置测量元素引用
@@ -132,8 +148,18 @@ const handleKeyDown = (event) => {
  * 处理失焦事件
  */
 const handleBlur = (event) => {
-  clearSuggestion();
+  // 延迟清除，以便点击下拉菜单项时能够触发
+  setTimeout(() => {
+    clearSuggestion();
+  }, 200);
   emit("blur", event);
+};
+
+/**
+ * 处理选择下拉菜单项
+ */
+const handleSelectSuggestion = (suggestion) => {
+  selectSuggestion(suggestion, handleUpdate);
 };
 
 /**
@@ -173,6 +199,12 @@ const handleFocus = (event) => {
     background-color: transparent;
   }
 
+  // 确保placeholder正常显示
+  :deep(.el-input__inner::placeholder) {
+    color: #c0c4cc;
+    opacity: 1;
+  }
+
   // 创建一个测量元素来获取输入文本宽度
   .text-measure {
     position: absolute;
@@ -191,6 +223,46 @@ const handleFocus = (event) => {
     height: 0;
     overflow: hidden;
     pointer-events: none;
+  }
+
+  // 下拉菜单样式
+  .autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: #fff;
+    border: 1px solid #e4e7ed;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+
+    .dropdown-item {
+      padding: 8px 12px;
+      font-size: 14px;
+      color: #606266;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover,
+      &.is-selected {
+        background-color: #f5f7fa;
+        color: #409eff;
+      }
+
+      &:first-child {
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+      }
+
+      &:last-child {
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+      }
+    }
   }
 }
 </style>
