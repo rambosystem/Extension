@@ -63,6 +63,8 @@
               // 仅在非多选状态下，才显示 active 样式
               active: isActive(rowIndex, colIndex) && !isMultiSelect,
               'in-selection': isInSelection(rowIndex, colIndex),
+              'multi-select':
+                isMultiSelect && isInSelection(rowIndex, colIndex),
               'drag-target': isInDragArea(rowIndex, colIndex),
             },
             getSelectionBorderClass(rowIndex, colIndex),
@@ -641,7 +643,7 @@ const { handleCellMenuCommand } = useCellMenu({
  * 显示条件：
  * 1. 不在编辑状态
  * 2. 不在多选模式（isMultipleMode === false）
- * 3. 是活动单元格，或者是选区左上角（在单选模式下，如果框选了多个单元格）
+ * 3. 优先显示在选区左上角（如果框选了多个单元格），否则显示在活动单元格
  *
  * @param {number} rowIndex - 行索引
  * @param {number} colIndex - 列索引
@@ -658,12 +660,7 @@ const shouldShowCellMenu = (rowIndex, colIndex) => {
     return false;
   }
 
-  // 如果是活动单元格，显示菜单
-  if (isActive(rowIndex, colIndex)) {
-    return true;
-  }
-
-  // 在单选模式下，如果框选了多个单元格，选区左上角也显示菜单
+  // 优先检查：如果框选了多个单元格，菜单显示在选区左上角
   const selection = normalizedSelection.value;
   if (selection) {
     // 检查是否是多个单元格的选区
@@ -679,6 +676,11 @@ const shouldShowCellMenu = (rowIndex, colIndex) => {
     ) {
       return true;
     }
+  }
+
+  // 否则，如果是活动单元格，显示菜单
+  if (isActive(rowIndex, colIndex)) {
+    return true;
   }
 
   return false;
@@ -977,6 +979,11 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
 
   &.in-selection {
     background-color: $selection-bg;
+  }
+
+  // 多选背景色
+  &.multi-select {
+    background-color: #f5f7fa;
   }
 
   // 选中边框伪元素（统一管理）
