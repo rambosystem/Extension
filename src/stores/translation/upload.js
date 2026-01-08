@@ -8,6 +8,7 @@ import { uploadTranslationKeys } from "../../requests/lokalise.js";
 import { searchKeysByNames } from "../../requests/deduplicate.js";
 import { useExportStore } from "./export.js";
 import { useTranslationCoreStore } from "./core.js";
+import { debugLog, debugError } from "../../utils/debug.js";
 
 /**
  * 上传功能状态管理
@@ -302,6 +303,9 @@ export const useUploadStore = defineStore("upload", {
         await this.performUpload(translationResult);
 
         this.setUploadSuccess(true, "Upload completed successfully");
+
+        // 上传成功后更新baseline key
+        await this.updateBaselineKeyAfterUpload(translationResult);
       } catch (error) {
         console.error("Upload failed:", error);
 
@@ -485,6 +489,173 @@ export const useUploadStore = defineStore("upload", {
         this.uploadForm.tag ? [this.uploadForm.tag] : [],
         apiToken
       );
+    },
+
+    /**
+     * 解析 key 格式（如 "key1", "item5"）
+     * @param {string} key - key 字符串
+     * @returns {Object|null} { prefix: string, number: number } 或 null
+     */
+    parseKey(key) {
+      if (!key || typeof key !== "string") return null;
+      const match = key.trim().match(/^([a-zA-Z]+)(\d+)$/);
+      if (!match) return null;
+      return {
+        prefix: match[1],
+        number: parseInt(match[2], 10),
+      };
+    },
+
+    /**
+     * 计算下一个 baseline key
+     * 基于 translationResult 中使用的最大 key 值
+     * @param {Array} translationResult - 翻译结果数组
+     * @returns {string|null} 下一个 baseline key，如果无法计算则返回 null
+     */
+    calculateNextBaselineKey(translationResult) {
+      if (!translationResult || translationResult.length === 0) {
+        debugLog(
+          "[UploadStore] No translation result provided for baseline key calculation"
+        );
+        return null;
+      }
+
+      const exportStore = useExportStore();
+      const currentBaselineKey =
+        exportStore.excelBaselineKey ||
+        localStorage.getItem("excel_baseline_key") ||
+        "";
+
+      // 如果没有当前的 baseline key，无法计算下一个
+      if (!currentBaselineKey || !currentBaselineKey.trim()) {
+        debugLog(
+          "[UploadStore] No current baseline key found, cannot calculate next"
+        );
+        return null;
+      }
+
+      // 解析当前的 baseline key
+      const parsed = this.parseKey(currentBaselineKey.trim());
+      if (!parsed) {
+        debugError(
+          "[UploadStore] Invalid baseline key format:",
+          currentBaselineKey
+        );
+        return null;
+      }
+
+      const { prefix, number: baselineNumber } = parsed;
+
+      // 从 translationResult 中提取所有符合格式的 key
+      const usedNumbers = new Set();
+      translationResult.forEach((row) => {
+        const key = row?.key;
+        if (key && typeof key === "string" && key.trim()) {
+          const keyParsed = this.parseKey(key.trim());
+          if (
+            keyParsed &&
+            keyParsed.prefix.toLowerCase() === prefix.toLowerCase()
+          ) {
+            usedNumbers.add(keyParsed.number);
+          }
+        }
+      });
+
+      debugLog("[UploadStore] Baseline key calculation:", {
+        currentBaselineKey,
+        prefix,
+        baselineNumber,
+        usedNumbers: Array.from(usedNumbers),
+        usedNumbersSize: usedNumbers.size,
+      });
+
+      // 如果没有找到已使用的 key，保持当前的 baseline key
+      if (usedNumbers.size === 0) {
+        debugLog(
+          "[UploadStore] No matching keys found, keeping current baseline key"
+        );
+        return currentBaselineKey;
+      }
+
+      // 找出最大的已使用数字
+      const maxUsedNumber = Math.max(...usedNumbers);
+
+      // 下一个 baseline key 应该是 maxUsedNumber + 1
+      // 但要确保不小于 baselineNumber（如果 baselineNumber 更大，使用它）
+      const nextNumber = Math.max(maxUsedNumber + 1, baselineNumber);
+      const nextBaselineKey = `${prefix}${nextNumber}`;
+
+      // 验证生成的 key 格式是否正确（双重保险）
+      if (!nextBaselineKey.match(/^[a-zA-Z]+[0-9]+$/)) {
+        debugError(
+          "[UploadStore] Generated baseline key format is invalid:",
+          nextBaselineKey
+        );
+        return null;
+      }
+
+      debugLog("[UploadStore] Calculated next baseline key:", {
+        maxUsedNumber,
+        nextNumber,
+        nextBaselineKey,
+      });
+
+      return nextBaselineKey;
+    },
+
+    /**
+     * 上传成功后更新baseline key为下一个可用值
+     * @param {Array} translationResult - 翻译结果数组
+     */
+    async updateBaselineKeyAfterUpload(translationResult) {
+      debugLog("[UploadStore] updateBaselineKeyAfterUpload called", {
+        translationResultLength: translationResult?.length,
+      });
+
+      try {
+        const exportStore = useExportStore();
+        const nextBaselineKey =
+          this.calculateNextBaselineKey(translationResult);
+
+        if (nextBaselineKey) {
+          // 更新 baseline key（会进行格式和唯一性校验）
+          const success = await exportStore.saveExcelBaselineKey(
+            nextBaselineKey
+          );
+
+          if (success) {
+            debugLog(
+              "[UploadStore] Baseline key updated successfully:",
+              nextBaselineKey
+            );
+
+            // 触发事件通知其他组件baseline key已更新
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("baselineKeyUpdated", {
+                  detail: { newBaselineKey: nextBaselineKey },
+                })
+              );
+            }
+          } else {
+            debugLog(
+              "[UploadStore] Failed to save baseline key (format or uniqueness check failed), clearing baseline key:",
+              nextBaselineKey
+            );
+            // 如果保存失败（格式或唯一性校验失败），清空 baseline key
+            await exportStore.saveExcelBaselineKey("");
+          }
+        } else {
+          debugLog(
+            "[UploadStore] Cannot calculate next baseline key, clearing baseline key"
+          );
+          // 如果无法计算下一个值，清空 baseline key
+          await exportStore.saveExcelBaselineKey("");
+        }
+      } catch (error) {
+        debugError("[UploadStore] Failed to update baseline key:", error);
+        // 如果更新失败，不影响上传成功状态
+      }
     },
 
     /**

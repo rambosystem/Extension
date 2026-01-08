@@ -126,20 +126,225 @@ export function useLokaliseUpload() {
   };
 
   /**
+   * 解析 key 格式（如 "key1", "item5"）
+   * @param {string} key - key 字符串
+   * @returns {Object|null} { prefix: string, number: number } 或 null
+   */
+  const parseKey = (key) => {
+    if (!key || typeof key !== "string") return null;
+    const match = key.trim().match(/^([a-zA-Z]+)(\d+)$/);
+    if (!match) return null;
+    return {
+      prefix: match[1],
+      number: parseInt(match[2], 10),
+    };
+  };
+
+  /**
+   * 计算下一个 baseline key
+   * 基于 translationResult 中使用的最大 key 值
+   * @param {Array} translationResult - 翻译结果数组
+   * @returns {string|null} 下一个 baseline key，如果无法计算则返回 null
+   */
+  const calculateNextBaselineKey = (translationResult) => {
+    if (!translationResult || translationResult.length === 0) {
+      console.log(
+        "[useLokaliseUpload] No translation result provided for baseline key calculation"
+      );
+      return null;
+    }
+
+    const exportStore = useExportStore();
+    const currentBaselineKey =
+      exportStore.excelBaselineKey ||
+      localStorage.getItem("excel_baseline_key") ||
+      "";
+
+    // 如果没有当前的 baseline key，无法计算下一个
+    if (!currentBaselineKey || !currentBaselineKey.trim()) {
+      console.log(
+        "[useLokaliseUpload] No current baseline key found, cannot calculate next"
+      );
+      return null;
+    }
+
+    // 解析当前的 baseline key
+    const parsed = parseKey(currentBaselineKey.trim());
+    if (!parsed) {
+      console.warn(
+        "[useLokaliseUpload] Invalid baseline key format:",
+        currentBaselineKey
+      );
+      return null;
+    }
+
+    const { prefix, number: baselineNumber } = parsed;
+
+    // 从 translationResult 中提取所有符合格式的 key
+    const usedNumbers = new Set();
+    translationResult.forEach((row) => {
+      const key = row?.key;
+      if (key && typeof key === "string" && key.trim()) {
+        const keyParsed = parseKey(key.trim());
+        if (
+          keyParsed &&
+          keyParsed.prefix.toLowerCase() === prefix.toLowerCase()
+        ) {
+          usedNumbers.add(keyParsed.number);
+        }
+      }
+    });
+
+    console.log("[useLokaliseUpload] Baseline key calculation:", {
+      currentBaselineKey,
+      prefix,
+      baselineNumber,
+      usedNumbers: Array.from(usedNumbers),
+      usedNumbersSize: usedNumbers.size,
+    });
+
+    // 如果没有找到已使用的 key，保持当前的 baseline key
+    if (usedNumbers.size === 0) {
+      console.log(
+        "[useLokaliseUpload] No matching keys found, keeping current baseline key"
+      );
+      return currentBaselineKey;
+    }
+
+    // 找出最大的已使用数字
+    const maxUsedNumber = Math.max(...usedNumbers);
+
+    // 下一个 baseline key 应该是 maxUsedNumber + 1
+    // 但要确保不小于 baselineNumber（如果 baselineNumber 更大，使用它）
+    const nextNumber = Math.max(maxUsedNumber + 1, baselineNumber);
+    const nextBaselineKey = `${prefix}${nextNumber}`;
+
+    console.log("[useLokaliseUpload] Calculated next baseline key:", {
+      maxUsedNumber,
+      nextNumber,
+      nextBaselineKey,
+    });
+
+    return nextBaselineKey;
+  };
+
+  /**
    * 清空baseline key
    */
   const clearBaselineKey = async () => {
+    console.log("[useLokaliseUpload] clearBaselineKey called");
     try {
       // 使用 store 的方法清空 baseline key
       const exportStore = useExportStore();
+      console.log("[useLokaliseUpload] Clearing baseline key...");
       await exportStore.saveExcelBaselineKey("");
+      console.log("[useLokaliseUpload] Baseline key cleared successfully");
 
       // 触发事件通知其他组件baseline key已被清空
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("baselineKeyCleared"));
       }
     } catch (error) {
-      console.error("Failed to clear baseline key:", error);
+      console.error("[useLokaliseUpload] Failed to clear baseline key:", error);
+    }
+  };
+
+  /**
+   * 更新baseline key为下一个可用值
+   * @param {Array} translationResult - 翻译结果数组
+   */
+  const updateBaselineKey = async (translationResult) => {
+    console.log("[useLokaliseUpload] updateBaselineKey called", {
+      translationResult,
+      translationResultLength: translationResult?.length,
+      translationResultType: typeof translationResult,
+      isArray: Array.isArray(translationResult),
+    });
+
+    try {
+      const exportStore = useExportStore();
+      const nextBaselineKey = calculateNextBaselineKey(translationResult);
+
+      console.log("[useLokaliseUpload] Calculating next baseline key:", {
+        translationResultLength: translationResult?.length,
+        nextBaselineKey,
+        currentBaselineKey:
+          exportStore.excelBaselineKey ||
+          localStorage.getItem("excel_baseline_key"),
+      });
+
+      if (nextBaselineKey) {
+        // 更新 baseline key
+        const success = await exportStore.saveExcelBaselineKey(nextBaselineKey);
+
+        if (success) {
+          console.log(
+            "[useLokaliseUpload] Baseline key updated successfully:",
+            nextBaselineKey
+          );
+
+          // 触发事件通知其他组件baseline key已更新
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("baselineKeyUpdated", {
+                detail: { newBaselineKey: nextBaselineKey },
+              })
+            );
+          }
+        } else {
+          console.warn(
+            "[useLokaliseUpload] Failed to save baseline key, it may already exist in the project:",
+            nextBaselineKey
+          );
+          // 如果保存失败（可能是 key 已存在），尝试递增到下一个可用的 key
+          const parsed = parseKey(nextBaselineKey);
+          if (parsed) {
+            let attemptNumber = parsed.number + 1;
+            let attemptKey = `${parsed.prefix}${attemptNumber}`;
+            let maxAttempts = 10; // 最多尝试 10 次
+
+            while (maxAttempts > 0) {
+              const attemptSuccess = await exportStore.saveExcelBaselineKey(
+                attemptKey
+              );
+              if (attemptSuccess) {
+                console.log(
+                  "[useLokaliseUpload] Baseline key updated to alternative:",
+                  attemptKey
+                );
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(
+                    new CustomEvent("baselineKeyUpdated", {
+                      detail: { newBaselineKey: attemptKey },
+                    })
+                  );
+                }
+                return;
+              }
+              attemptNumber++;
+              attemptKey = `${parsed.prefix}${attemptNumber}`;
+              maxAttempts--;
+            }
+          }
+          // 如果所有尝试都失败，保持当前 baseline key 不变
+          console.warn(
+            "[useLokaliseUpload] Could not update baseline key, keeping current value"
+          );
+        }
+      } else {
+        console.log(
+          "[useLokaliseUpload] Cannot calculate next baseline key, clearing it"
+        );
+        // 如果无法计算下一个值，则清空
+        await clearBaselineKey();
+      }
+    } catch (error) {
+      console.error(
+        "[useLokaliseUpload] Failed to update baseline key:",
+        error
+      );
+      // 如果更新失败，尝试清空
+      await clearBaselineKey();
     }
   };
 
@@ -319,8 +524,16 @@ export function useLokaliseUpload() {
       successMessage.value = `Successfully uploaded ${keys.length} keys to project: ${selectedProject.name}`;
       isUploadSuccess.value = true;
 
-      // 上传完成后清空baseline key
-      clearBaselineKey();
+      // 上传完成后更新baseline key为下一个可用值
+      console.log(
+        "[useLokaliseUpload] Upload successful, updating baseline key...",
+        {
+          filteredResultLength: filteredResult?.length,
+          filteredResult,
+        }
+      );
+      await updateBaselineKey(filteredResult);
+      console.log("[useLokaliseUpload] Baseline key update completed");
     } catch (error) {
       // 显示详细的错误信息
       const errorMessage =
