@@ -126,26 +126,6 @@ export function useLokaliseUpload() {
   };
 
   /**
-   * 生成自增序列key
-   * @param {string} baselineKey - 基准key（如"key1"）
-   * @param {number} index - 当前索引
-   * @returns {string} 生成的key
-   */
-  const generateIncrementalKey = (baselineKey, index) => {
-    // 提取基准key的字母部分和数字部分
-    const match = baselineKey.match(/^([a-zA-Z]+)(\d+)$/);
-    if (!match) {
-      return baselineKey; // 如果格式不正确，返回原值
-    }
-
-    const [, prefix, numberStr] = match;
-    const baseNumber = parseInt(numberStr, 10);
-    const newNumber = baseNumber + index;
-
-    return `${prefix}${newNumber}`;
-  };
-
-  /**
    * 清空baseline key
    */
   const clearBaselineKey = async () => {
@@ -240,10 +220,9 @@ export function useLokaliseUpload() {
       );
 
       // 构建请求体
-      // key的生成已经在翻译完成后通过applyAutoKeyGeneration完成
-      // 这里直接使用filteredResult中已存在的key值（已过滤空行）
+      // 如果没有key值则使用en作为key
       const keys = filteredResult.map((row) => {
-        // 直接使用翻译结果中已生成的key，如果没有则使用en
+        // 如果没有key值则使用en作为key
         const keyName =
           row.key && row.key.trim() ? row.key.trim() : row.en || "";
 

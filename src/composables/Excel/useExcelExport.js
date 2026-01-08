@@ -16,26 +16,6 @@ export function useExcelExport() {
   const exportStore = useExportStore();
 
   /**
-   * 生成自增序列key
-   * @param {string} baselineKey - 基准key（如"key1"）
-   * @param {number} index - 当前索引
-   * @returns {string} 生成的key
-   */
-  const generateIncrementalKey = (baselineKey, index) => {
-    // 提取基准key的字母部分和数字部分
-    const match = baselineKey.match(/^([a-zA-Z]+)(\d+)$/);
-    if (!match) {
-      return baselineKey; // 如果格式不正确，返回原值
-    }
-
-    const [, prefix, numberStr] = match;
-    const baseNumber = parseInt(numberStr, 10);
-    const newNumber = baseNumber + index;
-
-    return `${prefix}${newNumber}`;
-  };
-
-  /**
    * 将翻译结果转换为Excel格式
    * @param {Array} translationResult - 翻译结果数组
    * @returns {Array} Excel格式的数据数组
@@ -58,21 +38,12 @@ export function useExcelExport() {
     // 构建表头：key, en, 然后是目标语言的ISO代码
     const header = ["key", "en", ...sortedLanguages.map((lang) => lang.iso)];
 
-    // 从 localStorage 获取 baseline key（与上传逻辑保持一致）
-    const baselineKey = localStorage.getItem("excel_baseline_key") || "";
-
     const excelData = [
       header,
-      ...translationResult.map((row, index) => {
-        // 根据baseline key是否为空决定key的生成方式
-        let key;
-        if (baselineKey && baselineKey.trim()) {
-          // 如果baseline key不为空，使用自增序列
-          key = generateIncrementalKey(baselineKey.trim(), index);
-        } else {
-          // 如果baseline key为空，使用en作为key
-          key = row.en;
-        }
+      ...translationResult.map((row) => {
+        // 直接使用翻译结果中已有的key，如果没有则使用en作为fallback
+        // key的生成由Excel组件的auto increment功能处理，导出时使用已有的key
+        const key = row.key && row.key.trim() ? row.key.trim() : row.en || "";
 
         // 构建数据行：key, en, 然后是目标语言的翻译
         const rowData = [key, row.en];

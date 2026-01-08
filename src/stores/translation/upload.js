@@ -299,16 +299,7 @@ export const useUploadStore = defineStore("upload", {
 
       try {
         // 直接调用上传API，不依赖composable
-        const lastKey = await this.performUpload(translationResult);
-
-        // 上传成功后，更新baselineKey为最后一个key自增1
-        // 只有当lastKey存在且是有效格式（字母+数字）时才更新
-        if (lastKey && lastKey.match(/^[a-zA-Z]+\d+$/)) {
-          const newBaselineKey = this.incrementKey(lastKey);
-          const exportStore = useExportStore();
-          // 注意：这里不等待校验，因为上传成功后key应该是唯一的
-          await exportStore.saveExcelBaselineKey(newBaselineKey);
-        }
+        await this.performUpload(translationResult);
 
         this.setUploadSuccess(true, "Upload completed successfully");
       } catch (error) {
@@ -327,42 +318,8 @@ export const useUploadStore = defineStore("upload", {
     },
 
     /**
-     * 生成自增key
-     * @param {string} baselineKey - 基准key（如"key1"）
-     * @param {number} index - 当前索引
-     * @returns {string} 生成的key
-     */
-    generateIncrementalKey(baselineKey, index) {
-      const match = baselineKey.match(/^([a-zA-Z]+)(\d+)$/);
-      if (!match) {
-        return baselineKey;
-      }
-      const [, prefix, numberStr] = match;
-      const baseNumber = parseInt(numberStr, 10);
-      const newNumber = baseNumber + index;
-      return `${prefix}${newNumber}`;
-    },
-
-    /**
-     * 从key中提取数字并自增1
-     * @param {string} key - 当前key（如"key5"）
-     * @returns {string} 自增后的key（如"key6"）
-     */
-    incrementKey(key) {
-      const match = key.match(/^([a-zA-Z]+)(\d+)$/);
-      if (!match) {
-        return key; // 如果格式不正确，返回原值
-      }
-      const [, prefix, numberStr] = match;
-      const currentNumber = parseInt(numberStr, 10);
-      const newNumber = currentNumber + 1;
-      return `${prefix}${newNumber}`;
-    },
-
-    /**
      * 执行实际的上传操作
      * @param {Array} translationResult - 翻译结果
-     * @returns {string} 返回最后一个生成的key
      */
     async performUpload(translationResult) {
       // 获取API token
@@ -426,18 +383,11 @@ export const useUploadStore = defineStore("upload", {
       );
 
       // 准备上传数据
-      // key的生成已经在翻译完成后通过applyAutoKeyGeneration完成
-      // 这里直接使用translationResult中已存在的key值
-      let lastGeneratedKey = null;
+      // 如果没有key值则使用en作为key
       const keys = translationResult.map((item) => {
-        // 直接使用翻译结果中已生成的key，如果没有则使用en
+        // 如果没有key值则使用en作为key
         const keyName =
           item.key && item.key.trim() ? item.key.trim() : item.en || "";
-
-        // 如果keyName是有效的key格式，记录下来（用于更新baseline key）
-        if (keyName && keyName.match(/^[a-zA-Z]+\d+$/)) {
-          lastGeneratedKey = keyName;
-        }
 
         // 构建translations数组：先添加英文，然后按顺序添加目标语言
         const translations = [
@@ -535,9 +485,6 @@ export const useUploadStore = defineStore("upload", {
         this.uploadForm.tag ? [this.uploadForm.tag] : [],
         apiToken
       );
-
-      // 返回最后一个生成的key，用于更新baselineKey
-      return lastGeneratedKey;
     },
 
     /**

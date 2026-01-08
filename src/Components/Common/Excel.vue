@@ -298,16 +298,6 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  /**
-   * 删除行后的回调函数
-   * @type {Function}
-   * @default null
-   * @description 删除行后调用的回调函数，可用于执行额外的操作（如重新排序key列）
-   */
-  onAfterDeleteRow: {
-    type: Function,
-    default: null,
-  },
 });
 
 /**
@@ -395,10 +385,6 @@ const {
   selectRows,
   selectColumns,
   selectAll,
-  // 兼容性函数
-  setSelection,
-  toggleSelectionAtCell,
-  addCurrentSelectionToMulti,
 } = useSelection();
 
 /**
@@ -502,7 +488,7 @@ const {
 } = useCellEditing({
   tableData,
   activeCell,
-  setSelection,
+  startSingleSelection,
   saveHistory,
   moveActiveCell,
   getMaxRows: () => rows.value.length,
@@ -686,9 +672,8 @@ const { handleInsertRowBelow, handleDeleteRow } = useRowOperations({
   saveHistory,
   insertRowBelow,
   deleteRow,
-  setSelection,
+  startSingleSelection,
   notifyDataChange,
-  onAfterDeleteRow: props.onAfterDeleteRow,
 });
 
 // --- Cell Menu 管理 ---

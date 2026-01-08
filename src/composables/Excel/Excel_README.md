@@ -194,7 +194,7 @@ useExcelData({
   selectionEnd: Ref<{ row: number, col: number } | null>,  // 选区终点
   isSelecting: Ref<boolean>,  // 是否正在选择
   normalizedSelection: ComputedRef<Range | null>,  // 归一化选区
-  setSelection: (row: number, col: number) => void,  // 设置选择
+  startSingleSelection: (row: number, col: number) => void,  // 开始单格选择
   updateSelectionEnd: (row: number, col: number) => void,  // 更新选区终点
   isActive: (row: number, col: number) => boolean,  // 是否为活动单元格
   isInSelection: (row: number, col: number) => boolean,  // 是否在选区内
@@ -366,7 +366,7 @@ useFillHandle({
 useCellEditing({
   tableData: Ref<string[][]>,
   activeCell: Ref<{ row: number, col: number } | null>,
-  setSelection: Function,
+  startSingleSelection: Function,
   saveHistory: Function,
   moveActiveCell: Function,
   getMaxRows: () => number,
@@ -505,7 +505,7 @@ useSelectionStyle({
 ```javascript
 useMouseEvents({
   isSelecting: Ref<boolean>,
-  setSelection: Function,
+  startSingleSelection: Function,
   updateSelectionEnd: Function,
   isEditing: Function,
   stopEdit: Function,
@@ -573,7 +573,7 @@ useCellMenu({
   saveHistory: Function,
   deleteRow: Function,
   insertRowBelow: Function,
-  setSelection: Function,
+  startSingleSelection: Function,
   notifyDataChange: Function
 });
 ```

@@ -8,7 +8,7 @@ import { ref, nextTick } from "vue";
  * @param {Object} context - 上下文对象
  * @param {import('vue').Ref} context.tableData - 表格数据
  * @param {import('vue').Ref} context.activeCell - 活动单元格
- * @param {Function} context.setSelection - 设置选择
+ * @param {Function} context.startSingleSelection - 开始单格选择
  * @param {Function} context.saveHistory - 保存历史记录
  * @param {Function} context.moveActiveCell - 移动活动单元格
  * @param {Function} context.getMaxRows - 获取最大行数
@@ -19,7 +19,7 @@ import { ref, nextTick } from "vue";
 export function useCellEditing({
   tableData,
   activeCell,
-  setSelection,
+  startSingleSelection,
   saveHistory,
   moveActiveCell,
   getMaxRows,
@@ -68,7 +68,7 @@ export function useCellEditing({
 
     beforeEditSnapshot = tableData.value[row][col];
     editingCell.value = { row, col };
-    setSelection(row, col); // 确保编辑时选中该单元格
+    startSingleSelection(row, col); // 确保编辑时选中该单元格
 
     // 使用 nextTick 确保 DOM 更新后再聚焦
     nextTick(() => {

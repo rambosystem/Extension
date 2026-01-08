@@ -14,9 +14,8 @@ import { nextTick } from "vue";
  * @param {Function} context.saveHistory - 保存历史记录
  * @param {Function} context.insertRowBelow - 在下方插入行（底层函数）
  * @param {Function} context.deleteRow - 删除行（底层函数）
- * @param {Function} context.setSelection - 设置选择
+ * @param {Function} context.startSingleSelection - 开始单格选择
  * @param {Function} context.notifyDataChange - 通知数据变化
- * @param {Function} context.onAfterDeleteRow - 删除行后的回调函数（可选）
  * @returns {Object} 返回行操作方法
  */
 export function useRowOperations({
@@ -27,9 +26,8 @@ export function useRowOperations({
   saveHistory,
   insertRowBelow,
   deleteRow,
-  setSelection,
+  startSingleSelection,
   notifyDataChange,
-  onAfterDeleteRow,
 }) {
   /**
    * 统一的插入行处理函数
@@ -51,7 +49,7 @@ export function useRowOperations({
     // 插入行后，活动单元格保持在原位置（新行在下方）
     // 如果需要移动到新插入的行，可以取消注释下面的代码
     // if (activeCell.value) {
-    //   setSelection(rowIndex + 1, activeCell.value.col);
+    //   startSingleSelection(rowIndex + 1, activeCell.value.col);
     // }
 
     // 通知数据变化
@@ -118,17 +116,17 @@ export function useRowOperations({
         // 尝试移动到删除范围的第一行位置（如果还存在）
         const targetRow = Math.min(minDeletedRow, newRowCount - 1);
         if (targetRow >= 0) {
-          setSelection(targetRow, safeCol);
+          startSingleSelection(targetRow, safeCol);
         } else if (newRowCount > 0) {
           // 如果所有行都被删除了，移动到第一行
-          setSelection(0, safeCol);
+          startSingleSelection(0, safeCol);
         }
       } else if (currentRow > maxDeletedRow) {
         // 如果当前行在删除范围之后，需要向上移动（删除的行数）
         const deletedCount = oldRowCount - newRowCount;
         const newRow = currentRow - deletedCount;
         const safeRow = Math.min(newRow, newRowCount - 1);
-        setSelection(safeRow, safeCol);
+        startSingleSelection(safeRow, safeCol);
       }
       // 如果 currentRow < minDeletedRow，不需要调整（删除的是后面的行）
     }
@@ -136,10 +134,6 @@ export function useRowOperations({
     // 通知数据变化
     nextTick(() => {
       notifyDataChange();
-      // 调用删除后的回调（如果提供）
-      if (onAfterDeleteRow && typeof onAfterDeleteRow === "function") {
-        onAfterDeleteRow();
-      }
     });
   };
 
@@ -181,17 +175,17 @@ export function useRowOperations({
         // 如果删除的是当前行
         if (rowIndexOrIndices < newRowCount) {
           // 下面还有行，保持在原位置（删除后，原来的下一行会移动到当前位置）
-          setSelection(rowIndexOrIndices, safeCol);
+          startSingleSelection(rowIndexOrIndices, safeCol);
         } else {
           // 下面没有行了，移动到上一行（如果存在）
           const newRow = Math.max(0, rowIndexOrIndices - 1);
-          setSelection(newRow, safeCol);
+          startSingleSelection(newRow, safeCol);
         }
       } else if (currentRow > rowIndexOrIndices) {
         // 如果删除的是当前行之前的行，行索引需要减1
         const newRow = currentRow - 1;
         const safeRow = Math.min(newRow, newRowCount - 1);
-        setSelection(safeRow, safeCol);
+        startSingleSelection(safeRow, safeCol);
       }
       // 如果 currentRow < rowIndexOrIndices，不需要调整（删除的是后面的行）
     }
@@ -199,10 +193,6 @@ export function useRowOperations({
     // 通知数据变化
     nextTick(() => {
       notifyDataChange();
-      // 调用删除后的回调（如果提供）
-      if (onAfterDeleteRow && typeof onAfterDeleteRow === "function") {
-        onAfterDeleteRow();
-      }
     });
   };
 

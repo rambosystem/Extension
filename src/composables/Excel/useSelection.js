@@ -989,33 +989,6 @@ export function useSelection() {
     selectionEnd.value = { row: maxRows - 1, col: maxCols - 1 };
   };
 
-  // ==================== 兼容性函数（保持向后兼容） ====================
-
-  /**
-   * @deprecated 使用 startSingleSelection 或 startMultipleSelection 代替
-   */
-  const setSelection = (row, col, addToMultiSelect = false) => {
-    if (addToMultiSelect) {
-      startMultipleSelection(row, col);
-    } else {
-      startSingleSelection(row, col);
-    }
-  };
-
-  /**
-   * @deprecated 使用 endMultipleSelectionClick 代替
-   */
-  const toggleSelectionAtCell = (row, col) => {
-    endMultipleSelectionClick(row, col);
-  };
-
-  /**
-   * @deprecated 使用 endMultipleSelectionDrag 代替
-   */
-  const addCurrentSelectionToMulti = (options = {}) => {
-    return endMultipleSelectionDrag(options);
-  };
-
   return {
     activeCell,
     selectionStart,
@@ -1047,9 +1020,5 @@ export function useSelection() {
     selectRows,
     selectColumns,
     selectAll,
-    // 兼容性函数
-    setSelection,
-    toggleSelectionAtCell,
-    addCurrentSelectionToMulti,
   };
 }

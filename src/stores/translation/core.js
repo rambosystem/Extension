@@ -324,55 +324,6 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
 
     /**
-     * 生成自增key
-     * @param {string} baselineKey - 基准key（如"key1"）
-     * @param {number} index - 当前索引
-     * @returns {string} 生成的key
-     */
-    generateIncrementalKey(baselineKey, index) {
-      // 提取基准key的字母部分和数字部分
-      const match = baselineKey.match(/^([a-zA-Z]+)(\d+)$/);
-      if (!match) {
-        return baselineKey; // 如果格式不正确，返回原值
-      }
-
-      const [, prefix, numberStr] = match;
-      const baseNumber = parseInt(numberStr, 10);
-      const newNumber = baseNumber + index;
-
-      return `${prefix}${newNumber}`;
-    },
-
-    /**
-     * 为翻译结果自动生成key值
-     * @param {Array} translationResult - 翻译结果数组
-     * @returns {Array} 添加了key值的翻译结果数组
-     */
-    applyAutoKeyGeneration(translationResult) {
-      if (!translationResult || !Array.isArray(translationResult)) {
-        return translationResult;
-      }
-
-      // 从 localStorage 获取 baseline key
-      const baselineKey = localStorage.getItem("excel_baseline_key") || "";
-
-      // 如果baseline key为空，不处理
-      if (!baselineKey || !baselineKey.trim()) {
-        return translationResult;
-      }
-
-      // 为每个翻译结果项生成key值
-      return translationResult.map((item, index) => {
-        const result = { ...item };
-        // 如果key字段不存在或为空，自动生成
-        if (!result.key || result.key.trim() === "") {
-          result.key = this.generateIncrementalKey(baselineKey.trim(), index);
-        }
-        return result;
-      });
-    },
-
-    /**
      * 执行翻译并处理结果
      */
     async handleTranslate() {
@@ -454,12 +405,11 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         // 创建流式更新回调
         const onProgress = (partialResult, fullText) => {
           if (partialResult && Array.isArray(partialResult)) {
-            // 自动为翻译结果生成key值（如果baseline key存在）
-            const resultWithKeys = this.applyAutoKeyGeneration(partialResult);
             // 更新翻译结果（流式更新）
-            this.setTranslationResult(resultWithKeys);
+            // key的生成由Excel组件的auto increment功能处理
+            this.setTranslationResult(partialResult);
             // 更新进度计数器
-            this.updateTranslationProgress(resultWithKeys.length);
+            this.updateTranslationProgress(partialResult.length);
           }
         };
 
@@ -468,14 +418,13 @@ export const useTranslationCoreStore = defineStore("translationCore", {
           onProgress
         );
 
-        // 自动为最终结果生成key值（如果baseline key存在）
-        const finalResultWithKeys = this.applyAutoKeyGeneration(result);
         // 最终设置完整结果
-        this.setTranslationResult(finalResultWithKeys);
+        // key的生成由Excel组件的auto increment功能处理
+        this.setTranslationResult(result);
         // 更新最终进度
-        this.updateTranslationProgress(finalResultWithKeys.length);
+        this.updateTranslationProgress(result.length);
 
-        // 提取纯数据并保存到存储（使用已生成key的结果）
+        // 提取纯数据并保存到存储
         const translationData =
           translation.extractTranslationData(finalResultWithKeys);
         this.saveTranslationToLocal(translationData);
