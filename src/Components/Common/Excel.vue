@@ -638,29 +638,33 @@ const { handleCellMenuCommand } = useCellMenu({
 });
 
 /**
- * 判断是否应该显示单元格菜单按钮
+ * 计算菜单按钮应该显示的位置
+ *
+ * 返回 { row, col } 或 null
  *
  * 显示条件：
  * 1. 不在编辑状态
- * 2. 不在多选模式（isMultipleMode === false）
- * 3. 优先显示在选区左上角（如果框选了多个单元格），否则显示在活动单元格
- *
- * @param {number} rowIndex - 行索引
- * @param {number} colIndex - 列索引
- * @returns {boolean}
+ * 2. 不在选择过程中（isSelecting === false）
+ * 3. 不在多选模式（isMultipleMode === false）
+ * 4. 优先显示在选区左上角（如果框选了多个单元格），否则显示在活动单元格
  */
-const shouldShowCellMenu = (rowIndex, colIndex) => {
+const cellMenuPosition = computed(() => {
   // 如果正在编辑，不显示菜单
   if (editingCell.value) {
-    return false;
+    return null;
+  }
+
+  // 如果正在选择过程中，隐藏菜单按钮（避免位置不正确）
+  if (isSelecting.value) {
+    return null;
   }
 
   // 如果处于多选模式，不显示菜单
   if (isMultipleMode.value) {
-    return false;
+    return null;
   }
 
-  // 优先检查：如果框选了多个单元格，菜单显示在选区左上角
+  // 优先检查：如果框选了多个单元格，菜单显示在选区右上角
   const selection = normalizedSelection.value;
   if (selection) {
     // 检查是否是多个单元格的选区
@@ -668,22 +672,39 @@ const shouldShowCellMenu = (rowIndex, colIndex) => {
       selection.minRow !== selection.maxRow ||
       selection.minCol !== selection.maxCol;
 
-    // 如果是多个单元格的选区，且当前单元格是左上角，显示菜单
-    if (
-      isMultiCellSelection &&
-      rowIndex === selection.minRow &&
-      colIndex === selection.minCol
-    ) {
-      return true;
+    // 如果是多个单元格的选区，菜单显示在右上角（minRow, maxCol）
+    if (isMultiCellSelection) {
+      return {
+        row: selection.minRow,
+        col: selection.maxCol,
+      };
     }
   }
 
-  // 否则，如果是活动单元格，显示菜单
-  if (isActive(rowIndex, colIndex)) {
-    return true;
+  // 否则，如果活动单元格存在，显示在活动单元格
+  if (activeCell.value) {
+    return {
+      row: activeCell.value.row,
+      col: activeCell.value.col,
+    };
   }
 
-  return false;
+  return null;
+});
+
+/**
+ * 判断是否应该显示单元格菜单按钮
+ *
+ * @param {number} rowIndex - 行索引
+ * @param {number} colIndex - 列索引
+ * @returns {boolean}
+ */
+const shouldShowCellMenu = (rowIndex, colIndex) => {
+  const position = cellMenuPosition.value;
+  if (!position) {
+    return false;
+  }
+  return position.row === rowIndex && position.col === colIndex;
 };
 
 // 使用键盘处理 composable

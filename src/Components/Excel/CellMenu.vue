@@ -117,7 +117,7 @@ $transition-fast: 0.05s ease;
   border: $border-width solid $border-color;
   border-radius: 4px;
   cursor: pointer;
-  z-index: 21;
+  z-index: 100;
   transition: background-color $transition-fast, border-color $transition-fast,
     transform $transition-fast;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
