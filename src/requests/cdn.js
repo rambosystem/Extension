@@ -2,6 +2,8 @@
  * CDN数据获取相关API - 支持增量更新和缓存
  */
 
+import { debugLog, debugWarn, debugError } from "../utils/debug.js";
+
 // CDN地址配置
 const CDN_URLS = {
   AmazonSearch:
@@ -17,9 +19,9 @@ const CACHE_CONFIG = {
   // 缓存过期时间（毫秒）- 默认24小时
   EXPIRY_TIME: 24 * 60 * 60 * 1000,
   // 缓存键前缀
-  CACHE_KEY_PREFIX: 'cdn_cache_',
+  CACHE_KEY_PREFIX: "cdn_cache_",
   // ETag键前缀
-  ETAG_KEY_PREFIX: 'cdn_etag_',
+  ETAG_KEY_PREFIX: "cdn_etag_",
   // 是否启用缓存
   ENABLE_CACHE: true,
   // 是否启用增量更新
@@ -51,29 +53,29 @@ function getEtagKey(project) {
  */
 function loadFromCache(project) {
   if (!CACHE_CONFIG.ENABLE_CACHE) return null;
-  
+
   try {
     const cacheKey = getCacheKey(project);
     const cached = localStorage.getItem(cacheKey);
     if (!cached) return null;
-    
+
     const cacheData = JSON.parse(cached);
     const now = Date.now();
-    
+
     // 检查是否过期
     if (now - cacheData.timestamp > CACHE_CONFIG.EXPIRY_TIME) {
       localStorage.removeItem(cacheKey);
       localStorage.removeItem(getEtagKey(project));
       return null;
     }
-    
+
     return {
       data: cacheData.data,
       etag: cacheData.etag,
       timestamp: cacheData.timestamp,
     };
   } catch (error) {
-    console.error('Failed to load CDN cache:', error);
+    debugError("[CDN Cache] Failed to load cache:", error);
     return null;
   }
 }
@@ -86,7 +88,7 @@ function loadFromCache(project) {
  */
 function saveToCache(project, data, etag) {
   if (!CACHE_CONFIG.ENABLE_CACHE) return;
-  
+
   try {
     const cacheKey = getCacheKey(project);
     const cacheData = {
@@ -96,25 +98,28 @@ function saveToCache(project, data, etag) {
       url: CDN_URLS[project],
     };
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    
+
     // 单独保存ETag用于快速检查
     if (etag) {
       localStorage.setItem(getEtagKey(project), etag);
     }
   } catch (error) {
-    console.error('Failed to save CDN cache:', error);
+    debugError("[CDN Cache] Failed to save cache:", error);
     // 如果存储空间不足，尝试清理过期缓存
     clearExpiredCaches();
     // 重试一次
     try {
-      localStorage.setItem(getCacheKey(project), JSON.stringify({
-        data,
-        etag: etag || null,
-        timestamp: Date.now(),
-        url: CDN_URLS[project],
-      }));
+      localStorage.setItem(
+        getCacheKey(project),
+        JSON.stringify({
+          data,
+          etag: etag || null,
+          timestamp: Date.now(),
+          url: CDN_URLS[project],
+        })
+      );
     } catch (retryError) {
-      console.error('Failed to save CDN cache after cleanup:', retryError);
+      debugError("[CDN Cache] Failed to save cache after cleanup:", retryError);
     }
   }
 }
@@ -130,7 +135,7 @@ function mergeTranslationData(oldData, newData) {
   let addedCount = 0;
   let updatedCount = 0;
   let removedCount = 0;
-  
+
   // 添加或更新新数据中的键
   for (const [key, value] of Object.entries(newData)) {
     if (!(key in merged)) {
@@ -141,7 +146,7 @@ function mergeTranslationData(oldData, newData) {
       updatedCount++;
     }
   }
-  
+
   // 移除旧数据中不存在的键
   const newKeys = new Set(Object.keys(newData));
   for (const key of Object.keys(merged)) {
@@ -150,11 +155,13 @@ function mergeTranslationData(oldData, newData) {
       removedCount++;
     }
   }
-  
+
   if (addedCount > 0 || updatedCount > 0 || removedCount > 0) {
-    console.log(`[CDN Merge] Added: ${addedCount}, Updated: ${updatedCount}, Removed: ${removedCount}`);
+    debugLog(
+      `[CDN Merge] Added: ${addedCount}, Updated: ${updatedCount}, Removed: ${removedCount}`
+    );
   }
-  
+
   return merged;
 }
 
@@ -163,7 +170,7 @@ function mergeTranslationData(oldData, newData) {
  */
 function clearExpiredCaches() {
   const now = Date.now();
-  Object.keys(CDN_URLS).forEach(project => {
+  Object.keys(CDN_URLS).forEach((project) => {
     const cacheKey = getCacheKey(project);
     try {
       const cached = localStorage.getItem(cacheKey);
@@ -202,7 +209,7 @@ export async function fetchCdnTranslations(project, forceRefresh = false) {
         const headers = {
           Accept: "application/javascript, text/javascript, */*",
         };
-        
+
         // 如果缓存中有ETag，使用条件请求
         if (cached.etag) {
           headers["If-None-Match"] = cached.etag;
@@ -215,25 +222,29 @@ export async function fetchCdnTranslations(project, forceRefresh = false) {
 
         // 304 Not Modified - 文件未变化，直接使用缓存
         if (response.status === 304) {
-          console.log(`[CDN Cache] File not modified (304), using cache for ${project}`);
+          debugLog(
+            `[CDN Cache] File not modified (304), using cache for ${project}`
+          );
           return cached.data;
         }
 
         // 获取新的ETag
         const newEtag = response.headers.get("ETag");
-        
+
         // 如果ETag相同但状态不是304，可能是服务器不支持条件请求
         // 继续下载完整文件
         if (newEtag && newEtag === cached.etag && response.status === 200) {
-          console.log(`[CDN Cache] ETag matches, using cache for ${project}`);
+          debugLog(`[CDN Cache] ETag matches, using cache for ${project}`);
           return cached.data;
         }
 
         // ETag不同，文件已更新，需要下载新文件
-        console.log(`[CDN Cache] File updated (ETag changed), downloading new version for ${project}`);
+        debugLog(
+          `[CDN Cache] File updated (ETag changed), downloading new version for ${project}`
+        );
       } catch (error) {
         // HEAD请求失败，使用缓存（网络问题）
-        console.warn(`[CDN Cache] HEAD request failed, using cache:`, error);
+        debugWarn(`[CDN Cache] HEAD request failed, using cache:`, error);
         return cached.data;
       }
     }
@@ -247,7 +258,11 @@ export async function fetchCdnTranslations(project, forceRefresh = false) {
     };
 
     // 如果启用增量更新且有缓存，添加条件请求头
-    if (CACHE_CONFIG.ENABLE_INCREMENTAL_UPDATE && cached?.etag && !forceRefresh) {
+    if (
+      CACHE_CONFIG.ENABLE_INCREMENTAL_UPDATE &&
+      cached?.etag &&
+      !forceRefresh
+    ) {
       headers["If-None-Match"] = cached.etag;
     }
 
@@ -258,7 +273,9 @@ export async function fetchCdnTranslations(project, forceRefresh = false) {
 
     // 304 Not Modified - 文件未变化
     if (response.status === 304) {
-      console.log(`[CDN Cache] File not modified (304), using cache for ${project}`);
+      debugLog(
+        `[CDN Cache] File not modified (304), using cache for ${project}`
+      );
       return cached.data;
     }
 
@@ -274,8 +291,15 @@ export async function fetchCdnTranslations(project, forceRefresh = false) {
     const newTranslations = parseTranslationData(jsContent);
 
     // 如果启用增量更新且有旧缓存，进行增量合并
-    if (CACHE_CONFIG.ENABLE_INCREMENTAL_UPDATE && cached?.data && !forceRefresh) {
-      const mergedTranslations = mergeTranslationData(cached.data, newTranslations);
+    if (
+      CACHE_CONFIG.ENABLE_INCREMENTAL_UPDATE &&
+      cached?.data &&
+      !forceRefresh
+    ) {
+      const mergedTranslations = mergeTranslationData(
+        cached.data,
+        newTranslations
+      );
       saveToCache(project, mergedTranslations, etag);
       return mergedTranslations;
     } else {
@@ -284,15 +308,15 @@ export async function fetchCdnTranslations(project, forceRefresh = false) {
       return newTranslations;
     }
   } catch (error) {
-    console.error(`Failed to fetch CDN data for ${project}:`, error);
-    
+    debugError(`[CDN] Failed to fetch CDN data for ${project}:`, error);
+
     // 如果网络请求失败，尝试使用过期缓存
     const expiredCache = loadFromCache(project);
     if (expiredCache) {
-      console.warn(`[CDN Cache] Network error, using expired cache`);
+      debugWarn(`[CDN Cache] Network error, using expired cache`);
       return expiredCache.data;
     }
-    
+
     throw new Error(`Failed to fetch translations from CDN: ${error.message}`);
   }
 }
@@ -307,7 +331,7 @@ export async function refreshCdnTranslations(project) {
   const etagKey = getEtagKey(project);
   localStorage.removeItem(cacheKey);
   localStorage.removeItem(etagKey);
-  
+
   return fetchCdnTranslations(project, true);
 }
 
@@ -347,7 +371,7 @@ export function clearCache(project) {
  * 清除所有CDN缓存
  */
 export function clearAllCaches() {
-  Object.keys(CDN_URLS).forEach(project => {
+  Object.keys(CDN_URLS).forEach((project) => {
     clearCache(project);
   });
 }
@@ -407,7 +431,7 @@ function parseTranslationData(jsContent) {
 
     return translations;
   } catch (error) {
-    console.error("Failed to parse translation data:", error);
+    debugError("[CDN] Failed to parse translation data:", error);
     throw new Error(`Failed to parse translation data: ${error.message}`);
   }
 }
