@@ -126,9 +126,7 @@
 
           <!-- Cell Menu Button -->
           <CellMenu
-            v-if="
-              isActive(rowIndex, colIndex) && !isMultiSelect && !editingCell
-            "
+            v-if="shouldShowCellMenu(rowIndex, colIndex)"
             :row-index="rowIndex"
             @command="handleCellMenuCommand"
           />
@@ -636,6 +634,55 @@ const { handleCellMenuCommand } = useCellMenu({
   handleInsertRowBelow,
   handleDeleteRow,
 });
+
+/**
+ * 判断是否应该显示单元格菜单按钮
+ *
+ * 显示条件：
+ * 1. 不在编辑状态
+ * 2. 不在多选模式（isMultipleMode === false）
+ * 3. 是活动单元格，或者是选区左上角（在单选模式下，如果框选了多个单元格）
+ *
+ * @param {number} rowIndex - 行索引
+ * @param {number} colIndex - 列索引
+ * @returns {boolean}
+ */
+const shouldShowCellMenu = (rowIndex, colIndex) => {
+  // 如果正在编辑，不显示菜单
+  if (editingCell.value) {
+    return false;
+  }
+
+  // 如果处于多选模式，不显示菜单
+  if (isMultipleMode.value) {
+    return false;
+  }
+
+  // 如果是活动单元格，显示菜单
+  if (isActive(rowIndex, colIndex)) {
+    return true;
+  }
+
+  // 在单选模式下，如果框选了多个单元格，选区左上角也显示菜单
+  const selection = normalizedSelection.value;
+  if (selection) {
+    // 检查是否是多个单元格的选区
+    const isMultiCellSelection =
+      selection.minRow !== selection.maxRow ||
+      selection.minCol !== selection.maxCol;
+
+    // 如果是多个单元格的选区，且当前单元格是左上角，显示菜单
+    if (
+      isMultiCellSelection &&
+      rowIndex === selection.minRow &&
+      colIndex === selection.minCol
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 // 使用键盘处理 composable
 const { handleKeydown } = useKeyboard({

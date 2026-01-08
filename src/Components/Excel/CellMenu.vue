@@ -173,6 +173,14 @@ $transition-fast: 0.05s ease;
     margin: 0;
     padding: 0;
   }
+
+  &:hover {
+    background-color: #f0f1f2;
+
+    .menu-item-shortcut {
+      background-color: #e2e4e6;
+    }
+  }
 }
 
 .menu-item-content {
@@ -196,7 +204,7 @@ $transition-fast: 0.05s ease;
   background-color: #f0f1f2;
   border-radius: 4px;
   font-size: 12px;
-  color: #606266;
+  color: #4a4b4d;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   white-space: nowrap;
