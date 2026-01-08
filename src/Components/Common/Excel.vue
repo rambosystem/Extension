@@ -298,6 +298,16 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  /**
+   * 删除行后的回调函数
+   * @type {Function}
+   * @default null
+   * @description 删除行后调用的回调函数，可用于执行额外的操作（如重新排序key列）
+   */
+  onAfterDeleteRow: {
+    type: Function,
+    default: null,
+  },
 });
 
 /**
@@ -678,6 +688,7 @@ const { handleInsertRowBelow, handleDeleteRow } = useRowOperations({
   deleteRow,
   setSelection,
   notifyDataChange,
+  onAfterDeleteRow: props.onAfterDeleteRow,
 });
 
 // --- Cell Menu 管理 ---

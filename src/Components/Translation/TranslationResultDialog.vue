@@ -406,11 +406,47 @@ watch(
 // Excel组件引用
 const excelRef = ref(null);
 
+// 用于防止循环更新的标志
+let isUpdatingKeyOrder = false;
+
 /**
  * 处理Excel数据变化
+ * 当key列发生变化时，自动确保key是唯一且按顺序排列的
  * @param {Array<string[]>} data - Excel数据
  */
 const handleExcelDataChange = (data) => {
+  // 如果正在更新key顺序，跳过处理（避免循环更新）
+  if (isUpdatingKeyOrder) {
+    return;
+  }
+
+  // 检查第一列是否为Key列
+  const columnNames = getColumnConfig.value.columnNames;
+  const isKeyColumn = columnNames[0] === "Key";
+
+  // 如果key列有变化，尝试确保key顺序
+  if (isKeyColumn) {
+    nextTick(() => {
+      if (isUpdatingKeyOrder) {
+        return;
+      }
+
+      // 尝试确保key顺序
+      const updated = ensureKeyOrder(data);
+      if (updated) {
+        // 如果更新了key，setData 会自动触发 change 事件
+        // 设置标志，避免循环更新
+        isUpdatingKeyOrder = true;
+        nextTick(() => {
+          isUpdatingKeyOrder = false;
+        });
+        // 不需要在这里再次处理数据，因为 setData 会触发 change 事件
+        return;
+      }
+    });
+  }
+
+  // 正常处理数据变化（无论是否更新了key，都需要同步数据）
   const translationData = convertFromExcelData(data);
   translationCoreStore.setTranslationResult(translationData);
   translationCoreStore.saveTranslationToLocal(translationData);
@@ -581,6 +617,160 @@ const generateNextAvailableKey = (baselineKey, usedKeys) => {
 
   usedKeys.add(newKey);
   return newKey;
+};
+
+/**
+ * 确保key列中的所有key是唯一且按顺序排列的
+ * 当key列发生变化时（删除行、修改值等），自动重新排序所有key
+ *
+ * @param {Array<string[]>} data - Excel数据（可选，如果不提供则从组件获取）
+ * @returns {boolean} 是否进行了更新
+ */
+const ensureKeyOrder = (data = null) => {
+  try {
+    // 检查第一列是否为Key列
+    const columnNames = getColumnConfig.value.columnNames;
+    const isKeyColumn = columnNames[0] === "Key";
+
+    if (!isKeyColumn) {
+      return false; // 如果不是Key列，不处理
+    }
+
+    // 获取baseline key
+    const baselineKey =
+      exportStore.excelBaselineKey ||
+      localStorage.getItem("excel_baseline_key") ||
+      "key1";
+
+    // 解析baseline key
+    const parsed = parseKey(baselineKey);
+    if (!parsed) {
+      console.warn(
+        "Invalid baseline key format, skipping key reorder",
+        baselineKey
+      );
+      return false;
+    }
+
+    const { prefix } = parsed;
+
+    if (!excelRef.value) {
+      return false;
+    }
+
+    // 获取当前数据
+    let currentData = data;
+    if (!currentData) {
+      const getData = excelRef.value.getData;
+      if (!getData) {
+        return false;
+      }
+      currentData = getData();
+    }
+
+    if (!currentData || currentData.length === 0) {
+      return false;
+    }
+
+    // 收集所有需要重新排序的行（只处理符合格式的key）
+    const rowsWithKeys = [];
+    for (let row = 0; row < currentData.length; row++) {
+      const rowData = currentData[row];
+      if (!rowData || rowData.length === 0) {
+        continue;
+      }
+      const key = rowData[0]; // 第一列是key列
+      if (key && typeof key === "string" && key.trim()) {
+        const keyParsed = parseKey(key.trim());
+        if (
+          keyParsed &&
+          keyParsed.prefix.toLowerCase() === prefix.toLowerCase()
+        ) {
+          rowsWithKeys.push({ row, key: key.trim(), parsed: keyParsed });
+        }
+      }
+    }
+
+    // 如果没有需要重新排序的行，直接返回
+    if (rowsWithKeys.length === 0) {
+      return false;
+    }
+
+    // 按行索引排序
+    rowsWithKeys.sort((a, b) => a.row - b.row);
+
+    // 检查是否需要更新（检查是否有重复或顺序不正确）
+    let needsUpdate = false;
+    const usedKeys = new Set();
+    let expectedNumber = parsed.number;
+
+    for (const item of rowsWithKeys) {
+      // 检查是否有重复
+      if (usedKeys.has(item.key)) {
+        needsUpdate = true;
+        break;
+      }
+      usedKeys.add(item.key);
+
+      // 检查顺序是否正确
+      if (item.parsed.number !== expectedNumber) {
+        needsUpdate = true;
+        break;
+      }
+      expectedNumber++;
+    }
+
+    // 如果不需要更新，直接返回
+    if (!needsUpdate) {
+      return false;
+    }
+
+    // 重新生成所有key，使其连续且唯一
+    let currentNumber = parsed.number;
+    const updates = [];
+
+    for (const item of rowsWithKeys) {
+      const newKey = `${prefix}${currentNumber}`;
+      // 只有当key发生变化时才记录更新
+      if (item.key !== newKey) {
+        updates.push({ row: item.row, key: newKey });
+      }
+      currentNumber++;
+    }
+
+    // 批量更新所有key（避免多次触发数据同步）
+    if (updates.length > 0) {
+      const setData = excelRef.value.setData;
+      if (setData) {
+        // 使用 setData 批量更新
+        const updatedData = currentData.map((row, index) => {
+          const update = updates.find((u) => u.row === index);
+          if (update) {
+            const newRow = [...row];
+            newRow[0] = update.key; // 更新第一列（key列）
+            return newRow;
+          }
+          return row;
+        });
+        setData(updatedData);
+        return true;
+      } else {
+        // 如果 setData 不可用，回退到逐个更新
+        const updateCell = excelRef.value.updateCell;
+        if (updateCell) {
+          for (const update of updates) {
+            updateCell(update.row, 0, update.key);
+          }
+          return true;
+        }
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error in ensureKeyOrder:", error);
+    return false;
+  }
 };
 
 /**

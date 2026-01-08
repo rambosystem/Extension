@@ -16,6 +16,7 @@ import { nextTick } from "vue";
  * @param {Function} context.deleteRow - 删除行（底层函数）
  * @param {Function} context.setSelection - 设置选择
  * @param {Function} context.notifyDataChange - 通知数据变化
+ * @param {Function} context.onAfterDeleteRow - 删除行后的回调函数（可选）
  * @returns {Object} 返回行操作方法
  */
 export function useRowOperations({
@@ -28,6 +29,7 @@ export function useRowOperations({
   deleteRow,
   setSelection,
   notifyDataChange,
+  onAfterDeleteRow,
 }) {
   /**
    * 统一的插入行处理函数
@@ -134,6 +136,10 @@ export function useRowOperations({
     // 通知数据变化
     nextTick(() => {
       notifyDataChange();
+      // 调用删除后的回调（如果提供）
+      if (onAfterDeleteRow && typeof onAfterDeleteRow === "function") {
+        onAfterDeleteRow();
+      }
     });
   };
 
@@ -193,6 +199,10 @@ export function useRowOperations({
     // 通知数据变化
     nextTick(() => {
       notifyDataChange();
+      // 调用删除后的回调（如果提供）
+      if (onAfterDeleteRow && typeof onAfterDeleteRow === "function") {
+        onAfterDeleteRow();
+      }
     });
   };
 
