@@ -102,13 +102,21 @@ export const useExportStore = defineStore("export", {
     /**
      * 保存Excel基线键
      * @param {string} key - 基线键
+     * @param {boolean} silent - 是否静默保存（不显示成功/失败消息，用于内部调用）
      * @returns {Promise<boolean>} 是否保存成功
      */
-    async saveExcelBaselineKey(key) {
+    async saveExcelBaselineKey(key, silent = false) {
       const { t } = useI18n();
+
+      debugLog("[ExportStore] saveExcelBaselineKey called", {
+        key,
+        silent,
+        stackTrace: new Error().stack,
+      });
 
       if (!key?.trim()) {
         // 清空操作
+        debugLog("[ExportStore] Clearing baseline key (empty value)");
         localStorage.setItem("excel_baseline_key", "");
         this.excelBaselineKey = "";
         return true;
@@ -116,7 +124,12 @@ export const useExportStore = defineStore("export", {
 
       // 验证格式：key+数字
       if (!key.match(/^[a-zA-Z]+[0-9]+$/)) {
-        ElMessage.warning(t("translationSetting.exportBaselineKeySaveWarning"));
+        debugLog("[ExportStore] Baseline key format validation failed:", key);
+        if (!silent) {
+          ElMessage.warning(
+            t("translationSetting.exportBaselineKeySaveWarning")
+          );
+        }
         return false;
       }
 
@@ -125,6 +138,16 @@ export const useExportStore = defineStore("export", {
       const projectId = this.defaultProjectId;
       const projectName = projectId ? this.getProjectNameById(projectId) : null;
       const displayProjectName = projectName || "Default Project";
+
+      debugLog(
+        "[ExportStore] saveExcelBaselineKey - starting uniqueness check",
+        {
+          trimmedKey,
+          projectId,
+          displayProjectName,
+          silent,
+        }
+      );
 
       if (projectId) {
         try {
@@ -149,9 +172,19 @@ export const useExportStore = defineStore("export", {
 
           // 检查key是否已存在
           if (existingKeyNames.has(trimmedKey)) {
-            ElMessage.warning(
-              `The key "${trimmedKey}" already exists in "${displayProjectName}". Please use a different key.`
+            debugLog(
+              "[ExportStore] saveExcelBaselineKey - key already exists, returning false",
+              {
+                trimmedKey,
+                projectId,
+                silent,
+              }
             );
+            if (!silent) {
+              ElMessage.warning(
+                `The key "${trimmedKey}" already exists in "${displayProjectName}". Please use a different key.`
+              );
+            }
             return false;
           }
 
@@ -163,23 +196,34 @@ export const useExportStore = defineStore("export", {
             "[ExportStore] Failed to check key uniqueness, proceeding with save:",
             error
           );
-          ElMessage.warning(
-            `Could not verify key uniqueness in "${displayProjectName}". The key will be saved, but please ensure it is unique.`
-          );
+          if (!silent) {
+            ElMessage.warning(
+              `Could not verify key uniqueness in "${displayProjectName}". The key will be saved, but please ensure it is unique.`
+            );
+          }
         }
       } else {
         // 如果没有项目ID，提示用户配置项目
         debugLog(
           "[ExportStore] No default project ID configured, skipping key uniqueness check"
         );
-        ElMessage.warning(
-          "Please configure Default Project first to verify key uniqueness."
-        );
+        if (!silent) {
+          ElMessage.warning(
+            "Please configure Default Project first to verify key uniqueness."
+          );
+        }
       }
 
       localStorage.setItem("excel_baseline_key", trimmedKey);
       this.excelBaselineKey = trimmedKey;
-      ElMessage.success(t("translationSetting.exportBaselineKeySaveSuccess"));
+      debugLog("[ExportStore] saveExcelBaselineKey - saved successfully", {
+        trimmedKey,
+        projectId,
+        silent,
+      });
+      if (!silent) {
+        ElMessage.success(t("translationSetting.exportBaselineKeySaveSuccess"));
+      }
       return true;
     },
 
@@ -196,15 +240,59 @@ export const useExportStore = defineStore("export", {
      * 更新默认项目ID
      * @param {string} projectId - 项目ID
      */
-    updateDefaultProjectId(projectId) {
-      debugLog("[ExportStore] Updating default project ID:", projectId);
+    async updateDefaultProjectId(projectId) {
+      const oldProjectId = this.defaultProjectId;
+
+      // 如果 projectId 没有变化，直接返回
+      if (projectId === oldProjectId) {
+        return;
+      }
+
+      // 切换项目时，校验 baseline key 在新项目中是否存在
+      if (projectId && oldProjectId && projectId !== oldProjectId) {
+        const baselineKey =
+          this.excelBaselineKey || localStorage.getItem("excel_baseline_key");
+        if (baselineKey?.trim()) {
+          const projectName = this.getProjectNameById(projectId) || projectId;
+          try {
+            const searchResult = await searchKeysByNames(projectId, [
+              baselineKey.trim(),
+            ]);
+            const exists =
+              searchResult.success &&
+              Array.isArray(searchResult.results) &&
+              searchResult.results.some(
+                (r) => r.key_name === baselineKey.trim()
+              );
+
+            if (exists) {
+              localStorage.setItem("excel_baseline_key", "");
+              this.excelBaselineKey = "";
+              ElMessage.warning(
+                `Baseline key "${baselineKey.trim()}" already exists in project "${projectName}". It has been cleared. Please configure a new baseline key.`
+              );
+            }
+          } catch (error) {
+            debugError("[ExportStore] Failed to validate baseline key:", error);
+            localStorage.setItem("excel_baseline_key", "");
+            this.excelBaselineKey = "";
+            ElMessage.warning(
+              `Failed to validate baseline key uniqueness in project "${projectName}". The baseline key has been cleared for safety.`
+            );
+          }
+        }
+      }
+
+      // 更新项目ID
       this.defaultProjectId = projectId || "";
       if (projectId) {
         localStorage.setItem("default_project_id", projectId);
-        debugLog("[ExportStore] Default project ID saved to localStorage");
       } else {
         localStorage.removeItem("default_project_id");
-        debugLog("[ExportStore] Default project ID removed from localStorage");
+        // 如果没有项目ID，清空 baseline key
+        if (this.excelBaselineKey) {
+          await this.saveExcelBaselineKey("");
+        }
       }
     },
 

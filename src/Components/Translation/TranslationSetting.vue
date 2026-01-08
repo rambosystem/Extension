@@ -1,57 +1,30 @@
 <template>
   <div>
     <h2 class="title">{{ t("translationSetting.translationSetting") }}</h2>
-    <el-form-item
-      v-if="hasLokaliseToken"
-      :label="t('translationSetting.defaultProject')"
-      label-position="left"
-    >
+    <el-form-item v-if="hasLokaliseToken" :label="t('translationSetting.defaultProject')" label-position="left">
       <div class="default-project-setting">
-        <el-radio-group
-          v-model="defaultProjectId"
-          @change="handleDefaultProjectChange"
-        >
-          <el-radio
-            v-for="project in projectList"
-            :key="project.project_id"
-            :label="project.project_id"
-          >
+        <el-radio-group v-model="defaultProjectId">
+          <el-radio v-for="project in projectList" :key="project.project_id" :label="project.project_id">
             {{ project.name }}
           </el-radio>
         </el-radio-group>
       </div>
     </el-form-item>
-    <el-form-item
-      :label="t('translationSetting.targetLanguage')"
-      label-position="left"
-    >
+    <el-form-item :label="t('translationSetting.targetLanguage')" label-position="left">
       <div class="target-language-setting">
-        <el-checkbox-group
-          v-model="targetLanguages"
-          @change="handleTargetLanguagesChange"
-        >
-          <el-checkbox
-            v-for="lang in availableLanguages"
-            :key="lang.code"
-            :label="lang.code"
-          >
+        <el-checkbox-group v-model="targetLanguages" @change="handleTargetLanguagesChange">
+          <el-checkbox v-for="lang in availableLanguages" :key="lang.code" :label="lang.code">
             {{ lang.name }}
           </el-checkbox>
         </el-checkbox-group>
       </div>
     </el-form-item>
-    <el-form-item
-      :label="t('translationSetting.exportKeySetting')"
-      label-position="left"
-    >
+    <el-form-item :label="t('translationSetting.exportKeySetting')" label-position="left">
       <div class="excel-key-setting">
         <div class="input-container">
-          <AutocompleteInput
-            v-model="excelBaselineKey"
-            :placeholder="t('translationSetting.exportKeySettingPlaceholder')"
-            :get-project-id="getProjectId"
-            @blur="handleExcelBaselineKeyBlur"
-          />
+          <AutocompleteInput v-model="excelBaselineKey"
+            :placeholder="t('translationSetting.exportKeySettingPlaceholder')" :get-project-id="getProjectId"
+            @blur="handleExcelBaselineKeyBlur" />
         </div>
       </div>
     </el-form-item>
@@ -121,10 +94,11 @@ const availableLanguages = computed(() => getAvailableLanguages());
 const hasLokaliseToken = computed(() => apiStore.hasLokaliseToken);
 
 // 使用 computed 来获取默认项目ID
+// 注意：v-model 会触发 setter，不需要额外的 @change 事件
 const defaultProjectId = computed({
   get: () => exportStore.defaultProjectId,
-  set: (value) => {
-    exportStore.updateDefaultProjectId(value);
+  set: async (value) => {
+    await exportStore.updateDefaultProjectId(value);
   },
 });
 
@@ -198,18 +172,9 @@ const handleTargetLanguagesChange = (languages) => {
 };
 
 /**
- * 处理默认项目变化
- * @param {string} projectId - 项目ID
- */
-const handleDefaultProjectChange = (projectId) => {
-  debugLog("[TranslationSetting] Default project changed to:", projectId);
-  exportStore.updateDefaultProjectId(projectId);
-};
-
-/**
  * 加载项目列表
  */
-const loadProjectList = () => {
+const loadProjectList = async () => {
   try {
     debugLog("[TranslationSetting] Loading project list...");
     const projects = localStorage.getItem("lokalise_projects");
@@ -233,7 +198,7 @@ const loadProjectList = () => {
               "[TranslationSetting] Setting default project to:",
               parsedProjects[0].project_id
             );
-            exportStore.updateDefaultProjectId(parsedProjects[0].project_id);
+            await exportStore.updateDefaultProjectId(parsedProjects[0].project_id);
           }
         } else {
           debugLog(
