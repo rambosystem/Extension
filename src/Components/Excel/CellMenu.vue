@@ -1,0 +1,145 @@
+<template>
+  <el-dropdown
+    trigger="click"
+    placement="bottom-end"
+    :show-arrow="false"
+    @command="handleCommand"
+    @visible-change="handleVisibleChange"
+  >
+    <div
+      class="cell-menu-button"
+      :class="{ 'is-active': isMenuOpen }"
+      @mousedown.stop
+    >
+      <img src="@/assets/down_arrow.svg" alt="Menu" class="cell-menu-icon" />
+    </div>
+    <template #dropdown>
+      <el-dropdown-menu>
+        <el-dropdown-item :command="{ action: 'insertRowBelow', rowIndex }">
+          向下插入行
+        </el-dropdown-item>
+        <el-dropdown-item :command="{ action: 'deleteRow', rowIndex }" divided>
+          删除行
+        </el-dropdown-item>
+      </el-dropdown-menu>
+    </template>
+  </el-dropdown>
+</template>
+
+<script setup>
+import { ref } from "vue";
+
+/**
+ * CellMenu - 单元格菜单组件
+ *
+ * 用于 Excel 组件的单元格右键菜单，提供行操作功能
+ *
+ * @component
+ * @example
+ * <CellMenu
+ *   :row-index="0"
+ *   @command="handleMenuCommand"
+ * />
+ */
+const props = defineProps({
+  /**
+   * 行索引
+   * @type {number}
+   * @required
+   */
+  rowIndex: {
+    type: Number,
+    required: true,
+  },
+});
+
+/**
+ * 菜单命令事件
+ * @event command
+ * @param {Object} command - 命令对象 { action: string, rowIndex: number }
+ */
+const emit = defineEmits(["command"]);
+
+const isMenuOpen = ref(false);
+
+/**
+ * 处理菜单命令
+ * @param {Object} command - 菜单命令对象
+ */
+const handleCommand = (command) => {
+  emit("command", command);
+};
+
+/**
+ * 处理菜单显示/隐藏状态变化
+ * @param {boolean} visible - 菜单是否可见
+ */
+const handleVisibleChange = (visible) => {
+  isMenuOpen.value = visible;
+};
+</script>
+
+<style scoped lang="scss">
+// ==================== 变量定义 ====================
+$border-color: #e4e7ed;
+$primary-color: #409eff;
+$white: #fff;
+$border-width: 1px;
+$transition-fast: 0.05s ease;
+
+// ==================== Cell Menu Button ====================
+.cell-menu-button {
+  position: absolute;
+  top: -13px;
+  right: 5px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $white;
+  border: $border-width solid $border-color;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 21;
+  transition: background-color $transition-fast, border-color $transition-fast,
+    transform $transition-fast;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background-color: rgba($primary-color, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  .cell-menu-icon {
+    width: 12px;
+    height: 12px;
+    display: block;
+    pointer-events: none;
+    transition: filter $transition-fast;
+  }
+
+  &.is-active {
+    border-color: $primary-color;
+    background-color: rgba($primary-color, 0.1);
+
+    .cell-menu-icon {
+      // 使用 filter 将灰色图标变为蓝色
+      // 将 #505258 (灰色) 转换为 $primary-color (蓝色)
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
+        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+    }
+  }
+
+  &:active,
+  &:focus {
+    border-color: $primary-color;
+    background-color: rgba($primary-color, 0.1);
+
+    .cell-menu-icon {
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
+        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+    }
+  }
+}
+</style>

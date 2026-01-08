@@ -297,6 +297,51 @@ export function useExcelData({
     );
   };
 
+  /**
+   * 删除指定行
+   * @param {number} rowIndex - 要删除的行索引
+   */
+  const deleteRow = (rowIndex) => {
+    if (rowIndex < 0 || rowIndex >= rows.value.length) {
+      console.warn(`deleteRow: Invalid row index ${rowIndex}`);
+      return;
+    }
+
+    // 如果只有一行，不清除数据，只清空内容
+    if (rows.value.length === 1) {
+      const currentCols = columns.value.length;
+      tableData.value[0] = Array.from({ length: currentCols }, () => "");
+      return;
+    }
+
+    // 删除行
+    tableData.value.splice(rowIndex, 1);
+    rows.value.splice(rowIndex, 1);
+
+    // 更新行索引
+    rows.value = rows.value.map((_, index) => index);
+  };
+
+  /**
+   * 在指定行下方插入新行
+   * @param {number} rowIndex - 在哪个行索引下方插入（插入后新行的索引为 rowIndex + 1）
+   */
+  const insertRowBelow = (rowIndex) => {
+    if (rowIndex < -1 || rowIndex >= rows.value.length) {
+      console.warn(`insertRowBelow: Invalid row index ${rowIndex}`);
+      return;
+    }
+
+    const currentCols = columns.value.length;
+    const newRow = Array.from({ length: currentCols }, () => "");
+
+    // 在指定行下方插入
+    tableData.value.splice(rowIndex + 1, 0, newRow);
+
+    // 重新生成行索引数组（确保与 tableData 长度一致）
+    rows.value = Array.from({ length: tableData.value.length }, (_, i) => i);
+  };
+
   return {
     columns,
     rows,
@@ -308,5 +353,7 @@ export function useExcelData({
     getData,
     updateCell,
     clearData,
+    deleteRow,
+    insertRowBelow,
   };
 }
