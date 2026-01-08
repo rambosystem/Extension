@@ -45,6 +45,8 @@
             :enableFillHandle="true"
             :defaultColumnWidth="calculatedColumnWidth"
             :columnNames="getColumnConfig.columnNames"
+            :custom-menu-items="customMenuItems"
+            @custom-action="handleCustomAction"
           />
         </div>
       </el-form-item>
@@ -412,6 +414,55 @@ const handleExcelDataChange = (data) => {
   const translationData = convertFromExcelData(data);
   translationCoreStore.setTranslationResult(translationData);
   translationCoreStore.saveTranslationToLocal(translationData);
+};
+
+/**
+ * 自定义菜单项配置
+ * 只在列名为 "Key" 时显示自增填充菜单项
+ */
+const customMenuItems = computed(() => {
+  // 获取当前列配置，检查第一列是否为 "Key"
+  const columnNames = getColumnConfig.value.columnNames;
+  const isKeyColumn = columnNames[0] === "Key";
+
+  return [
+    {
+      id: "auto-increment-key",
+      label: "自增填充",
+      shortcut: "Ctrl+Alt+A",
+      validate: (ctx) => {
+        // 验证：列名必须为 "Key"，且选区必须在第一列（Key列）
+        if (!isKeyColumn) return false;
+
+        const { normalizedSelection } = ctx;
+        if (!normalizedSelection) return false;
+
+        // 检查选区是否在第一列（索引为0）
+        return (
+          normalizedSelection.minCol === 0 && normalizedSelection.maxCol === 0
+        );
+      },
+    },
+  ];
+});
+
+/**
+ * 处理自定义菜单项点击事件
+ * @param {Object} payload - 事件载荷 { id: string, context: Object }
+ */
+const handleCustomAction = ({ id, context }) => {
+  if (id === "auto-increment-key") {
+    const { normalizedSelection, updateCell } = context;
+    if (!normalizedSelection) return;
+
+    const { minRow, maxRow } = normalizedSelection;
+
+    // 生成自增填充：a1, a2, a3, a4...
+    for (let row = minRow; row <= maxRow; row++) {
+      const value = `a${row + 1}`;
+      updateCell(row, 0, value); // 第一列（Key列）的索引为0
+    }
+  }
 };
 </script>
 

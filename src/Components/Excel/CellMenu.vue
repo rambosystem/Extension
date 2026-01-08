@@ -27,6 +27,22 @@
             <span class="menu-item-shortcut">{{ deleteRowShortcut }}</span>
           </div>
         </el-dropdown-item>
+        <!-- 自定义菜单项 -->
+        <template v-if="validatedCustomMenuItems.length > 0">
+          <el-dropdown-item
+            v-for="item in validatedCustomMenuItems"
+            :key="item.id"
+            :command="{ action: 'custom', id: item.id, rowIndex }"
+            :disabled="isCustomItemDisabled(item)"
+          >
+            <div class="menu-item-content">
+              <span class="menu-item-text">{{ item.label }}</span>
+              <span v-if="item.shortcut" class="menu-item-shortcut">{{
+                item.shortcut
+              }}</span>
+            </div>
+          </el-dropdown-item>
+        </template>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -57,6 +73,47 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  /**
+   * 自定义菜单项配置
+   * @type {Array}
+   * @default []
+   * @description
+   * 自定义菜单项配置数组，每个配置项包含：
+   * - id: 唯一标识
+   * - label: 显示文本
+   * - shortcut: 快捷键（可选）
+   * - validate: 验证函数，接收 context 对象，返回是否显示该菜单项（可选）
+   * - disabled: 禁用函数，接收 context 对象，返回是否禁用该菜单项（可选）
+   * @example
+   * [
+   *   {
+   *     id: 'auto-increment',
+   *     label: '自增填充',
+   *     shortcut: 'Ctrl+Alt+A',
+   *     validate: (ctx) => ctx.normalizedSelection?.minCol === 0
+   *   }
+   * ]
+   */
+  customMenuItems: {
+    type: Array,
+    default: () => [],
+  },
+  /**
+   * 上下文对象，传递给自定义菜单项的验证和执行函数
+   * @type {Object}
+   * @default null
+   * @description
+   * 包含以下属性：
+   * - normalizedSelection: 归一化选区信息
+   * - activeCell: 活动单元格
+   * - rowIndex: 当前行索引
+   * - tableData: 表格数据（只读）
+   * - updateCell: 更新单元格方法
+   */
+  context: {
+    type: Object,
+    default: null,
+  },
 });
 
 /**
@@ -64,7 +121,12 @@ const props = defineProps({
  * @event command
  * @param {Object} command - 命令对象 { action: string, rowIndex: number }
  */
-const emit = defineEmits(["command"]);
+/**
+ * 自定义菜单项点击事件
+ * @event custom-action
+ * @param {Object} payload - 事件载荷 { id: string, context: Object }
+ */
+const emit = defineEmits(["command", "custom-action"]);
 
 const isMenuOpen = ref(false);
 
@@ -79,11 +141,78 @@ const insertRowShortcut = computed(() => `${modifierKey.value}+Enter`);
 const deleteRowShortcut = computed(() => `${modifierKey.value}+Delete`);
 
 /**
+ * 验证并过滤自定义菜单项
+ * 只显示通过 validate 验证的菜单项
+ */
+const validatedCustomMenuItems = computed(() => {
+  if (!props.customMenuItems || props.customMenuItems.length === 0) {
+    return [];
+  }
+
+  if (!props.context) {
+    return [];
+  }
+
+  return props.customMenuItems.filter((item) => {
+    // 如果没有 validate 函数，默认显示
+    if (typeof item.validate !== "function") {
+      return true;
+    }
+    // 调用 validate 函数，传入 context
+    try {
+      return item.validate(props.context);
+    } catch (error) {
+      console.warn(
+        `CellMenu: validate function error for menu item "${item.id}":`,
+        error
+      );
+      return false;
+    }
+  });
+});
+
+/**
+ * 判断自定义菜单项是否禁用
+ * @param {Object} item - 菜单项配置
+ * @returns {boolean}
+ */
+const isCustomItemDisabled = (item) => {
+  if (!props.context) {
+    return false;
+  }
+
+  // 如果没有 disabled 函数，默认不禁用
+  if (typeof item.disabled !== "function") {
+    return false;
+  }
+
+  // 调用 disabled 函数，传入 context
+  try {
+    return item.disabled(props.context);
+  } catch (error) {
+    console.warn(
+      `CellMenu: disabled function error for menu item "${item.id}":`,
+      error
+    );
+    return false;
+  }
+};
+
+/**
  * 处理菜单命令
  * @param {Object} command - 菜单命令对象
  */
 const handleCommand = (command) => {
-  emit("command", command);
+  // 如果是自定义菜单项，触发 custom-action 事件
+  if (command.action === "custom") {
+    emit("custom-action", {
+      id: command.id,
+      context: props.context,
+    });
+  } else {
+    // 默认菜单项，触发 command 事件
+    emit("command", command);
+  }
 };
 
 /**

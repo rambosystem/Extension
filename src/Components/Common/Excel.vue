@@ -130,7 +130,10 @@
           <CellMenu
             v-if="shouldShowCellMenu(rowIndex, colIndex)"
             :row-index="rowIndex"
+            :custom-menu-items="customMenuItems"
+            :context="createMenuContext(rowIndex)"
             @command="handleCellMenuCommand"
+            @custom-action="handleCustomAction"
           />
         </div>
       </div>
@@ -261,6 +264,31 @@ const props = defineProps({
     type: Array,
     default: null,
   },
+  /**
+   * 自定义菜单项配置
+   * @type {Array}
+   * @default []
+   * @description
+   * 自定义菜单项配置数组，每个配置项包含：
+   * - id: 唯一标识
+   * - label: 显示文本
+   * - shortcut: 快捷键（可选）
+   * - validate: 验证函数，接收 context 对象，返回是否显示该菜单项（可选）
+   * - disabled: 禁用函数，接收 context 对象，返回是否禁用该菜单项（可选）
+   * @example
+   * [
+   *   {
+   *     id: 'auto-increment',
+   *     label: '自增填充',
+   *     shortcut: 'Ctrl+Alt+A',
+   *     validate: (ctx) => ctx.normalizedSelection?.minCol === 0
+   *   }
+   * ]
+   */
+  customMenuItems: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 /**
@@ -268,6 +296,7 @@ const props = defineProps({
  *
  * @emits {string[][]} update:modelValue - v-model 更新事件，当表格数据变化时触发
  * @emits {string[][]} change - 数据变化事件，返回当前表格数据的深拷贝
+ * @emits {Object} custom-action - 自定义菜单项点击事件
  */
 const emit = defineEmits({
   /**
@@ -280,6 +309,11 @@ const emit = defineEmits({
    * @param {string[][]} data - 变化后的表格数据（深拷贝）
    */
   change: (data) => Array.isArray(data),
+  /**
+   * 自定义菜单项点击事件
+   * @param {Object} payload - 事件载荷 { id: string, context: Object }
+   */
+  "custom-action": (payload) => payload && typeof payload.id === "string",
 });
 
 // --- 1. 核心逻辑组合 ---
@@ -705,6 +739,37 @@ const shouldShowCellMenu = (rowIndex, colIndex) => {
     return false;
   }
   return position.row === rowIndex && position.col === colIndex;
+};
+
+/**
+ * 创建菜单上下文对象
+ * 提供给自定义菜单项的验证和执行函数使用
+ */
+const createMenuContext = (rowIndex) => {
+  return {
+    normalizedSelection: normalizedSelection.value,
+    activeCell: activeCell.value,
+    rowIndex,
+    tableData: tableData.value,
+    updateCell: (row, col, value) => {
+      updateCell(row, col, value);
+      nextTick(() => {
+        notifyDataChange();
+      });
+    },
+    getData: () => getData(),
+    setData: (data) => {
+      setDataWithSync(data);
+    },
+  };
+};
+
+/**
+ * 处理自定义菜单项点击事件
+ * @param {Object} payload - 事件载荷 { id: string, context: Object }
+ */
+const handleCustomAction = (payload) => {
+  emit("custom-action", payload);
 };
 
 // 使用键盘处理 composable
