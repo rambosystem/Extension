@@ -527,6 +527,7 @@ export function useSelection() {
     isSelecting,
     normalizedSelection,
     multiSelections,
+    isMultipleMode, // 导出多选模式状态
     // 新模式 API
     startSingleSelection,
     updateSingleSelectionEnd,

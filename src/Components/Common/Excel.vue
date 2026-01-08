@@ -342,13 +342,43 @@ const {
 
 /**
  * 判断当前是否处于多单元格选区状态
- * 即 selectionStart 和 selectionEnd 不相等
+ *
+ * 判断逻辑：
+ * 1. 如果处于 MULTIPLE 模式（isMultipleMode === true），返回 true
+ * 2. 如果多选列表中有多个选区（multiSelections.length > 1），返回 true
+ * 3. 如果多选列表中有一个选区，且该选区不是单格选区，返回 true
+ * 4. 如果 selectionStart 和 selectionEnd 不相等，返回 true
+ * 5. 否则返回 false
  */
 const isMultiSelect = computed(() => {
-  if (!selectionStart.value || !selectionEnd.value) return false;
-  const { row: sr, col: sc } = selectionStart.value;
-  const { row: er, col: ec } = selectionEnd.value;
-  return sr !== er || sc !== ec;
+  // 1. 检查是否处于 MULTIPLE 模式
+  if (isMultipleMode.value) {
+    return true;
+  }
+
+  // 2. 检查多选列表中是否有多个选区
+  if (multiSelections.value && multiSelections.value.length > 1) {
+    return true;
+  }
+
+  // 3. 检查多选列表中是否有一个非单格选区
+  if (multiSelections.value && multiSelections.value.length === 1) {
+    const sel = multiSelections.value[0];
+    if (sel.minRow !== sel.maxRow || sel.minCol !== sel.maxCol) {
+      return true;
+    }
+  }
+
+  // 4. 检查当前选区是否是多单元格选区
+  if (selectionStart.value && selectionEnd.value) {
+    const { row: sr, col: sc } = selectionStart.value;
+    const { row: er, col: ec } = selectionEnd.value;
+    if (sr !== er || sc !== ec) {
+      return true;
+    }
+  }
+
+  return false;
 });
 
 const {
