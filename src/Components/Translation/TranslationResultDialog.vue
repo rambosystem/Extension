@@ -348,27 +348,31 @@ const convertFromExcelData = (excelDataArray) => {
 
   const { fieldNames } = getColumnConfig.value;
 
-  // 过滤掉完全空白的行
-  return excelDataArray
-    .filter(
-      (row) => row && row.some((cell) => cell && String(cell).trim() !== "")
-    )
-    .map((row) => {
-      const item = {};
-      fieldNames.forEach((field, index) => {
-        item[field] = row[index] || "";
-      });
-      return item;
+  // 保留所有行（包括空行），因为用户可能正在编辑或刚插入新行
+  // 只在导出或保存时过滤空行，而不是在每次数据变化时过滤
+  return excelDataArray.map((row) => {
+    const item = {};
+    fieldNames.forEach((field, index) => {
+      item[field] = row[index] || "";
     });
+    return item;
+  });
 };
 
 /**
  * 监听翻译结果变化，更新Excel数据
+ * 添加深度比较，避免在用户操作时覆盖数据
  */
 watch(
   () => translationCoreStore.translationResult,
   (newResult) => {
-    excelData.value = convertToExcelData(newResult);
+    const newExcelData = convertToExcelData(newResult);
+    // 深度比较，避免不必要的更新（防止覆盖用户正在进行的操作）
+    const currentDataStr = JSON.stringify(excelData.value);
+    const newDataStr = JSON.stringify(newExcelData);
+    if (currentDataStr !== newDataStr) {
+      excelData.value = newExcelData;
+    }
   },
   { immediate: true }
 );

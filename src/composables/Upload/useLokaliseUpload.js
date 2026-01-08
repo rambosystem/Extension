@@ -172,6 +172,20 @@ export function useLokaliseUpload() {
       return;
     }
 
+    // 过滤掉完全空白的行（所有字段都为空）
+    const filteredResult = translationResult.filter((row) => {
+      if (!row || typeof row !== "object") return false;
+      // 检查是否有任何非空字段
+      return Object.values(row).some(
+        (value) => value && String(value).trim() !== ""
+      );
+    });
+
+    if (filteredResult.length === 0) {
+      ElMessage.warning("No translation data to upload");
+      return;
+    }
+
     // 检查翻译结果的语言配置是否与当前配置匹配
     if (!uploadStore.checkTranslationConfigMatch(translationResult)) {
       ElMessage.warning(
@@ -227,8 +241,8 @@ export function useLokaliseUpload() {
 
       // 构建请求体
       // key的生成已经在翻译完成后通过applyAutoKeyGeneration完成
-      // 这里直接使用translationResult中已存在的key值
-      const keys = translationResult.map((row) => {
+      // 这里直接使用filteredResult中已存在的key值（已过滤空行）
+      const keys = filteredResult.map((row) => {
         // 直接使用翻译结果中已生成的key，如果没有则使用en
         const keyName =
           row.key && row.key.trim() ? row.key.trim() : row.en || "";

@@ -55,13 +55,22 @@ export const useExportStore = defineStore("export", {
      * @param {Array} translationResult - 翻译结果
      */
     exportExcel(translationResult) {
-      if (translationResult.length === 0) {
+      // 过滤掉完全空白的行（所有字段都为空）
+      const filteredResult = translationResult.filter((row) => {
+        if (!row || typeof row !== "object") return false;
+        // 检查是否有任何非空字段
+        return Object.values(row).some(
+          (value) => value && String(value).trim() !== ""
+        );
+      });
+
+      if (filteredResult.length === 0) {
         ElMessage.warning("No translation data to export");
         return;
       }
 
       const excelExport = useExcelExport();
-      excelExport.exportExcel(translationResult);
+      excelExport.exportExcel(filteredResult);
     },
 
     /**
