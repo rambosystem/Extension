@@ -447,6 +447,135 @@ const customMenuItems = computed(() => {
 });
 
 /**
+ * 从 key 字符串中提取前缀和数字
+ * @param {string} key - key 字符串（如 "key1", "a5"）
+ * @returns {Object|null} { prefix: string, number: number } 或 null
+ */
+const parseKey = (key) => {
+  if (!key || typeof key !== "string") return null;
+  const match = key.trim().match(/^([a-zA-Z]+)(\d+)$/);
+  if (!match) return null;
+  return {
+    prefix: match[1],
+    number: parseInt(match[2], 10),
+  };
+};
+
+/**
+ * 获取所有已使用的 key 列表
+ * @returns {Set<string>} 已使用的 key 集合
+ */
+const getUsedKeys = () => {
+  const usedKeys = new Set();
+  const translationResult = translationCoreStore.translationResult || [];
+
+  translationResult.forEach((item) => {
+    const key = item?.key;
+    if (key && typeof key === "string" && key.trim()) {
+      usedKeys.add(key.trim());
+    }
+  });
+
+  return usedKeys;
+};
+
+/**
+ * 获取已使用 key 的数字集合（基于相同的 prefix）
+ * @param {string} prefix - key 前缀
+ * @param {Set<string>} usedKeys - 已使用的 key 集合
+ * @returns {Set<number>} 已使用的数字集合
+ */
+const getUsedNumbers = (prefix, usedKeys) => {
+  const usedNumbers = new Set();
+
+  usedKeys.forEach((key) => {
+    const parsed = parseKey(key);
+    if (parsed && parsed.prefix.toLowerCase() === prefix.toLowerCase()) {
+      usedNumbers.add(parsed.number);
+    }
+  });
+
+  return usedNumbers;
+};
+
+/**
+ * 生成下一个可用的 key
+ * @param {string} baselineKey - 基准 key（如 "key1"）
+ * @param {Set<string>} usedKeys - 已使用的 key 集合（会被修改，添加新生成的 key）
+ * @returns {string} 下一个可用的 key
+ */
+const generateNextAvailableKey = (baselineKey, usedKeys) => {
+  const parsed = parseKey(baselineKey);
+  if (!parsed) {
+    // 如果 baseline key 格式不正确，使用默认格式
+    let nextNumber = 1;
+    let newKey = `key${nextNumber}`;
+    while (usedKeys.has(newKey)) {
+      nextNumber++;
+      newKey = `key${nextNumber}`;
+    }
+    usedKeys.add(newKey);
+    return newKey;
+  }
+
+  const { prefix, number: baselineNumber } = parsed;
+  const usedNumbers = getUsedNumbers(prefix, usedKeys);
+
+  // 如果没有已使用的数字，从 baseline number 开始
+  if (usedNumbers.size === 0) {
+    const newKey = `${prefix}${baselineNumber}`;
+    usedKeys.add(newKey);
+    return newKey;
+  }
+
+  // 找出缺失的数字（在已使用数字范围内的空缺）
+  const maxUsedNumber = Math.max(...usedNumbers);
+
+  // 查找缺失的数字
+  // 搜索范围：从 baselineNumber 开始，到 maxUsedNumber
+  // 最小值一定是 baselineNumber（baseline key 的数字部分）
+  const missingNumbers = [];
+
+  // 如果 maxUsedNumber < baselineNumber，说明 baselineNumber 本身就是一个缺失的数字
+  if (maxUsedNumber < baselineNumber) {
+    // baselineNumber 就是缺失的数字，直接使用
+    const newKey = `${prefix}${baselineNumber}`;
+    usedKeys.add(newKey);
+    return newKey;
+  }
+
+  // 在 baselineNumber 到 maxUsedNumber 之间查找缺失的数字
+  for (let i = baselineNumber; i <= maxUsedNumber; i++) {
+    if (!usedNumbers.has(i)) {
+      missingNumbers.push(i);
+    }
+  }
+
+  // 优先使用缺失的数字（从小到大排序）
+  if (missingNumbers.length > 0) {
+    missingNumbers.sort((a, b) => a - b);
+    const nextNumber = missingNumbers[0];
+    const newKey = `${prefix}${nextNumber}`;
+    usedKeys.add(newKey);
+    return newKey;
+  }
+
+  // 如果没有缺失的数字，使用下一个递增的数字
+  // 取 maxUsedNumber + 1 和 baselineNumber 中的较大值（确保不小于 baselineNumber）
+  let nextNumber = Math.max(maxUsedNumber + 1, baselineNumber);
+  let newKey = `${prefix}${nextNumber}`;
+
+  // 确保生成的 key 是唯一的
+  while (usedKeys.has(newKey)) {
+    nextNumber++;
+    newKey = `${prefix}${nextNumber}`;
+  }
+
+  usedKeys.add(newKey);
+  return newKey;
+};
+
+/**
  * 处理自定义菜单项点击事件
  * @param {Object} payload - 事件载荷 { id: string, context: Object }
  */
@@ -457,10 +586,59 @@ const handleCustomAction = ({ id, context }) => {
 
     const { minRow, maxRow } = normalizedSelection;
 
-    // 生成自增填充：a1, a2, a3, a4...
+    // 获取 baseline key
+    const baselineKey =
+      exportStore.excelBaselineKey ||
+      localStorage.getItem("excel_baseline_key") ||
+      "key1";
+
+    // 如果 baseline key 格式不正确，使用默认值
+    const parsed = parseKey(baselineKey);
+    if (!parsed) {
+      console.warn(
+        "Invalid baseline key format, using default 'key1'",
+        baselineKey
+      );
+      // 使用默认格式生成
+      const usedKeys = getUsedKeys();
+      for (let row = minRow; row <= maxRow; row++) {
+        const value = generateNextAvailableKey("key1", usedKeys);
+        updateCell(row, 0, value);
+      }
+      return;
+    }
+
+    // 获取已使用的 key 列表
+    const usedKeys = getUsedKeys();
+
+    // 获取当前选中区域已有的 key，避免覆盖
+    const translationResult = translationCoreStore.translationResult || [];
+    const { prefix } = parsed;
+
+    // 为选中的每一行生成唯一的 key
     for (let row = minRow; row <= maxRow; row++) {
-      const value = `a${row + 1}`;
-      updateCell(row, 0, value); // 第一列（Key列）的索引为0
+      // 如果当前行已有 key 且该 key 符合格式且前缀匹配，跳过（保留现有 key）
+      const currentItem = translationResult[row];
+      const existingKey = currentItem?.key;
+      if (
+        existingKey &&
+        typeof existingKey === "string" &&
+        existingKey.trim()
+      ) {
+        const existingParsed = parseKey(existingKey.trim());
+        if (
+          existingParsed &&
+          existingParsed.prefix.toLowerCase() === prefix.toLowerCase()
+        ) {
+          // 保留现有 key，但将其添加到已使用列表
+          usedKeys.add(existingKey.trim());
+          continue;
+        }
+      }
+
+      // 生成新的 key（会自动处理缺失的 key 和唯一性）
+      const value = generateNextAvailableKey(baselineKey, usedKeys);
+      updateCell(row, 0, value);
     }
   }
 };
