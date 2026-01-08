@@ -169,6 +169,8 @@ export function useCellMenuPosition(context) {
 
     return {
       normalizedSelection: effectiveSelection,
+      multiSelections: multiSelections.value, // 添加多选列表信息
+      isMultipleMode: isMultipleMode.value, // 添加多选模式标识
       activeCell: activeCell.value,
       rowIndex,
       tableData: tableData.value,

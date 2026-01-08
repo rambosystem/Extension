@@ -434,12 +434,20 @@ const customMenuItems = computed(() => {
         // 验证：列名必须为 "Key"，且选区必须在第一列（Key列）
         if (!isKeyColumn) return false;
 
-        const { normalizedSelection } = ctx;
-        if (!normalizedSelection) return false;
+        const { normalizedSelection, multiSelections, isMultipleMode } = ctx;
 
-        // 检查选区是否在第一列（索引为0）
+        // 多选模式：检查是否有至少一个选区包含第一列（Key列）的单元格
+        if (isMultipleMode && multiSelections && multiSelections.length > 0) {
+          // 检查是否有至少一个选区包含第一列（minCol <= 0 <= maxCol）
+          return multiSelections.some(
+            (selection) => selection.minCol <= 0 && selection.maxCol >= 0
+          );
+        }
+
+        // 单选模式：检查选区是否包含第一列（索引为0）
+        if (!normalizedSelection) return false;
         return (
-          normalizedSelection.minCol === 0 && normalizedSelection.maxCol === 0
+          normalizedSelection.minCol <= 0 && normalizedSelection.maxCol >= 0
         );
       },
     },
@@ -581,10 +589,8 @@ const generateNextAvailableKey = (baselineKey, usedKeys) => {
  */
 const handleCustomAction = ({ id, context }) => {
   if (id === "auto-increment-key") {
-    const { normalizedSelection, updateCell } = context;
-    if (!normalizedSelection) return;
-
-    const { minRow, maxRow } = normalizedSelection;
+    const { normalizedSelection, multiSelections, isMultipleMode, updateCell } =
+      context;
 
     // 获取 baseline key
     const baselineKey =
@@ -599,21 +605,64 @@ const handleCustomAction = ({ id, context }) => {
         "Invalid baseline key format, using default 'key1'",
         baselineKey
       );
-      // 使用默认格式生成
-      const usedKeys = getUsedKeys();
-      for (let row = minRow; row <= maxRow; row++) {
-        const value = generateNextAvailableKey("key1", usedKeys);
-        updateCell(row, 0, value);
-      }
-      return;
     }
 
     // 获取已使用的 key 列表
     const usedKeys = getUsedKeys();
-
-    // 获取当前选中区域已有的 key，避免覆盖
     const translationResult = translationCoreStore.translationResult || [];
-    const { prefix } = parsed;
+    const { prefix } = parsed || { prefix: "key" };
+
+    // 多选模式：处理所有包含第一列（Key列）的单元格
+    if (isMultipleMode && multiSelections && multiSelections.length > 0) {
+      // 收集所有在第一列的单元格行索引（去重）
+      const targetRows = new Set();
+
+      // 遍历所有选区，收集所有在第一列的单元格
+      for (const selection of multiSelections) {
+        // 检查选区是否包含第一列（minCol <= 0 <= maxCol）
+        if (selection.minCol <= 0 && selection.maxCol >= 0) {
+          // 如果选区包含第一列，收集该选区的所有行
+          for (let row = selection.minRow; row <= selection.maxRow; row++) {
+            targetRows.add(row);
+          }
+        }
+      }
+
+      // 如果有符合条件的单元格，填充所有单元格
+      if (targetRows.size > 0) {
+        // 不需要排序，直接处理所有单元格
+        for (const row of targetRows) {
+          // 如果当前行已有 key 且该 key 符合格式且前缀匹配，跳过（保留现有 key）
+          const currentItem = translationResult[row];
+          const existingKey = currentItem?.key;
+          if (
+            existingKey &&
+            typeof existingKey === "string" &&
+            existingKey.trim()
+          ) {
+            const existingParsed = parseKey(existingKey.trim());
+            if (
+              existingParsed &&
+              existingParsed.prefix.toLowerCase() === prefix.toLowerCase()
+            ) {
+              // 保留现有 key，但将其添加到已使用列表
+              usedKeys.add(existingKey.trim());
+              continue;
+            }
+          }
+
+          // 生成新的 key（会自动处理缺失的 key 和唯一性）
+          const value = generateNextAvailableKey(baselineKey, usedKeys);
+          updateCell(row, 0, value);
+        }
+        return;
+      }
+    }
+
+    // 单选模式：使用 normalizedSelection
+    if (!normalizedSelection) return;
+
+    const { minRow, maxRow } = normalizedSelection;
 
     // 为选中的每一行生成唯一的 key
     for (let row = minRow; row <= maxRow; row++) {

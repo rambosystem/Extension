@@ -92,7 +92,6 @@ export function useFillHandle({ getSmartValue, saveHistory }) {
 
     if (end.row > start.row) {
       saveHistory(tableData); // 填充前保存
-      const baseValue = tableData[start.row]?.[start.col] ?? "";
       const colIndex = start.col;
 
       // 边界检查
@@ -101,6 +100,7 @@ export function useFillHandle({ getSmartValue, saveHistory }) {
         return;
       }
 
+      const baseValue = tableData[start.row]?.[start.col] ?? "";
       for (let r = start.row + 1; r <= end.row; r++) {
         if (r >= 0 && r < maxRows) {
           tableData[r][colIndex] = getSmartValue(baseValue, r - start.row);

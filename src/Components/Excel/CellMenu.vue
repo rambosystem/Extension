@@ -292,6 +292,8 @@ $transition-fast: 0.05s ease;
 // 覆盖 Element Plus 的默认样式，确保自定义内容正确显示
 :deep(.el-dropdown-menu__item) {
   padding: 8px 12px;
+  user-select: none; // 禁用文本选中
+  transition: background-color $transition-fast;
 
   .menu-item-content {
     display: flex;
@@ -303,11 +305,40 @@ $transition-fast: 0.05s ease;
     padding: 0;
   }
 
+  // Hover 状态
   &:hover {
     background-color: #f0f1f2;
 
     .menu-item-shortcut {
       background-color: #e2e4e6;
+    }
+  }
+
+  // 激活/聚焦状态（与 hover 统一）
+  &:active,
+  &:focus,
+  &.is-focus,
+  &.is-active {
+    background-color: #f0f1f2;
+
+    .menu-item-shortcut {
+      background-color: #e2e4e6;
+    }
+  }
+
+  // 禁用状态
+  &.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    &:hover,
+    &:active,
+    &:focus {
+      background-color: transparent;
+
+      .menu-item-shortcut {
+        background-color: #f0f1f2;
+      }
     }
   }
 }
@@ -339,5 +370,6 @@ $transition-fast: 0.05s ease;
   white-space: nowrap;
   min-width: fit-content;
   line-height: 1.4;
+  transition: background-color $transition-fast;
 }
 </style>
