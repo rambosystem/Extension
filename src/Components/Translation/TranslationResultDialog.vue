@@ -83,6 +83,7 @@ import { useExportStore } from "../../stores/translation/export.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { Loading } from "@element-plus/icons-vue";
 import { computed, ref, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { ElMessage } from "element-plus";
 
 const { t } = useI18n();
 
@@ -786,21 +787,31 @@ const handleCustomAction = ({ id, context }) => {
     const baselineKey =
       exportStore.excelBaselineKey ||
       localStorage.getItem("excel_baseline_key") ||
-      "key1";
+      "";
 
-    // 如果 baseline key 格式不正确，使用默认值
+    // 检查 baseline key 是否存在
+    if (!baselineKey || !baselineKey.trim()) {
+      ElMessage.warning(
+        t("translation.autoIncrementBaselineKeyRequired") ||
+          "Please configure baseline key in settings before using auto increment"
+      );
+      return;
+    }
+
+    // 检查 baseline key 格式是否正确
     const parsed = parseKey(baselineKey);
     if (!parsed) {
-      console.warn(
-        "Invalid baseline key format, using default 'key1'",
-        baselineKey
+      ElMessage.warning(
+        t("translation.autoIncrementBaselineKeyInvalid") ||
+          "Baseline key format is invalid. Please use format like 'key1', 'item5', etc."
       );
+      return;
     }
 
     // 获取已使用的 key 列表
     const usedKeys = getUsedKeys();
     const translationResult = translationCoreStore.translationResult || [];
-    const { prefix } = parsed || { prefix: "key" };
+    const { prefix } = parsed;
 
     // 收集所有需要处理的单元格行索引
     let targetRows = [];

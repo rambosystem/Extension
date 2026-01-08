@@ -58,7 +58,9 @@
     "pleaseSelectDeduplicateProject": "Please select a deduplication project in Settings first.",
     "allTextsDuplicatedAuto": "All texts have been deduplicated. No translation needed.",
     "autoDeduplicateSuccess": "Auto deduplication completed! Removed {duplicate} duplicates, {remaining} texts remaining for translation.",
-    "autoDeduplicateFailed": "Auto deduplication failed. Please check your settings and try again."
+    "autoDeduplicateFailed": "Auto deduplication failed. Please check your settings and try again.",
+    "autoIncrementBaselineKeyRequired": "Please configure baseline key in settings before using auto increment",
+    "autoIncrementBaselineKeyInvalid": "Baseline key format is invalid. Please use format like 'key1', 'item5', etc."
   },
   "translationSetting": {
     "exportKeySetting": "Export Baseline Key",

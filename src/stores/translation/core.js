@@ -425,8 +425,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         this.updateTranslationProgress(result.length);
 
         // 提取纯数据并保存到存储
-        const translationData =
-          translation.extractTranslationData(finalResultWithKeys);
+        const translationData = translation.extractTranslationData(result);
         this.saveTranslationToLocal(translationData);
       } catch (error) {
         // 翻译失败时关闭对话框

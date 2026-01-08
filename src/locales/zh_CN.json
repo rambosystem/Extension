@@ -58,7 +58,9 @@
     "pleaseSelectDeduplicateProject": "请先在设置中选择去重项目。",
     "allTextsDuplicatedAuto": "所有文本已被去重，无需翻译。",
     "autoDeduplicateSuccess": "自动去重完成！已移除 {duplicate} 个重复文本，剩余 {remaining} 个文本待翻译。",
-    "autoDeduplicateFailed": "自动去重失败，请检查设置后重试。"
+    "autoDeduplicateFailed": "自动去重失败，请检查设置后重试。",
+    "autoIncrementBaselineKeyRequired": "请先在设置中配置基准键（Baseline Key）才能使用自动递增功能",
+    "autoIncrementBaselineKeyInvalid": "基准键格式无效，请使用类似 'key1'、'item5' 等格式"
   },
   "translationSetting": {
     "exportKeySetting": "导出基准键",
