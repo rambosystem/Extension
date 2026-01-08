@@ -612,10 +612,13 @@ const handleCustomAction = ({ id, context }) => {
     const translationResult = translationCoreStore.translationResult || [];
     const { prefix } = parsed || { prefix: "key" };
 
+    // 收集所有需要处理的单元格行索引
+    let targetRows = [];
+
     // 多选模式：处理所有包含第一列（Key列）的单元格
     if (isMultipleMode && multiSelections && multiSelections.length > 0) {
       // 收集所有在第一列的单元格行索引（去重）
-      const targetRows = new Set();
+      const targetRowsSet = new Set();
 
       // 遍历所有选区，收集所有在第一列的单元格
       for (const selection of multiSelections) {
@@ -623,71 +626,50 @@ const handleCustomAction = ({ id, context }) => {
         if (selection.minCol <= 0 && selection.maxCol >= 0) {
           // 如果选区包含第一列，收集该选区的所有行
           for (let row = selection.minRow; row <= selection.maxRow; row++) {
-            targetRows.add(row);
+            targetRowsSet.add(row);
           }
         }
       }
 
-      // 如果有符合条件的单元格，填充所有单元格
-      if (targetRows.size > 0) {
-        // 不需要排序，直接处理所有单元格
-        for (const row of targetRows) {
-          // 如果当前行已有 key 且该 key 符合格式且前缀匹配，跳过（保留现有 key）
-          const currentItem = translationResult[row];
-          const existingKey = currentItem?.key;
-          if (
-            existingKey &&
-            typeof existingKey === "string" &&
-            existingKey.trim()
-          ) {
-            const existingParsed = parseKey(existingKey.trim());
-            if (
-              existingParsed &&
-              existingParsed.prefix.toLowerCase() === prefix.toLowerCase()
-            ) {
-              // 保留现有 key，但将其添加到已使用列表
-              usedKeys.add(existingKey.trim());
-              continue;
-            }
-          }
-
-          // 生成新的 key（会自动处理缺失的 key 和唯一性）
-          const value = generateNextAvailableKey(baselineKey, usedKeys);
-          updateCell(row, 0, value);
-        }
-        return;
+      // 转换为数组并排序
+      targetRows = Array.from(targetRowsSet).sort((a, b) => a - b);
+    } else if (normalizedSelection) {
+      // 单选模式：使用 normalizedSelection
+      const { minRow, maxRow } = normalizedSelection;
+      // 按顺序生成行索引数组
+      for (let row = minRow; row <= maxRow; row++) {
+        targetRows.push(row);
       }
     }
 
-    // 单选模式：使用 normalizedSelection
-    if (!normalizedSelection) return;
-
-    const { minRow, maxRow } = normalizedSelection;
-
-    // 为选中的每一行生成唯一的 key
-    for (let row = minRow; row <= maxRow; row++) {
-      // 如果当前行已有 key 且该 key 符合格式且前缀匹配，跳过（保留现有 key）
-      const currentItem = translationResult[row];
-      const existingKey = currentItem?.key;
-      if (
-        existingKey &&
-        typeof existingKey === "string" &&
-        existingKey.trim()
-      ) {
-        const existingParsed = parseKey(existingKey.trim());
+    // 如果有符合条件的单元格，按顺序重新生成所有 key
+    if (targetRows.length > 0) {
+      // 先清除这些行的现有 key（如果符合格式），避免影响唯一性检查
+      for (const row of targetRows) {
+        const currentItem = translationResult[row];
+        const existingKey = currentItem?.key;
         if (
-          existingParsed &&
-          existingParsed.prefix.toLowerCase() === prefix.toLowerCase()
+          existingKey &&
+          typeof existingKey === "string" &&
+          existingKey.trim()
         ) {
-          // 保留现有 key，但将其添加到已使用列表
-          usedKeys.add(existingKey.trim());
-          continue;
+          const existingParsed = parseKey(existingKey.trim());
+          if (
+            existingParsed &&
+            existingParsed.prefix.toLowerCase() === prefix.toLowerCase()
+          ) {
+            // 从已使用列表中移除，以便重新生成
+            usedKeys.delete(existingKey.trim());
+          }
         }
       }
 
-      // 生成新的 key（会自动处理缺失的 key 和唯一性）
-      const value = generateNextAvailableKey(baselineKey, usedKeys);
-      updateCell(row, 0, value);
+      // 按顺序重新生成所有 key
+      for (const row of targetRows) {
+        // 生成新的 key（会自动处理缺失的 key 和唯一性）
+        const value = generateNextAvailableKey(baselineKey, usedKeys);
+        updateCell(row, 0, value);
+      }
     }
   }
 };

@@ -367,12 +367,41 @@ export function useSelection() {
         multiSelections.value = optimizeSelections(multiSelections.value);
       }
 
-      // 更新 activeCell 指向列表中的最后一个，或者清空
+      // 更新 activeCell：优先尝试找到包含用户点击位置附近单元格的选区
+      // 如果找不到，使用最后一个选区
       if (multiSelections.value.length > 0) {
-        const last = multiSelections.value[multiSelections.value.length - 1];
-        activeCell.value = { row: last.minRow, col: last.minCol };
-        selectionStart.value = { row: last.minRow, col: last.minCol };
-        selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+        // 尝试找到包含用户点击位置附近单元格的选区（优先使用相邻单元格）
+        let targetSelection = null;
+
+        // 检查点击位置的上、下、左、右相邻单元格是否在某个选区内
+        const adjacentCells = [
+          { row: row - 1, col }, // 上
+          { row: row + 1, col }, // 下
+          { row, col: col - 1 }, // 左
+          { row, col: col + 1 }, // 右
+        ];
+
+        for (const cell of adjacentCells) {
+          const found = multiSelections.value.find((sel) =>
+            isCellInRange(cell.row, cell.col, sel)
+          );
+          if (found) {
+            targetSelection = found;
+            // 使用相邻单元格作为 activeCell
+            activeCell.value = { row: cell.row, col: cell.col };
+            selectionStart.value = { row: cell.row, col: cell.col };
+            selectionEnd.value = { row: found.maxRow, col: found.maxCol };
+            break;
+          }
+        }
+
+        // 如果没找到相邻单元格，使用最后一个选区
+        if (!targetSelection) {
+          const last = multiSelections.value[multiSelections.value.length - 1];
+          activeCell.value = { row: last.minRow, col: last.minCol };
+          selectionStart.value = { row: last.minRow, col: last.minCol };
+          selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+        }
       } else {
         // 多选列表为空，切换到 SINGLE 模式
         isMultipleMode.value = false;
@@ -485,12 +514,61 @@ export function useSelection() {
       // 优化选区：将单格选区合并成矩形选区
       multiSelections.value = optimizeSelections(multiSelections.value);
 
-      // 更新 activeCell 指向列表中的最后一个，或者清空
+      // 更新 activeCell：优先尝试找到包含起始单元格附近单元格的选区
+      // 如果找不到，使用最后一个选区
       if (multiSelections.value.length > 0) {
-        const last = multiSelections.value[multiSelections.value.length - 1];
-        activeCell.value = { row: last.minRow, col: last.minCol };
-        selectionStart.value = { row: last.minRow, col: last.minCol };
-        selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+        // 获取起始单元格位置（用户开始拖拽的位置）
+        const startRow = selectionStart.value?.row;
+        const startCol = selectionStart.value?.col;
+
+        // 尝试找到包含起始单元格附近单元格的选区
+        let targetSelection = null;
+
+        if (startRow !== undefined && startCol !== undefined) {
+          // 首先检查起始单元格是否还在某个选区内
+          targetSelection = multiSelections.value.find((sel) =>
+            isCellInRange(startRow, startCol, sel)
+          );
+
+          if (targetSelection) {
+            // 如果起始单元格还在选区内，使用起始单元格位置
+            activeCell.value = { row: startRow, col: startCol };
+            selectionStart.value = { row: startRow, col: startCol };
+            selectionEnd.value = {
+              row: targetSelection.maxRow,
+              col: targetSelection.maxCol,
+            };
+          } else {
+            // 如果起始单元格不在选区内，检查相邻单元格
+            const adjacentCells = [
+              { row: startRow - 1, col: startCol }, // 上
+              { row: startRow + 1, col: startCol }, // 下
+              { row: startRow, col: startCol - 1 }, // 左
+              { row: startRow, col: startCol + 1 }, // 右
+            ];
+
+            for (const cell of adjacentCells) {
+              const found = multiSelections.value.find((sel) =>
+                isCellInRange(cell.row, cell.col, sel)
+              );
+              if (found) {
+                targetSelection = found;
+                activeCell.value = { row: cell.row, col: cell.col };
+                selectionStart.value = { row: cell.row, col: cell.col };
+                selectionEnd.value = { row: found.maxRow, col: found.maxCol };
+                break;
+              }
+            }
+          }
+        }
+
+        // 如果没找到，使用最后一个选区
+        if (!targetSelection) {
+          const last = multiSelections.value[multiSelections.value.length - 1];
+          activeCell.value = { row: last.minRow, col: last.minCol };
+          selectionStart.value = { row: last.minRow, col: last.minCol };
+          selectionEnd.value = { row: last.maxRow, col: last.maxCol };
+        }
       } else {
         // 多选列表为空，切换到 SINGLE 模式
         isMultipleMode.value = false;
@@ -525,18 +603,27 @@ export function useSelection() {
     multiSelections.value = optimizeSelections(multiSelections.value);
 
     // 更新 activeCell：查找包含原选区起始单元格的选区
+    // 使用 selectionStart.value 而不是 selection.minRow/minCol，因为用户可能从选区的任意位置开始拖拽
     // 如果找不到（可能被合并了），使用最后一个选区
-    const targetSelection = multiSelections.value.find((sel) =>
-      isCellInRange(selection.minRow, selection.minCol, sel)
-    );
+    const startRow = selectionStart.value?.row;
+    const startCol = selectionStart.value?.col;
+    const targetSelection =
+      startRow !== undefined && startCol !== undefined
+        ? multiSelections.value.find((sel) =>
+            isCellInRange(startRow, startCol, sel)
+          )
+        : null;
+
     if (targetSelection) {
+      // 如果找到了包含起始单元格的选区，优先使用起始单元格位置
+      // 但如果起始单元格不在任何选区内（可能被优化掉了），使用选区的左上角
       activeCell.value = {
-        row: targetSelection.minRow,
-        col: targetSelection.minCol,
+        row: startRow,
+        col: startCol,
       };
       selectionStart.value = {
-        row: targetSelection.minRow,
-        col: targetSelection.minCol,
+        row: startRow,
+        col: startCol,
       };
       selectionEnd.value = {
         row: targetSelection.maxRow,
@@ -721,6 +808,18 @@ export function useSelection() {
     multiSelections.value = [];
   };
 
+  /**
+   * 清除所有选择状态（包括 activeCell、selectionStart、selectionEnd）
+   * 默认情况下 activeCell 为 null，只有在用户点击单元格时才设置
+   */
+  const clearSelection = () => {
+    activeCell.value = null;
+    selectionStart.value = null;
+    selectionEnd.value = null;
+    multiSelections.value = [];
+    isMultipleMode.value = false;
+  };
+
   // ==================== 兼容性函数（保持向后兼容） ====================
 
   /**
@@ -772,6 +871,7 @@ export function useSelection() {
     isInSelectionHeader,
     moveActiveCell,
     clearMultiSelections,
+    clearSelection, // 清除选择函数
     // 兼容性函数
     setSelection,
     toggleSelectionAtCell,

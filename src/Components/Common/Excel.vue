@@ -5,6 +5,7 @@
     @keydown="handleKeydown"
     @copy="handleCopy"
     @paste="handlePaste"
+    @click="handleContainerClick"
     tabindex="0"
     ref="containerRef"
   >
@@ -371,6 +372,7 @@ const {
   isInSelection,
   isInSelectionHeader,
   moveActiveCell,
+  clearSelection, // 清除选择函数
   // 兼容性函数
   setSelection,
   toggleSelectionAtCell,
@@ -696,6 +698,21 @@ const handleCustomAction = (payload) => {
   emit("custom-action", payload);
 };
 
+/**
+ * 处理容器点击事件（点击空白区域时清除选择）
+ * 默认情况下 activeCell 为 null，只有在用户点击单元格时才设置
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const handleContainerClick = (event) => {
+  // 如果点击的是容器本身（不是单元格），清除选择
+  if (
+    event.target === containerRef.value ||
+    event.target.classList.contains("excel-container")
+  ) {
+    clearSelection();
+  }
+};
+
 // 使用键盘处理 composable
 const { handleKeydown } = useKeyboard({
   activeCell,
@@ -986,7 +1003,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   transition: background-color $transition-fast;
 
   // 交互状态
-  &:hover:not(.active):not(.in-selection) {
+  &:hover:not(.active):not(.in-selection):not(.header-cell):not(.row-number) {
     background-color: $cell-hover-bg;
   }
 
@@ -1156,6 +1173,14 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   padding: 0 $cell-padding-h; // 与数据单元格对齐
   justify-content: flex-start; // 表头左对齐
   text-align: left;
+
+  // 禁用 hover 效果
+  &:hover {
+    background-color: $header-bg !important;
+  }
+  &.active-header:hover {
+    background-color: $header-active-bg !important;
+  }
 }
 
 .row-number {
@@ -1165,6 +1190,14 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   display: flex !important;
   justify-content: center;
   text-align: center;
+
+  // 禁用 hover 效果
+  &:hover {
+    background-color: $header-bg !important;
+  }
+  &.active-header:hover {
+    background-color: $header-active-bg !important;
+  }
 }
 
 // 角单元格：占据行号列的宽度，确保表头与数据行对齐
