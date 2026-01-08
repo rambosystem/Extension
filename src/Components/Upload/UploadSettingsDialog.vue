@@ -1,17 +1,9 @@
 <template>
-  <el-dialog
-    :modelValue="uploadStore.uploadDialogVisible"
-    @update:modelValue="uploadStore.setUploadDialogVisible"
-    :title="uploadStore.isUploadSuccess ? 'Upload Success' : 'Upload Setting'"
-    width="500px"
-    top="30vh"
-    :close-on-click-modal="!uploadStore.isUploading"
-    :close-on-press-escape="!uploadStore.isUploading"
-    v-loading="uploadStore.isUploading"
-    element-loading-text="Uploading to Lokalise..."
-    element-loading-spinner="el-icon-loading"
-    @close="uploadStore.closeUploadDialog"
-  >
+  <el-dialog :modelValue="uploadStore.uploadDialogVisible" @update:modelValue="uploadStore.setUploadDialogVisible"
+    :title="uploadStore.isUploadSuccess ? 'Upload Success' : 'Upload Setting'" width="500px" top="30vh"
+    :close-on-click-modal="!uploadStore.isUploading" :close-on-press-escape="!uploadStore.isUploading"
+    v-loading="uploadStore.isUploading" element-loading-text="Uploading to Lokalise..."
+    element-loading-spinner="el-icon-loading" @close="uploadStore.closeUploadDialog">
     <!-- 成功页面 -->
     <div v-if="uploadStore.isUploadSuccess" class="upload-success">
       <div class="success-icon">
@@ -22,53 +14,29 @@
     </div>
 
     <!-- 上传设置表单 -->
-    <el-form
-      v-else
-      :model="uploadStore.uploadForm"
-      label-position="top"
-      @submit.prevent="handleUpload"
-    >
+    <el-form v-else :model="uploadStore.uploadForm" label-position="top" @submit.prevent="handleUpload">
       <el-form-item label="Tag">
-        <AutocompleteInput
-          :modelValue="uploadStore.uploadForm.tag"
-          @update:modelValue="uploadStore.handleTagChange"
-          placeholder="Enter tag (optional)"
-          :fetch-suggestions="fetchTagSuggestions"
-          :get-project-id="getProjectId"
-        />
+        <el-select :model-value="uploadStore.uploadForm.tag" @update:model-value="uploadStore.handleTagChange"
+          filterable remote :remote-method="remoteSearchTags" :loading="tagSearchLoading"
+          placeholder="Search or enter tag" allow-create default-first-option clearable style="width: 100%">
+          <el-option v-for="tag in tagOptions" :key="tag" :label="tag" :value="tag" />
+        </el-select>
       </el-form-item>
     </el-form>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button
-          v-if="!uploadStore.isUploadSuccess"
-          @click="uploadStore.closeUploadDialog"
-          >Cancel</el-button
-        >
-        <el-button
-          v-if="!uploadStore.isUploadSuccess"
-          type="primary"
-          @click="handleUpload"
-          :disabled="uploadStore.isUploading"
-          :loading="uploadStore.isUploading"
-        >
+        <el-button v-if="!uploadStore.isUploadSuccess" @click="uploadStore.closeUploadDialog">Cancel</el-button>
+        <el-button v-if="!uploadStore.isUploadSuccess" type="primary" @click="handleUpload"
+          :disabled="uploadStore.isUploading" :loading="uploadStore.isUploading">
           {{ uploadStore.isUploading ? "Uploading..." : "Upload" }}
         </el-button>
-        <el-button
-          v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
-          type="primary"
-          @click="uploadStore.openLokaliseProject"
-          style="min-width: 120px"
-        >
+        <el-button v-if="uploadStore.isUploadSuccess && uploadStore.currentProject" type="primary"
+          @click="uploadStore.openLokaliseProject" style="min-width: 120px">
           View In Lokalise
         </el-button>
-        <el-button
-          v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
-          type="primary"
-          @click="uploadStore.openLokaliseDownload"
-          style="min-width: 80px"
-        >
+        <el-button v-if="uploadStore.isUploadSuccess && uploadStore.currentProject" type="primary"
+          @click="uploadStore.openLokaliseDownload" style="min-width: 80px">
           Build Now
         </el-button>
       </div>
@@ -79,63 +47,95 @@
 <script setup>
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
-import AutocompleteInput from "../Common/AutocompleteInput.vue";
 import { autocompleteTags } from "../../requests/autocomplete.js";
 import { debugLog, debugError } from "../../utils/debug.js";
+import { ref, watch } from "vue";
 
 // 使用翻译Store
 const uploadStore = useUploadStore();
 const translationCoreStore = useTranslationCoreStore();
 
+// Tag选项列表
+const tagOptions = ref([]);
+// Tag搜索加载状态
+const tagSearchLoading = ref(false);
+
 /**
- * 获取项目ID（用于tag自动补全）
+ * 获取项目ID（用于tag搜索）
  */
 const getProjectId = () => {
   return uploadStore.uploadForm.projectId || null;
 };
 
 /**
- * 获取Tag自动补全建议
- * 使用第一个匹配结果（已按优先级排序：前缀匹配 > 包含匹配，最近使用优先）
- * @param {string} queryString - 搜索关键词
- * @param {string} projectId - 项目ID
- * @returns {Promise<string|null>} 建议的tag名称
+ * 远程搜索Tag（用于el-select的remote-method）
+ * 只在用户手动输入时才进行搜索匹配
+ * @param {string} query - 搜索关键词
  */
-const fetchTagSuggestions = async (queryString, projectId) => {
+const remoteSearchTags = async (query) => {
+  const projectId = getProjectId();
+  if (!projectId) {
+    tagOptions.value = [];
+    return;
+  }
+
+  // 如果查询为空，不进行搜索（等待用户输入）
+  if (!query || !query.trim()) {
+    tagOptions.value = [];
+    return;
+  }
+
   try {
-    debugLog("[Tag Autocomplete] Calling API with:", {
+    tagSearchLoading.value = true;
+    debugLog("[Tag Remote Search] Calling API with:", {
       projectId,
-      query: queryString.trim(),
-      limit: 1,
+      query: query.trim(),
+      limit: 20,
     });
 
-    const response = await autocompleteTags(projectId, queryString.trim(), 1);
+    const response = await autocompleteTags(projectId, query.trim(), 20);
 
-    debugLog("[Tag Autocomplete] API response:", response);
+    debugLog("[Tag Remote Search] API response:", response);
 
     // 验证响应格式
-    if (!response || !response.success) {
-      debugLog(
-        "[Tag Autocomplete] Invalid response or unsuccessful:",
-        response
-      );
-      return null;
+    if (response && response.success && response.results) {
+      tagOptions.value = response.results.map((item) => item.tag).filter(Boolean);
+      debugLog("[Tag Remote Search] Found tags:", tagOptions.value);
+    } else {
+      tagOptions.value = [];
+      debugLog("[Tag Remote Search] No tags found");
     }
-
-    // 获取第一条建议（已按优先级排序，使用第一个即可）
-    const firstResult = response?.results?.[0];
-    if (firstResult && firstResult.tag) {
-      debugLog("[Tag Autocomplete] Found suggestion:", firstResult.tag);
-      return firstResult.tag;
-    }
-
-    debugLog("[Tag Autocomplete] No suggestions found");
-    return null;
   } catch (error) {
-    debugError("[Tag Autocomplete] Error occurred:", error);
-    return null;
+    debugError("[Tag Remote Search] Error occurred:", error);
+    tagOptions.value = [];
+  } finally {
+    tagSearchLoading.value = false;
   }
 };
+
+// 监听对话框打开，加载已保存的tag
+watch(
+  () => uploadStore.uploadDialogVisible,
+  (isVisible) => {
+    if (isVisible) {
+      // 对话框打开时，加载已保存的tag（如果之前有保存）
+      try {
+        const savedTag = localStorage.getItem("lokalise_upload_tag");
+        if (savedTag && savedTag.trim()) {
+          debugLog("[Tag Load] Loading saved tag:", savedTag);
+          uploadStore.setUploadTag(savedTag);
+        } else {
+          debugLog("[Tag Load] No saved tag, user needs to input manually");
+        }
+      } catch (error) {
+        debugError("[Tag Load] Failed to load saved tag:", error);
+      }
+    } else {
+      // 对话框关闭时清空选项
+      tagOptions.value = [];
+    }
+  }
+);
 
 // 处理上传
 const handleUpload = async () => {
