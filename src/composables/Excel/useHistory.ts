@@ -17,6 +17,7 @@ export enum HistoryActionType {
   ROW_DELETE = "row_delete",
   FILL = "fill",
   DELETE = "delete",
+  PASTE = "paste",
   BULK_OPERATION = "bulk_operation",
   UNKNOWN = "unknown",
 }

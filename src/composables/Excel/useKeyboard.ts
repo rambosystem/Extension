@@ -62,6 +62,8 @@ export interface UseKeyboardOptions {
   customMenuItems?: CustomMenuItem[];
   handleCustomAction?: (payload: { id: string; context: MenuContext }) => void;
   createMenuContext?: (rowIndex: number) => MenuContext;
+  copyToClipboard?: () => Promise<boolean>;
+  pasteFromClipboard?: () => Promise<boolean>;
 }
 
 /**
@@ -295,7 +297,65 @@ export function useKeyboard({
   customMenuItems = [],
   handleCustomAction,
   createMenuContext,
+  copyToClipboard,
+  pasteFromClipboard,
 }: UseKeyboardOptions): UseKeyboardReturn {
+  /**
+   * 处理复制快捷键（Ctrl+C / Cmd+C）
+   */
+  const handleCopyShortcut = (event: KeyboardEvent): boolean => {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    const isCKey = event.key.toLowerCase() === "c";
+
+    if (!isCtrlOrCmd || !isCKey) {
+      return false;
+    }
+
+    // 如果正在编辑，让浏览器原生处理
+    if (editingCell.value) {
+      return false;
+    }
+
+    event.preventDefault();
+
+    // 调用程序化复制
+    if (copyToClipboard) {
+      copyToClipboard().catch((error) => {
+        console.error("Copy shortcut failed:", error);
+      });
+    }
+
+    return true;
+  };
+
+  /**
+   * 处理粘贴快捷键（Ctrl+V / Cmd+V）
+   */
+  const handlePasteShortcut = (event: KeyboardEvent): boolean => {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    const isVKey = event.key.toLowerCase() === "v";
+
+    if (!isCtrlOrCmd || !isVKey) {
+      return false;
+    }
+
+    // 如果正在编辑，让浏览器原生处理
+    if (editingCell.value) {
+      return false;
+    }
+
+    event.preventDefault();
+
+    // 调用程序化粘贴
+    if (pasteFromClipboard) {
+      pasteFromClipboard().catch((error) => {
+        console.error("Paste shortcut failed:", error);
+      });
+    }
+
+    return true;
+  };
+
   /**
    * 处理撤销/重做快捷键
    */
@@ -658,6 +718,8 @@ export function useKeyboard({
     }
 
     if (handleUndoRedo(event)) return;
+    if (handleCopyShortcut(event)) return;
+    if (handlePasteShortcut(event)) return;
     if (editingCell.value) return;
     if (handleInsertRow(event)) return;
     if (handleDeleteRowKey(event)) return;

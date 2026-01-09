@@ -144,8 +144,12 @@
             :row-index="rowIndex"
             :custom-menu-items="customMenuItems"
             :context="createMenuContext(rowIndex)"
+            :can-undo="canUndo"
+            :can-redo="canRedo"
+            :can-paste="canPaste"
             @command="handleCellMenuCommand"
             @custom-action="handleCustomAction"
+            @visible-change="handleMenuVisibleChange"
           />
         </div>
       </div>
@@ -224,8 +228,6 @@ const {
   rows,
   tableData,
   getSmartValue,
-  generateClipboardText,
-  parsePasteData,
   setData,
   getData,
   updateCell,
@@ -325,6 +327,8 @@ const {
   saveHistory,
   undo: undoHistory,
   redo: redoHistory,
+  canUndo: canUndoFn,
+  canRedo: canRedoFn,
 } = useHistory();
 
 // 智能填充管理（仅在启用时使用）
@@ -533,34 +537,6 @@ function startFillDrag(row: number, col: number): void {
   );
 }
 
-// --- 剪贴板管理 ---
-const { handleCopy, handlePaste } = useClipboard({
-  editingCell,
-  normalizedSelection,
-  tableData,
-  activeCell,
-  rows,
-  columns: internalColumns,
-  generateClipboardText,
-  parsePasteData,
-  saveHistory,
-});
-
-// --- 8. 键盘主逻辑 ---
-/**
- * 删除选区内容
- */
-const deleteSelection = (range: SelectionRange): void => {
-  for (let r = range.minRow; r <= range.maxRow; r++) {
-    if (!tableData.value[r]) continue;
-    for (let c = range.minCol; c <= range.maxCol; c++) {
-      if (tableData.value[r][c] !== undefined) {
-        tableData.value[r][c] = "";
-      }
-    }
-  }
-};
-
 // --- 数据同步管理 ---
 const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
   tableData,
@@ -582,6 +558,41 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
 // 初始化数据同步监听
 initDataSync();
 
+// --- 剪贴板管理 ---
+const {
+  handleCopy,
+  handlePaste,
+  copyToClipboard,
+  pasteFromClipboard,
+  hasClipboardContent,
+} = useClipboard({
+  editingCell,
+  normalizedSelection,
+  tableData,
+  activeCell,
+  rows,
+  columns: internalColumns,
+  multiSelections,
+  saveHistory,
+  startSingleSelection,
+  notifyDataChange,
+});
+
+// --- 8. 键盘主逻辑 ---
+/**
+ * 删除选区内容
+ */
+const deleteSelection = (range: SelectionRange): void => {
+  for (let r = range.minRow; r <= range.maxRow; r++) {
+    if (!tableData.value[r]) continue;
+    for (let c = range.minCol; c <= range.maxCol; c++) {
+      if (tableData.value[r][c] !== undefined) {
+        tableData.value[r][c] = "";
+      }
+    }
+  }
+};
+
 // --- 行操作管理（统一的插入/删除行逻辑）---
 const { handleInsertRowBelow, handleDeleteRow } = useRowOperations({
   tableData,
@@ -596,9 +607,41 @@ const { handleInsertRowBelow, handleDeleteRow } = useRowOperations({
 });
 
 // --- Cell Menu 管理 ---
+// 添加历史记录状态的响应式引用
+const canUndo = ref(false);
+const canRedo = ref(false);
+const canPaste = ref(false);
+
+// 更新历史记录状态
+const updateHistoryState = () => {
+  canUndo.value = canUndoFn();
+  canRedo.value = canRedoFn();
+};
+
+// 检查剪贴板是否有内容
+const checkClipboard = async () => {
+  try {
+    canPaste.value = await hasClipboardContent();
+  } catch (error) {
+    // 如果没有权限或者失败，假设剪贴板有内容
+    canPaste.value = true;
+  }
+};
+
+// 定期更新状态（在菜单打开时）
+const updateMenuStates = () => {
+  updateHistoryState();
+  checkClipboard();
+};
+
 const { handleCellMenuCommand } = useCellMenu({
   handleInsertRowBelow,
   handleDeleteRow,
+  copyToClipboard,
+  pasteFromClipboard,
+  undoHistory,
+  redoHistory,
+  tableData,
 });
 
 // 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义）
@@ -655,6 +698,15 @@ const handleCustomAction = (payload: {
   context: MenuContext;
 }): void => {
   emit("custom-action", payload);
+};
+
+/**
+ * 处理菜单可见性变化
+ */
+const handleMenuVisibleChange = (visible: boolean): void => {
+  if (visible) {
+    updateMenuStates();
+  }
 };
 
 /**
@@ -830,6 +882,8 @@ const { handleKeydown } = useKeyboard({
   customMenuItems: props.customMenuItems, // 传递自定义菜单项配置
   handleCustomAction, // 传递自定义菜单项处理函数
   createMenuContext: (rowIndex: number) => createMenuContext(rowIndex), // 传递创建上下文函数
+  copyToClipboard, // 传递程序化复制函数
+  pasteFromClipboard, // 传递程序化粘贴函数
 });
 
 // 注意：列宽初始化逻辑已移至 getColumnWidth 函数中处理

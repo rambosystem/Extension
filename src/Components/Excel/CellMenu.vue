@@ -15,12 +15,55 @@
     </div>
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item :command="{ action: 'insertRowBelow', rowIndex }">
+        <!-- 复制 -->
+        <el-dropdown-item :command="{ action: 'copy', rowIndex }">
+          <div class="menu-item-content">
+            <span class="menu-item-text">Copy</span>
+            <span class="menu-item-shortcut">{{ copyShortcut }}</span>
+          </div>
+        </el-dropdown-item>
+        <!-- 粘贴 -->
+        <el-dropdown-item
+          :command="{ action: 'paste', rowIndex }"
+          :disabled="!canPaste"
+        >
+          <div class="menu-item-content">
+            <span class="menu-item-text">Paste</span>
+            <span class="menu-item-shortcut">{{ pasteShortcut }}</span>
+          </div>
+        </el-dropdown-item>
+        <!-- Undo -->
+        <el-dropdown-item
+          divided
+          :command="{ action: 'undo', rowIndex }"
+          :disabled="!canUndo"
+        >
+          <div class="menu-item-content">
+            <span class="menu-item-text">Undo</span>
+            <span class="menu-item-shortcut">{{ undoShortcut }}</span>
+          </div>
+        </el-dropdown-item>
+        <!-- Redo -->
+        <el-dropdown-item
+          :command="{ action: 'redo', rowIndex }"
+          :disabled="!canRedo"
+        >
+          <div class="menu-item-content">
+            <span class="menu-item-text">Redo</span>
+            <span class="menu-item-shortcut">{{ redoShortcut }}</span>
+          </div>
+        </el-dropdown-item>
+        <!-- 插入行 -->
+        <el-dropdown-item
+          divided
+          :command="{ action: 'insertRowBelow', rowIndex }"
+        >
           <div class="menu-item-content">
             <span class="menu-item-text">Insert Row Below</span>
             <span class="menu-item-shortcut">{{ insertRowShortcut }}</span>
           </div>
         </el-dropdown-item>
+        <!-- 删除行 -->
         <el-dropdown-item :command="{ action: 'deleteRow', rowIndex }">
           <div class="menu-item-content">
             <span class="menu-item-text">Delete Row</span>
@@ -30,8 +73,9 @@
         <!-- 自定义菜单项 -->
         <template v-if="validatedCustomMenuItems.length > 0">
           <el-dropdown-item
-            v-for="item in validatedCustomMenuItems"
+            v-for="(item, index) in validatedCustomMenuItems"
             :key="item.id"
+            :divided="index === 0"
             :command="{ action: 'custom', id: item.id, rowIndex }"
             :disabled="isCustomItemDisabled(item)"
           >
@@ -52,13 +96,10 @@
 import { ref, computed } from "vue";
 import {
   normalizeShortcutForPlatform,
-  getModifierKey,
   buildShortcut,
 } from "../../composables/Excel/useKeyboard";
-import type {
-  CustomMenuItem,
-  MenuContext,
-} from "../../composables/Excel/useKeyboard";
+import type { CustomMenuItem } from "../../composables/Excel/useKeyboard";
+import type { MenuContext } from "../../composables/Excel/types";
 
 /**
  * CellMenu - 单元格菜单组件
@@ -69,6 +110,9 @@ import type {
  * @example
  * <CellMenu
  *   :row-index="0"
+ *   :can-undo="true"
+ *   :can-redo="false"
+ *   :can-paste="true"
  *   @command="handleMenuCommand"
  * />
  */
@@ -76,11 +120,17 @@ interface Props {
   rowIndex: number;
   customMenuItems?: CustomMenuItem[];
   context?: MenuContext | null;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  canPaste?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   customMenuItems: () => [],
   context: null,
+  canUndo: false,
+  canRedo: false,
+  canPaste: false,
 });
 
 /**
@@ -93,11 +143,23 @@ const props = withDefaults(defineProps<Props>(), {
  * @event custom-action
  * @param {Object} payload - 事件载荷 { id: string, context: Object }
  */
-const emit = defineEmits(["command", "custom-action"]);
+/**
+ * 菜单可见性变化事件
+ * @event visible-change
+ * @param {boolean} visible - 是否可见
+ */
+const emit = defineEmits(["command", "custom-action", "visible-change"]);
 
 const isMenuOpen = ref(false);
 
 // 使用统一的跨平台快捷键工具函数
+const copyShortcut = computed(() => buildShortcut("C"));
+const pasteShortcut = computed(() => buildShortcut("V"));
+const undoShortcut = computed(() => buildShortcut("Z"));
+const redoShortcut = computed(() => {
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  return isMac ? buildShortcut("Z", { shift: true }) : buildShortcut("Y");
+});
 const insertRowShortcut = computed(() => buildShortcut("Enter"));
 const deleteRowShortcut = computed(() => buildShortcut("Delete"));
 
@@ -129,7 +191,7 @@ const validatedCustomMenuItems = computed(() => {
     }
     // 调用 validate 函数，传入 context
     try {
-      return item.validate(props.context);
+      return props.context ? item.validate(props.context) : false;
     } catch (error) {
       console.warn(
         `CellMenu: validate function error for menu item "${item.id}":`,
@@ -145,7 +207,7 @@ const validatedCustomMenuItems = computed(() => {
  * @param {Object} item - 菜单项配置
  * @returns {boolean}
  */
-const isCustomItemDisabled = (item) => {
+const isCustomItemDisabled = (item: CustomMenuItem): boolean => {
   if (!props.context) {
     return false;
   }
@@ -168,10 +230,19 @@ const isCustomItemDisabled = (item) => {
 };
 
 /**
+ * 菜单命令类型
+ */
+interface MenuCommand {
+  action: string;
+  rowIndex: number;
+  id?: string;
+}
+
+/**
  * 处理菜单命令
  * @param {Object} command - 菜单命令对象
  */
-const handleCommand = (command) => {
+const handleCommand = (command: MenuCommand): void => {
   // 如果是自定义菜单项，触发 custom-action 事件
   if (command.action === "custom") {
     emit("custom-action", {
@@ -179,7 +250,7 @@ const handleCommand = (command) => {
       context: props.context,
     });
   } else {
-    // 默认菜单项，触发 command 事件
+    // 默认菜单项（包括 copy, paste, undo, redo, insertRowBelow, deleteRow），触发 command 事件
     emit("command", command);
   }
 };
@@ -189,6 +260,7 @@ const handleCommand = (command) => {
  */
 const handleVisibleChange = (visible: boolean): void => {
   isMenuOpen.value = visible;
+  emit("visible-change", visible);
 };
 </script>
 
