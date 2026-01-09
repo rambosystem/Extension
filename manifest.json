@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Penrose",
-  "version": "1.0.0",
-  "description": "Extension for Rambo",
+  "version": "1.2.0",
+  "description": "Extension for Penrose",
   "permissions": ["activeTab", "tabs", "scripting", "storage"],
   "action": {
     "default_popup": "popup/popup.html",
