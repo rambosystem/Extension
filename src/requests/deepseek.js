@@ -149,15 +149,51 @@ ${copiesSection}  </copies>
     let tokenUsage = null;
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+    // Buffer 用于累积不完整的行，防止跨 chunk 的 JSON 数据被错误分割
+    let buffer = "";
 
     try {
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // 处理最后剩余的 buffer 内容
+          if (buffer.trim()) {
+            const line = buffer.trim();
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data !== "[DONE]") {
+                try {
+                  const json = JSON.parse(data);
+                  const delta = json.choices?.[0]?.delta?.content;
+
+                  if (json.choices?.[0]?.finish_reason) {
+                    finishReason = json.choices[0].finish_reason;
+                    tokenUsage = json.usage || null;
+                  }
+
+                  if (delta) {
+                    fullContent += delta;
+                    onChunk(delta, fullContent);
+                  }
+                } catch (e) {
+                  debugLog("Failed to parse final SSE data:", e, line);
+                }
+              }
+            }
+          }
+          break;
+        }
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        // 将新 chunk 追加到 buffer
+        buffer += chunk;
+        
+        // 按换行符分割，但保留最后一行（可能不完整）在 buffer 中
+        const lines = buffer.split("\n");
+        // 最后一行可能不完整，保留在 buffer 中等待下一个 chunk
+        buffer = lines.pop() || "";
 
+        // 处理所有完整的行
         for (const line of lines) {
           if (line.trim() === "") continue;
           if (line.startsWith("data: ")) {
