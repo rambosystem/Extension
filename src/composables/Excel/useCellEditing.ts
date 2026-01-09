@@ -1,5 +1,11 @@
 import { ref, nextTick, type Ref } from "vue";
 import type { CellPosition } from "./types";
+import {
+  HistoryActionType,
+  type CellChange,
+  type SaveHistoryOptions,
+} from "./useHistory";
+import { debugLog } from "../../utils/debug.js";
 
 /**
  * 单元格编辑管理 Composable 选项
@@ -7,7 +13,7 @@ import type { CellPosition } from "./types";
 export interface UseCellEditingOptions {
   tableData: Ref<string[][]>;
   startSingleSelection: (row: number, col: number) => void;
-  saveHistory: (state: any) => void;
+  saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   moveActiveCell: (
     rowDelta: number,
     colDelta: number,
@@ -25,7 +31,12 @@ export interface UseCellEditingOptions {
 export interface UseCellEditingReturn {
   editingCell: Ref<CellPosition | null>;
   isEditing: (row: number, col: number) => boolean;
-  startEdit: (row: number, col: number, selectAll?: boolean) => void;
+  startEdit: (
+    row: number,
+    col: number,
+    selectAll?: boolean,
+    initialValue?: string
+  ) => void;
   stopEdit: () => void;
   cancelEdit: () => void;
   setInputRef: (el: HTMLInputElement | null, row: number, col: number) => void;
@@ -75,17 +86,39 @@ export function useCellEditing({
 
   /**
    * 开始编辑单元格
+   * @param row - 行索引
+   * @param col - 列索引
+   * @param selectAll - 是否全选文本
+   * @param initialValue - 可选的初始值（用于在数据已修改的情况下保存原始值）
    */
-  const startEdit = (row: number, col: number, selectAll = true): void => {
+  const startEdit = (
+    row: number,
+    col: number,
+    selectAll = true,
+    initialValue?: string
+  ): void => {
     // 边界检查
     if (row < 0 || row >= getMaxRows() || col < 0 || col >= getMaxCols()) {
       console.warn(`Invalid cell position: row=${row}, col=${col}`);
       return;
     }
 
-    beforeEditSnapshot = tableData.value[row]?.[col] ?? "";
+    // 如果提供了初始值，使用它；否则使用当前单元格的值
+    beforeEditSnapshot =
+      initialValue !== undefined
+        ? initialValue
+        : tableData.value[row]?.[col] ?? "";
     editingCell.value = { row, col };
     startSingleSelection(row, col); // 确保编辑时选中该单元格
+
+    debugLog("[CellEditing] startEdit", {
+      row,
+      col,
+      beforeValue: beforeEditSnapshot,
+      currentValue: tableData.value[row]?.[col] ?? "",
+      initialValueProvided: initialValue !== undefined,
+      selectAll,
+    });
 
     // 使用 nextTick 确保 DOM 更新后再聚焦
     nextTick(() => {
@@ -107,11 +140,46 @@ export function useCellEditing({
    * 停止编辑单元格
    */
   const stopEdit = (): void => {
-    if (!editingCell.value) return;
+    if (!editingCell.value) {
+      debugLog("[CellEditing] stopEdit: no editing cell, skipped");
+      return;
+    }
     const { row, col } = editingCell.value;
 
-    if (beforeEditSnapshot !== (tableData.value[row]?.[col] ?? "")) {
-      saveHistory(tableData.value); // 数据变动保存历史
+    const newValue = tableData.value[row]?.[col] ?? "";
+    debugLog("[CellEditing] stopEdit: called", {
+      row,
+      col,
+      beforeValue: beforeEditSnapshot,
+      newValue,
+      hasChange: beforeEditSnapshot !== newValue,
+    });
+
+    if (beforeEditSnapshot !== newValue) {
+      // 构建变化信息
+      const changes: CellChange[] = [
+        {
+          row,
+          col,
+          oldValue: beforeEditSnapshot ?? "",
+          newValue,
+        },
+      ];
+
+      debugLog("[CellEditing] stopEdit: saving history", {
+        row,
+        col,
+        changes,
+      });
+
+      // 保存历史记录，指定操作类型为单元格编辑
+      saveHistory(tableData.value, {
+        type: HistoryActionType.CELL_EDIT,
+        description: `Cell edit at (${row}, ${col})`,
+        changes,
+      });
+    } else {
+      debugLog("[CellEditing] stopEdit: no change detected, skipping history");
     }
 
     editingCell.value = null;

@@ -576,6 +576,7 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
       emit("custom-action", args[0] as { id: string; context: MenuContext });
     }
   },
+  initHistory, // 传递 initHistory 函数，用于在数据更新时重新初始化历史记录
 });
 
 // 初始化数据同步监听

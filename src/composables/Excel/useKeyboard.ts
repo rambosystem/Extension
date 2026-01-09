@@ -2,6 +2,11 @@ import { KEY_CODES, NAV_DIRECTION } from "./constants";
 import type { Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
 import type { MenuContext } from "./useCellMenuPosition";
+import {
+  HistoryActionType,
+  type CellChange,
+  type SaveHistoryOptions,
+} from "./useHistory";
 
 /**
  * 自定义菜单项配置
@@ -39,10 +44,15 @@ export interface UseKeyboardOptions {
     maxCols: number,
     extendSelection?: boolean
   ) => void;
-  saveHistory: (state: any) => void;
+  saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   undoHistory: () => any | null;
   redoHistory: () => any | null;
-  startEdit: (row: number, col: number, selectAll?: boolean) => void;
+  startEdit: (
+    row: number,
+    col: number,
+    selectAll?: boolean,
+    initialValue?: string
+  ) => void;
   deleteSelection: (range: SelectionRange) => void;
   handleInsertRowBelow: (rowIndex: number) => void;
   handleDeleteRow: (rowIndexOrIndices: number | number[]) => void;
@@ -297,8 +307,39 @@ export function useKeyboard({
     const key = event.key.toLowerCase();
     if (key === KEY_CODES.Z) {
       const newState = event.shiftKey ? redoHistory() : undoHistory();
-      if (newState) {
-        tableData.value = newState;
+      if (newState && Array.isArray(newState)) {
+        // 验证状态的有效性
+        const validatedState = newState.map((row) => {
+          if (row === null || row === undefined) {
+            return [];
+          }
+          if (Array.isArray(row)) {
+            return row.map((cell) => String(cell ?? ""));
+          }
+          return [];
+        });
+        // 确保至少有一行
+        if (validatedState.length === 0) {
+          validatedState.push([]);
+        }
+        tableData.value = validatedState;
+
+        // 验证并调整 activeCell 位置，确保它在有效范围内
+        if (activeCell.value) {
+          const maxRows = validatedState.length;
+          const maxCols = validatedState[0]?.length || 0;
+
+          if (
+            activeCell.value.row >= maxRows ||
+            activeCell.value.col >= maxCols
+          ) {
+            // 如果当前活动单元格超出范围，移动到最后一个有效单元格
+            activeCell.value = {
+              row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
+              col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
+            };
+          }
+        }
       }
       event.preventDefault();
       return true;
@@ -306,8 +347,39 @@ export function useKeyboard({
 
     if (key === KEY_CODES.Y) {
       const newState = redoHistory();
-      if (newState) {
-        tableData.value = newState;
+      if (newState && Array.isArray(newState)) {
+        // 验证状态的有效性
+        const validatedState = newState.map((row) => {
+          if (row === null || row === undefined) {
+            return [];
+          }
+          if (Array.isArray(row)) {
+            return row.map((cell) => String(cell ?? ""));
+          }
+          return [];
+        });
+        // 确保至少有一行
+        if (validatedState.length === 0) {
+          validatedState.push([]);
+        }
+        tableData.value = validatedState;
+
+        // 验证并调整 activeCell 位置，确保它在有效范围内
+        if (activeCell.value) {
+          const maxRows = validatedState.length;
+          const maxCols = validatedState[0]?.length || 0;
+
+          if (
+            activeCell.value.row >= maxRows ||
+            activeCell.value.col >= maxCols
+          ) {
+            // 如果当前活动单元格超出范围，移动到最后一个有效单元格
+            activeCell.value = {
+              row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
+              col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
+            };
+          }
+        }
       }
       event.preventDefault();
       return true;
@@ -431,7 +503,7 @@ export function useKeyboard({
   };
 
   /**
-   * 处理删除键（删除选区内容）
+   * 处理删除键(删除选区内容）
    */
   const handleDelete = (event: KeyboardEvent): boolean => {
     if (event.ctrlKey || event.metaKey) {
@@ -448,8 +520,37 @@ export function useKeyboard({
     }
 
     event.preventDefault();
-    saveHistory(tableData.value);
+
+    // 收集要删除的单元格变化信息（在删除之前捕获原始值）
+    const changes: CellChange[] = [];
+    for (let r = range.minRow; r <= range.maxRow; r++) {
+      if (!tableData.value[r]) continue;
+      for (let c = range.minCol; c <= range.maxCol; c++) {
+        const oldValue = tableData.value[r]?.[c] ?? "";
+        if (oldValue !== "") {
+          // 只记录非空单元格的删除
+          changes.push({
+            row: r,
+            col: c,
+            oldValue,
+            newValue: "",
+          });
+        }
+      }
+    }
+
+    // 执行删除操作
     deleteSelection(range);
+
+    // 如果有变化，保存历史记录（在删除之后保存）
+    if (changes.length > 0) {
+      saveHistory(tableData.value, {
+        type: HistoryActionType.DELETE,
+        description: `Delete ${changes.length} cell(s)`,
+        changes,
+      });
+    }
+
     return true;
   };
 
@@ -535,9 +636,12 @@ export function useKeyboard({
     }
 
     event.preventDefault();
-    saveHistory(tableData.value);
+    // 先保存原始值，然后修改数据，再开始编辑
+    // 这样 startEdit 可以正确记录编辑前的值
+    const originalValue = tableData.value[row][col] ?? "";
     tableData.value[row][col] = event.key;
-    startEdit(row, col, false);
+    // 传递原始值给 startEdit，确保历史记录能正确记录变化
+    startEdit(row, col, false, originalValue);
     return true;
   };
 

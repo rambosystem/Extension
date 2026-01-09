@@ -11,6 +11,7 @@ export interface UseDataSyncOptions {
   getData: () => string[][];
   setData: (data: string[][]) => void;
   emit: (event: string, ...args: any[]) => void;
+  initHistory?: (state: string[][]) => void; // 新增：初始化历史记录的函数
 }
 
 /**
@@ -31,6 +32,7 @@ export function useDataSync({
   getData,
   setData,
   emit,
+  initHistory,
 }: UseDataSyncOptions): UseDataSyncReturn {
   let isUpdatingFromExternal = false;
 
@@ -72,6 +74,10 @@ export function useDataSync({
             setData(newValue);
             nextTick(() => {
               isUpdatingFromExternal = false;
+              // 当外部数据更新时，重新初始化历史记录
+              if (initHistory && newValue.length > 0) {
+                initHistory(newValue);
+              }
             });
           }
         }
@@ -89,6 +95,10 @@ export function useDataSync({
     nextTick(() => {
       isUpdatingFromExternal = false;
       notifyDataChange();
+      // 设置数据后，重新初始化历史记录
+      if (initHistory && data.length > 0) {
+        initHistory(data);
+      }
     });
   };
 
