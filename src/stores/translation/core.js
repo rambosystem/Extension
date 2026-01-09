@@ -41,6 +41,15 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     // 翻译截断状态
     isTranslationTruncated: false,
 
+    // 原始输入内容（用于截断后继续翻译）
+    originalCodeContent: "",
+
+    // 已累积的翻译结果（用于合并多次翻译的结果）
+    accumulatedTranslationResult: [],
+
+    // 当前批次的翻译结果（用于流式更新时避免重复）
+    currentBatchResult: [],
+
     // 用户建议
     userSuggestion: "",
     userSuggestionVisible: false,
@@ -187,17 +196,27 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     /**
      * 开始翻译
      * @param {number} totalCount - 总翻译数量（可选）
+     * @param {boolean} isResume - 是否为继续翻译（不重置累积结果）
      */
-    startTranslation(totalCount = 0) {
-      // 清空上一次的翻译结果，避免流式展示时显示旧数据
-      this.clearTranslationResult();
+    startTranslation(totalCount = 0, isResume = false) {
+      // 如果不是继续翻译，清空上一次的翻译结果和累积结果
+      if (!isResume) {
+        this.clearTranslationResult();
+        this.accumulatedTranslationResult = [];
+        this.currentBatchResult = [];
+        // 保存原始输入内容
+        this.originalCodeContent = this.codeContent;
+      } else {
+        // 继续翻译时，清空当前批次结果
+        this.currentBatchResult = [];
+      }
       this.isTranslating = true;
       this.setLoading("translation", true);
       // 重置截断状态
       this.isTranslationTruncated = false;
       // 初始化进度计数器
       this.translationProgress = {
-        finished: 0,
+        finished: isResume ? this.accumulatedTranslationResult.length : 0,
         total: totalCount,
       };
     },
@@ -208,13 +227,12 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     finishTranslation() {
       this.isTranslating = false;
       this.setLoading("translation", false);
-      // 重置进度计数器
+      // 重置进度计数器（保留累积结果的数量）
       this.translationProgress = {
-        finished: 0,
+        finished: this.accumulatedTranslationResult.length || 0,
         total: 0,
       };
-      // 重置截断状态
-      this.isTranslationTruncated = false;
+      // 注意：不重置截断状态，以便在对话框中显示警告
     },
 
     /**
@@ -379,9 +397,44 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
 
     /**
-     * 继续翻译流程（在自动去重完成后调用）
+     * 提取未翻译的内容
+     * @param {Array} translatedResult - 已翻译的结果数组
+     * @returns {string} 未翻译的内容（按行分隔）
      */
-    async continueTranslation() {
+    extractRemainingContent(translatedResult) {
+      if (!this.originalCodeContent) {
+        return "";
+      }
+
+      // 获取原始输入的所有行
+      const originalLines = this.originalCodeContent
+        .trim()
+        .split("\n")
+        .filter((line) => line.trim());
+
+      // 从已翻译结果中提取已翻译的原文（en字段）
+      const translatedLines = new Set();
+      translatedResult.forEach((item) => {
+        const enText = item.en || "";
+        if (enText.trim()) {
+          translatedLines.add(enText.trim());
+        }
+      });
+
+      // 找出未翻译的行
+      const remainingLines = originalLines.filter((line) => {
+        const trimmedLine = line.trim();
+        return trimmedLine && !translatedLines.has(trimmedLine);
+      });
+
+      return remainingLines.join("\n");
+    },
+
+    /**
+     * 继续翻译流程（在自动去重完成后调用）
+     * @param {boolean} isResume - 是否为继续翻译（截断后自动继续）
+     */
+    async continueTranslation(isResume = false) {
       // 计算总翻译数量（按行数）
       const textLines = this.codeContent
         .trim()
@@ -389,7 +442,15 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         .filter((line) => line.trim());
       const totalCount = textLines.length;
 
-      this.startTranslation(totalCount);
+      // 如果是继续翻译，总数量应该是原始内容的总行数
+      const finalTotalCount = isResume
+        ? this.originalCodeContent
+            .trim()
+            .split("\n")
+            .filter((line) => line.trim()).length
+        : totalCount;
+
+      this.startTranslation(finalTotalCount, isResume);
 
       try {
         // 先弹出对话框，显示加载状态
@@ -412,11 +473,22 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         // 创建流式更新回调
         const onProgress = (partialResult, fullText) => {
           if (partialResult && Array.isArray(partialResult)) {
-            // 更新翻译结果（流式更新）
-            // key的生成由Excel组件的auto increment功能处理
-            this.setTranslationResult(partialResult);
-            // 更新进度计数器
-            this.updateTranslationProgress(partialResult.length);
+            if (isResume) {
+              // 继续翻译：更新当前批次结果，并合并显示
+              // partialResult 是当前批次的完整结果（从当前批次开始）
+              this.currentBatchResult = partialResult;
+              // 合并显示：累积结果 + 当前批次结果
+              const mergedResult = [
+                ...this.accumulatedTranslationResult,
+                ...this.currentBatchResult,
+              ];
+              this.setTranslationResult(mergedResult);
+              this.updateTranslationProgress(mergedResult.length);
+            } else {
+              // 第一次翻译：直接显示当前结果
+              this.setTranslationResult(partialResult);
+              this.updateTranslationProgress(partialResult.length);
+            }
           }
         };
 
@@ -425,19 +497,90 @@ export const useTranslationCoreStore = defineStore("translationCore", {
           onProgress
         );
 
-        // 最终设置完整结果
-        // key的生成由Excel组件的auto increment功能处理
-        this.setTranslationResult(result);
-        // 更新最终进度
-        this.updateTranslationProgress(result.length);
-        
         // 获取截断状态（如果可用）
+        let isTruncated = false;
         if (translation.getIsTruncated) {
-          this.isTranslationTruncated = translation.getIsTruncated();
+          isTruncated = translation.getIsTruncated();
+          this.isTranslationTruncated = isTruncated;
+        }
+
+        // 合并结果到累积结果中
+        if (isResume) {
+          // 继续翻译：追加当前批次结果到累积结果
+          // result 是当前批次的最终结果
+          this.accumulatedTranslationResult = [
+            ...this.accumulatedTranslationResult,
+            ...result,
+          ];
+        } else {
+          // 第一次翻译：直接使用结果
+          this.accumulatedTranslationResult = [...result];
+        }
+
+        // 最终设置完整结果（显示累积的所有结果）
+        // key的生成由Excel组件的auto increment功能处理
+        this.setTranslationResult(this.accumulatedTranslationResult);
+        // 更新最终进度
+        this.updateTranslationProgress(this.accumulatedTranslationResult.length);
+
+        // 如果检测到截断，尝试自动继续翻译
+        if (isTruncated && !isResume) {
+          // 只在第一次翻译时自动继续，避免无限递归
+          const shouldAutoContinue =
+            localStorage.getItem("auto_continue_on_truncate") !== "false"; // 默认启用
+
+          if (shouldAutoContinue) {
+            // 提取未翻译的内容
+            const remainingContent = this.extractRemainingContent(result);
+            if (remainingContent && remainingContent.trim()) {
+              // 检查剩余内容是否与当前内容相同（避免无限循环）
+              const currentContent = this.codeContent.trim();
+              if (remainingContent.trim() !== currentContent) {
+                // 更新 codeContent 为剩余内容
+                this.setCodeContent(remainingContent);
+                // 显示继续翻译的提示
+                ElMessage.info(
+                  t("translation.autoContinuingTranslation") ||
+                    "Translation truncated. Auto-continuing with remaining content..."
+                );
+                // 递归继续翻译（使用 isResume=true 表示继续翻译）
+                await this.continueTranslation(true);
+                // 如果继续翻译成功完成，清除截断状态（因为已经全部翻译完成）
+                // 注意：如果继续翻译时再次截断，isTranslationTruncated 会保持为 true
+                if (!this.isTranslationTruncated) {
+                  // 全部翻译完成，显示成功消息
+                  ElMessage.success(t("translation.translationCompleted"));
+                }
+                return; // 提前返回，避免执行后续的保存逻辑
+              } else {
+                // 如果剩余内容与当前内容相同，说明无法继续，保持截断状态并显示警告
+                ElMessage.warning(
+                  t("translation.cannotAutoContinue") ||
+                    "Cannot auto-continue translation. Please reduce the content amount."
+                );
+              }
+            } else {
+              // 没有剩余内容，说明已经全部翻译完成（虽然被截断标记了）
+              // 清除截断状态，因为实际上已经全部翻译完成
+              this.isTranslationTruncated = false;
+              ElMessage.info(
+                t("translation.allContentTranslated") ||
+                  "All content has been translated, but some results may be incomplete."
+              );
+            }
+          } else {
+            // 自动继续功能未启用，保持截断状态，让对话框显示警告
+            // useTranslation 中已经显示了警告消息，这里不需要重复
+          }
+        } else if (!isTruncated && !isResume) {
+          // 翻译完成且没有截断，清除截断状态
+          this.isTranslationTruncated = false;
         }
 
         // 提取纯数据并保存到存储
-        const translationData = translation.extractTranslationData(result);
+        const translationData = translation.extractTranslationData(
+          this.accumulatedTranslationResult
+        );
         this.saveTranslationToLocal(translationData);
       } catch (error) {
         // 翻译失败时关闭对话框

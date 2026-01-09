@@ -302,11 +302,20 @@ export function useTranslation() {
       }
 
       // 如果检测到可能被截断，显示警告
+      // 注意：如果启用了自动继续功能，警告会在 store 层处理，这里不显示
       if (isTruncated) {
-        ElMessage.warning(
-          t("translation.translationTruncated") ||
-            "Translation incomplete due to token limit. Please reduce the amount of content translated at once."
-        );
+        // 检查是否启用了自动继续功能
+        const shouldAutoContinue =
+          localStorage.getItem("auto_continue_on_truncate") !== "false";
+        
+        // 只有在未启用自动继续时才显示警告
+        // 如果启用了自动继续，警告会在 store 层根据实际结果决定是否显示
+        if (!shouldAutoContinue) {
+          ElMessage.warning(
+            t("translation.translationTruncated") ||
+              "Translation incomplete due to token limit. Please reduce the amount of content translated at once."
+          );
+        }
       } else {
         ElMessage.success(t("translation.translationCompleted"));
       }
