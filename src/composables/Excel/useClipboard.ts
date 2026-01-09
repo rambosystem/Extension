@@ -242,15 +242,7 @@ class PasteStrategyManager {
     const startRow = context.activeCell?.row ?? 0;
     const startCol = context.activeCell?.col ?? 0;
 
-    // 4. 保存历史记录
-    options.saveHistory(context.tableData, {
-      type: HistoryActionType.PASTE,
-      description: `Paste ${pasteData.length}x${
-        pasteData[0]?.length || 0
-      } cells`,
-    });
-
-    // 5. 执行粘贴（扩展行列）
+    // 4. 执行粘贴（扩展行列）
     const result = this.applyPasteData(
       pasteData,
       startRow,
@@ -258,6 +250,16 @@ class PasteStrategyManager {
       context.tableData,
       options
     );
+
+    // 5. 保存历史记录（在粘贴完成后）
+    if (result.success) {
+      options.saveHistory(context.tableData, {
+        type: HistoryActionType.PASTE,
+        description: `Paste ${pasteData.length}x${
+          pasteData[0]?.length || 0
+        } cells`,
+      });
+    }
 
     // 6. 更新选区（高亮粘贴区域）
     if (result.success && result.affectedRange) {
