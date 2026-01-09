@@ -17,14 +17,11 @@ export interface MenuContext {
 }
 
 /**
- * 行/列标题选择状态
+ * 鼠标位置
  */
-export interface HeaderSelectState {
-  isSelecting: boolean;
-  type: "row" | "col" | null;
-  startIndex: number | null;
-  isMultipleMode: boolean;
-  lastSelectType: "row" | "col" | null; // 保留最近一次的行/列选择类型，用于菜单位置计算
+export interface MousePosition {
+  x: number;
+  y: number;
 }
 
 /**
@@ -42,9 +39,8 @@ export interface UseCellMenuPositionOptions {
   notifyDataChange: () => void;
   getData: () => string[][];
   setDataWithSync: (data: string[][]) => void;
-  headerSelectState?: Ref<HeaderSelectState>;
-  getMaxRows?: () => number;
-  getMaxCols?: () => number;
+  lastMousePosition?: Ref<MousePosition | null>;
+  getCellElement?: (row: number, col: number) => HTMLElement | null;
 }
 
 /**
@@ -71,9 +67,8 @@ export function useCellMenuPosition({
   notifyDataChange,
   getData,
   setDataWithSync,
-  headerSelectState,
-  getMaxRows,
-  getMaxCols,
+  lastMousePosition,
+  getCellElement,
 }: UseCellMenuPositionOptions): UseCellMenuPositionReturn {
   /**
    * 获取多选模式下菜单按钮应该显示的位置
@@ -93,6 +88,35 @@ export function useCellMenuPosition({
   });
 
   /**
+   * 计算两个点之间的距离（欧几里得距离）
+   */
+  const calculateDistance = (
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ): number => {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  };
+
+  /**
+   * 获取单元格的中心点坐标
+   */
+  const getCellCenter = (
+    row: number,
+    col: number
+  ): { x: number; y: number } | null => {
+    if (!getCellElement) return null;
+    const cellEl = getCellElement(row, col);
+    if (!cellEl) return null;
+    const rect = cellEl.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  };
+
+  /**
    * 计算菜单按钮应该显示的位置
    */
   const cellMenuPosition = computed<CellPosition | null>(() => {
@@ -104,50 +128,64 @@ export function useCellMenuPosition({
       return null;
     }
 
-    // 检查是否是行/列标题选择
-    if (headerSelectState && getMaxRows && getMaxCols) {
-      const headerState = headerSelectState.value;
-      const selection = normalizedSelection.value;
+    const selection = normalizedSelection.value;
+    if (!selection) {
+      // 没有选区时，使用默认逻辑
+      if (activeCell.value) {
+        return {
+          row: activeCell.value.row,
+          col: activeCell.value.col,
+        };
+      }
+      return null;
+    }
 
-      if (selection) {
-        const maxRows = getMaxRows();
-        const maxCols = getMaxCols();
-        const selectType = headerState.lastSelectType || headerState.type;
+    // 如果是单单元格选择，直接返回该单元格
+    if (
+      selection.minRow === selection.maxRow &&
+      selection.minCol === selection.maxCol
+    ) {
+      return {
+        row: selection.minRow,
+        col: selection.minCol,
+      };
+    }
 
-        // 判断是否是列选择（覆盖所有行）
-        const isColumnSelection =
-          selection.minRow === 0 && selection.maxRow === maxRows - 1;
+    // 多单元格选择：基于鼠标位置选择最近的角
+    if (lastMousePosition?.value && getCellElement) {
+      const mousePos = lastMousePosition.value;
+      const corners: Array<{ row: number; col: number }> = [
+        { row: selection.minRow, col: selection.minCol }, // 左上
+        { row: selection.minRow, col: selection.maxCol }, // 右上
+        { row: selection.maxRow, col: selection.minCol }, // 左下
+        { row: selection.maxRow, col: selection.maxCol }, // 右下
+      ];
 
-        // 判断是否是行选择（覆盖所有列）
-        const isRowSelection =
-          selection.minCol === 0 && selection.maxCol === maxCols - 1;
+      let minDistance = Infinity;
+      let nearestCorner: CellPosition | null = null;
 
-        // 列选择：菜单出现在首行
-        if (isColumnSelection && selectType === "col") {
-          return {
-            row: 0,
-            // 单列：出现在该列，多列：出现在最后一列（右上角）
-            col:
-              selection.minCol === selection.maxCol
-                ? selection.minCol
-                : selection.maxCol,
-          };
+      for (const corner of corners) {
+        const cellCenter = getCellCenter(corner.row, corner.col);
+        if (cellCenter) {
+          const distance = calculateDistance(
+            mousePos.x,
+            mousePos.y,
+            cellCenter.x,
+            cellCenter.y
+          );
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestCorner = { row: corner.row, col: corner.col };
+          }
         }
+      }
 
-        // 行选择：菜单出现在首列
-        if (isRowSelection && selectType === "row") {
-          return {
-            // 单行：出现在该行，多行：出现在最后一行（左下角）
-            row:
-              selection.minRow === selection.maxRow
-                ? selection.minRow
-                : selection.maxRow,
-            col: 0,
-          };
-        }
+      if (nearestCorner) {
+        return nearestCorner;
       }
     }
 
+    // 多选模式处理
     if (isMultipleMode.value) {
       const lastCell = getLastCellInMultiSelections.value;
       if (lastCell) {
@@ -162,28 +200,11 @@ export function useCellMenuPosition({
       return null;
     }
 
-    const selection = normalizedSelection.value;
-    if (selection) {
-      const isMultiCellSelection =
-        selection.minRow !== selection.maxRow ||
-        selection.minCol !== selection.maxCol;
-
-      if (isMultiCellSelection) {
-        return {
-          row: selection.maxRow,
-          col: selection.maxCol,
-        };
-      }
-    }
-
-    if (activeCell.value) {
-      return {
-        row: activeCell.value.row,
-        col: activeCell.value.col,
-      };
-    }
-
-    return null;
+    // 如果没有鼠标位置或无法获取单元格元素，使用默认逻辑（右下角）
+    return {
+      row: selection.maxRow,
+      col: selection.maxCol,
+    };
   });
 
   /**

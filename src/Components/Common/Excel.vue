@@ -68,6 +68,8 @@
           v-for="(_col, colIndex) in internalColumns"
           :key="colIndex"
           class="excel-cell"
+          :data-row="rowIndex"
+          :data-col="colIndex"
           :class="[
             {
               // 仅在非多选状态下，才显示 active 样式
@@ -460,38 +462,68 @@ const {
 });
 
 // --- 鼠标事件管理 ---
-const { handleMouseUp, handleCellMouseDown: originalHandleCellMouseDown, handleMouseEnter } = useMouseEvents(
-  {
-    isSelecting,
-    selectionStart,
-    selectionEnd,
-    startSingleSelection,
-    updateSingleSelectionEnd,
-    startMultipleSelection,
-    updateMultipleSelectionEnd,
-    endMultipleSelectionClick,
-    endMultipleSelectionDrag,
-    multiSelections,
-    isEditing,
-    stopEdit,
-    handleFillDragEnter,
-    applyFill,
-    stopColumnResize,
-    stopRowResize,
-    props,
-    fillHandleComposable,
-    columnWidthComposable,
-    rowHeightComposable,
-    handleColumnResize: handleColumnResizeMove,
-    handleRowResize: handleRowResizeMove,
-  }
-);
+const {
+  handleMouseUp,
+  handleCellMouseDown: originalHandleCellMouseDown,
+  handleMouseEnter,
+} = useMouseEvents({
+  isSelecting,
+  selectionStart,
+  selectionEnd,
+  startSingleSelection,
+  updateSingleSelectionEnd,
+  startMultipleSelection,
+  updateMultipleSelectionEnd,
+  endMultipleSelectionClick,
+  endMultipleSelectionDrag,
+  multiSelections,
+  isEditing,
+  stopEdit,
+  handleFillDragEnter,
+  applyFill,
+  stopColumnResize,
+  stopRowResize,
+  props,
+  fillHandleComposable,
+  columnWidthComposable,
+  rowHeightComposable,
+  handleColumnResize: handleColumnResizeMove,
+  handleRowResize: handleRowResizeMove,
+});
 
-// 临时使用原始函数，稍后会被重新定义
-let handleCellMouseDown = originalHandleCellMouseDown;
+// 包装 handleMouseUp，保存鼠标位置
+const wrappedHandleMouseUp = (event: MouseEvent): void => {
+  lastMousePosition.value = {
+    x: event.clientX,
+    y: event.clientY,
+  };
+  handleMouseUp(event);
+};
+
+// 包装 handleCellMouseDown，让它注册包装后的 handleMouseUp
+const handleCellMouseDown = (
+  rowIndex: number,
+  colIndex: number,
+  maxRows: number,
+  maxCols: number,
+  event: MouseEvent | null = null
+): void => {
+  // 普通单元格选择，不需要特殊处理
+
+  // 调用原始函数，但需要替换它内部注册的 mouseup 事件
+  // 先移除可能存在的原始事件监听
+  window.removeEventListener("mouseup", handleMouseUp);
+
+  // 调用原始函数（它会重新注册 mouseup，但我们会在之后替换）
+  originalHandleCellMouseDown(rowIndex, colIndex, maxRows, maxCols, event);
+
+  // 移除原始注册的 handleMouseUp，注册我们的包装版本
+  window.removeEventListener("mouseup", handleMouseUp);
+  window.addEventListener("mouseup", wrappedHandleMouseUp);
+};
 
 // 更新引用
-handleMouseUpRef = handleMouseUp;
+handleMouseUpRef = wrappedHandleMouseUp;
 
 // 填充拖拽开始
 function startFillDrag(row: number, col: number): void {
@@ -585,6 +617,18 @@ const headerSelectState = ref<HeaderSelectState>({
   lastSelectType: null,
 });
 
+// 保存最后一次鼠标位置，用于菜单位置计算
+const lastMousePosition = ref<{ x: number; y: number } | null>(null);
+
+// 获取单元格DOM元素的函数
+const getCellElement = (row: number, col: number): HTMLElement | null => {
+  if (!containerRef.value) return null;
+  // 通过data属性查找单元格
+  return containerRef.value.querySelector(
+    `.excel-cell[data-row="${row}"][data-col="${col}"]`
+  ) as HTMLElement | null;
+};
+
 // --- Cell Menu Position 管理 ---
 const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
   editingCell,
@@ -598,9 +642,8 @@ const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
   notifyDataChange,
   getData,
   setDataWithSync,
-  headerSelectState,
-  getMaxRows: () => rows.value.length,
-  getMaxCols: () => internalColumns.value.length,
+  lastMousePosition,
+  getCellElement,
 });
 
 /**
@@ -626,20 +669,7 @@ const handleContainerClick = (event: MouseEvent): void => {
   }
 };
 
-// 重新定义 handleCellMouseDown，在普通单元格选择时清空 lastSelectType
-handleCellMouseDown = (
-  rowIndex: number,
-  colIndex: number,
-  maxRows: number,
-  maxCols: number,
-  event: MouseEvent | null = null
-): void => {
-  // 清空 lastSelectType，因为这是普通单元格选择
-  if (headerSelectState.value.lastSelectType) {
-    headerSelectState.value.lastSelectType = null;
-  }
-  originalHandleCellMouseDown(rowIndex, colIndex, maxRows, maxCols, event);
-};
+// handleCellMouseDown 已经在上面定义，这里不需要重新定义
 
 /**
  * 处理行号鼠标按下事件
@@ -663,7 +693,7 @@ const handleRowNumberMouseDown = (
     type: "row",
     startIndex: rowIndex,
     isMultipleMode: isCtrlClick,
-    lastSelectType: headerSelectState.value.lastSelectType,
+    lastSelectType: null,
   };
 
   // 全选该行
@@ -698,7 +728,7 @@ const handleColumnHeaderMouseDown = (
     type: "col",
     startIndex: colIndex,
     isMultipleMode: isCtrlClick,
-    lastSelectType: headerSelectState.value.lastSelectType,
+    lastSelectType: null,
   };
 
   // 全选该列
@@ -746,11 +776,14 @@ const handleColumnHeaderMouseEnter = (colIndex: number): void => {
 /**
  * 处理行号/列标题鼠标抬起事件
  */
-const handleHeaderMouseUp = (_event: MouseEvent): void => {
+const handleHeaderMouseUp = (event: MouseEvent): void => {
   if (!headerSelectState.value.isSelecting) return;
 
-  // 保留最近一次的选择类型，用于菜单位置计算
-  const lastSelectType = headerSelectState.value.type;
+  // 保存鼠标位置
+  lastMousePosition.value = {
+    x: event.clientX,
+    y: event.clientY,
+  };
 
   // 清理状态
   headerSelectState.value = {
@@ -758,7 +791,7 @@ const handleHeaderMouseUp = (_event: MouseEvent): void => {
     type: null,
     startIndex: null,
     isMultipleMode: false,
-    lastSelectType,
+    lastSelectType: null,
   };
 
   // 移除事件监听
