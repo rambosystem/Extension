@@ -4,11 +4,11 @@
  */
 
 // DeepSeek 翻译服务
-export { translateWithDeepSeek } from "./deepseekService.js";
+export { translateWithDeepSeek as translateByAI } from "./deepseekService.js";
 
 // Lokalise 服务
 export {
-  translate,
+  translate as translateByHuman,
   getUserProjects,
   uploadTranslationKeys,
   createTranslationKey,

@@ -1,5 +1,5 @@
 import { ElMessage } from "element-plus";
-import { translate } from "../../services/translation/index.js";
+import { translateByHuman } from "../../services/translation/index.js";
 import { t } from "../../utils/i18n.js";
 import { ref } from "vue";
 
@@ -241,7 +241,7 @@ export function useTranslation() {
           }
         : null;
 
-      const data = await translate(
+      const data = await translateByHuman(
         content,
         (status) => {
           currentStatus.value = status;
