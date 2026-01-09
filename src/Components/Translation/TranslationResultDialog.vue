@@ -465,7 +465,7 @@ const customMenuItems = computed(() => {
   return [
     {
       id: "auto-increment-key",
-      label: "Auto Increment",
+      label: t("translationResult.autoIncrement"),
       shortcut: "Ctrl+Alt+A",
       validate: (ctx) => {
         // 验证：列名必须为 "Key"，且选区必须在第一列（Key列）
@@ -792,8 +792,7 @@ const handleCustomAction = ({ id, context }) => {
     // 检查 baseline key 是否存在
     if (!baselineKey || !baselineKey.trim()) {
       ElMessage.warning(
-        t("translation.autoIncrementBaselineKeyRequired") ||
-          "Please configure baseline key in settings before using auto increment"
+        t("translation.autoIncrementBaselineKeyRequired")
       );
       return;
     }

@@ -8,14 +8,14 @@
     :close-on-click-modal="!isDeduplicating"
     :close-on-press-escape="!isDeduplicating"
     v-loading="isDeduplicating"
-    element-loading-text="Processing deduplication..."
+    :element-loading-text="t('upload.processingDeduplication')"
     element-loading-spinner="el-icon-loading"
   >
     <el-form label-position="top">
       <el-form-item :label="t('translation.selectProject')">
         <el-input
           :modelValue="selectedProject || ''"
-          placeholder="No project selected"
+          :placeholder="t('translationResult.noProjectSelected')"
           style="width: 100%"
           readonly
           :disabled="isDeduplicating"

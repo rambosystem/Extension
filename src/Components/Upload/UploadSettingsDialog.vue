@@ -2,13 +2,13 @@
   <el-dialog
     :modelValue="uploadStore.uploadDialogVisible"
     @update:modelValue="uploadStore.setUploadDialogVisible"
-    :title="uploadStore.isUploadSuccess ? 'Upload Success' : 'Upload Setting'"
+    :title="uploadStore.isUploadSuccess ? t('upload.uploadSuccess') : t('upload.uploadSetting')"
     width="500px"
     top="30vh"
     :close-on-click-modal="!uploadStore.isUploading"
     :close-on-press-escape="!uploadStore.isUploading"
     v-loading="uploadStore.isUploading"
-    element-loading-text="Uploading to Lokalise..."
+    :element-loading-text="t('upload.uploadingToLokalise')"
     element-loading-spinner="el-icon-loading"
     @close="uploadStore.closeUploadDialog"
   >
@@ -17,7 +17,7 @@
       <div class="success-icon">
         <img src="../../assets/success.svg" alt="Success" />
       </div>
-      <div class="success-title">Success !</div>
+      <div class="success-title">{{ t('upload.success') }}</div>
       <div class="success-message">{{ uploadStore.successMessage }}</div>
     </div>
 
@@ -28,11 +28,11 @@
       label-position="top"
       @submit.prevent="handleUpload"
     >
-      <el-form-item label="Tag">
+      <el-form-item :label="t('upload.tag')">
         <AutocompleteInput
           :modelValue="uploadStore.uploadForm.tag"
           @update:modelValue="uploadStore.handleTagChange"
-          placeholder="Enter or select tag"
+          :placeholder="t('upload.tagPlaceholder')"
           :fetch-suggestions="fetchTagSuggestions"
           :get-project-id="getProjectId"
           :show-dropdown="true"
@@ -47,7 +47,7 @@
         <el-button
           v-if="!uploadStore.isUploadSuccess"
           @click="uploadStore.closeUploadDialog"
-          >Cancel</el-button
+          >{{ t('common.cancel') }}</el-button
         >
         <el-button
           v-if="!uploadStore.isUploadSuccess"
@@ -56,7 +56,7 @@
           :disabled="uploadStore.isUploading"
           :loading="uploadStore.isUploading"
         >
-          {{ uploadStore.isUploading ? "Uploading..." : "Upload" }}
+          {{ uploadStore.isUploading ? t('upload.uploading') : t('upload.upload') }}
         </el-button>
         <el-button
           v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
@@ -64,7 +64,7 @@
           @click="uploadStore.openLokaliseProject"
           style="min-width: 120px"
         >
-          View In Lokalise
+          {{ t('upload.viewInLokalise') }}
         </el-button>
         <el-button
           v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
@@ -72,7 +72,7 @@
           @click="uploadStore.openLokaliseDownload"
           style="min-width: 80px"
         >
-          Build Now
+          {{ t('upload.buildNow') }}
         </el-button>
       </div>
     </template>
@@ -80,11 +80,14 @@
 </template>
 
 <script setup>
+import { useI18n } from "../../composables/Core/useI18n.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
 import AutocompleteInput from "../Common/AutocompleteInput.vue";
 import { autocompleteTags } from "../../services/autocomplete/autocompleteService.js";
 import { debugLog, debugError } from "../../utils/debug.js";
+
+const { t } = useI18n();
 
 // 使用翻译Store
 const uploadStore = useUploadStore();

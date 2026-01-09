@@ -29,7 +29,6 @@ import { useI18n } from "../../composables/Core/useI18n.js";
 import PopupTextInput from "../Common/PopupTextInput.vue";
 import MultiSelectWithAll from "../Common/MultiSelectWithAll.vue";
 import en from "../../locales/en.json";
-import zh_CN from "../../locales/zh_CN.json";
 
 const props = defineProps({
   filterKeyName: {
@@ -60,7 +59,6 @@ const { t, currentLanguage } = useI18n();
 
 const messages = {
   en,
-  zh_CN,
 };
 const globalLanguage = currentLanguage;
 

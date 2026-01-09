@@ -81,7 +81,7 @@
             <div class="table-section">
                 <el-table :data="paginatedTermsData" style="width: 100%" empty-text="" v-loading="loading"
                     :element-loading-text="t('common.loading')">
-                    <el-table-column prop="en" label="EN">
+                    <el-table-column prop="en" :label="t('terms.enLabel')">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.en" :isEditing="row.editing_en" :rowIndex="$index"
                                 :columnIndex="0" :isLastCell="false" @enterEdit="enterEditMode($index, 'en')"
@@ -90,7 +90,7 @@
                                 @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
-                    <el-table-column prop="cn" label="CN">
+                    <el-table-column prop="cn" :label="t('terms.cnLabel')">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.cn" :isEditing="row.editing_cn" :rowIndex="$index"
                                 :columnIndex="1" :isLastCell="false" @enterEdit="enterEditMode($index, 'cn')"
@@ -99,7 +99,7 @@
                                 @save="() => handleSaveTerm(row)" @tabNext="handleTabNext" />
                         </template>
                     </el-table-column>
-                    <el-table-column prop="jp" label="JP">
+                    <el-table-column prop="jp" :label="t('terms.jpLabel')">
                         <template #default="{ row, $index }">
                             <EditableCell :value="row.jp" :isEditing="row.editing_jp" :rowIndex="$index"
                                 :columnIndex="2" :isLastCell="false" @enterEdit="enterEditMode($index, 'jp')"

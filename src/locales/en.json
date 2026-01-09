@@ -78,6 +78,7 @@
     "apiKey": "API Key",
     "apiKeyForDeepSeek": "API Key for DeepSeek",
     "lokaliseApiToken": "Lokalise API Token",
+    "lokaliseApiTokenPlaceholder": "Enter your Lokalise API token...",
     "advancedSettings": "Advanced Settings",
     "language": "Language",
     "clearLocalStorage": "Clear Local Storage",
@@ -170,7 +171,10 @@
     "refreshSuccess": "Terms Library Status refreshed successfully",
     "rebuildEmbeddingCheck": "Are you sure you want to rebuild the index?",
     "rebuildEmbeddingFailed": "Failed to rebuild index",
-    "rebuildEmbeddingProcessing": "Index Processing, please try again later"
+    "rebuildEmbeddingProcessing": "Index Processing, please try again later",
+    "enLabel": "EN",
+    "cnLabel": "CN",
+    "jpLabel": "JP"
   },
   "termMatch": {
     "title": "Term Matching",
@@ -192,5 +196,26 @@
     "averageMatches": "Average Matches per Text",
     "textsWithMatches": "Texts with Matches",
     "textsWithoutMatches": "Texts without Matches"
+  },
+  "upload": {
+    "uploadSuccess": "Upload Success",
+    "uploadSetting": "Upload Setting",
+    "tag": "Tag",
+    "tagPlaceholder": "Enter or select tag",
+    "uploading": "Uploading...",
+    "upload": "Upload",
+    "uploadingToLokalise": "Uploading to Lokalise...",
+    "viewInLokalise": "View In Lokalise",
+    "buildNow": "Build Now",
+    "success": "Success !",
+    "processingDeduplication": "Processing deduplication..."
+  },
+  "app": {
+    "lokalise": "Lokalise",
+    "copyright": "© Rambo Systems Software"
+  },
+  "translationResult": {
+    "autoIncrement": "Auto Increment",
+    "noProjectSelected": "No project selected"
   }
 }

@@ -51,22 +51,23 @@ export const useAppStore = defineStore("app", {
     },
 
     /**
-     * 设置应用语言
+     * 设置应用语言（已废弃，仅支持英文）
      * @param {string} lang - 语言代码
      */
     setLanguage(lang) {
-      this.language = lang;
+      // 强制设置为英文
+      this.language = "en";
 
       // 保存到localStorage
       if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("app_language", lang);
+        localStorage.setItem("app_language", "en");
       }
 
       // 触发语言变化事件
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("languageChanged", {
-            detail: { language: lang },
+            detail: { language: "en" },
           })
         );
       }
@@ -121,12 +122,12 @@ export const useAppStore = defineStore("app", {
           }
         }
 
-        // 从localStorage恢复语言设置
+        // 从localStorage恢复语言设置（强制为英文）
         if (typeof window !== "undefined" && window.localStorage) {
           const storedLanguage = localStorage.getItem("app_language");
-          if (storedLanguage) {
-            this.language = storedLanguage;
-          }
+          // 强制设置为英文，忽略存储的语言设置
+          this.language = "en";
+          localStorage.setItem("app_language", "en");
         }
 
         this.isInitialized = true;

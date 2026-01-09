@@ -9,7 +9,7 @@
       </el-form-item>
       <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken">
         <SaveableInput v-model="localLokaliseToken" :label="t('settings.lokaliseApiToken')"
-          placeholder="Enter your Lokalise API token..." @save="handleSaveLokaliseApiToken"
+          :placeholder="t('settings.lokaliseApiTokenPlaceholder')" @save="handleSaveLokaliseApiToken"
           :loading="apiStore.loadingStates?.lokaliseApiToken || false" />
       </el-form-item>
 
@@ -68,14 +68,6 @@
         <div class="max-ngram">
           <el-input-number controls-position="right" v-model="translationSettingsStore.maxNGram" :step="1" :min="1"
             :max="5" :precision="0" @change="handleMaxNGramChange" />
-        </div>
-      </el-form-item>
-      <el-form-item :label="t('settings.language')" label-position="left">
-        <div class="language-select">
-          <el-select v-model="appStore.language" @change="handleLanguageChange" style="width: 160px">
-            <el-option label="English" value="en" />
-            <el-option label="中文" value="zh_CN" />
-          </el-select>
         </div>
       </el-form-item>
       <el-form-item :label="t('settings.debugLogging')" label-position="left">
@@ -202,9 +194,6 @@ const handleMaxNGramChange = (value) => {
   translationSettingsStore.updateMaxNGram(value);
 };
 
-const handleLanguageChange = (value) => {
-  appStore.setLanguage(value);
-};
 
 const handleDebugLoggingChange = (value) => {
   translationSettingsStore.toggleDebugLogging(value);
@@ -433,7 +422,6 @@ onMounted(async () => {
   align-items: center;
 }
 
-.language-select,
 .similarity-threshold,
 .top-k,
 .max-ngram,
