@@ -35,6 +35,8 @@
     "noPreviousTranslation": "No previous translation result found",
     "noTranslationData": "No translation data to export",
     "translationCompleted": "Translation completed successfully",
+    "translationTruncated": "Translation Incomplete",
+    "translationTruncatedMessage": "Translation incomplete due to token limit. Please reduce the amount of content translated at once.",
     "pleaseEnterContent": "Please Enter the Content to Translate",
     "pleaseConfigureAPIKey": "Please Configure Your API Key in Settings to Use Translation Feature.",
     "translationFailed": "Translation failed. Please check your API key and settings.",

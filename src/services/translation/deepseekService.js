@@ -16,7 +16,7 @@ import { parseStreamResponse } from "./streamParser.js";
  * @param {Function} onStatusUpdate - 状态更新回调（可选）
  * @param {Array} matchedTerms - 匹配的术语数组（可选）
  * @param {Function} onChunk - 流式处理时的 chunk 回调（可选）
- * @returns {Promise<string>} 翻译结果
+ * @returns {Promise<{content: string, isTruncated: boolean}>} 翻译结果和截断标记
  */
 export async function translateWithDeepSeek(
   content,
@@ -61,6 +61,11 @@ export async function translateWithDeepSeek(
     return await parseStreamResponse(reader, onChunk);
   } else {
     // 非流式处理
-    return await parseNonStreamResponse(response);
+    const content = await parseNonStreamResponse(response);
+    // 非流式响应通常不会截断，但为了保持接口一致性，返回相同格式
+    return {
+      content: content,
+      isTruncated: false,
+    };
   }
 }

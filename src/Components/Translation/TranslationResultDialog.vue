@@ -33,6 +33,18 @@
         </div>
       </div>
     </template>
+    <el-alert
+      v-if="translationCoreStore.isTranslationTruncated"
+      :title="t('translation.translationTruncated')"
+      type="warning"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 16px"
+    >
+      <template #default>
+        {{ t("translation.translationTruncatedMessage") }}
+      </template>
+    </el-alert>
     <el-form label-position="top">
       <el-form-item>
         <div ref="excelWrapperRef" class="excel-wrapper">

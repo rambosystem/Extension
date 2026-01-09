@@ -22,7 +22,7 @@ import {
  * @param {string} content - 要翻译的内容
  * @param {Function} onStatusUpdate - 状态更新回调（可选）
  * @param {Function} onChunk - 流式处理时的 chunk 回调（可选）
- * @returns {Promise<string>} 翻译结果
+ * @returns {Promise<{content: string, isTruncated: boolean}>} 翻译结果和截断标记
  */
 export async function translate(
   content,

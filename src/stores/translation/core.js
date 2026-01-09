@@ -38,6 +38,9 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       total: 0,
     },
 
+    // 翻译截断状态
+    isTranslationTruncated: false,
+
     // 用户建议
     userSuggestion: "",
     userSuggestionVisible: false,
@@ -190,6 +193,8 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       this.clearTranslationResult();
       this.isTranslating = true;
       this.setLoading("translation", true);
+      // 重置截断状态
+      this.isTranslationTruncated = false;
       // 初始化进度计数器
       this.translationProgress = {
         finished: 0,
@@ -208,6 +213,8 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         finished: 0,
         total: 0,
       };
+      // 重置截断状态
+      this.isTranslationTruncated = false;
     },
 
     /**
@@ -423,6 +430,11 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         this.setTranslationResult(result);
         // 更新最终进度
         this.updateTranslationProgress(result.length);
+        
+        // 获取截断状态（如果可用）
+        if (translation.getIsTruncated) {
+          this.isTranslationTruncated = translation.getIsTruncated();
+        }
 
         // 提取纯数据并保存到存储
         const translationData = translation.extractTranslationData(result);

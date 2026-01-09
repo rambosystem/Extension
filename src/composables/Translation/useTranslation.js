@@ -13,6 +13,9 @@ export function useTranslation() {
 
   // 添加动态加载状态
   const currentStatus = ref("idle"); // idle, matching_terms, translating
+  
+  // 截断状态
+  const isTruncatedRef = ref(false);
 
   /**
    * 解析翻译结果文本为结构化数据
@@ -225,6 +228,7 @@ export function useTranslation() {
 
       // 重置状态
       currentStatus.value = "idle";
+      isTruncatedRef.value = false;
 
       let accumulatedText = "";
       let isTruncated = false;
@@ -241,7 +245,7 @@ export function useTranslation() {
           }
         : null;
 
-      const data = await translateByHuman(
+      const result = await translateByHuman(
         content,
         (status) => {
           currentStatus.value = status;
@@ -249,29 +253,45 @@ export function useTranslation() {
         onChunk
       );
 
-      // 检查数据是否可能被截断（通过检查最后一个字符或JSON完整性）
-      const trimmedData = data.trim();
-      // 如果数据以不完整的JSON结束（比如字符串未闭合），可能被截断了
-      const arrayEnd = trimmedData.lastIndexOf("]");
-      const arrayStart = trimmedData.indexOf("[");
-      if (arrayStart !== -1 && (arrayEnd === -1 || arrayEnd <= arrayStart)) {
-        // JSON可能不完整，可能被截断了
-        isTruncated = true;
-      } else {
-        // 检查最后一个对象是否完整
-        const lastBrace = trimmedData.lastIndexOf("}");
-        if (lastBrace !== -1 && lastBrace < trimmedData.length - 1) {
-          // 最后一个}后面还有内容，可能不完整
-          const afterLastBrace = trimmedData.substring(lastBrace + 1).trim();
-          if (
-            afterLastBrace &&
-            !afterLastBrace.startsWith("]") &&
-            !afterLastBrace.startsWith(",")
-          ) {
-            isTruncated = true;
+      // 处理新的返回格式：可能是字符串（向后兼容）或对象
+      let data;
+      if (typeof result === "string") {
+        // 向后兼容：如果返回的是字符串，保持原有逻辑
+        data = result;
+        // 检查数据是否可能被截断（通过检查最后一个字符或JSON完整性）
+        const trimmedData = data.trim();
+        // 如果数据以不完整的JSON结束（比如字符串未闭合），可能被截断了
+        const arrayEnd = trimmedData.lastIndexOf("]");
+        const arrayStart = trimmedData.indexOf("[");
+        if (arrayStart !== -1 && (arrayEnd === -1 || arrayEnd <= arrayStart)) {
+          // JSON可能不完整，可能被截断了
+          isTruncated = true;
+        } else {
+          // 检查最后一个对象是否完整
+          const lastBrace = trimmedData.lastIndexOf("}");
+          if (lastBrace !== -1 && lastBrace < trimmedData.length - 1) {
+            // 最后一个}后面还有内容，可能不完整
+            const afterLastBrace = trimmedData.substring(lastBrace + 1).trim();
+            if (
+              afterLastBrace &&
+              !afterLastBrace.startsWith("]") &&
+              !afterLastBrace.startsWith(",")
+            ) {
+              isTruncated = true;
+            }
           }
         }
+      } else if (result && typeof result === "object") {
+        // 新格式：对象包含 content 和 isTruncated
+        data = result.content || "";
+        isTruncated = result.isTruncated || false;
+      } else {
+        // 未知格式，尝试作为字符串处理
+        data = String(result || "");
       }
+
+      // 保存截断状态到 ref
+      isTruncatedRef.value = isTruncated;
 
       // 最终解析完整结果
       const translationResult = parseTranslationResult(data);
@@ -285,7 +305,7 @@ export function useTranslation() {
       if (isTruncated) {
         ElMessage.warning(
           t("translation.translationTruncated") ||
-            "Translation may be incomplete due to token limit. Please check the results."
+            "Translation incomplete due to token limit. Please reduce the amount of content translated at once."
         );
       } else {
         ElMessage.success(t("translation.translationCompleted"));
@@ -333,11 +353,20 @@ export function useTranslation() {
     });
   };
 
+  /**
+   * 获取翻译截断状态（用于外部访问）
+   * @returns {boolean} 是否截断
+   */
+  const getIsTruncated = () => {
+    return isTruncatedRef.value;
+  };
+
   return {
     loadingStates,
     currentStatus,
     getStatusText,
     performTranslation,
     extractTranslationData,
+    getIsTruncated,
   };
 }

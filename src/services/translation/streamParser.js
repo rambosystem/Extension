@@ -9,7 +9,7 @@ import { debugLog } from "../../utils/debug.js";
  * 处理流式响应，解析 SSE 数据
  * @param {ReadableStreamDefaultReader} reader - 流读取器
  * @param {Function} onChunk - 每收到一个 chunk 时的回调函数 (delta, fullContent)
- * @returns {Promise<string>} 完整的翻译内容
+ * @returns {Promise<{content: string, isTruncated: boolean}>} 完整的翻译内容和截断标记
  */
 export async function parseStreamResponse(reader, onChunk) {
   let fullContent = "";
@@ -96,14 +96,16 @@ export async function parseStreamResponse(reader, onChunk) {
     debugLog("Finish reason:", finishReason);
     debugLog("Token usage:", tokenUsage);
 
-    // 如果因为token限制而停止，在返回的内容中添加标记
-    if (finishReason === "length") {
+    // 如果因为token限制而停止，标记为截断
+    const isTruncated = finishReason === "length";
+    if (isTruncated) {
       debugLog("Warning: Translation stopped due to token limit");
-      // 可以在这里添加一个标记，让调用方知道输出被截断了
-      // 但为了不影响现有逻辑，暂时只记录日志
     }
 
-    return fullContent;
+    return {
+      content: fullContent,
+      isTruncated: isTruncated,
+    };
   } finally {
     reader.releaseLock();
   }
