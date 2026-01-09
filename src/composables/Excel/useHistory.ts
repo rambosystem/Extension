@@ -1,4 +1,4 @@
-import { ref, nextTick, type Ref } from "vue";
+import { ref, type Ref } from "vue";
 import { DEFAULT_CONFIG } from "./constants";
 import {
   debugLog,
@@ -62,14 +62,23 @@ export interface HistoryEntry {
 export interface UseHistoryReturn {
   initHistory: (data: any) => void;
   saveHistory: (currentState: any, options?: SaveHistoryOptions) => void;
-  undo: () => any | null;
-  redo: () => any | null;
+  undo: () => HistoryRestoreResult | null;
+  redo: () => HistoryRestoreResult | null;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  isUndoRedoInProgress: () => boolean; // 新增：检查是否正在进行撤销/重做
   // 新增 API
   getHistoryInfo: () => HistoryInfo;
   clearHistory: () => void;
   getHistoryEntries: () => HistoryEntry[];
+}
+
+/**
+ * 历史记录恢复结果
+ */
+export interface HistoryRestoreResult {
+  state: string[][];
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -747,7 +756,7 @@ export function useHistory(
   /**
    * 撤销操作
    */
-  const undo = (): any | null => {
+  const undo = (): HistoryRestoreResult | null => {
     if (historyIndex.value <= 0) {
       debugLog("[History] undo: cannot undo, already at initial state");
       return null;
@@ -782,7 +791,14 @@ export function useHistory(
 
       // 验证结果的有效性
       if (result.length === 0) {
-        return [[]];
+        // 使用 setTimeout 而不是 nextTick，确保所有 watch 都执行完毕
+        setTimeout(() => {
+          isUndoRedoInProgress = false;
+        }, 0);
+        return {
+          state: [[]],
+          metadata: targetEntry?.metadata,
+        };
       }
 
       // 确保每一行都是有效的数组
@@ -792,11 +808,15 @@ export function useHistory(
         }
       }
 
-      nextTick(() => {
+      // 使用 setTimeout 而不是 nextTick，确保所有 watch 和 emit 都执行完毕
+      setTimeout(() => {
         isUndoRedoInProgress = false;
-      });
+      }, 0);
 
-      return result;
+      return {
+        state: result,
+        metadata: targetEntry?.metadata,
+      };
     } catch (error) {
       isUndoRedoInProgress = false;
       debugError("[History] undo: failed", error);
@@ -807,7 +827,7 @@ export function useHistory(
   /**
    * 重做操作
    */
-  const redo = (): any | null => {
+  const redo = (): HistoryRestoreResult | null => {
     if (historyIndex.value >= historyEntries.value.length - 1) {
       debugLog("[History] redo: cannot redo, already at latest state");
       return null;
@@ -852,7 +872,14 @@ export function useHistory(
         debugWarn(
           "[History] redo: result is empty array, returning empty state"
         );
-        return [[]];
+        // 使用 setTimeout 而不是 nextTick，确保所有 watch 都执行完毕
+        setTimeout(() => {
+          isUndoRedoInProgress = false;
+        }, 0);
+        return {
+          state: [[]],
+          metadata: currentEntry?.metadata,
+        };
       }
 
       // 确保每一行都是有效的数组
@@ -867,11 +894,15 @@ export function useHistory(
         }
       }
 
-      nextTick(() => {
+      // 使用 setTimeout 而不是 nextTick，确保所有 watch 和 emit 都执行完毕
+      setTimeout(() => {
         isUndoRedoInProgress = false;
-      });
+      }, 0);
 
-      return result;
+      return {
+        state: result,
+        metadata: currentEntry?.metadata,
+      };
     } catch (error) {
       isUndoRedoInProgress = false;
       debugError("[History] redo: failed", error);
@@ -919,6 +950,7 @@ export function useHistory(
     redo,
     canUndo: () => historyIndex.value > 0,
     canRedo: () => historyIndex.value < historyEntries.value.length - 1,
+    isUndoRedoInProgress: () => isUndoRedoInProgress,
     getHistoryInfo,
     clearHistory,
     getHistoryEntries,

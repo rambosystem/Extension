@@ -329,6 +329,7 @@ const {
   redo: redoHistory,
   canUndo: canUndoFn,
   canRedo: canRedoFn,
+  isUndoRedoInProgress,
 } = useHistory();
 
 // 智能填充管理（仅在启用时使用）
@@ -553,6 +554,7 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
     }
   },
   initHistory, // 传递 initHistory 函数，用于在数据更新时重新初始化历史记录
+  isUndoRedoInProgress, // 传递 isUndoRedoInProgress 函数，防止撤销/重做时清空历史
 });
 
 // 初始化数据同步监听
@@ -877,6 +879,8 @@ const { handleKeydown } = useKeyboard({
   handleInsertRowBelow, // 使用统一的插入行处理函数
   handleDeleteRow, // 使用统一的删除行处理函数
   tableData,
+  rows, // 传递行引用，用于恢复行数量
+  columns: internalColumns, // 传递列引用，用于恢复列数量
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
   customMenuItems: props.customMenuItems, // 传递自定义菜单项配置

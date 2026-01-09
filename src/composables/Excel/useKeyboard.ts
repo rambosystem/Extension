@@ -6,6 +6,7 @@ import {
   HistoryActionType,
   type CellChange,
   type SaveHistoryOptions,
+  type HistoryRestoreResult,
 } from "./useHistory";
 
 /**
@@ -45,8 +46,8 @@ export interface UseKeyboardOptions {
     extendSelection?: boolean
   ) => void;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
-  undoHistory: () => any | null;
-  redoHistory: () => any | null;
+  undoHistory: () => HistoryRestoreResult | null;
+  redoHistory: () => HistoryRestoreResult | null;
   startEdit: (
     row: number,
     col: number,
@@ -57,6 +58,8 @@ export interface UseKeyboardOptions {
   handleInsertRowBelow: (rowIndex: number) => void;
   handleDeleteRow: (rowIndexOrIndices: number | number[]) => void;
   tableData: Ref<string[][]>;
+  rows: Ref<number[]>;
+  columns: Ref<string[]>;
   getMaxRows: () => number;
   getMaxCols: () => number;
   customMenuItems?: CustomMenuItem[];
@@ -277,6 +280,18 @@ const matchShortcut = (
 };
 
 /**
+ * 生成列标签（A, B, C, ..., Z, AA, AB, ...）
+ */
+const generateColumnLabel = (index: number): string => {
+  if (index < 26) {
+    return String.fromCharCode(65 + index);
+  }
+  const first = Math.floor((index - 26) / 26);
+  const second = (index - 26) % 26;
+  return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
+};
+
+/**
  * Excel 键盘处理 Composable
  */
 export function useKeyboard({
@@ -292,6 +307,8 @@ export function useKeyboard({
   handleInsertRowBelow,
   handleDeleteRow,
   tableData,
+  rows,
+  columns,
   getMaxRows,
   getMaxCols,
   customMenuItems = [],
@@ -366,10 +383,11 @@ export function useKeyboard({
 
     const key = event.key.toLowerCase();
     if (key === KEY_CODES.Z) {
-      const newState = event.shiftKey ? redoHistory() : undoHistory();
-      if (newState && Array.isArray(newState)) {
+      const result = event.shiftKey ? redoHistory() : undoHistory();
+
+      if (result && result.state && Array.isArray(result.state)) {
         // 验证状态的有效性
-        const validatedState = newState.map((row) => {
+        const validatedState = result.state.map((row) => {
           if (row === null || row === undefined) {
             return [];
           }
@@ -382,7 +400,37 @@ export function useKeyboard({
         if (validatedState.length === 0) {
           validatedState.push([]);
         }
+
         tableData.value = validatedState;
+
+        // 始终使用 tableData 的实际大小来调整行列
+        const targetRowCount = validatedState.length;
+        const targetColCount = Math.max(
+          ...validatedState.map((row) => row.length),
+          1
+        );
+
+        // 调整行数量
+        if (rows.value.length !== targetRowCount) {
+          if (rows.value.length > targetRowCount) {
+            rows.value = rows.value.slice(0, targetRowCount);
+          } else {
+            while (rows.value.length < targetRowCount) {
+              rows.value.push(rows.value.length);
+            }
+          }
+        }
+
+        // 调整列数量
+        if (columns.value.length !== targetColCount) {
+          if (columns.value.length > targetColCount) {
+            columns.value = columns.value.slice(0, targetColCount);
+          } else {
+            while (columns.value.length < targetColCount) {
+              columns.value.push(generateColumnLabel(columns.value.length));
+            }
+          }
+        }
 
         // 验证并调整 activeCell 位置，确保它在有效范围内
         if (activeCell.value) {
@@ -406,10 +454,11 @@ export function useKeyboard({
     }
 
     if (key === KEY_CODES.Y) {
-      const newState = redoHistory();
-      if (newState && Array.isArray(newState)) {
+      const result = redoHistory();
+
+      if (result && result.state && Array.isArray(result.state)) {
         // 验证状态的有效性
-        const validatedState = newState.map((row) => {
+        const validatedState = result.state.map((row) => {
           if (row === null || row === undefined) {
             return [];
           }
@@ -423,6 +472,35 @@ export function useKeyboard({
           validatedState.push([]);
         }
         tableData.value = validatedState;
+
+        // 始终使用 tableData 的实际大小来调整行列
+        const targetRowCount = validatedState.length;
+        const targetColCount = Math.max(
+          ...validatedState.map((row) => row.length),
+          1
+        );
+
+        // 调整行数量
+        if (rows.value.length !== targetRowCount) {
+          if (rows.value.length > targetRowCount) {
+            rows.value = rows.value.slice(0, targetRowCount);
+          } else {
+            while (rows.value.length < targetRowCount) {
+              rows.value.push(rows.value.length);
+            }
+          }
+        }
+
+        // 调整列数量
+        if (columns.value.length !== targetColCount) {
+          if (columns.value.length > targetColCount) {
+            columns.value = columns.value.slice(0, targetColCount);
+          } else {
+            while (columns.value.length < targetColCount) {
+              columns.value.push(generateColumnLabel(columns.value.length));
+            }
+          }
+        }
 
         // 验证并调整 activeCell 位置，确保它在有效范围内
         if (activeCell.value) {

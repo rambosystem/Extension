@@ -12,6 +12,7 @@ export interface UseDataSyncOptions {
   setData: (data: string[][]) => void;
   emit: (event: string, ...args: any[]) => void;
   initHistory?: (state: string[][]) => void; // 新增：初始化历史记录的函数
+  isUndoRedoInProgress?: () => boolean; // 新增：检查是否正在撤销/重做
 }
 
 /**
@@ -33,6 +34,7 @@ export function useDataSync({
   setData,
   emit,
   initHistory,
+  isUndoRedoInProgress,
 }: UseDataSyncOptions): UseDataSyncReturn {
   let isUpdatingFromExternal = false;
 
@@ -56,6 +58,11 @@ export function useDataSync({
       () => {
         if (!isUpdatingFromExternal) {
           nextTick(() => {
+            // 如果正在进行撤销/重做操作，不触发数据变化通知
+            // 因为撤销/重做本身就是数据变化，不应该触发额外的通知
+            if (isUndoRedoInProgress && isUndoRedoInProgress()) {
+              return;
+            }
             notifyDataChange();
           });
         }
@@ -75,7 +82,12 @@ export function useDataSync({
             nextTick(() => {
               isUpdatingFromExternal = false;
               // 当外部数据更新时，重新初始化历史记录
-              if (initHistory && newValue.length > 0) {
+              // 但如果正在撤销/重做，不要重新初始化（会清空历史）
+              if (
+                initHistory &&
+                newValue.length > 0 &&
+                (!isUndoRedoInProgress || !isUndoRedoInProgress())
+              ) {
                 initHistory(newValue);
               }
             });
