@@ -467,9 +467,14 @@ const handleExcelDataChange = (data) => {
 
 /**
  * 自定义菜单项配置
- * 只在列名为 "Key" 时显示自增填充菜单项
+ * 只在列名为 "Key" 且 Auto-Increment 开关开启时显示自增填充菜单项
  */
 const customMenuItems = computed(() => {
+  // 检查 Auto-Increment 开关是否开启
+  if (!exportStore.autoIncrementKeyEnabled) {
+    return [];
+  }
+
   // 获取当前列配置，检查第一列是否为 "Key"
   const columnNames = getColumnConfig.value.columnNames;
   const isKeyColumn = columnNames[0] === "Key";
@@ -792,6 +797,11 @@ const ensureKeyOrder = (data = null) => {
  */
 const handleCustomAction = ({ id, context }) => {
   if (id === "auto-increment-key") {
+    // 检查 Auto-Increment 开关是否开启
+    if (!exportStore.autoIncrementKeyEnabled) {
+      return;
+    }
+
     const { normalizedSelection, multiSelections, isMultipleMode, updateCell } =
       context;
 
@@ -803,9 +813,7 @@ const handleCustomAction = ({ id, context }) => {
 
     // 检查 baseline key 是否存在
     if (!baselineKey || !baselineKey.trim()) {
-      ElMessage.warning(
-        t("translation.autoIncrementBaselineKeyRequired")
-      );
+      ElMessage.warning(t("translation.autoIncrementBaselineKeyRequired"));
       return;
     }
 

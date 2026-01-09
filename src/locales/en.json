@@ -68,7 +68,8 @@
     "autoIncrementBaselineKeyInvalid": "Baseline key format is invalid. Please use format like 'key1', 'item5', etc."
   },
   "translationSetting": {
-    "exportKeySetting": "Export Baseline Key",
+    "autoIncrementKey": "Key Auto-Increment",
+    "exportKeySetting": "Baseline Key",
     "exportKeySettingPlaceholder": "Baseline Key",
     "translationSetting": "Translation Setting",
     "exportBaselineKeySaveSuccess": "Export Baseline Key saved successfully",

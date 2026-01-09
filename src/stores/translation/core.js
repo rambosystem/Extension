@@ -5,6 +5,8 @@ import { useTranslation } from "../../composables/Translation/useTranslation.js"
 import { useTranslationStorage } from "../../composables/Translation/useTranslationStorage.js";
 import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
 import { debugLog } from "../../utils/debug.js";
+import { generateKeysForTranslationResult } from "../../utils/keyGenerator.js";
+import { useExportStore } from "./export.js";
 
 /**
  * 翻译核心功能状态管理
@@ -467,16 +469,63 @@ export const useTranslationCoreStore = defineStore("translationCore", {
           this.translationTargetLanguages = [];
         }
 
+        // 检查是否需要自动生成key
+        const exportStore = useExportStore();
+        const shouldAutoGenerateKey =
+          exportStore.autoIncrementKeyEnabled &&
+          exportStore.excelBaselineKey?.trim();
+
+        // 计算起始索引（用于key生成）
+        const startIndex = isResume
+          ? this.accumulatedTranslationResult.length
+          : 0;
+
+        // 在翻译开始前，预先生成所有key（空结构）
+        // 这样流式更新时只需要填充数据，不需要重新生成key
+        let preGeneratedKeys = [];
+        if (shouldAutoGenerateKey) {
+          // 创建空的结果数组，预先生成key
+          const emptyResults = Array(finalTotalCount)
+            .fill(null)
+            .map(() => ({}));
+          preGeneratedKeys = generateKeysForTranslationResult(
+            emptyResults,
+            exportStore.excelBaselineKey,
+            startIndex
+          );
+        }
+
         // 使用翻译模块执行翻译
         const translation = useTranslation();
 
         // 创建流式更新回调
+        // 流式更新时，只需要将翻译结果填充到预先生成的key结构中
         const onProgress = (partialResult, fullText) => {
           if (partialResult && Array.isArray(partialResult)) {
+            let resultToSet = partialResult;
+
+            // 如果需要自动生成key，将翻译结果填充到预先生成的key结构中
+            if (shouldAutoGenerateKey) {
+              // 将翻译结果与预先生成的key合并
+              // 注意：partialResult 的索引需要根据 isResume 调整
+              resultToSet = partialResult.map((item, index) => {
+                // 计算全局索引：如果是继续翻译，需要加上已累积的结果数量
+                const globalIndex = isResume ? startIndex + index : index;
+                const preGeneratedKey = preGeneratedKeys[globalIndex];
+                if (preGeneratedKey && preGeneratedKey.key) {
+                  return {
+                    ...item,
+                    key: preGeneratedKey.key, // 使用预先生成的key
+                  };
+                }
+                return item;
+              });
+            }
+
             if (isResume) {
               // 继续翻译：更新当前批次结果，并合并显示
               // partialResult 是当前批次的完整结果（从当前批次开始）
-              this.currentBatchResult = partialResult;
+              this.currentBatchResult = resultToSet;
               // 合并显示：累积结果 + 当前批次结果
               const mergedResult = [
                 ...this.accumulatedTranslationResult,
@@ -486,8 +535,8 @@ export const useTranslationCoreStore = defineStore("translationCore", {
               this.updateTranslationProgress(mergedResult.length);
             } else {
               // 第一次翻译：直接显示当前结果
-              this.setTranslationResult(partialResult);
-              this.updateTranslationProgress(partialResult.length);
+              this.setTranslationResult(resultToSet);
+              this.updateTranslationProgress(resultToSet.length);
             }
           }
         };
@@ -505,23 +554,44 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         }
 
         // 合并结果到累积结果中
+        let finalResult = result;
+
+        // 如果需要自动生成key，将最终结果与预先生成的key合并
+        if (shouldAutoGenerateKey) {
+          // 将翻译结果与预先生成的key合并
+          // 注意：result 的索引需要根据 isResume 调整
+          finalResult = result.map((item, index) => {
+            // 计算全局索引：如果是继续翻译，需要加上已累积的结果数量
+            const globalIndex = isResume ? startIndex + index : index;
+            const preGeneratedKey = preGeneratedKeys[globalIndex];
+            if (preGeneratedKey && preGeneratedKey.key) {
+              return {
+                ...item,
+                key: preGeneratedKey.key, // 使用预先生成的key
+              };
+            }
+            return item;
+          });
+        }
+
         if (isResume) {
           // 继续翻译：追加当前批次结果到累积结果
           // result 是当前批次的最终结果
           this.accumulatedTranslationResult = [
             ...this.accumulatedTranslationResult,
-            ...result,
+            ...finalResult,
           ];
         } else {
           // 第一次翻译：直接使用结果
-          this.accumulatedTranslationResult = [...result];
+          this.accumulatedTranslationResult = [...finalResult];
         }
 
         // 最终设置完整结果（显示累积的所有结果）
-        // key的生成由Excel组件的auto increment功能处理
         this.setTranslationResult(this.accumulatedTranslationResult);
         // 更新最终进度
-        this.updateTranslationProgress(this.accumulatedTranslationResult.length);
+        this.updateTranslationProgress(
+          this.accumulatedTranslationResult.length
+        );
 
         // 如果检测到截断，尝试自动继续翻译
         if (isTruncated && !isResume) {

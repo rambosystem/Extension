@@ -1,31 +1,71 @@
 <template>
   <div>
     <h2 class="title">{{ t("translationSetting.translationSetting") }}</h2>
-    <el-form-item v-if="hasLokaliseToken" :label="t('translationSetting.defaultProject')" label-position="left">
+    <el-form-item
+      v-if="hasLokaliseToken"
+      :label="t('translationSetting.defaultProject')"
+      label-position="left"
+    >
       <div class="default-project-setting">
         <el-radio-group v-model="defaultProjectId">
-          <el-radio v-for="project in projectList" :key="project.project_id" :label="project.project_id">
+          <el-radio
+            v-for="project in projectList"
+            :key="project.project_id"
+            :label="project.project_id"
+          >
             {{ project.name }}
           </el-radio>
         </el-radio-group>
       </div>
     </el-form-item>
-    <el-form-item :label="t('translationSetting.targetLanguage')" label-position="left">
+    <el-form-item
+      :label="t('translationSetting.targetLanguage')"
+      label-position="left"
+    >
       <div class="target-language-setting">
-        <el-checkbox-group v-model="targetLanguages" @change="handleTargetLanguagesChange">
-          <el-checkbox v-for="lang in availableLanguages" :key="lang.code" :label="lang.code">
+        <el-checkbox-group
+          v-model="targetLanguages"
+          @change="handleTargetLanguagesChange"
+        >
+          <el-checkbox
+            v-for="lang in availableLanguages"
+            :key="lang.code"
+            :label="lang.code"
+          >
             {{ lang.name }}
           </el-checkbox>
         </el-checkbox-group>
       </div>
     </el-form-item>
-    <el-form-item :label="t('translationSetting.exportKeySetting')" label-position="left">
+    <el-form-item
+      :label="t('translationSetting.autoIncrementKey')"
+      label-position="left"
+    >
+      <div class="auto-increment-key-setting">
+        <el-switch
+          v-model="autoIncrementKeyEnabled"
+          @change="handleAutoIncrementKeyChange"
+          width="45px"
+        />
+      </div>
+    </el-form-item>
+    <el-form-item
+      v-if="autoIncrementKeyEnabled"
+      :label="t('translationSetting.exportKeySetting')"
+      label-position="left"
+    >
       <div class="excel-key-setting">
         <div class="input-container">
-          <AutocompleteInput v-model="excelBaselineKey"
-            :placeholder="t('translationSetting.exportKeySettingPlaceholder')" :get-project-id="getProjectId"
-            :show-dropdown="true" :dropdown-limit="10" :fetch-suggestions="fetchBaselineKeySuggestion"
-            :fetch-suggestions-list="fetchBaselineKeySuggestions" @blur="handleExcelBaselineKeyBlur" />
+          <AutocompleteInput
+            v-model="excelBaselineKey"
+            :placeholder="t('translationSetting.exportKeySettingPlaceholder')"
+            :get-project-id="getProjectId"
+            :show-dropdown="true"
+            :dropdown-limit="10"
+            :fetch-suggestions="fetchBaselineKeySuggestion"
+            :fetch-suggestions-list="fetchBaselineKeySuggestions"
+            @blur="handleExcelBaselineKeyBlur"
+          />
         </div>
       </div>
     </el-form-item>
@@ -78,6 +118,14 @@ const Overwrite = computed({
   get: () => exportStore.excelOverwrite,
   set: (value) => {
     exportStore.excelOverwrite = value;
+  },
+});
+
+// 使用 computed 来获取 Auto Increment Key 开关状态
+const autoIncrementKeyEnabled = computed({
+  get: () => exportStore.autoIncrementKeyEnabled,
+  set: (value) => {
+    exportStore.setAutoIncrementKeyEnabled(value);
   },
 });
 
@@ -175,7 +223,12 @@ const fetchBaselineKeySuggestion = async (queryString, projectId) => {
         const currentNumber = parseInt(numberStr, 10);
         const newNumber = currentNumber + 1;
         const incrementedKey = `${prefix}${newNumber}`;
-        debugLog("[Baseline Key Autocomplete] Incremented key:", originalKey, "->", incrementedKey);
+        debugLog(
+          "[Baseline Key Autocomplete] Incremented key:",
+          originalKey,
+          "->",
+          incrementedKey
+        );
         return incrementedKey;
       }
       // 如果格式不正确，返回原值
@@ -195,7 +248,11 @@ const fetchBaselineKeySuggestion = async (queryString, projectId) => {
  * @param {number} limit - 返回结果数量限制
  * @returns {Promise<Array<string>>} 建议的key名称列表
  */
-const fetchBaselineKeySuggestions = async (queryString, projectId, limit = 10) => {
+const fetchBaselineKeySuggestions = async (
+  queryString,
+  projectId,
+  limit = 10
+) => {
   try {
     debugLog("[Baseline Key Dropdown] Calling API with:", {
       projectId,
@@ -203,7 +260,11 @@ const fetchBaselineKeySuggestions = async (queryString, projectId, limit = 10) =
       limit,
     });
 
-    const response = await autocompleteKeys(projectId, queryString.trim(), limit);
+    const response = await autocompleteKeys(
+      projectId,
+      queryString.trim(),
+      limit
+    );
 
     debugLog("[Baseline Key Dropdown] API response:", response);
 
@@ -225,6 +286,14 @@ const fetchBaselineKeySuggestions = async (queryString, projectId, limit = 10) =
 const handleOverwriteChange = (value) => {
   // 使用 translation store 的方法更新状态
   exportStore.updateExcelOverwrite(value);
+};
+
+/**
+ * 处理Auto Increment Key开关变化
+ * @param {boolean} value - 开关状态
+ */
+const handleAutoIncrementKeyChange = (value) => {
+  debugLog("[TranslationSetting] Auto Increment Key changed:", value);
 };
 
 /**
@@ -276,7 +345,9 @@ const loadProjectList = async () => {
               "[TranslationSetting] Setting default project to:",
               parsedProjects[0].project_id
             );
-            await exportStore.updateDefaultProjectId(parsedProjects[0].project_id);
+            await exportStore.updateDefaultProjectId(
+              parsedProjects[0].project_id
+            );
           }
         } else {
           debugLog(
@@ -344,6 +415,13 @@ watch(
 .title {
   font-size: 24px;
   margin-bottom: 20px;
+}
+
+.auto-increment-key-setting {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
 }
 
 .excel-key-setting {

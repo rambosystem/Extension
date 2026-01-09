@@ -17,6 +17,9 @@ export const useExportStore = defineStore("export", {
     excelBaselineKey: "",
     excelOverwrite: false,
 
+    // Auto Increment Key开关状态
+    autoIncrementKeyEnabled: false,
+
     // 默认项目设置
     defaultProjectId: "",
 
@@ -235,6 +238,19 @@ export const useExportStore = defineStore("export", {
     },
 
     /**
+     * 设置Auto Increment Key开关状态
+     * @param {boolean} enabled - 是否启用
+     */
+    setAutoIncrementKeyEnabled(enabled) {
+      this.autoIncrementKeyEnabled = enabled;
+      localStorage.setItem(
+        "auto_increment_key_enabled",
+        enabled ? "true" : "false"
+      );
+      debugLog("[ExportStore] Auto Increment Key enabled set to:", enabled);
+    },
+
+    /**
      * 更新默认项目ID
      * @param {string} projectId - 项目ID
      */
@@ -362,6 +378,18 @@ export const useExportStore = defineStore("export", {
           debugLog(
             "[ExportStore] Excel overwrite setting loaded:",
             this.excelOverwrite
+          );
+        }
+
+        // 加载Auto Increment Key开关状态
+        const autoIncrementKeyEnabled = localStorage.getItem(
+          "auto_increment_key_enabled"
+        );
+        if (autoIncrementKeyEnabled !== null) {
+          this.autoIncrementKeyEnabled = autoIncrementKeyEnabled === "true";
+          debugLog(
+            "[ExportStore] Auto Increment Key enabled setting loaded:",
+            this.autoIncrementKeyEnabled
           );
         }
 
