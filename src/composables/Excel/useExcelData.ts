@@ -1,5 +1,43 @@
-import { ref } from "vue";
-import { DEFAULT_CONFIG, CLIPBOARD_SEPARATORS } from "./constants.js";
+import { ref, type Ref } from "vue";
+import { DEFAULT_CONFIG, CLIPBOARD_SEPARATORS } from "./constants";
+
+/**
+ * Excel 数据管理 Composable 选项
+ */
+export interface UseExcelDataOptions {
+  rowsCount?: number;
+  colsCount?: number;
+  initialData?: string[][] | null;
+}
+
+/**
+ * 维度计算结果
+ */
+interface Dimensions {
+  rows: number;
+  cols: number;
+}
+
+/**
+ * Excel 数据管理 Composable 返回值
+ */
+export interface UseExcelDataReturn {
+  columns: Ref<string[]>;
+  rows: Ref<number[]>;
+  tableData: Ref<string[][]>;
+  getSmartValue: (value: string, step: number) => string;
+  generateClipboardText: (
+    range: { minRow: number; maxRow: number; minCol: number; maxCol: number },
+    data: string[][]
+  ) => string;
+  parsePasteData: (clipboardText: string) => string[][];
+  setData: (data: string[][]) => void;
+  getData: () => string[][];
+  updateCell: (row: number, col: number, value: string) => void;
+  clearData: () => void;
+  deleteRow: (rowIndex: number) => void;
+  insertRowBelow: (rowIndex: number) => void;
+}
 
 /**
  * Excel 数据管理 Composable
@@ -10,30 +48,17 @@ import { DEFAULT_CONFIG, CLIPBOARD_SEPARATORS } from "./constants.js";
  * - 通用组件（Components/Common/）应该自包含，不依赖 Store
  * - 每个组件实例拥有独立的状态，保证组件的可复用性
  * - 这是通用组件的标准做法，符合组件化设计原则
- *
- * @param {Object} options - 配置选项
- * @param {number} options.rowsCount - 行数，默认 15
- * @param {number} options.colsCount - 列数，默认 10
- * @param {string[][]} options.initialData - 初始数据，可选
- * @returns {Object} 返回数据和方法
- * @returns {import('vue').Ref<string[]>} returns.columns - 列标题数组
- * @returns {import('vue').Ref<number[]>} returns.rows - 行索引数组
- * @returns {import('vue').Ref<string[][]>} returns.tableData - 表格数据二维数组
- * @returns {Function} returns.getSmartValue - 智能填充值计算函数
- * @returns {Function} returns.generateClipboardText - 生成剪贴板文本
- * @returns {Function} returns.parsePasteData - 解析粘贴数据
- * @returns {Function} returns.setData - 设置表格数据
- * @returns {Function} returns.getData - 获取表格数据
- * @returns {Function} returns.updateCell - 更新单个单元格
- * @returns {Function} returns.clearData - 清空表格数据
  */
 export function useExcelData({
   rowsCount = DEFAULT_CONFIG.ROWS_COUNT,
   colsCount = DEFAULT_CONFIG.COLS_COUNT,
   initialData = null,
-} = {}) {
+}: UseExcelDataOptions = {}): UseExcelDataReturn {
   // 根据实际数据动态计算行列数
-  const calculateDimensions = (data, allowEmpty = false) => {
+  const calculateDimensions = (
+    data: string[][] | null | undefined,
+    allowEmpty = false
+  ): Dimensions => {
     // 处理无效数据或空数组
     if (!data || !Array.isArray(data) || data.length === 0) {
       return allowEmpty
@@ -44,7 +69,7 @@ export function useExcelData({
     const actualRows = data.length;
     // 根据实际数据的列数计算，不使用默认 colsCount 作为最小值
     const rowLengths = data.map((row) => (Array.isArray(row) ? row.length : 0));
-    const actualCols = Math.max(...rowLengths);
+    const actualCols = Math.max(...rowLengths, 0);
 
     return { rows: actualRows, cols: actualCols };
   };
@@ -55,7 +80,7 @@ export function useExcelData({
   const actualColsCount = initialDimensions.cols;
 
   // 生成列标题（支持超过26列：A-Z, AA-AZ, BA-BZ...）
-  const generateColumnLabel = (index) => {
+  const generateColumnLabel = (index: number): string => {
     if (index < 26) {
       return String.fromCharCode(65 + index);
     }
@@ -65,13 +90,15 @@ export function useExcelData({
   };
 
   // 基础数据生成（动态）
-  const columns = ref(
+  const columns = ref<string[]>(
     Array.from({ length: actualColsCount }, (_, i) => generateColumnLabel(i))
   );
-  const rows = ref(Array.from({ length: actualRowsCount }, (_, i) => i));
+  const rows = ref<number[]>(
+    Array.from({ length: actualRowsCount }, (_, i) => i)
+  );
 
   // 更新行列数
-  const updateDimensions = (data) => {
+  const updateDimensions = (data: string[][]): void => {
     // setData 时允许空数组（保持空状态）
     const { rows: newRows, cols: newCols } = calculateDimensions(data, true);
 
@@ -97,7 +124,7 @@ export function useExcelData({
   };
 
   // 初始化表格数据
-  const initializeTableData = () => {
+  const initializeTableData = (): string[][] => {
     if (initialData && Array.isArray(initialData) && initialData.length > 0) {
       // 使用初始数据，确保数据格式正确
       const data = initialData.map((row) => {
@@ -121,24 +148,20 @@ export function useExcelData({
     );
   };
 
-  const tableData = ref(initializeTableData());
+  const tableData = ref<string[][]>(initializeTableData());
 
   /**
    * 智能填充算法
    * 支持数字递增和末尾数字递增（如 "Item1" -> "Item2"）
-   *
-   * @param {string} value - 原始值
-   * @param {number} step - 递增步长
-   * @returns {string} 填充后的值
    */
-  const getSmartValue = (value, step) => {
+  const getSmartValue = (value: string, step: number): string => {
     if (!value || typeof value !== "string") return "";
 
     const trimmed = value.trim();
     if (!trimmed) return "";
 
     // 纯数字：直接递增
-    if (!isNaN(trimmed) && trimmed !== "") {
+    if (!isNaN(Number(trimmed)) && trimmed !== "") {
       return String(Number(trimmed) + step);
     }
 
@@ -157,21 +180,20 @@ export function useExcelData({
   /**
    * 生成剪贴板文本
    * 将选中的单元格数据转换为制表符分隔的文本格式
-   *
-   * @param {Object} range - 选区范围 { minRow, maxRow, minCol, maxCol }
-   * @param {string[][]} data - 表格数据
-   * @returns {string} 剪贴板文本
    */
-  const generateClipboardText = (range, data) => {
+  const generateClipboardText = (
+    range: { minRow: number; maxRow: number; minCol: number; maxCol: number },
+    data: string[][]
+  ): string => {
     if (!range || !data) return "";
 
-    const rowsData = [];
+    const rowsData: string[] = [];
     for (let r = range.minRow; r <= range.maxRow; r++) {
       if (!data[r]) continue; // 边界检查
 
-      const rowData = [];
+      const rowData: string[] = [];
       for (let c = range.minCol; c <= range.maxCol; c++) {
-        const cellValue = data[r][c] ?? ""; // 安全的数组访问
+        const cellValue = data[r]?.[c] ?? ""; // 安全的数组访问
         rowData.push(cellValue);
       }
       rowsData.push(rowData.join(CLIPBOARD_SEPARATORS.CELL));
@@ -182,11 +204,8 @@ export function useExcelData({
   /**
    * 解析粘贴数据
    * 将剪贴板文本转换为二维数组
-   *
-   * @param {string} clipboardText - 剪贴板文本
-   * @returns {string[][]} 解析后的数据数组
    */
-  const parsePasteData = (clipboardText) => {
+  const parsePasteData = (clipboardText: string): string[][] => {
     if (!clipboardText || typeof clipboardText !== "string") {
       return [];
     }
@@ -204,9 +223,8 @@ export function useExcelData({
 
   /**
    * 设置表格数据
-   * @param {string[][]} data - 新的表格数据
    */
-  const setData = (data) => {
+  const setData = (data: string[][]): void => {
     if (!data || !Array.isArray(data)) {
       console.warn("setData: Invalid data format");
       return;
@@ -240,19 +258,15 @@ export function useExcelData({
 
   /**
    * 获取表格数据
-   * @returns {string[][]} 表格数据的深拷贝
    */
-  const getData = () => {
+  const getData = (): string[][] => {
     return JSON.parse(JSON.stringify(tableData.value));
   };
 
   /**
    * 更新单个单元格
-   * @param {number} row - 行索引
-   * @param {number} col - 列索引
-   * @param {string} value - 新值
    */
-  const updateCell = (row, col, value) => {
+  const updateCell = (row: number, col: number, value: string): void => {
     const currentRows = rows.value.length;
     const currentCols = columns.value.length;
 
@@ -289,7 +303,7 @@ export function useExcelData({
   /**
    * 清空表格数据
    */
-  const clearData = () => {
+  const clearData = (): void => {
     const currentRows = rows.value.length;
     const currentCols = columns.value.length;
     tableData.value = Array.from({ length: currentRows }, () =>
@@ -299,9 +313,8 @@ export function useExcelData({
 
   /**
    * 删除指定行
-   * @param {number} rowIndex - 要删除的行索引
    */
-  const deleteRow = (rowIndex) => {
+  const deleteRow = (rowIndex: number): void => {
     if (rowIndex < 0 || rowIndex >= rows.value.length) {
       console.warn(`deleteRow: Invalid row index ${rowIndex}`);
       return;
@@ -324,9 +337,8 @@ export function useExcelData({
 
   /**
    * 在指定行下方插入新行
-   * @param {number} rowIndex - 在哪个行索引下方插入（插入后新行的索引为 rowIndex + 1）
    */
-  const insertRowBelow = (rowIndex) => {
+  const insertRowBelow = (rowIndex: number): void => {
     if (rowIndex < -1 || rowIndex >= rows.value.length) {
       console.warn(`insertRowBelow: Invalid row index ${rowIndex}`);
       return;

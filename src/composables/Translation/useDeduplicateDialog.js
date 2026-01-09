@@ -2,10 +2,8 @@ import { onMounted, onUnmounted, computed } from "vue";
 import { useDeduplicateStore } from "../../stores/translation/deduplicate.js";
 import { useTranslationSettingsStore } from "../../stores/settings/translation.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
-import { useI18n } from "../Core/useI18n.js";
 
 export function useDeduplicateDialog() {
-  const { t } = useI18n();
   const deduplicateStore = useDeduplicateStore();
   const translationSettingsStore = useTranslationSettingsStore();
   const translationCoreStore = useTranslationCoreStore();

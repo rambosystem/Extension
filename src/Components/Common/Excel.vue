@@ -36,14 +36,14 @@
         >
           {{ col }}
           <ColumnResizer
-            v-if="enableColumnResize && index < displayColumns.length - 1"
-            @mousedown.stop="startColumnResize(index, $event)"
-            @dblclick="handleDoubleClickResize(index)"
+            v-if="enableColumnResize && Number(index) < displayColumns.length - 1"
+            @mousedown.stop="startColumnResize(Number(index), $event)"
+            @dblclick="handleDoubleClickResize(Number(index))"
           />
         </div>
       </div>
 
-      <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="excel-row">
+      <div v-for="(_row, rowIndex) in rows" :key="rowIndex" class="excel-row">
         <div
           class="excel-cell row-number"
           :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }"
@@ -63,7 +63,7 @@
         </div>
 
         <div
-          v-for="(col, colIndex) in internalColumns"
+          v-for="(_col, colIndex) in internalColumns"
           :key="colIndex"
           class="excel-cell"
           :class="[
@@ -110,7 +110,7 @@
             @keydown.enter.prevent.stop="handleInputEnter"
             @keydown.tab.prevent.stop="handleInputTab"
             @keydown.esc="cancelEdit"
-            :ref="(el) => setInputRef(el, rowIndex, colIndex)"
+            :ref="(el) => setInputRef(el as HTMLInputElement | null, rowIndex, colIndex)"
           />
 
           <span
@@ -137,7 +137,7 @@
           <!-- Cell Menu Button -->
           <CellMenu
             v-if="shouldShowCellMenu(rowIndex, colIndex)"
-            :row-index="rowIndex"
+            :row-index="Number(rowIndex)"
             :custom-menu-items="customMenuItems"
             :context="createMenuContext(rowIndex)"
             @command="handleCellMenuCommand"
@@ -149,7 +149,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
 import { useHistory } from "../../composables/Excel/useHistory";
 import { useSelection } from "../../composables/Excel/useSelection";
@@ -169,6 +169,12 @@ import { useCellMenu } from "../../composables/Excel/useCellMenu";
 import { useCellMenuPosition } from "../../composables/Excel/useCellMenuPosition";
 import { useRowOperations } from "../../composables/Excel/useRowOperations";
 import { useResizeHandlers } from "../../composables/Excel/useResizeHandlers";
+import type {
+  ColumnWidthConfig,
+  MenuContext,
+  SelectionRange,
+} from "../../composables/Excel/types";
+import type { CustomMenuItem } from "../../composables/Excel/useKeyboard";
 import CellMenu from "../Excel/CellMenu.vue";
 import FillHandle from "../Excel/FillHandle.vue";
 import ColumnResizer from "../Excel/ColumnResizer.vue";
@@ -176,154 +182,37 @@ import RowResizer from "../Excel/RowResizer.vue";
 
 /**
  * Excel 组件 Props
- *
- * @component Excel
- * @description 类 Excel 表格组件，支持单元格编辑、选择、复制粘贴、撤销重做、智能填充等功能
  */
-const props = defineProps({
-  /**
-   * 是否启用列宽调整功能
-   * @type {boolean}
-   * @default true
-   * @description 启用后可以通过拖拽列边界调整列宽，双击列边界自动适应内容宽度
-   */
-  enableColumnResize: {
-    type: Boolean,
-    default: true,
-  },
-  /**
-   * 是否启用智能填充功能
-   * @type {boolean}
-   * @default true
-   * @description 启用后会在选区右下角显示填充手柄，支持拖拽填充（支持数字递增和末尾数字递增）
-   */
-  enableFillHandle: {
-    type: Boolean,
-    default: true,
-  },
-  /**
-   * 默认列宽（像素）
-   * @type {number | Object}
-   * @default 100
-   * @description
-   * - 数字类型：所有列使用相同的固定宽度
-   * - 对象类型：{ key: number, others: number }，第一列使用 key 宽度，其他列使用 others 宽度
-   * - 仅在禁用列宽调整时生效，或作为初始列宽
-   * @example
-   * // 所有列100px
-   * :default-column-width="100"
-   *
-   * // 第一列120px，其他列平均分配
-   * :default-column-width="{ key: 120, others: 150 }"
-   */
-  defaultColumnWidth: {
-    type: [Number, Object],
-    default: 100,
-  },
-  /**
-   * 是否启用行高调整功能
-   * @type {boolean}
-   * @default true
-   * @description 启用后可以通过拖拽行边界调整行高，双击行边界自动适应内容高度
-   */
-  enableRowResize: {
-    type: Boolean,
-    default: true,
-  },
-  /**
-   * 默认行高（像素）
-   * @type {number}
-   * @default 36
-   * @description 禁用行高调整时的固定行高，或作为初始行高
-   */
-  defaultRowHeight: {
-    type: Number,
-    default: 36,
-  },
-  /**
-   * v-model 绑定的表格数据
-   * @type {string[][]}
-   * @default null
-   * @description
-   * - 二维字符串数组，每个元素代表一行，每行是一个字符串数组
-   * - 支持双向绑定，数据变化会自动同步
-   * - 如果传入数据，组件会根据数据自动计算行列数
-   * @example
-   * [
-   *   ["姓名", "年龄", "城市"],
-   *   ["张三", "25", "北京"],
-   *   ["李四", "30", "上海"]
-   * ]
-   */
-  modelValue: {
-    type: Array,
-    default: null,
-  },
-  /**
-   * 自定义列标题
-   * @type {string[]}
-   * @default null
-   * @description
-   * - 如果不提供，则使用默认的 A, B, C, ..., Z, AA, AB, ... 格式
-   * - 如果提供，会使用自定义的列标题（数量不足时用默认标题补齐）
-   * @example
-   * ["Key", "English", "Chinese", "Japanese"]
-   */
-  columnNames: {
-    type: Array,
-    default: null,
-  },
-  /**
-   * 自定义菜单项配置
-   * @type {Array}
-   * @default []
-   * @description
-   * 自定义菜单项配置数组，每个配置项包含：
-   * - id: 唯一标识
-   * - label: 显示文本
-   * - shortcut: 快捷键（可选）
-   * - validate: 验证函数，接收 context 对象，返回是否显示该菜单项（可选）
-   * - disabled: 禁用函数，接收 context 对象，返回是否禁用该菜单项（可选）
-   * @example
-   * [
-   *   {
-   *     id: 'auto-increment',
-   *     label: '自增填充',
-   *     shortcut: 'Ctrl+Alt+A',
-   *     validate: (ctx) => ctx.normalizedSelection?.minCol === 0
-   *   }
-   * ]
-   */
-  customMenuItems: {
-    type: Array,
-    default: () => [],
-  },
+interface Props {
+  enableColumnResize?: boolean;
+  enableFillHandle?: boolean;
+  defaultColumnWidth?: number | ColumnWidthConfig;
+  enableRowResize?: boolean;
+  defaultRowHeight?: number;
+  modelValue?: string[][] | null;
+  columnNames?: string[] | null;
+  customMenuItems?: CustomMenuItem[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  enableColumnResize: true,
+  enableFillHandle: true,
+  defaultColumnWidth: 100,
+  enableRowResize: true,
+  defaultRowHeight: 36,
+  modelValue: null,
+  columnNames: null,
+  customMenuItems: () => [],
 });
 
 /**
  * Excel 组件 Emits
- *
- * @emits {string[][]} update:modelValue - v-model 更新事件，当表格数据变化时触发
- * @emits {string[][]} change - 数据变化事件，返回当前表格数据的深拷贝
- * @emits {Object} custom-action - 自定义菜单项点击事件
  */
-const emit = defineEmits({
-  /**
-   * v-model 更新事件
-   * @param {string[][]} data - 更新后的表格数据
-   */
-  "update:modelValue": (data) => Array.isArray(data),
-  /**
-   * 数据变化事件
-   * @param {string[][]} data - 变化后的表格数据（深拷贝）
-   */
-  change: (data) => Array.isArray(data),
-  /**
-   * 自定义菜单项点击事件
-   * @param {Object} payload - 事件载荷 { id: string, context: Object }
-   */
-  "custom-action": (payload) => payload && typeof payload.id === "string",
-});
+const emit = defineEmits<{
+  "update:modelValue": [data: string[][]];
+  change: [data: string[][]];
+  "custom-action": [payload: { id: string; context: MenuContext }];
+}>();
 
 // --- 1. 核心逻辑组合 ---
 const {
@@ -344,7 +233,7 @@ const {
 });
 
 // 使用自定义列标题或默认列标题（仅用于显示）
-const displayColumns = computed(() => {
+const displayColumns = computed<string[]>(() => {
   if (
     props.columnNames &&
     Array.isArray(props.columnNames) &&
@@ -355,7 +244,7 @@ const displayColumns = computed(() => {
       .slice(0, internalColumns.value.length)
       .map((name, index) => {
         // 如果自定义列标题数量不足，用默认的补齐
-        return name || internalColumns.value[index];
+        return name || internalColumns.value[index] || "";
       });
   }
   return internalColumns.value;
@@ -374,7 +263,6 @@ const {
   updateMultipleSelectionEnd,
   endMultipleSelectionClick,
   endMultipleSelectionDrag,
-  updateSelectionEnd,
   isActive,
   isInSelection,
   isInSelectionHeader,
@@ -397,7 +285,7 @@ const {
  * 4. 如果 selectionStart 和 selectionEnd 不相等，返回 true
  * 5. 否则返回 false
  */
-const isMultiSelect = computed(() => {
+const isMultiSelect = computed<boolean>(() => {
   // 1. 检查是否处于 MULTIPLE 模式
   if (isMultipleMode.value) {
     return true;
@@ -411,7 +299,7 @@ const isMultiSelect = computed(() => {
   // 3. 检查多选列表中是否有一个非单格选区
   if (multiSelections.value && multiSelections.value.length === 1) {
     const sel = multiSelections.value[0];
-    if (sel.minRow !== sel.maxRow || sel.minCol !== sel.maxCol) {
+    if (sel && (sel.minRow !== sel.maxRow || sel.minCol !== sel.maxCol)) {
       return true;
     }
   }
@@ -446,20 +334,19 @@ const fillHandleComposable = props.enableFillHandle
 // 列宽管理（仅在启用时使用）
 // 传入初始列数，Map会自动处理新增列（使用默认宽度）
 // 注意：如果 defaultColumnWidth 是对象，useColumnWidth 的 defaultWidth 使用 others 值
-const getDefaultWidthForComposable = () => {
+const getDefaultWidthForComposable = (): number => {
   if (
     typeof props.defaultColumnWidth === "object" &&
     props.defaultColumnWidth !== null
   ) {
     return props.defaultColumnWidth.others || 100;
   }
-  return props.defaultColumnWidth || 100;
+  return (props.defaultColumnWidth as number) || 100;
 };
 
 const columnWidthComposable = props.enableColumnResize
   ? useColumnWidth({
       defaultWidth: getDefaultWidthForComposable(),
-      colsCount: internalColumns.value.length,
     })
   : null;
 
@@ -472,7 +359,7 @@ const rowHeightComposable = props.enableRowResize
   : null;
 
 // --- 状态管理 ---
-const containerRef = ref(null);
+const containerRef = ref<HTMLElement | null>(null);
 
 // --- 单元格编辑管理 ---
 const {
@@ -511,7 +398,7 @@ const { getCellDisplayStyle } = useCellDisplay({
 });
 
 // 智能填充相关函数
-const applyFill = () => {
+const applyFill = (): void => {
   if (!props.enableFillHandle || !fillHandleComposable) return;
   fillHandleComposable.applyFill(
     tableData.value,
@@ -520,12 +407,12 @@ const applyFill = () => {
   );
 };
 
-const handleFillDragEnter = (row, col) => {
+const handleFillDragEnter = (row: number, col: number): void => {
   if (!props.enableFillHandle || !fillHandleComposable) return;
   fillHandleComposable.handleFillDragEnter(row, col);
 };
 
-const isInDragArea = (row, col) => {
+const isInDragArea = (row: number, col: number): boolean => {
   if (!props.enableFillHandle || !fillHandleComposable) return false;
   return fillHandleComposable.isInDragArea(row, col);
 };
@@ -549,9 +436,7 @@ const {
 
 // --- 鼠标事件管理（先定义，供 resize handlers 使用）---
 // 定义临时函数引用
-let handleMouseUpRef = null;
-let handleColumnResizeRef = null;
-let handleRowResizeRef = null;
+let handleMouseUpRef: ((event: MouseEvent) => void) | null = null;
 
 // --- 尺寸调整处理器 ---
 const {
@@ -570,14 +455,8 @@ const {
   tableData,
   columns: internalColumns,
   getColumnWidth,
-  handleMouseUp: () => handleMouseUpRef?.(),
-  handleColumnResize: null, // 不再需要，使用内部定义的 handleColumnResizeMove
-  handleRowResize: null, // 不再需要，使用内部定义的 handleRowResizeMove
+  handleMouseUp: handleMouseUpRef,
 });
-
-// 更新引用
-handleColumnResizeRef = handleColumnResizeMove;
-handleRowResizeRef = handleRowResizeMove;
 
 // --- 鼠标事件管理 ---
 const { handleMouseUp, handleCellMouseDown, handleMouseEnter } = useMouseEvents(
@@ -611,15 +490,12 @@ const { handleMouseUp, handleCellMouseDown, handleMouseEnter } = useMouseEvents(
 handleMouseUpRef = handleMouseUp;
 
 // 填充拖拽开始
-const startFillDrag = (row, col) => {
+function startFillDrag(row: number, col: number): void {
   if (!props.enableFillHandle || !fillHandleComposable) return;
-  fillHandleComposable.startFillDrag(
-    row,
-    col,
-    normalizedSelection.value,
-    handleMouseUp
+  fillHandleComposable.startFillDrag(row, col, normalizedSelection.value, () =>
+    handleMouseUp(new MouseEvent("mouseup"))
   );
-};
+}
 
 // --- 剪贴板管理 ---
 const { handleCopy, handlePaste } = useClipboard({
@@ -637,12 +513,10 @@ const { handleCopy, handlePaste } = useClipboard({
 // --- 8. 键盘主逻辑 ---
 /**
  * 删除选区内容
- *
- * @param {Object} range - 选区范围 { minRow, maxRow, minCol, maxCol }
  */
-const deleteSelection = (range) => {
+const deleteSelection = (range: SelectionRange): void => {
   for (let r = range.minRow; r <= range.maxRow; r++) {
-    if (!tableData.value[r]) continue; // 边界检查
+    if (!tableData.value[r]) continue;
     for (let c = range.minCol; c <= range.maxCol; c++) {
       if (tableData.value[r][c] !== undefined) {
         tableData.value[r][c] = "";
@@ -657,7 +531,15 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
   props,
   getData,
   setData,
-  emit,
+  emit: (event: string, ...args: any[]) => {
+    if (event === "update:modelValue") {
+      emit("update:modelValue", args[0] as string[][]);
+    } else if (event === "change") {
+      emit("change", args[0] as string[][]);
+    } else if (event === "custom-action") {
+      emit("custom-action", args[0] as { id: string; context: MenuContext });
+    }
+  },
 });
 
 // 初始化数据同步监听
@@ -683,58 +565,65 @@ const { handleCellMenuCommand } = useCellMenu({
 });
 
 // --- Cell Menu Position 管理 ---
-const { cellMenuPosition, shouldShowCellMenu, createMenuContext } =
-  useCellMenuPosition({
-    editingCell,
-    isSelecting,
-    isMultipleMode,
-    activeCell,
-    normalizedSelection,
-    multiSelections,
-    tableData,
-    updateCell,
-    notifyDataChange,
-    getData,
-    setDataWithSync,
-  });
+const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
+  editingCell,
+  isSelecting,
+  isMultipleMode,
+  activeCell,
+  normalizedSelection,
+  multiSelections,
+  tableData,
+  updateCell,
+  notifyDataChange,
+  getData,
+  setDataWithSync,
+});
 
 /**
  * 处理自定义菜单项点击事件
- * @param {Object} payload - 事件载荷 { id: string, context: Object }
  */
-const handleCustomAction = (payload) => {
+const handleCustomAction = (payload: {
+  id: string;
+  context: MenuContext;
+}): void => {
   emit("custom-action", payload);
 };
 
 /**
  * 处理容器点击事件（点击空白区域时清除选择）
- * 默认情况下 activeCell 为 null，只有在用户点击单元格时才设置
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleContainerClick = (event) => {
-  // 如果点击的是容器本身（不是单元格），清除选择
+const handleContainerClick = (event: MouseEvent): void => {
+  const target = event.target as HTMLElement;
   if (
-    event.target === containerRef.value ||
-    event.target.classList.contains("excel-container")
+    target === containerRef.value ||
+    target.classList.contains("excel-container")
   ) {
     clearSelection();
   }
 };
 
 // 行号和列标题选择状态
-const headerSelectState = ref({
+interface HeaderSelectState {
+  isSelecting: boolean;
+  type: "row" | "col" | null;
+  startIndex: number | null;
+  isMultipleMode: boolean;
+}
+
+const headerSelectState = ref<HeaderSelectState>({
   isSelecting: false,
-  type: null, // 'row' 或 'col'
+  type: null,
   startIndex: null,
   isMultipleMode: false,
 });
 
 /**
  * 处理行号鼠标按下事件
- * @param {number} rowIndex - 行索引
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleRowNumberMouseDown = (rowIndex, event) => {
+const handleRowNumberMouseDown = (
+  rowIndex: number,
+  event: MouseEvent
+): void => {
   // 如果正在调整行高，不处理选择
   if (props.enableRowResize && rowHeightComposable?.isResizingRow.value) {
     return;
@@ -761,10 +650,11 @@ const handleRowNumberMouseDown = (rowIndex, event) => {
 
 /**
  * 处理列标题鼠标按下事件
- * @param {number} colIndex - 列索引
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleColumnHeaderMouseDown = (colIndex, event) => {
+const handleColumnHeaderMouseDown = (
+  colIndex: number,
+  event: MouseEvent
+): void => {
   // 如果正在调整列宽，不处理选择
   if (
     props.enableColumnResize &&
@@ -794,9 +684,8 @@ const handleColumnHeaderMouseDown = (colIndex, event) => {
 
 /**
  * 处理行号鼠标进入事件（拖选时）
- * @param {number} rowIndex - 行索引
  */
-const handleRowNumberMouseEnter = (rowIndex) => {
+const handleRowNumberMouseEnter = (rowIndex: number): void => {
   if (
     !headerSelectState.value.isSelecting ||
     headerSelectState.value.type !== "row"
@@ -805,6 +694,7 @@ const handleRowNumberMouseEnter = (rowIndex) => {
   }
 
   const startRow = headerSelectState.value.startIndex;
+  if (startRow === null) return;
   const endRow = rowIndex;
   selectRows(startRow, endRow, internalColumns.value.length);
 };
@@ -813,7 +703,7 @@ const handleRowNumberMouseEnter = (rowIndex) => {
  * 处理列标题鼠标进入事件（拖选时）
  * @param {number} colIndex - 列索引
  */
-const handleColumnHeaderMouseEnter = (colIndex) => {
+const handleColumnHeaderMouseEnter = (colIndex: number): void => {
   if (
     !headerSelectState.value.isSelecting ||
     headerSelectState.value.type !== "col"
@@ -822,15 +712,15 @@ const handleColumnHeaderMouseEnter = (colIndex) => {
   }
 
   const startCol = headerSelectState.value.startIndex;
+  if (startCol === null) return;
   const endCol = colIndex;
   selectColumns(startCol, endCol, rows.value.length);
 };
 
 /**
  * 处理行号/列标题鼠标抬起事件
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleHeaderMouseUp = (event) => {
+const handleHeaderMouseUp = (_event: MouseEvent): void => {
   if (!headerSelectState.value.isSelecting) return;
 
   // 清理状态
@@ -847,9 +737,8 @@ const handleHeaderMouseUp = (event) => {
 
 /**
  * 处理角单元格点击事件（全选整个表格）
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleCornerCellClick = (event) => {
+const handleCornerCellClick = (_event: MouseEvent): void => {
   if (stopEdit) {
     stopEdit();
   }
@@ -876,7 +765,7 @@ const { handleKeydown } = useKeyboard({
   getMaxCols: () => internalColumns.value.length,
   customMenuItems: props.customMenuItems, // 传递自定义菜单项配置
   handleCustomAction, // 传递自定义菜单项处理函数
-  createMenuContext: (rowIndex) => createMenuContext(rowIndex), // 传递创建上下文函数
+  createMenuContext: (rowIndex: number) => createMenuContext(rowIndex), // 传递创建上下文函数
 });
 
 // 注意：列宽初始化逻辑已移至 getColumnWidth 函数中处理
@@ -885,10 +774,8 @@ const { handleKeydown } = useKeyboard({
 
 /**
  * 设置指定列的宽度
- * @param {number} colIndex - 列索引
- * @param {number} width - 宽度（像素）
  */
-const setColumnWidth = (colIndex, width) => {
+const setColumnWidth = (colIndex: number, width: number): void => {
   if (props.enableColumnResize && columnWidthComposable) {
     columnWidthComposable.columnWidths.value.set(colIndex, width);
   }
@@ -941,7 +828,7 @@ defineExpose({
    * @example
    * excelRef.value.updateCell(0, 0, "新值");
    */
-  updateCell: (row, col, value) => {
+  updateCell: (row: number, col: number, value: string) => {
     updateCell(row, col, value);
     nextTick(() => {
       notifyDataChange();
@@ -949,10 +836,6 @@ defineExpose({
   },
   /**
    * 清空表格数据
-   * @method clearData
-   * @description 清空所有单元格的数据，但保持当前的行列数
-   * @example
-   * excelRef.value.clearData();
    */
   clearData: () => {
     clearData();

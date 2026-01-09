@@ -1,27 +1,44 @@
-import { watch, nextTick } from "vue";
+import { watch, nextTick, type Ref } from "vue";
+
+/**
+ * useDataSync 选项
+ */
+export interface UseDataSyncOptions {
+  tableData: Ref<string[][]>;
+  props: {
+    modelValue?: string[][] | null;
+  };
+  getData: () => string[][];
+  setData: (data: string[][]) => void;
+  emit: (event: string, ...args: any[]) => void;
+}
+
+/**
+ * useDataSync 返回值
+ */
+export interface UseDataSyncReturn {
+  notifyDataChange: () => void;
+  initDataSync: () => void;
+  setDataWithSync: (data: string[][]) => void;
+}
 
 /**
  * 数据同步管理 Composable
- *
- * 负责处理 Excel 组件内部数据与外部 props 的双向同步
- *
- * @param {Object} context - 上下文对象
- * @param {import('vue').Ref} context.tableData - 表格数据
- * @param {Object} context.props - 组件 props
- * @param {Function} context.getData - 获取表格数据
- * @param {Function} context.setData - 设置表格数据
- * @param {Function} context.emit - 事件发射器
- * @returns {Object} 返回数据同步相关方法
  */
-export function useDataSync({ tableData, props, getData, setData, emit }) {
+export function useDataSync({
+  tableData,
+  props,
+  getData,
+  setData,
+  emit,
+}: UseDataSyncOptions): UseDataSyncReturn {
   let isUpdatingFromExternal = false;
 
   /**
    * 通知外部数据变化
    */
-  const notifyDataChange = () => {
+  const notifyDataChange = (): void => {
     if (props.modelValue !== null) {
-      // 只有在使用 v-model 时才 emit
       const data = getData();
       emit("update:modelValue", data);
     }
@@ -31,8 +48,7 @@ export function useDataSync({ tableData, props, getData, setData, emit }) {
   /**
    * 初始化数据同步监听
    */
-  const initDataSync = () => {
-    // 监听内部数据变化（深度监听，使用 nextTick 避免频繁触发）
+  const initDataSync = (): void => {
     watch(
       tableData,
       () => {
@@ -45,13 +61,10 @@ export function useDataSync({ tableData, props, getData, setData, emit }) {
       { deep: true }
     );
 
-    // 监听外部数据变化（props.modelValue）
     watch(
       () => props.modelValue,
       (newValue) => {
-        // 处理 null、undefined、空数组和有效数组
         if (props.modelValue !== null && Array.isArray(newValue)) {
-          // 只有当外部数据真正变化时才更新（避免循环更新）
           const currentData = JSON.stringify(getData());
           const newData = JSON.stringify(newValue);
           if (currentData !== newData) {
@@ -69,9 +82,8 @@ export function useDataSync({ tableData, props, getData, setData, emit }) {
 
   /**
    * 设置数据（带外部更新标记）
-   * @param {string[][]} data - 表格数据
    */
-  const setDataWithSync = (data) => {
+  const setDataWithSync = (data: string[][]): void => {
     isUpdatingFromExternal = true;
     setData(data);
     nextTick(() => {

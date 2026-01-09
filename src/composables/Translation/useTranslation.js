@@ -1,9 +1,7 @@
 import { ElMessage } from "element-plus";
 import { translate } from "../../services/translation/index.js";
-import { useI18n } from "../Core/useI18n.js";
+import { t } from "../../utils/i18n.js";
 import { ref } from "vue";
-
-const { t } = useI18n();
 
 /**
  * 翻译功能Hook

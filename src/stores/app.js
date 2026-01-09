@@ -51,29 +51,6 @@ export const useAppStore = defineStore("app", {
     },
 
     /**
-     * 设置应用语言（已废弃，仅支持英文）
-     * @param {string} lang - 语言代码
-     */
-    setLanguage(lang) {
-      // 强制设置为英文
-      this.language = "en";
-
-      // 保存到localStorage
-      if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("app_language", "en");
-      }
-
-      // 触发语言变化事件
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("languageChanged", {
-            detail: { language: "en" },
-          })
-        );
-      }
-    },
-
-    /**
      * 设置全局加载状态
      * @param {boolean} loading - 加载状态
      */
@@ -87,7 +64,19 @@ export const useAppStore = defineStore("app", {
      */
     initializeToDefaults() {
       // 注意：不重置 currentMenu，保持当前菜单选择
-      this.setLanguage("en"); // 使用setLanguage方法确保触发事件
+      // 确保语言为英文（应用仅支持英文）
+      this.language = "en";
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("app_language", "en");
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("languageChanged", {
+            detail: { language: "en" },
+          })
+        );
+      }
+
       this.isLoading = false;
       this.isInitialized = false;
     },

@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
+import { t } from "../../utils/i18n.js";
 import { useDeduplicate } from "../../composables/Translation/useDeduplicate.js";
 import { useTranslationSettingsStore } from "../settings/translation.js";
 import { useExportStore } from "./export.js";
@@ -144,9 +145,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
       }
 
       if (!cdnProjectName) {
-        ElMessage.warning(
-          "Please configure Default Project or deduplicate project in Settings first"
-        );
+        ElMessage.warning(t("translation.pleaseSelectDeduplicateProject"));
         return { success: false, error: "No CDN project configured" };
       }
 
@@ -173,7 +172,10 @@ export const useDeduplicateStore = defineStore("deduplicate", {
 
         if (result.remainingCount > 0) {
           ElMessage.success(
-            `Deduplication completed: ${result.duplicateCount} duplicates removed, ${result.remainingCount} texts remaining`
+            t("translation.deduplicateSuccess", {
+              duplicate: result.duplicateCount,
+              remaining: result.remainingCount,
+            })
           );
 
           // 如果是自动去重，先更新 codeContent，然后继续翻译流程
@@ -198,7 +200,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
           if (clearCache) {
             clearCache();
           }
-          ElMessage.info("All texts were duplicated and removed");
+          ElMessage.info(t("messages.allTextsDuplicatedAndRemoved"));
 
           // 如果是自动去重，不需要关闭对话框（因为已经没有对话框了）
 
@@ -206,7 +208,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
         }
       } catch (error) {
         console.error("Deduplication failed:", error);
-        ElMessage.error("Deduplication failed");
+        ElMessage.error(t("messages.deduplicationFailed"));
         return { success: false, error };
       } finally {
         this.setDeduplicating(false);

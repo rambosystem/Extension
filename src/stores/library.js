@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { nextTick } from "vue";
 import { ElMessage } from "element-plus";
-import { useI18n } from "../composables/Core/useI18n.js";
+import { t } from "../utils/i18n.js";
 import { getUserProjects } from "../services/translation/index.js";
 
 /**
@@ -173,7 +173,7 @@ export const useLibraryStore = defineStore("library", {
       // 清除选中状态，因为数据即将更新
       this.clearSelectedRows();
       try {
-        // TODO: Replace with real API call
+        // 使用模拟数据，待后端API就绪后替换
         this.tableData = [
           {
             keyName: "common.welcome",
@@ -310,7 +310,6 @@ export const useLibraryStore = defineStore("library", {
         ];
       } catch (error) {
         console.error("Failed to load translation keys:", error);
-        const { t } = useI18n();
         ElMessage.error(t("library.loadFailed"));
       } finally {
         this.loading = false;
@@ -325,7 +324,7 @@ export const useLibraryStore = defineStore("library", {
       // 清除选中状态，因为搜索结果即将更新
       this.clearSelectedRows();
       try {
-        // TODO: 调用后端API，传递筛选条件
+        // 待后端API就绪后实现真实搜索
         // const params = {
         //   keyNames: this.filterKeyName
         //     .split(/[\n,]/)
@@ -341,7 +340,6 @@ export const useLibraryStore = defineStore("library", {
         await this.loadTableData();
       } catch (error) {
         console.error("Failed to search translation keys:", error);
-        const { t } = useI18n();
         ElMessage.error(t("library.loadFailed"));
       } finally {
         this.loading = false;

@@ -2,23 +2,18 @@
   <div class="fill-handle" @mousedown.stop="handleMouseDown"></div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 /**
  * FillHandle - 填充手柄组件
- *
- * Excel 组件中用于智能填充的拖拽手柄
- *
- * @component
- * @example
- * <FillHandle @mousedown="handleFillDrag" />
  */
-const emit = defineEmits(["mousedown"]);
+const emit = defineEmits<{
+  mousedown: [event: MouseEvent];
+}>();
 
 /**
  * 处理鼠标按下事件
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleMouseDown = (event) => {
+const handleMouseDown = (event: MouseEvent): void => {
   emit("mousedown", event);
 };
 </script>

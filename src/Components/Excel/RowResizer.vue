@@ -6,34 +6,26 @@
   ></div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 /**
  * RowResizer - 行调整器组件
- *
- * Excel 组件中用于调整行高的拖拽区域
- *
- * @component
- * @example
- * <RowResizer
- *   @mousedown="startRowResize"
- *   @dblclick="handleDoubleClickRowResize"
- * />
  */
-const emit = defineEmits(["mousedown", "dblclick"]);
+const emit = defineEmits<{
+  mousedown: [event: MouseEvent];
+  dblclick: [event: MouseEvent];
+}>();
 
 /**
  * 处理鼠标按下事件
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleMouseDown = (event) => {
+const handleMouseDown = (event: MouseEvent): void => {
   emit("mousedown", event);
 };
 
 /**
  * 处理双击事件
- * @param {MouseEvent} event - 鼠标事件
  */
-const handleDoubleClick = (event) => {
+const handleDoubleClick = (event: MouseEvent): void => {
   emit("dblclick", event);
 };
 </script>

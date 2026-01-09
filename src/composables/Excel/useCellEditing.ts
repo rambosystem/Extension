@@ -1,20 +1,44 @@
-import { ref, nextTick } from "vue";
+import { ref, nextTick, type Ref } from "vue";
+import type { CellPosition } from "./types";
+
+/**
+ * 单元格编辑管理 Composable 选项
+ */
+export interface UseCellEditingOptions {
+  tableData: Ref<string[][]>;
+  activeCell: Ref<CellPosition | null>;
+  startSingleSelection: (row: number, col: number) => void;
+  saveHistory: (state: any) => void;
+  moveActiveCell: (
+    rowDelta: number,
+    colDelta: number,
+    maxRows: number,
+    maxCols: number
+  ) => void;
+  getMaxRows: () => number;
+  getMaxCols: () => number;
+  containerRef: Ref<HTMLElement | null>;
+}
+
+/**
+ * 单元格编辑管理 Composable 返回值
+ */
+export interface UseCellEditingReturn {
+  editingCell: Ref<CellPosition | null>;
+  isEditing: (row: number, col: number) => boolean;
+  startEdit: (row: number, col: number, selectAll?: boolean) => void;
+  stopEdit: () => void;
+  cancelEdit: () => void;
+  setInputRef: (el: HTMLInputElement | null, row: number, col: number) => void;
+  handleInputEnter: (event: KeyboardEvent) => void;
+  handleInputTab: (event: KeyboardEvent) => void;
+  clearInputRefs: () => void;
+}
 
 /**
  * 单元格编辑管理 Composable
  *
  * 负责管理单元格的编辑状态、输入框引用和编辑相关操作
- *
- * @param {Object} context - 上下文对象
- * @param {import('vue').Ref} context.tableData - 表格数据
- * @param {import('vue').Ref} context.activeCell - 活动单元格
- * @param {Function} context.startSingleSelection - 开始单格选择
- * @param {Function} context.saveHistory - 保存历史记录
- * @param {Function} context.moveActiveCell - 移动活动单元格
- * @param {Function} context.getMaxRows - 获取最大行数
- * @param {Function} context.getMaxCols - 获取最大列数
- * @param {import('vue').Ref} context.containerRef - 容器引用
- * @returns {Object} 返回编辑相关的方法和状态
  */
 export function useCellEditing({
   tableData,
@@ -25,20 +49,21 @@ export function useCellEditing({
   getMaxRows,
   getMaxCols,
   containerRef,
-}) {
-  const editingCell = ref(null); // { row, col }
-  let beforeEditSnapshot = null;
+}: UseCellEditingOptions): UseCellEditingReturn {
+  const editingCell = ref<CellPosition | null>(null);
+  let beforeEditSnapshot: string | null = null;
 
   // DOM Refs for Inputs
-  const cellInputRefs = new Map();
+  const cellInputRefs = new Map<string, HTMLInputElement>();
 
   /**
    * 设置输入框引用
-   * @param {HTMLElement} el - DOM 元素
-   * @param {number} row - 行索引
-   * @param {number} col - 列索引
    */
-  const setInputRef = (el, row, col) => {
+  const setInputRef = (
+    el: HTMLInputElement | null,
+    row: number,
+    col: number
+  ): void => {
     if (!el) return;
     const key = `${row}-${col}`;
     cellInputRefs.set(key, el);
@@ -46,27 +71,21 @@ export function useCellEditing({
 
   /**
    * 判断是否正在编辑指定单元格
-   * @param {number} row - 行索引
-   * @param {number} col - 列索引
-   * @returns {boolean}
    */
-  const isEditing = (row, col) =>
+  const isEditing = (row: number, col: number): boolean =>
     editingCell.value?.row === row && editingCell.value?.col === col;
 
   /**
    * 开始编辑单元格
-   * @param {number} row - 行索引
-   * @param {number} col - 列索引
-   * @param {boolean} selectAll - 是否全选文本，默认 true
    */
-  const startEdit = (row, col, selectAll = true) => {
+  const startEdit = (row: number, col: number, selectAll = true): void => {
     // 边界检查
     if (row < 0 || row >= getMaxRows() || col < 0 || col >= getMaxCols()) {
       console.warn(`Invalid cell position: row=${row}, col=${col}`);
       return;
     }
 
-    beforeEditSnapshot = tableData.value[row][col];
+    beforeEditSnapshot = tableData.value[row]?.[col] ?? "";
     editingCell.value = { row, col };
     startSingleSelection(row, col); // 确保编辑时选中该单元格
 
@@ -89,11 +108,11 @@ export function useCellEditing({
   /**
    * 停止编辑单元格
    */
-  const stopEdit = () => {
+  const stopEdit = (): void => {
     if (!editingCell.value) return;
     const { row, col } = editingCell.value;
 
-    if (beforeEditSnapshot !== tableData.value[row][col]) {
+    if (beforeEditSnapshot !== (tableData.value[row]?.[col] ?? "")) {
       saveHistory(tableData.value); // 数据变动保存历史
     }
 
@@ -105,10 +124,12 @@ export function useCellEditing({
   /**
    * 取消编辑单元格
    */
-  const cancelEdit = () => {
+  const cancelEdit = (): void => {
     if (editingCell.value && beforeEditSnapshot !== null) {
       const { row, col } = editingCell.value;
-      tableData.value[row][col] = beforeEditSnapshot;
+      if (tableData.value[row]) {
+        tableData.value[row][col] = beforeEditSnapshot;
+      }
     }
     editingCell.value = null;
     beforeEditSnapshot = null;
@@ -117,9 +138,8 @@ export function useCellEditing({
 
   /**
    * 处理输入框 Enter 键
-   * @param {KeyboardEvent} event - 键盘事件
    */
-  const handleInputEnter = (event) => {
+  const handleInputEnter = (event: KeyboardEvent): void => {
     stopEdit();
     moveActiveCell(event.shiftKey ? -1 : 1, 0, getMaxRows(), getMaxCols());
     nextTick(() => containerRef.value?.focus());
@@ -127,9 +147,8 @@ export function useCellEditing({
 
   /**
    * 处理输入框 Tab 键
-   * @param {KeyboardEvent} event - 键盘事件
    */
-  const handleInputTab = (event) => {
+  const handleInputTab = (event: KeyboardEvent): void => {
     stopEdit();
     moveActiveCell(0, event.shiftKey ? -1 : 1, getMaxRows(), getMaxCols());
     nextTick(() => containerRef.value?.focus());
@@ -138,7 +157,7 @@ export function useCellEditing({
   /**
    * 清理输入框引用
    */
-  const clearInputRefs = () => {
+  const clearInputRefs = (): void => {
     cellInputRefs.clear();
   };
 

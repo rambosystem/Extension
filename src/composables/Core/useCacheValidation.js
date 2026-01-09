@@ -5,7 +5,7 @@
 
 import { ref } from "vue";
 import { debugLog } from "../../utils/debug.js";
-import { useI18n } from "./useI18n.js";
+import { t } from "../../utils/i18n.js";
 
 /**
  * 缓存校验 Composable
@@ -13,7 +13,6 @@ import { useI18n } from "./useI18n.js";
 export function useCacheValidation() {
   const isValidating = ref(false);
   const lastValidationResult = ref(null);
-  const { t } = useI18n();
 
   /**
    * 校验缓存初始化结果

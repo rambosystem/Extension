@@ -118,7 +118,6 @@ src/
   - `isInitialized`: 应用初始化状态
 - **主要方法**:
   - `setCurrentMenu()`: 设置当前菜单
-  - `setLanguage()`: 设置语言
   - `initializeApp()`: 初始化应用
   - `initializeToDefaults()`: 初始化到默认值（缓存清除）
 

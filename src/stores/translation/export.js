@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { useExcelExport } from "../../composables/Excel/useExcelExport.js";
-import { useI18n } from "../../composables/Core/useI18n.js";
+import { useExcelExport } from "../../composables/Excel/useExcelExport";
+import { t } from "../../utils/i18n.js";
 import { debugLog, debugError } from "../../utils/debug.js";
 import { getAvailableLanguages } from "../../config/languages.js";
 import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
@@ -65,7 +65,7 @@ export const useExportStore = defineStore("export", {
       });
 
       if (filteredResult.length === 0) {
-        ElMessage.warning("No translation data to export");
+        ElMessage.warning(t("messages.noTranslationDataToExport"));
         return;
       }
 
@@ -106,8 +106,6 @@ export const useExportStore = defineStore("export", {
      * @returns {Promise<boolean>} 是否保存成功
      */
     async saveExcelBaselineKey(key, silent = false) {
-      const { t } = useI18n();
-
       debugLog("[ExportStore] saveExcelBaselineKey called", {
         key,
         silent,

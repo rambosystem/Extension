@@ -1,7 +1,16 @@
 <template>
-  <el-dropdown trigger="click" placement="right-start" :show-arrow="false" @command="handleCommand"
-    @visible-change="handleVisibleChange">
-    <div class="cell-menu-button" :class="{ 'is-active': isMenuOpen }" @mousedown.stop>
+  <el-dropdown
+    trigger="click"
+    placement="right-start"
+    :show-arrow="false"
+    @command="handleCommand"
+    @visible-change="handleVisibleChange"
+  >
+    <div
+      class="cell-menu-button"
+      :class="{ 'is-active': isMenuOpen }"
+      @mousedown.stop
+    >
       <img src="@/assets/down_arrow.svg" alt="Menu" class="cell-menu-icon" />
     </div>
     <template #dropdown>
@@ -20,8 +29,12 @@
         </el-dropdown-item>
         <!-- 自定义菜单项 -->
         <template v-if="validatedCustomMenuItems.length > 0">
-          <el-dropdown-item v-for="item in validatedCustomMenuItems" :key="item.id"
-            :command="{ action: 'custom', id: item.id, rowIndex }" :disabled="isCustomItemDisabled(item)">
+          <el-dropdown-item
+            v-for="item in validatedCustomMenuItems"
+            :key="item.id"
+            :command="{ action: 'custom', id: item.id, rowIndex }"
+            :disabled="isCustomItemDisabled(item)"
+          >
             <div class="menu-item-content">
               <span class="menu-item-text">{{ item.label }}</span>
               <span v-if="item.shortcut" class="menu-item-shortcut">{{
@@ -35,13 +48,17 @@
   </el-dropdown>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from "vue";
 import {
   normalizeShortcutForPlatform,
   getModifierKey,
   buildShortcut,
-} from "../../composables/Excel/useKeyboard.js";
+} from "../../composables/Excel/useKeyboard";
+import type {
+  CustomMenuItem,
+  MenuContext,
+} from "../../composables/Excel/useKeyboard";
 
 /**
  * CellMenu - 单元格菜单组件
@@ -55,57 +72,15 @@ import {
  *   @command="handleMenuCommand"
  * />
  */
-const props = defineProps({
-  /**
-   * 行索引
-   * @type {number}
-   * @required
-   */
-  rowIndex: {
-    type: Number,
-    required: true,
-  },
-  /**
-   * 自定义菜单项配置
-   * @type {Array}
-   * @default []
-   * @description
-   * 自定义菜单项配置数组，每个配置项包含：
-   * - id: 唯一标识
-   * - label: 显示文本
-   * - shortcut: 快捷键（可选）
-   * - validate: 验证函数，接收 context 对象，返回是否显示该菜单项（可选）
-   * - disabled: 禁用函数，接收 context 对象，返回是否禁用该菜单项（可选）
-   * @example
-   * [
-   *   {
-   *     id: 'auto-increment',
-   *     label: '自增填充',
-   *     shortcut: 'Ctrl+Alt+A',
-   *     validate: (ctx) => ctx.normalizedSelection?.minCol === 0
-   *   }
-   * ]
-   */
-  customMenuItems: {
-    type: Array,
-    default: () => [],
-  },
-  /**
-   * 上下文对象，传递给自定义菜单项的验证和执行函数
-   * @type {Object}
-   * @default null
-   * @description
-   * 包含以下属性：
-   * - normalizedSelection: 归一化选区信息
-   * - activeCell: 活动单元格
-   * - rowIndex: 当前行索引
-   * - tableData: 表格数据（只读）
-   * - updateCell: 更新单元格方法
-   */
-  context: {
-    type: Object,
-    default: null,
-  },
+interface Props {
+  rowIndex: number;
+  customMenuItems?: CustomMenuItem[];
+  context?: MenuContext | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  customMenuItems: () => [],
+  context: null,
 });
 
 /**
@@ -128,11 +103,8 @@ const deleteRowShortcut = computed(() => buildShortcut("Delete"));
 
 /**
  * 规范化自定义菜单项的快捷键显示
- * 根据平台自动转换 Ctrl/Cmd
- * @param {string} shortcut - 原始快捷键字符串
- * @returns {string} 规范化后的快捷键字符串
  */
-const normalizeShortcut = (shortcut) => {
+const normalizeShortcut = (shortcut: string | undefined): string => {
   if (!shortcut) return "";
   return normalizeShortcutForPlatform(shortcut);
 };
@@ -214,9 +186,8 @@ const handleCommand = (command) => {
 
 /**
  * 处理菜单显示/隐藏状态变化
- * @param {boolean} visible - 菜单是否可见
  */
-const handleVisibleChange = (visible) => {
+const handleVisibleChange = (visible: boolean): void => {
   isMenuOpen.value = visible;
 };
 </script>
@@ -268,7 +239,8 @@ $transition-fast: 0.05s ease;
     .cell-menu-icon {
       // 使用 filter 将灰色图标变为蓝色
       // 将 #505258 (灰色) 转换为 $primary-color (蓝色)
-      filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
+        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
     }
   }
 
@@ -278,7 +250,8 @@ $transition-fast: 0.05s ease;
     background-color: rgba($primary-color, 0.1);
 
     .cell-menu-icon {
-      filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
+        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
     }
   }
 }

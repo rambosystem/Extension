@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { useI18n } from "../../composables/Core/useI18n.js";
+import { t } from "../../utils/i18n.js";
 import { useTranslation } from "../../composables/Translation/useTranslation.js";
 import { useTranslationStorage } from "../../composables/Translation/useTranslationStorage.js";
 import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
@@ -335,13 +335,13 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       // 检查 API Key 是否存在
       const apiKey = localStorage.getItem("deepseek_api_key");
       if (!apiKey) {
-        ElMessage.warning("Please configure API Key first");
+        ElMessage.warning(t("messages.pleaseConfigureAPIKeyFirst"));
         return;
       }
 
       // 检查输入内容是否为空
       if (!this.codeContent?.trim()) {
-        ElMessage.warning("Please enter content to translate");
+        ElMessage.warning(t("messages.pleaseEnterContentToTranslate"));
         return;
       }
 
@@ -431,7 +431,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         // 翻译失败时关闭对话框
         this.closeDialog();
         console.error("Translation failed:", error);
-        ElMessage.error("Translation failed");
+        ElMessage.error(t("messages.translationFailed"));
       } finally {
         this.finishTranslation();
       }
@@ -452,7 +452,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         this.setTranslationResult(dataWithEditState);
         this.openDialog();
       } else {
-        ElMessage.warning("No previous translation found");
+        ElMessage.warning(t("messages.noPreviousTranslationFound"));
       }
     },
 
@@ -493,9 +493,9 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         // 如果删除后没有数据了，关闭对话框
         if (this.translationResult.length === 0) {
           this.closeDialog();
-          ElMessage.info("All data deleted");
+          ElMessage.info(t("messages.allDataDeleted"));
         } else {
-          ElMessage.success("Row deleted successfully");
+          ElMessage.success(t("messages.rowDeletedSuccessfully"));
         }
       }
     },

@@ -1,5 +1,17 @@
-import { ref } from "vue";
-import { DEFAULT_CONFIG } from "./constants.js";
+import { ref, type Ref } from "vue";
+import { DEFAULT_CONFIG } from "./constants";
+
+/**
+ * 历史记录 Composable 返回值
+ */
+export interface UseHistoryReturn {
+  initHistory: (data: any) => void;
+  saveHistory: (currentState: any) => void;
+  undo: () => any | null;
+  redo: () => any | null;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+}
 
 /**
  * Excel 历史记录 Composable
@@ -10,37 +22,34 @@ import { DEFAULT_CONFIG } from "./constants.js";
  * - 通用组件（Components/Common/）应该自包含，不依赖 Store
  * - 每个组件实例拥有独立的历史记录，保证组件的可复用性
  * - 这是通用组件的标准做法，符合组件化设计原则
- *
- * @param {number} maxHistorySize - 最大历史记录数，默认 50
- * @returns {Object} 返回历史记录管理方法
  */
-export function useHistory(maxHistorySize = DEFAULT_CONFIG.MAX_HISTORY_SIZE) {
-  const historyStack = ref([]);
+export function useHistory(
+  maxHistorySize: number = DEFAULT_CONFIG.MAX_HISTORY_SIZE
+): UseHistoryReturn {
+  const historyStack: Ref<any[]> = ref([]);
   const historyIndex = ref(-1);
 
   /**
    * 深拷贝辅助函数
    * 使用 JSON 序列化实现深拷贝（适用于简单数据结构）
-   *
-   * @param {any} data - 要拷贝的数据
-   * @returns {any} 深拷贝后的数据
-   * @throws {Error} 当数据无法序列化时抛出错误
    */
-  const deepCopy = (data) => {
+  const deepCopy = <T>(data: T): T => {
     try {
       return JSON.parse(JSON.stringify(data));
     } catch (error) {
       console.error("Deep copy failed:", error);
-      throw new Error("Failed to deep copy data: " + error.message);
+      throw new Error(
+        `Failed to deep copy data: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   };
 
   /**
    * 初始化历史记录
-   *
-   * @param {any} data - 初始状态数据
    */
-  const initHistory = (data) => {
+  const initHistory = (data: any): void => {
     if (!data) {
       console.warn("initHistory: data is required");
       return;
@@ -52,10 +61,8 @@ export function useHistory(maxHistorySize = DEFAULT_CONFIG.MAX_HISTORY_SIZE) {
   /**
    * 保存历史记录
    * 如果当前处于历史中间位置，会切断后面的记录
-   *
-   * @param {any} currentState - 当前状态
    */
-  const saveHistory = (currentState) => {
+  const saveHistory = (currentState: any): void => {
     if (!currentState) {
       console.warn("saveHistory: currentState is required");
       return;
@@ -91,10 +98,8 @@ export function useHistory(maxHistorySize = DEFAULT_CONFIG.MAX_HISTORY_SIZE) {
 
   /**
    * 撤销操作
-   *
-   * @returns {any|null} 撤销后的状态，如果无法撤销则返回 null
    */
-  const undo = () => {
+  const undo = (): any | null => {
     if (historyIndex.value > 0) {
       historyIndex.value--;
       return deepCopy(historyStack.value[historyIndex.value]);
@@ -104,10 +109,8 @@ export function useHistory(maxHistorySize = DEFAULT_CONFIG.MAX_HISTORY_SIZE) {
 
   /**
    * 重做操作
-   *
-   * @returns {any|null} 重做后的状态，如果无法重做则返回 null
    */
-  const redo = () => {
+  const redo = (): any | null => {
     if (historyIndex.value < historyStack.value.length - 1) {
       historyIndex.value++;
       return deepCopy(historyStack.value[historyIndex.value]);

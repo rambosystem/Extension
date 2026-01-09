@@ -217,5 +217,34 @@
   "translationResult": {
     "autoIncrement": "Auto Increment",
     "noProjectSelected": "No project selected"
+  },
+  "messages": {
+    "noTranslationDataToUpload": "No translation data to upload",
+    "translationConfigMismatch": "The translation data does not match the current language configuration. Please translate again.",
+    "pleaseSelectProject": "Please select a project",
+    "selectedProjectNotFound": "Selected project not found",
+    "pleaseConfigureAPIKeyFirst": "Please configure API Key first",
+    "pleaseEnterContentToTranslate": "Please enter content to translate",
+    "translationFailed": "Translation failed",
+    "noPreviousTranslationFound": "No previous translation found",
+    "allDataDeleted": "All data deleted",
+    "rowDeletedSuccessfully": "Row deleted successfully",
+    "noTranslationDataToExport": "No translation data to export",
+    "allTextsDuplicatedAndRemoved": "All texts were duplicated and removed",
+    "deduplicationFailed": "Deduplication failed",
+    "apiKeySavedSuccessfully": "API Key saved successfully",
+    "lokaliseApiTokenSavedSuccessfully": "Lokalise API Token saved successfully",
+    "failedToFetchTermsData": "Failed to fetch terms data",
+    "termsRefreshedSuccessfully": "Terms refreshed successfully",
+    "failedToRefreshTerms": "Failed to refresh terms",
+    "embeddingRebuiltSuccessfully": "Embedding rebuilt successfully",
+    "failedToRebuildEmbedding": "Failed to rebuild embedding",
+    "failedToAddTerms": "Failed to add terms",
+    "termDeletedSuccessfully": "Term deleted successfully",
+    "failedToDeleteTerm": "Failed to delete term",
+    "noChangesToSave": "No changes to save",
+    "failedToSaveChanges": "Failed to save changes",
+    "cacheInitializedSuccessfully": "Cache initialized successfully",
+    "failedToInitializeCache": "Failed to initialize cache"
   }
 }

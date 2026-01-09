@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { useI18n } from "../composables/Core/useI18n.js";
+import { t } from "../utils/i18n.js";
 import {
   fetchCurrentUserTerms,
   addUserTerms,
@@ -267,7 +267,7 @@ export const useTermsStore = defineStore("terms", {
       } catch (err) {
         this.setError(err.message);
         console.error("Failed to fetch terms:", err);
-        ElMessage.error("Failed to fetch terms data");
+        ElMessage.error(t("messages.failedToFetchTermsData"));
       } finally {
         this.setLoading("terms", false);
       }
@@ -307,12 +307,12 @@ export const useTermsStore = defineStore("terms", {
         );
 
         if (hasSuccess && showSuccessMessage) {
-          ElMessage.success("Terms refreshed successfully");
+          ElMessage.success(t("messages.termsRefreshedSuccessfully"));
         }
       } catch (error) {
         console.error("Failed to refresh terms:", error);
         this.setError("Failed to refresh terms");
-        ElMessage.error("Failed to refresh terms");
+        ElMessage.error(t("messages.failedToRefreshTerms"));
       } finally {
         this.setLoading("refresh", false);
       }
@@ -328,11 +328,11 @@ export const useTermsStore = defineStore("terms", {
         await rebuildUserEmbedding();
         const currentTime = new Date().toLocaleString();
         this.completeEmbeddingBuild(currentTime);
-        ElMessage.success("Embedding rebuilt successfully");
+        ElMessage.success(t("messages.embeddingRebuiltSuccessfully"));
       } catch (error) {
         console.error("Failed to rebuild embedding:", error);
         this.failEmbeddingBuild("Failed to rebuild embedding");
-        ElMessage.error("Failed to rebuild embedding");
+        ElMessage.error(t("messages.failedToRebuildEmbedding"));
       }
     },
 
@@ -348,7 +348,7 @@ export const useTermsStore = defineStore("terms", {
         ElMessage.success(`Added ${terms.length} terms successfully`);
       } catch (error) {
         console.error("Failed to add terms:", error);
-        ElMessage.error("Failed to add terms");
+        ElMessage.error(t("messages.failedToAddTerms"));
         throw error;
       }
     },
@@ -362,10 +362,10 @@ export const useTermsStore = defineStore("terms", {
         await deleteUserTerm(termId);
         // 刷新数据
         await this.refreshTerms(false);
-        ElMessage.success("Term deleted successfully");
+        ElMessage.success(t("messages.termDeletedSuccessfully"));
       } catch (error) {
         console.error("Failed to delete term:", error);
-        ElMessage.error("Failed to delete term");
+        ElMessage.error(t("messages.failedToDeleteTerm"));
         throw error;
       }
     },
@@ -379,10 +379,10 @@ export const useTermsStore = defineStore("terms", {
         await deleteTermIndex(index);
         // 刷新数据
         await this.refreshTerms(false);
-        ElMessage.success("Term deleted successfully");
+        ElMessage.success(t("messages.termDeletedSuccessfully"));
       } catch (error) {
         console.error("Failed to delete term:", error);
-        ElMessage.error("Failed to delete term");
+        ElMessage.error(t("messages.failedToDeleteTerm"));
         throw error;
       }
     },
@@ -469,13 +469,13 @@ export const useTermsStore = defineStore("terms", {
      */
     async saveChanges() {
       if (!this.hasChanges) {
-        ElMessage.warning("No changes to save");
+        ElMessage.warning(t("messages.noChangesToSave"));
         return;
       }
 
       const changedTerms = this.getChangedTerms();
       if (changedTerms.length === 0) {
-        ElMessage.warning("No changes to save");
+        ElMessage.warning(t("messages.noChangesToSave"));
         return;
       }
 
@@ -487,7 +487,7 @@ export const useTermsStore = defineStore("terms", {
         ElMessage.success(`Saved ${changedTerms.length} term changes`);
       } catch (error) {
         console.error("Failed to save changes:", error);
-        ElMessage.error("Failed to save changes");
+        ElMessage.error(t("messages.failedToSaveChanges"));
       }
     },
 

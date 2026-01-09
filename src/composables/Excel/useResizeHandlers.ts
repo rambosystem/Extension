@@ -1,19 +1,39 @@
+import type { Ref } from "vue";
+import type { UseColumnWidthReturn } from "./useColumnWidth";
+import type { UseRowHeightReturn } from "./useRowHeight";
+
+/**
+ * useResizeHandlers 选项
+ */
+export interface UseResizeHandlersOptions {
+  props: {
+    enableColumnResize?: boolean;
+    enableRowResize?: boolean;
+  };
+  columnWidthComposable: UseColumnWidthReturn | null;
+  rowHeightComposable: UseRowHeightReturn | null;
+  tableData: Ref<string[][]>;
+  columns: Ref<string[]>;
+  getColumnWidth: (colIndex: number) => number;
+  handleMouseUp: ((event: MouseEvent) => void) | null;
+}
+
+/**
+ * useResizeHandlers 返回值
+ */
+export interface UseResizeHandlersReturn {
+  startColumnResize: (colIndex: number, event: MouseEvent) => void;
+  startRowResize: (rowIndex: number, event: MouseEvent) => void;
+  stopColumnResize: () => void;
+  stopRowResize: () => void;
+  handleDoubleClickResize: (colIndex: number) => void;
+  handleDoubleClickRowResize: (rowIndex: number) => void;
+  handleColumnResizeMove: (event: MouseEvent) => void;
+  handleRowResizeMove: (event: MouseEvent) => void;
+}
+
 /**
  * 尺寸调整处理器管理 Composable
- *
- * 负责处理列宽和行高的调整操作（拖拽和双击自适应）
- *
- * @param {Object} context - 上下文对象
- * @param {Object} context.props - 组件 props
- * @param {Object} context.columnWidthComposable - 列宽管理 composable
- * @param {Object} context.rowHeightComposable - 行高管理 composable
- * @param {import('vue').Ref} context.tableData - 表格数据
- * @param {import('vue').Ref} context.columns - 列标题数组
- * @param {Function} context.getColumnWidth - 获取列宽函数
- * @param {Function} context.handleMouseUp - 处理鼠标抬起
- * @param {Function} context.handleColumnResize - 处理列宽调整
- * @param {Function} context.handleRowResize - 处理行高调整
- * @returns {Object} 返回尺寸调整处理方法
  */
 export function useResizeHandlers({
   props,
@@ -23,14 +43,11 @@ export function useResizeHandlers({
   columns,
   getColumnWidth,
   handleMouseUp,
-  handleColumnResize,
-  handleRowResize,
-}) {
+}: UseResizeHandlersOptions): UseResizeHandlersReturn {
   /**
    * 处理列宽调整（事件处理）
-   * @param {MouseEvent} event - 鼠标事件
    */
-  const handleColumnResizeMove = (event) => {
+  const handleColumnResizeMove = (event: MouseEvent): void => {
     if (props.enableColumnResize && columnWidthComposable) {
       columnWidthComposable.handleColumnResize(event);
     }
@@ -38,20 +55,17 @@ export function useResizeHandlers({
 
   /**
    * 处理行高调整（事件处理）
-   * @param {MouseEvent} event - 鼠标事件
    */
-  const handleRowResizeMove = (event) => {
+  const handleRowResizeMove = (event: MouseEvent): void => {
     if (props.enableRowResize && rowHeightComposable) {
       rowHeightComposable.handleRowResize(event);
     }
   };
 
   /**
-   * 开始调整列宽（包装函数，添加事件监听）
-   * @param {number} colIndex - 列索引
-   * @param {MouseEvent} event - 鼠标事件
+   * 开始调整列宽
    */
-  const startColumnResize = (colIndex, event) => {
+  const startColumnResize = (colIndex: number, event: MouseEvent): void => {
     if (!props.enableColumnResize) return;
     if (columnWidthComposable) {
       columnWidthComposable.startColumnResize(colIndex, event);
@@ -63,11 +77,9 @@ export function useResizeHandlers({
   };
 
   /**
-   * 开始调整行高（包装函数，添加事件监听）
-   * @param {number} rowIndex - 行索引
-   * @param {MouseEvent} event - 鼠标事件
+   * 开始调整行高
    */
-  const startRowResize = (rowIndex, event) => {
+  const startRowResize = (rowIndex: number, event: MouseEvent): void => {
     if (!props.enableRowResize) return;
     if (rowHeightComposable) {
       rowHeightComposable.startRowResize(rowIndex, event);
@@ -81,7 +93,7 @@ export function useResizeHandlers({
   /**
    * 停止列宽调整
    */
-  const stopColumnResize = () => {
+  const stopColumnResize = (): void => {
     if (props.enableColumnResize && columnWidthComposable) {
       columnWidthComposable.stopColumnResize();
     }
@@ -90,7 +102,7 @@ export function useResizeHandlers({
   /**
    * 停止行高调整
    */
-  const stopRowResize = () => {
+  const stopRowResize = (): void => {
     if (props.enableRowResize && rowHeightComposable) {
       rowHeightComposable.stopRowResize();
     }
@@ -98,25 +110,22 @@ export function useResizeHandlers({
 
   /**
    * 处理双击列边界自适应
-   * @param {number} colIndex - 列索引
    */
-  const handleDoubleClickResize = (colIndex) => {
+  const handleDoubleClickResize = (colIndex: number): void => {
     if (!props.enableColumnResize) return;
     if (columnWidthComposable) {
       columnWidthComposable.handleDoubleClickResize(
         colIndex,
         columns.value,
-        tableData.value,
-        tableData.value.length
+        tableData.value
       );
     }
   };
 
   /**
    * 处理双击行边界自适应
-   * @param {number} rowIndex - 行索引
    */
-  const handleDoubleClickRowResize = (rowIndex) => {
+  const handleDoubleClickRowResize = (rowIndex: number): void => {
     if (!props.enableRowResize) return;
     if (rowHeightComposable) {
       rowHeightComposable.handleDoubleClickResize(

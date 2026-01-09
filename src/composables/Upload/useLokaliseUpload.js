@@ -1,5 +1,5 @@
 import { ElMessage } from "element-plus";
-import { useI18n } from "../Core/useI18n.js";
+import { t } from "../../utils/i18n.js";
 import { useApiStore } from "../../stores/settings/api.js";
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { useExportStore } from "../../stores/translation/export.js";
@@ -10,8 +10,6 @@ import {
 import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "../../services/translation/index.js";
 import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
-
-const { t } = useI18n();
 
 /**
  * Lokalise上传功能Hook
@@ -353,7 +351,7 @@ export function useLokaliseUpload() {
    */
   const executeUpload = async (translationResult) => {
     if (!translationResult || translationResult.length === 0) {
-      ElMessage.warning("No translation data to upload");
+      ElMessage.warning(t("messages.noTranslationDataToUpload"));
       return;
     }
 
@@ -367,20 +365,18 @@ export function useLokaliseUpload() {
     });
 
     if (filteredResult.length === 0) {
-      ElMessage.warning("No translation data to upload");
+      ElMessage.warning(t("messages.noTranslationDataToUpload"));
       return;
     }
 
     // 检查翻译结果的语言配置是否与当前配置匹配
     if (!uploadStore.checkTranslationConfigMatch(translationResult)) {
-      ElMessage.warning(
-        "The translation data does not match the current language configuration. Please translate again."
-      );
+      ElMessage.warning(t("messages.translationConfigMismatch"));
       return;
     }
 
     if (!uploadStore.uploadForm.projectId) {
-      ElMessage.warning("Please select a project");
+      ElMessage.warning(t("messages.pleaseSelectProject"));
       return;
     }
 
@@ -389,7 +385,7 @@ export function useLokaliseUpload() {
       (p) => p.project_id === uploadStore.uploadForm.projectId
     );
     if (!selectedProject) {
-      ElMessage.error("Selected project not found");
+      ElMessage.error(t("messages.selectedProjectNotFound"));
       return;
     }
 

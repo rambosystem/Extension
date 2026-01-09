@@ -1,34 +1,13 @@
 import { computed } from "vue";
 import { ElMessage } from "element-plus";
-import { useI18n } from "../Core/useI18n.js";
+import { t } from "../../utils/i18n.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
-
-const { t } = useI18n();
 
 /**
  * 翻译结果存储管理Hook
  */
 export function useTranslationStorage() {
   const translationCoreStore = useTranslationCoreStore();
-
-  /**
-   * 从本地存储加载上次翻译结果
-   * 注意：此方法已废弃，请使用 store 中的 loadLastTranslation
-   * @deprecated 使用 translationCoreStore.loadLastTranslation() 代替
-   */
-  const loadLastTranslation = () => {
-    translationCoreStore.loadLastTranslation();
-  };
-
-  /**
-   * 保存翻译结果到本地存储
-   * 注意：此方法已废弃，请使用 store 中的 saveTranslationToLocal
-   * @deprecated 使用 translationCoreStore.saveTranslationToLocal() 代替
-   * @param {Array} translationData - 翻译数据（不包含编辑状态）
-   */
-  const saveTranslationToLocal = (translationData) => {
-    translationCoreStore.saveTranslationToLocal(translationData);
-  };
 
   /**
    * 为翻译数据添加编辑状态属性
@@ -117,8 +96,6 @@ export function useTranslationStorage() {
     hasLastTranslation: computed(() => translationCoreStore.hasLastTranslation),
 
     // 方法
-    loadLastTranslation,
-    saveTranslationToLocal,
     addEditingStates,
     hasLastTranslation,
     clearLastTranslation,

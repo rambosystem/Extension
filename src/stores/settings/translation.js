@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
+import { t } from "../../utils/i18n.js";
 import { debugLog } from "../../utils/debug.js";
 import { useApiStore } from "./api.js";
 import { useTranslationCoreStore } from "../translation/core.js";
@@ -418,13 +419,13 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
           exportStore.defaultProjectId || "empty"
         );
 
-        ElMessage.success("Cache initialized successfully");
+        ElMessage.success(t("messages.cacheInitializedSuccessfully"));
 
         // 自动校验缓存初始化结果
         this.autoValidateCache();
       } catch (error) {
         console.error("Failed to initialize cache:", error);
-        ElMessage.error("Failed to initialize cache");
+        ElMessage.error(t("messages.failedToInitializeCache"));
       }
     },
 

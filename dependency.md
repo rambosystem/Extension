@@ -38,6 +38,65 @@
 - `vite.config.js`: 构建配置（已包含 Sass 现代编译器配置）
 - `README.md`: 项目文档中的依赖版本信息
 
+## TypeScript 支持
+
+### 2024 - 添加 TypeScript 支持
+
+**更新日期**: 当前日期  
+**更新内容**:
+
+- `typescript`: ^5.9.3 (新增)
+- `vue-tsc`: ^1.8.27 (新增)
+
+**目的**:
+
+- 将 Excel 组件重构为 TypeScript，提供类型安全
+- 提升代码可维护性和开发体验
+- 增强 IDE 智能提示和类型检查
+
+**转换范围**:
+
+- ✅ `src/composables/Excel/`: 所有 18 个 composables 已转换为 TypeScript
+  - constants.ts
+  - types.ts (共享类型定义)
+  - useExcelData.ts
+  - useHistory.ts
+  - useCellEditing.ts
+  - useSelection.ts
+  - useColumnWidth.ts
+  - useRowHeight.ts
+  - useFillHandle.ts
+  - useClipboard.ts
+  - useCellDisplay.ts
+  - useSizeManager.ts
+  - useSelectionStyle.ts
+  - useMouseEvents.ts
+  - useDataSync.ts
+  - useCellMenu.ts
+  - useCellMenuPosition.ts
+  - useRowOperations.ts
+  - useResizeHandlers.ts
+  - useKeyboard.ts
+  - useExcelExport.ts
+- ✅ `src/Components/Common/Excel.vue`: 主组件已转换为 TypeScript
+- ✅ `src/Components/Excel/`: 所有子组件已转换为 TypeScript
+  - CellMenu.vue
+  - FillHandle.vue
+  - ColumnResizer.vue
+  - RowResizer.vue
+
+**类型定义**:
+
+- 所有 composables 都提供了完整的 TypeScript 接口定义
+- 共享类型定义在 `src/composables/Excel/types.ts`
+- 组件 Props 和 Emits 使用 TypeScript 类型系统
+
+**相关文件**:
+
+- `tsconfig.json`: TypeScript 配置文件
+- `package.json`: 依赖版本定义
+- `src/composables/Excel/types.ts`: 共享类型定义
+
 ## 依赖版本说明
 
 ### 核心依赖
@@ -51,6 +110,8 @@
 
 - `vite`: ^5.0.0
 - `@vitejs/plugin-vue`: ^5.0.0
+- `typescript`: ^5.3.3
+- `vue-tsc`: ^1.8.27
 
 ### 其他依赖
 

@@ -1,16 +1,51 @@
-import { ref, onUnmounted } from "vue";
+import { ref, onUnmounted, type Ref } from "vue";
 
 // 缓存 Canvas context 避免重复创建
-let cachedCtx = null;
-function getTextWidth(text, font = "13px sans-serif") {
+let cachedCtx: CanvasRenderingContext2D | null = null;
+
+function getTextWidth(text: string, font = "13px sans-serif"): number {
   if (!text) return 0;
   if (!cachedCtx) {
     const canvas = document.createElement("canvas");
     cachedCtx = canvas.getContext("2d");
   }
+  if (!cachedCtx) return 0;
   cachedCtx.font = font;
   const metrics = cachedCtx.measureText(text);
   return Math.ceil(metrics.width);
+}
+
+/**
+ * useColumnWidth 选项
+ */
+export interface UseColumnWidthOptions {
+  defaultWidth?: number;
+  minWidth?: number;
+  maxWidth?: number;
+  fontStyle?: string;
+}
+
+/**
+ * useColumnWidth 返回值
+ */
+export interface UseColumnWidthReturn {
+  columnWidths: Ref<Map<number, number>>;
+  isResizingColumn: Ref<boolean>;
+  resizingColumnIndex: Ref<number | null>;
+  getColumnWidth: (colIndex: number) => number;
+  startColumnResize: (colIndex: number, event: MouseEvent) => void;
+  handleColumnResize: (event: MouseEvent) => void;
+  stopColumnResize: () => void;
+  handleDoubleClickResize: (
+    colIndex: number,
+    columns: string[],
+    tableData: string[][]
+  ) => void;
+  autoFitColumn: (
+    colIndex: number,
+    columns: string[],
+    tableData: string[][]
+  ) => void;
 }
 
 export function useColumnWidth({
@@ -18,30 +53,25 @@ export function useColumnWidth({
   minWidth = 50,
   maxWidth = 500,
   fontStyle = "13px sans-serif",
-} = {}) {
-  // 状态
-  const columnWidths = ref(new Map());
-  const isResizingColumn = ref(false);
-  const resizingColumnIndex = ref(null);
+}: UseColumnWidthOptions = {}): UseColumnWidthReturn {
+  const columnWidths = ref<Map<number, number>>(new Map());
+  const isResizingColumn = ref<boolean>(false);
+  const resizingColumnIndex = ref<number | null>(null);
 
-  // 临时变量
   let resizeStartX = 0;
   let resizeStartWidth = 0;
-  let animationFrameId = null;
+  let animationFrameId: number | null = null;
 
-  const getColumnWidth = (colIndex) => {
+  const getColumnWidth = (colIndex: number): number => {
     return columnWidths.value.get(colIndex) ?? defaultWidth;
   };
 
   /**
    * 处理拖拽逻辑
-   * 包含 requestAnimationFrame 节流优化
    */
-  const handleColumnResize = (event) => {
+  const handleColumnResize = (event: MouseEvent): void => {
     if (!isResizingColumn.value) return;
 
-    // 这一步是为了防止模板里绑定的 @mousemove 和 window 监听同时触发导致计算错误
-    // 同时也为了性能
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
     animationFrameId = requestAnimationFrame(() => {
@@ -51,14 +81,14 @@ export function useColumnWidth({
         Math.min(maxWidth, resizeStartWidth + deltaX)
       );
 
-      columnWidths.value.set(resizingColumnIndex.value, newWidth);
+      columnWidths.value.set(resizingColumnIndex.value!, newWidth);
     });
   };
 
   /**
    * 停止拖拽
    */
-  const stopColumnResize = () => {
+  const stopColumnResize = (): void => {
     isResizingColumn.value = false;
     resizingColumnIndex.value = null;
 
@@ -67,45 +97,43 @@ export function useColumnWidth({
       animationFrameId = null;
     }
 
-    // 移除全局监听
     window.removeEventListener("mousemove", handleColumnResize);
     window.removeEventListener("mouseup", stopColumnResize);
-    document.body.style.cursor = ""; // 恢复鼠标样式
+    document.body.style.cursor = "";
   };
 
   /**
    * 开始调整
    */
-  const startColumnResize = (colIndex, event) => {
+  const startColumnResize = (colIndex: number, event: MouseEvent): void => {
     event.preventDefault();
     isResizingColumn.value = true;
     resizingColumnIndex.value = colIndex;
     resizeStartX = event.clientX;
     resizeStartWidth = getColumnWidth(colIndex);
 
-    // 添加全局监听（即使鼠标移出表格也能继续拖拽）
     window.addEventListener("mousemove", handleColumnResize);
     window.addEventListener("mouseup", stopColumnResize);
-    document.body.style.cursor = "col-resize"; // 强制鼠标样式
+    document.body.style.cursor = "col-resize";
   };
 
-  const autoFitColumn = (colIndex, columns, tableData) => {
+  const autoFitColumn = (
+    colIndex: number,
+    columns: string[],
+    tableData: string[][]
+  ): void => {
     let maxContentWidth = defaultWidth;
 
-    // 1. Header
     if (columns && columns[colIndex]) {
       const headerWidth = getTextWidth(String(columns[colIndex]), fontStyle);
       maxContentWidth = Math.max(maxContentWidth, headerWidth + 24);
     }
 
-    // 2. Data (采样前 100 行)
     if (tableData && tableData.length > 0) {
       const sampleLimit = Math.min(tableData.length, 100);
       for (let r = 0; r < sampleLimit; r++) {
         const row = tableData[r];
-        const cellValue = Array.isArray(row)
-          ? row[colIndex]
-          : row[Object.keys(row)[colIndex]];
+        const cellValue = Array.isArray(row) ? row[colIndex] : undefined;
         if (cellValue) {
           const strVal = String(cellValue);
           if (strVal.length > 0) {
@@ -119,11 +147,14 @@ export function useColumnWidth({
     columnWidths.value.set(colIndex, finalWidth);
   };
 
-  const handleDoubleClickResize = (colIndex, columns, tableData) => {
+  const handleDoubleClickResize = (
+    colIndex: number,
+    columns: string[],
+    tableData: string[][]
+  ): void => {
     autoFitColumn(colIndex, columns, tableData);
   };
 
-  // 必须手动销毁监听，防止组件卸载后残留
   onUnmounted(() => {
     window.removeEventListener("mousemove", handleColumnResize);
     window.removeEventListener("mouseup", stopColumnResize);
@@ -135,11 +166,8 @@ export function useColumnWidth({
     resizingColumnIndex,
     getColumnWidth,
     startColumnResize,
-
-    // 关键修正：必须把这两个方法暴露出去，因为你的模板里绑定了它们
     handleColumnResize,
     stopColumnResize,
-
     handleDoubleClickResize,
     autoFitColumn,
   };

@@ -41,11 +41,12 @@ export function useI18n() {
   );
 
   /**
-   * 切换语言（已废弃，仅支持英文）
-   * @param {string} language - 语言代码
+   * 确保语言为英文（仅支持英文）
+   * 注意：应用仅支持英文，此方法会忽略传入的参数并强制设置为英文
+   * @param {string} language - 语言代码（已忽略，仅用于兼容性）
    */
   const setLanguage = (language) => {
-    // 强制设置为英文
+    // 强制设置为英文，忽略传入的参数
     globalLanguage.value = DEFAULT_LANGUAGE;
     try {
       if (typeof window !== "undefined" && window.localStorage) {
@@ -154,3 +155,6 @@ export function useI18n() {
     DEFAULT_LANGUAGE,
   };
 }
+
+// 创建全局 i18n 实例，可以在任何地方直接导入使用
+export const i18n = useI18n();

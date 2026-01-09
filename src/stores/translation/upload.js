@@ -8,6 +8,7 @@ import { uploadTranslationKeys } from "../../services/translation/index.js";
 import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
 import { useExportStore } from "./export.js";
 import { useTranslationCoreStore } from "./core.js";
+import { t } from "../../utils/i18n.js";
 import { debugLog, debugError } from "../../utils/debug.js";
 
 /**
@@ -262,15 +263,13 @@ export const useUploadStore = defineStore("upload", {
      */
     uploadToLokalise(translationResult) {
       if (translationResult.length === 0) {
-        ElMessage.warning("No translation data to upload");
+        ElMessage.warning(t("messages.noTranslationDataToUpload"));
         return;
       }
 
       // 检查翻译结果的语言配置是否与当前配置匹配
       if (!this.checkTranslationConfigMatch(translationResult)) {
-        ElMessage.warning(
-          "The translation data does not match the current language configuration. Please translate again."
-        );
+        ElMessage.warning(t("messages.translationConfigMismatch"));
         return;
       }
 
@@ -284,7 +283,7 @@ export const useUploadStore = defineStore("upload", {
      */
     async executeUpload(translationResult) {
       if (translationResult.length === 0) {
-        ElMessage.warning("No translation data to upload");
+        ElMessage.warning(t("messages.noTranslationDataToUpload"));
         return;
       }
 

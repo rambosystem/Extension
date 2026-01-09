@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
+import { t } from "../../utils/i18n.js";
 import { validateDeepSeekApiKey } from "../../utils/apiValidation.js";
 
 /**
@@ -111,7 +112,7 @@ export const useApiStore = defineStore("api", {
         this.apiKey = apiKey.trim();
       });
 
-      ElMessage.success("API Key saved successfully");
+      ElMessage.success(t("messages.apiKeySavedSuccessfully"));
     },
 
     /**
@@ -237,7 +238,7 @@ export const useApiStore = defineStore("api", {
           }
         });
 
-        ElMessage.success("Lokalise API Token saved successfully");
+        ElMessage.success(t("messages.lokaliseApiTokenSavedSuccessfully"));
       } catch (error) {
         // 验证失败或保存失败时，确保清除可能已保存的 token
         localStorage.removeItem("lokalise_api_token");

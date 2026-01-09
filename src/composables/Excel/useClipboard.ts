@@ -1,19 +1,31 @@
+import type { Ref } from "vue";
+import type { CellPosition, SelectionRange } from "./types";
+
+/**
+ * useClipboard 选项
+ */
+export interface UseClipboardOptions {
+  editingCell: Ref<CellPosition | null>;
+  normalizedSelection: Ref<SelectionRange | null>;
+  tableData: Ref<string[][]>;
+  activeCell: Ref<CellPosition | null>;
+  rows: Ref<number[]>;
+  columns: Ref<string[]>;
+  generateClipboardText: (range: SelectionRange, data: string[][]) => string;
+  parsePasteData: (clipboardText: string) => string[][];
+  saveHistory: (state: any) => void;
+}
+
+/**
+ * useClipboard 返回值
+ */
+export interface UseClipboardReturn {
+  handleCopy: (event: ClipboardEvent) => void;
+  handlePaste: (event: ClipboardEvent) => void;
+}
+
 /**
  * 剪贴板管理 Composable
- *
- * 负责处理 Excel 组件的复制和粘贴操作
- *
- * @param {Object} context - 上下文对象
- * @param {import('vue').Ref} context.editingCell - 正在编辑的单元格
- * @param {import('vue').ComputedRef} context.normalizedSelection - 归一化选区
- * @param {import('vue').Ref} context.tableData - 表格数据
- * @param {import('vue').Ref} context.activeCell - 活动单元格
- * @param {import('vue').Ref} context.rows - 行索引数组
- * @param {import('vue').Ref} context.columns - 列标题数组
- * @param {Function} context.generateClipboardText - 生成剪贴板文本
- * @param {Function} context.parsePasteData - 解析粘贴数据
- * @param {Function} context.saveHistory - 保存历史记录
- * @returns {Object} 返回剪贴板处理方法
  */
 export function useClipboard({
   editingCell,
@@ -25,13 +37,11 @@ export function useClipboard({
   generateClipboardText,
   parsePasteData,
   saveHistory,
-}) {
+}: UseClipboardOptions): UseClipboardReturn {
   /**
    * 生成列标题（支持超过26列）
-   * @param {number} index - 列索引
-   * @returns {string} 列标题
    */
-  const generateColumnLabel = (index) => {
+  const generateColumnLabel = (index: number): string => {
     if (index < 26) {
       return String.fromCharCode(65 + index);
     }
@@ -42,9 +52,8 @@ export function useClipboard({
 
   /**
    * 处理复制操作
-   * @param {ClipboardEvent} event - 剪贴板事件
    */
-  const handleCopy = (event) => {
+  const handleCopy = (event: ClipboardEvent): void => {
     if (editingCell.value || !normalizedSelection.value) {
       return;
     }
@@ -70,9 +79,8 @@ export function useClipboard({
 
   /**
    * 处理粘贴操作
-   * @param {ClipboardEvent} event - 剪贴板事件
    */
-  const handlePaste = (event) => {
+  const handlePaste = (event: ClipboardEvent): void => {
     if (editingCell.value) {
       return;
     }
@@ -81,14 +89,14 @@ export function useClipboard({
 
     try {
       const text =
-        (event.clipboardData || window.clipboardData)?.getData("text") || "";
+        (event.clipboardData || (window as any).clipboardData)?.getData("text") || "";
       const pasteData = parsePasteData(text);
 
       if (pasteData.length === 0) {
         return;
       }
 
-      saveHistory(tableData.value); // 粘贴前保存
+      saveHistory(tableData.value);
 
       const startRow = activeCell.value?.row ?? 0;
       const startCol = activeCell.value?.col ?? 0;
@@ -96,10 +104,9 @@ export function useClipboard({
       pasteData.forEach((rowArr, rIndex) => {
         const r = startRow + rIndex;
         if (r < 0) {
-          return; // 不允许负行
+          return;
         }
 
-        // 如果超出当前行数，自动扩展
         if (r >= rows.value.length) {
           const currentLength = rows.value.length;
           for (let i = currentLength; i <= r; i++) {
@@ -112,16 +119,14 @@ export function useClipboard({
         rowArr.forEach((cellVal, cIndex) => {
           const c = startCol + cIndex;
           if (c < 0) {
-            return; // 不允许负列
+            return;
           }
 
-          // 如果超出当前列数，自动扩展
           if (c >= columns.value.length) {
             const currentLength = columns.value.length;
             for (let i = currentLength; i <= c; i++) {
               columns.value.push(generateColumnLabel(i));
             }
-            // 为所有行补齐列
             tableData.value.forEach((rowData) => {
               while (rowData.length <= c) {
                 rowData.push("");
