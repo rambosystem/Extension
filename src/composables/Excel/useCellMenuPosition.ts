@@ -17,6 +17,17 @@ export interface MenuContext {
 }
 
 /**
+ * 行/列标题选择状态
+ */
+export interface HeaderSelectState {
+  isSelecting: boolean;
+  type: "row" | "col" | null;
+  startIndex: number | null;
+  isMultipleMode: boolean;
+  lastSelectType: "row" | "col" | null; // 保留最近一次的行/列选择类型，用于菜单位置计算
+}
+
+/**
  * useCellMenuPosition 选项
  */
 export interface UseCellMenuPositionOptions {
@@ -31,6 +42,9 @@ export interface UseCellMenuPositionOptions {
   notifyDataChange: () => void;
   getData: () => string[][];
   setDataWithSync: (data: string[][]) => void;
+  headerSelectState?: Ref<HeaderSelectState>;
+  getMaxRows?: () => number;
+  getMaxCols?: () => number;
 }
 
 /**
@@ -57,6 +71,9 @@ export function useCellMenuPosition({
   notifyDataChange,
   getData,
   setDataWithSync,
+  headerSelectState,
+  getMaxRows,
+  getMaxCols,
 }: UseCellMenuPositionOptions): UseCellMenuPositionReturn {
   /**
    * 获取多选模式下菜单按钮应该显示的位置
@@ -85,6 +102,50 @@ export function useCellMenuPosition({
 
     if (isSelecting.value) {
       return null;
+    }
+
+    // 检查是否是行/列标题选择
+    if (headerSelectState && getMaxRows && getMaxCols) {
+      const headerState = headerSelectState.value;
+      const selection = normalizedSelection.value;
+
+      if (selection) {
+        const maxRows = getMaxRows();
+        const maxCols = getMaxCols();
+        const selectType = headerState.lastSelectType || headerState.type;
+
+        // 判断是否是列选择（覆盖所有行）
+        const isColumnSelection =
+          selection.minRow === 0 && selection.maxRow === maxRows - 1;
+
+        // 判断是否是行选择（覆盖所有列）
+        const isRowSelection =
+          selection.minCol === 0 && selection.maxCol === maxCols - 1;
+
+        // 列选择：菜单出现在首行
+        if (isColumnSelection && selectType === "col") {
+          return {
+            row: 0,
+            // 单列：出现在该列，多列：出现在最后一列（右上角）
+            col:
+              selection.minCol === selection.maxCol
+                ? selection.minCol
+                : selection.maxCol,
+          };
+        }
+
+        // 行选择：菜单出现在首列
+        if (isRowSelection && selectType === "row") {
+          return {
+            // 单行：出现在该行，多行：出现在最后一行（左下角）
+            row:
+              selection.minRow === selection.maxRow
+                ? selection.minRow
+                : selection.maxRow,
+            col: 0,
+          };
+        }
+      }
     }
 
     if (isMultipleMode.value) {

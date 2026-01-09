@@ -460,7 +460,7 @@ const {
 });
 
 // --- 鼠标事件管理 ---
-const { handleMouseUp, handleCellMouseDown, handleMouseEnter } = useMouseEvents(
+const { handleMouseUp, handleCellMouseDown: originalHandleCellMouseDown, handleMouseEnter } = useMouseEvents(
   {
     isSelecting,
     selectionStart,
@@ -486,6 +486,9 @@ const { handleMouseUp, handleCellMouseDown, handleMouseEnter } = useMouseEvents(
     handleRowResize: handleRowResizeMove,
   }
 );
+
+// 临时使用原始函数，稍后会被重新定义
+let handleCellMouseDown = originalHandleCellMouseDown;
 
 // 更新引用
 handleMouseUpRef = handleMouseUp;
@@ -565,6 +568,23 @@ const { handleCellMenuCommand } = useCellMenu({
   handleDeleteRow,
 });
 
+// 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义）
+interface HeaderSelectState {
+  isSelecting: boolean;
+  type: "row" | "col" | null;
+  startIndex: number | null;
+  isMultipleMode: boolean;
+  lastSelectType: "row" | "col" | null; // 保留最近一次的行/列选择类型，用于菜单位置计算
+}
+
+const headerSelectState = ref<HeaderSelectState>({
+  isSelecting: false,
+  type: null,
+  startIndex: null,
+  isMultipleMode: false,
+  lastSelectType: null,
+});
+
 // --- Cell Menu Position 管理 ---
 const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
   editingCell,
@@ -578,6 +598,9 @@ const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
   notifyDataChange,
   getData,
   setDataWithSync,
+  headerSelectState,
+  getMaxRows: () => rows.value.length,
+  getMaxCols: () => internalColumns.value.length,
 });
 
 /**
@@ -603,20 +626,20 @@ const handleContainerClick = (event: MouseEvent): void => {
   }
 };
 
-// 行号和列标题选择状态
-interface HeaderSelectState {
-  isSelecting: boolean;
-  type: "row" | "col" | null;
-  startIndex: number | null;
-  isMultipleMode: boolean;
-}
-
-const headerSelectState = ref<HeaderSelectState>({
-  isSelecting: false,
-  type: null,
-  startIndex: null,
-  isMultipleMode: false,
-});
+// 重新定义 handleCellMouseDown，在普通单元格选择时清空 lastSelectType
+handleCellMouseDown = (
+  rowIndex: number,
+  colIndex: number,
+  maxRows: number,
+  maxCols: number,
+  event: MouseEvent | null = null
+): void => {
+  // 清空 lastSelectType，因为这是普通单元格选择
+  if (headerSelectState.value.lastSelectType) {
+    headerSelectState.value.lastSelectType = null;
+  }
+  originalHandleCellMouseDown(rowIndex, colIndex, maxRows, maxCols, event);
+};
 
 /**
  * 处理行号鼠标按下事件
@@ -640,6 +663,7 @@ const handleRowNumberMouseDown = (
     type: "row",
     startIndex: rowIndex,
     isMultipleMode: isCtrlClick,
+    lastSelectType: headerSelectState.value.lastSelectType,
   };
 
   // 全选该行
@@ -674,6 +698,7 @@ const handleColumnHeaderMouseDown = (
     type: "col",
     startIndex: colIndex,
     isMultipleMode: isCtrlClick,
+    lastSelectType: headerSelectState.value.lastSelectType,
   };
 
   // 全选该列
@@ -724,12 +749,16 @@ const handleColumnHeaderMouseEnter = (colIndex: number): void => {
 const handleHeaderMouseUp = (_event: MouseEvent): void => {
   if (!headerSelectState.value.isSelecting) return;
 
+  // 保留最近一次的选择类型，用于菜单位置计算
+  const lastSelectType = headerSelectState.value.type;
+
   // 清理状态
   headerSelectState.value = {
     isSelecting: false,
     type: null,
     startIndex: null,
     isMultipleMode: false,
+    lastSelectType,
   };
 
   // 移除事件监听
