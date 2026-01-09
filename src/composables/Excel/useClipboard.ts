@@ -242,7 +242,10 @@ class PasteStrategyManager {
     const startRow = context.activeCell?.row ?? 0;
     const startCol = context.activeCell?.col ?? 0;
 
-    // 4. 执行粘贴（扩展行列）
+    // 4. 保存粘贴前的状态（用于历史记录比较）
+    const beforePasteState = JSON.parse(JSON.stringify(context.tableData));
+
+    // 5. 执行粘贴（扩展行列）
     const result = this.applyPasteData(
       pasteData,
       startRow,
@@ -251,17 +254,54 @@ class PasteStrategyManager {
       options
     );
 
-    // 5. 保存历史记录（在粘贴完成后）
+    // 6. 保存历史记录（在粘贴完成后，使用修改后的状态）
     if (result.success) {
+      // 检测粘贴引起的变化
+      const changes: Array<{
+        row: number;
+        col: number;
+        oldValue: string;
+        newValue: string;
+      }> = [];
+
+      const endRow = startRow + pasteData.length - 1;
+      const endCol =
+        startCol + Math.max(...pasteData.map((row) => row.length)) - 1;
+
+      // 检测所有被粘贴覆盖的单元格变化
+      for (let r = startRow; r <= endRow; r++) {
+        const rIndex = r - startRow;
+        const rowData = pasteData[rIndex] || [];
+        const rowBefore = beforePasteState[r] || [];
+
+        for (let c = startCol; c <= endCol; c++) {
+          const cIndex = c - startCol;
+          const oldVal = rowBefore[c] ?? "";
+          const newVal = rowData[cIndex] ?? "";
+
+          // 记录所有变化（包括值相同的情况，因为这是粘贴操作）
+          // 但为了优化，只记录实际有值变化的单元格
+          if (oldVal !== newVal) {
+            changes.push({
+              row: r,
+              col: c,
+              oldValue: oldVal,
+              newValue: newVal,
+            });
+          }
+        }
+      }
+
       options.saveHistory(context.tableData, {
         type: HistoryActionType.PASTE,
         description: `Paste ${pasteData.length}x${
           pasteData[0]?.length || 0
         } cells`,
+        changes: changes.length > 0 ? changes : undefined,
       });
     }
 
-    // 6. 更新选区（高亮粘贴区域）
+    // 7. 更新选区（高亮粘贴区域）
     if (result.success && result.affectedRange) {
       options.startSingleSelection(
         result.affectedRange.minRow,

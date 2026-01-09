@@ -1,5 +1,10 @@
 import { nextTick, type Ref } from "vue";
 import type { CellPosition } from "./types";
+import {
+  HistoryActionType,
+  type SaveHistoryOptions,
+  type CellChange,
+} from "./useHistory";
 
 /**
  * useRowOperations 选项
@@ -9,7 +14,7 @@ export interface UseRowOperationsOptions {
   rows: Ref<number[]>;
   activeCell: Ref<CellPosition | null>;
   columns: Ref<string[]>;
-  saveHistory: (state: any) => void;
+  saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
   startSingleSelection: (row: number, col: number) => void;
@@ -47,7 +52,18 @@ export function useRowOperations({
       return;
     }
 
-    saveHistory(tableData.value);
+    // 先保存历史记录（插入前的状态）
+    // 强制创建检查点，因为行操作是结构性变化，需要完整快照来确保正确恢复
+    saveHistory(tableData.value, {
+      type: HistoryActionType.ROW_INSERT,
+      description: "Insert 1 row",
+      forceFullSnapshot: true, // 强制创建检查点，因为行操作影响大
+      metadata: {
+        insertedRowIndex: rowIndex,
+        insertedRowCount: 1,
+      },
+    });
+
     insertRowBelow(rowIndex);
 
     nextTick(() => {
@@ -76,13 +92,49 @@ export function useRowOperations({
       return;
     }
 
-    saveHistory(tableData.value);
+    // 在删除之前，记录被删除行的所有单元格数据（包括空单元格）
+    // 记录所有单元格确保空行也能正确恢复
+    const changes: CellChange[] = [];
+    const maxCols = Math.max(
+      ...tableData.value.map((row) => row?.length || 0),
+      columns.value.length
+    );
+
+    // 按从大到小排序，这样删除时索引不会变化
+    const sortedIndices = [...validIndices].sort((a, b) => b - a);
+
+    for (const rowIndex of sortedIndices) {
+      const rowData = tableData.value[rowIndex] || [];
+      // 记录该行的所有单元格（包括空单元格），确保空行也能正确恢复
+      for (let col = 0; col < maxCols; col++) {
+        const oldValue = rowData[col] ?? "";
+        changes.push({
+          row: rowIndex,
+          col,
+          oldValue,
+          newValue: "", // 删除行后，这些单元格不存在了
+        });
+      }
+    }
 
     const oldRowCount = rows.value.length;
     const minDeletedRow = Math.min(...validIndices);
     const maxDeletedRow = Math.max(...validIndices);
 
-    const sortedIndices = [...validIndices].sort((a, b) => b - a);
+    // 先保存历史记录（删除前的状态）
+    // 强制创建检查点，因为行删除是结构性变化，需要完整快照
+    saveHistory(tableData.value, {
+      type: HistoryActionType.ROW_DELETE,
+      description: `Delete ${validIndices.length} row(s)`,
+      forceFullSnapshot: true, // 强制创建检查点，确保行结构正确恢复
+      changes: changes.length > 0 ? changes : undefined,
+      metadata: {
+        deletedRowIndices: validIndices,
+        deletedRowCount: validIndices.length,
+      },
+    });
+
+    // 然后执行删除操作
     for (const rowIndex of sortedIndices) {
       deleteRow(rowIndex);
     }
@@ -98,7 +150,6 @@ export function useRowOperations({
         currentRow >= minDeletedRow && currentRow <= maxDeletedRow;
 
       if (isCurrentRowDeleted) {
-        const deletedCount = oldRowCount - newRowCount;
         const targetRow = Math.min(minDeletedRow, newRowCount - 1);
         if (targetRow >= 0) {
           startSingleSelection(targetRow, safeCol);
@@ -131,9 +182,42 @@ export function useRowOperations({
       return;
     }
 
-    saveHistory(tableData.value);
+    // 在删除之前，记录被删除行的所有单元格数据（包括空单元格）
+    // 记录所有单元格确保空行也能正确恢复
+    const changes: CellChange[] = [];
+    const rowIndex = rowIndexOrIndices;
+    const rowData = tableData.value[rowIndex] || [];
+    const maxCols = Math.max(
+      rowData.length,
+      columns.value.length,
+      ...tableData.value.map((row) => row?.length || 0)
+    );
 
-    const oldRowCount = rows.value.length;
+    // 记录该行的所有单元格（包括空单元格），确保空行也能正确恢复
+    for (let col = 0; col < maxCols; col++) {
+      const oldValue = rowData[col] ?? "";
+      changes.push({
+        row: rowIndex,
+        col,
+        oldValue,
+        newValue: "", // 删除行后，这些单元格不存在了
+      });
+    }
+
+    // 先保存历史记录（删除前的状态）
+    // 强制创建检查点，因为行删除是结构性变化，需要完整快照
+    saveHistory(tableData.value, {
+      type: HistoryActionType.ROW_DELETE,
+      description: "Delete 1 row",
+      forceFullSnapshot: true, // 强制创建检查点，确保行结构正确恢复
+      changes: changes.length > 0 ? changes : undefined,
+      metadata: {
+        deletedRowIndices: [rowIndex],
+        deletedRowCount: 1,
+      },
+    });
+
+    // 然后执行删除操作
     deleteRow(rowIndexOrIndices);
     const newRowCount = rows.value.length;
 

@@ -1,12 +1,17 @@
 import { ref, type Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
+import {
+  HistoryActionType,
+  type SaveHistoryOptions,
+  type CellChange,
+} from "./useHistory";
 
 /**
  * useFillHandle 选项
  */
 export interface UseFillHandleOptions {
   getSmartValue: (value: string, step: number) => string;
-  saveHistory: (state: any) => void;
+  saveHistory: (state: any, options?: SaveHistoryOptions) => void;
 }
 
 /**
@@ -113,7 +118,6 @@ export function useFillHandle({
     const end = dragEndCell.value;
 
     if (end.row > start.row) {
-      saveHistory(tableData);
       const colIndex = start.col;
 
       if (colIndex < 0 || colIndex >= maxCols) {
@@ -121,13 +125,50 @@ export function useFillHandle({
         return;
       }
 
+      // 在填充之前，记录所有将被填充的单元格的原始值
+      const changes: CellChange[] = [];
       const baseValue = tableData[start.row]?.[start.col] ?? "";
+
+      for (let r = start.row + 1; r <= end.row; r++) {
+        if (r >= 0 && r < maxRows) {
+          if (tableData[r]) {
+            const oldValue = tableData[r][colIndex] ?? "";
+            const newValue = getSmartValue(baseValue, r - start.row);
+
+            // 只记录实际有变化的单元格
+            if (oldValue !== newValue) {
+              changes.push({
+                row: r,
+                col: colIndex,
+                oldValue,
+                newValue,
+              });
+            }
+          }
+        }
+      }
+
+      // 执行填充操作
       for (let r = start.row + 1; r <= end.row; r++) {
         if (r >= 0 && r < maxRows) {
           if (tableData[r]) {
             tableData[r][colIndex] = getSmartValue(baseValue, r - start.row);
           }
         }
+      }
+
+      // 保存历史记录，使用 FILL 类型
+      if (changes.length > 0) {
+        saveHistory(tableData, {
+          type: HistoryActionType.FILL,
+          description: `Fill ${changes.length} cell(s)`,
+          changes,
+          metadata: {
+            fillStartRow: start.row,
+            fillEndRow: end.row,
+            fillCol: colIndex,
+          },
+        });
       }
     }
 

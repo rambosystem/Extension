@@ -385,70 +385,76 @@ export function useKeyboard({
     if (key === KEY_CODES.Z) {
       const result = event.shiftKey ? redoHistory() : undoHistory();
 
-      if (result && result.state && Array.isArray(result.state)) {
-        // 验证状态的有效性
-        const validatedState = result.state.map((row) => {
-          if (row === null || row === undefined) {
-            return [];
-          }
-          if (Array.isArray(row)) {
-            return row.map((cell) => String(cell ?? ""));
-          }
+      // 如果无法撤销/重做，阻止默认行为但返回 true 表示已处理
+      if (!result || !result.state || !Array.isArray(result.state)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
+
+      // 验证状态的有效性
+      const validatedState = result.state.map((row) => {
+        if (row === null || row === undefined) {
           return [];
-        });
-        // 确保至少有一行
-        if (validatedState.length === 0) {
-          validatedState.push([]);
         }
-
-        tableData.value = validatedState;
-
-        // 始终使用 tableData 的实际大小来调整行列
-        const targetRowCount = validatedState.length;
-        const targetColCount = Math.max(
-          ...validatedState.map((row) => row.length),
-          1
-        );
-
-        // 调整行数量
-        if (rows.value.length !== targetRowCount) {
-          if (rows.value.length > targetRowCount) {
-            rows.value = rows.value.slice(0, targetRowCount);
-          } else {
-            while (rows.value.length < targetRowCount) {
-              rows.value.push(rows.value.length);
-            }
-          }
+        if (Array.isArray(row)) {
+          return row.map((cell) => String(cell ?? ""));
         }
+        return [];
+      });
+      // 确保至少有一行
+      if (validatedState.length === 0) {
+        validatedState.push([]);
+      }
 
-        // 调整列数量
-        if (columns.value.length !== targetColCount) {
-          if (columns.value.length > targetColCount) {
-            columns.value = columns.value.slice(0, targetColCount);
-          } else {
-            while (columns.value.length < targetColCount) {
-              columns.value.push(generateColumnLabel(columns.value.length));
-            }
-          }
-        }
+      tableData.value = validatedState;
 
-        // 验证并调整 activeCell 位置，确保它在有效范围内
-        if (activeCell.value) {
-          const maxRows = validatedState.length;
-          const maxCols = validatedState[0]?.length || 0;
+      // 始终使用 tableData 的实际大小来调整行列
+      const targetRowCount = validatedState.length;
+      const targetColCount = Math.max(
+        ...validatedState.map((row) => row.length),
+        1
+      );
 
-          if (
-            activeCell.value.row >= maxRows ||
-            activeCell.value.col >= maxCols
-          ) {
-            // 如果当前活动单元格超出范围，移动到最后一个有效单元格
-            activeCell.value = {
-              row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
-              col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
-            };
+      // 调整行数量
+      if (rows.value.length !== targetRowCount) {
+        if (rows.value.length > targetRowCount) {
+          rows.value = rows.value.slice(0, targetRowCount);
+        } else {
+          while (rows.value.length < targetRowCount) {
+            rows.value.push(rows.value.length);
           }
         }
       }
+
+      // 调整列数量
+      if (columns.value.length !== targetColCount) {
+        if (columns.value.length > targetColCount) {
+          columns.value = columns.value.slice(0, targetColCount);
+        } else {
+          while (columns.value.length < targetColCount) {
+            columns.value.push(generateColumnLabel(columns.value.length));
+          }
+        }
+      }
+
+      // 验证并调整 activeCell 位置，确保它在有效范围内
+      if (activeCell.value) {
+        const maxRows = validatedState.length;
+        const maxCols = validatedState[0]?.length || 0;
+
+        if (
+          activeCell.value.row >= maxRows ||
+          activeCell.value.col >= maxCols
+        ) {
+          // 如果当前活动单元格超出范围，移动到最后一个有效单元格
+          activeCell.value = {
+            row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
+            col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
+          };
+        }
+      }
+
       event.preventDefault();
       return true;
     }
@@ -456,69 +462,75 @@ export function useKeyboard({
     if (key === KEY_CODES.Y) {
       const result = redoHistory();
 
-      if (result && result.state && Array.isArray(result.state)) {
-        // 验证状态的有效性
-        const validatedState = result.state.map((row) => {
-          if (row === null || row === undefined) {
-            return [];
-          }
-          if (Array.isArray(row)) {
-            return row.map((cell) => String(cell ?? ""));
-          }
+      // 如果无法重做，阻止默认行为但返回 true 表示已处理
+      if (!result || !result.state || !Array.isArray(result.state)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
+
+      // 验证状态的有效性
+      const validatedState = result.state.map((row) => {
+        if (row === null || row === undefined) {
           return [];
-        });
-        // 确保至少有一行
-        if (validatedState.length === 0) {
-          validatedState.push([]);
         }
-        tableData.value = validatedState;
-
-        // 始终使用 tableData 的实际大小来调整行列
-        const targetRowCount = validatedState.length;
-        const targetColCount = Math.max(
-          ...validatedState.map((row) => row.length),
-          1
-        );
-
-        // 调整行数量
-        if (rows.value.length !== targetRowCount) {
-          if (rows.value.length > targetRowCount) {
-            rows.value = rows.value.slice(0, targetRowCount);
-          } else {
-            while (rows.value.length < targetRowCount) {
-              rows.value.push(rows.value.length);
-            }
-          }
+        if (Array.isArray(row)) {
+          return row.map((cell) => String(cell ?? ""));
         }
+        return [];
+      });
+      // 确保至少有一行
+      if (validatedState.length === 0) {
+        validatedState.push([]);
+      }
+      tableData.value = validatedState;
 
-        // 调整列数量
-        if (columns.value.length !== targetColCount) {
-          if (columns.value.length > targetColCount) {
-            columns.value = columns.value.slice(0, targetColCount);
-          } else {
-            while (columns.value.length < targetColCount) {
-              columns.value.push(generateColumnLabel(columns.value.length));
-            }
-          }
-        }
+      // 始终使用 tableData 的实际大小来调整行列
+      const targetRowCount = validatedState.length;
+      const targetColCount = Math.max(
+        ...validatedState.map((row) => row.length),
+        1
+      );
 
-        // 验证并调整 activeCell 位置，确保它在有效范围内
-        if (activeCell.value) {
-          const maxRows = validatedState.length;
-          const maxCols = validatedState[0]?.length || 0;
-
-          if (
-            activeCell.value.row >= maxRows ||
-            activeCell.value.col >= maxCols
-          ) {
-            // 如果当前活动单元格超出范围，移动到最后一个有效单元格
-            activeCell.value = {
-              row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
-              col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
-            };
+      // 调整行数量
+      if (rows.value.length !== targetRowCount) {
+        if (rows.value.length > targetRowCount) {
+          rows.value = rows.value.slice(0, targetRowCount);
+        } else {
+          while (rows.value.length < targetRowCount) {
+            rows.value.push(rows.value.length);
           }
         }
       }
+
+      // 调整列数量
+      if (columns.value.length !== targetColCount) {
+        if (columns.value.length > targetColCount) {
+          columns.value = columns.value.slice(0, targetColCount);
+        } else {
+          while (columns.value.length < targetColCount) {
+            columns.value.push(generateColumnLabel(columns.value.length));
+          }
+        }
+      }
+
+      // 验证并调整 activeCell 位置，确保它在有效范围内
+      if (activeCell.value) {
+        const maxRows = validatedState.length;
+        const maxCols = validatedState[0]?.length || 0;
+
+        if (
+          activeCell.value.row >= maxRows ||
+          activeCell.value.col >= maxCols
+        ) {
+          // 如果当前活动单元格超出范围，移动到最后一个有效单元格
+          activeCell.value = {
+            row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
+            col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
+          };
+        }
+      }
+
       event.preventDefault();
       return true;
     }

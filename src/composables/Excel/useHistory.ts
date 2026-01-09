@@ -659,8 +659,17 @@ export function useHistory(
       changes = detectChanges(lastFullState, currentState);
     }
 
-    // 如果没有变化，不保存
-    if (changes.length === 0) {
+    // 对于行操作（ROW_INSERT, ROW_DELETE），即使 changes 为空也要保存
+    // 因为行操作是结构性变化，即使行是空的也需要记录
+    const isRowOperation =
+      actionType === HistoryActionType.ROW_INSERT ||
+      actionType === HistoryActionType.ROW_DELETE;
+
+    // 如果没有变化，且不是强制快照的行操作，不保存
+    if (
+      changes.length === 0 &&
+      !(options.forceFullSnapshot && isRowOperation)
+    ) {
       debugLog("[History] saveHistory: no changes detected, skipped");
       return;
     }

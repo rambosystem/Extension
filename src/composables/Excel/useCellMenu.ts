@@ -66,14 +66,14 @@ export function useCellMenu({
         console.error("Menu paste failed:", error);
       });
     } else if (action === "undo") {
-      const newState = undoHistory();
-      if (newState && Array.isArray(newState)) {
-        tableData.value = newState;
+      const result = undoHistory();
+      if (result && result.state && Array.isArray(result.state)) {
+        tableData.value = result.state;
       }
     } else if (action === "redo") {
-      const newState = redoHistory();
-      if (newState && Array.isArray(newState)) {
-        tableData.value = newState;
+      const result = redoHistory();
+      if (result && result.state && Array.isArray(result.state)) {
+        tableData.value = result.state;
       }
     }
   };
