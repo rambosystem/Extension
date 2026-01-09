@@ -20,7 +20,7 @@ export function getTranslationConfig() {
     : 0.1;
 
   const maxTokensSetting = localStorage.getItem("translation_max_tokens");
-  const maxTokens = maxTokensSetting ? parseInt(maxTokensSetting, 10) : 16384;
+  const maxTokens = maxTokensSetting ? parseInt(maxTokensSetting, 10) : 8192;
 
   const streamEnabled = localStorage.getItem("stream_translation") !== "false";
 
