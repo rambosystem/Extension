@@ -185,8 +185,63 @@ export function useCellMenuPosition({
       }
     }
 
-    // 多选模式处理
+    // 多选模式处理：基于最后一次选区，使用鼠标位置计算最近的角
     if (isMultipleMode.value) {
+      if (
+        multiSelections.value &&
+        multiSelections.value.length > 0 &&
+        lastMousePosition?.value &&
+        getCellElement
+      ) {
+        // 获取最后一次选区
+        const lastSelection =
+          multiSelections.value[multiSelections.value.length - 1];
+
+        // 如果是单单元格，直接返回
+        if (
+          lastSelection.minRow === lastSelection.maxRow &&
+          lastSelection.minCol === lastSelection.maxCol
+        ) {
+          return {
+            row: lastSelection.minRow,
+            col: lastSelection.minCol,
+          };
+        }
+
+        // 多单元格：基于鼠标位置选择最近的角
+        const mousePos = lastMousePosition.value;
+        const corners: Array<{ row: number; col: number }> = [
+          { row: lastSelection.minRow, col: lastSelection.minCol }, // 左上
+          { row: lastSelection.minRow, col: lastSelection.maxCol }, // 右上
+          { row: lastSelection.maxRow, col: lastSelection.minCol }, // 左下
+          { row: lastSelection.maxRow, col: lastSelection.maxCol }, // 右下
+        ];
+
+        let minDistance = Infinity;
+        let nearestCorner: CellPosition | null = null;
+
+        for (const corner of corners) {
+          const cellCenter = getCellCenter(corner.row, corner.col);
+          if (cellCenter) {
+            const distance = calculateDistance(
+              mousePos.x,
+              mousePos.y,
+              cellCenter.x,
+              cellCenter.y
+            );
+            if (distance < minDistance) {
+              minDistance = distance;
+              nearestCorner = { row: corner.row, col: corner.col };
+            }
+          }
+        }
+
+        if (nearestCorner) {
+          return nearestCorner;
+        }
+      }
+
+      // 回退逻辑：如果没有鼠标位置或无法获取单元格元素，使用默认逻辑
       const lastCell = getLastCellInMultiSelections.value;
       if (lastCell) {
         return lastCell;
