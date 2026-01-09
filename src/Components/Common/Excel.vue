@@ -376,7 +376,6 @@ const {
   clearInputRefs,
 } = useCellEditing({
   tableData,
-  activeCell,
   startSingleSelection,
   saveHistory,
   moveActiveCell,

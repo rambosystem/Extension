@@ -1,4 +1,4 @@
-import { KEY_CODES, MODIFIER_KEYS, NAV_DIRECTION } from "./constants";
+import { KEY_CODES, NAV_DIRECTION } from "./constants";
 import type { Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
 import type { MenuContext } from "./useCellMenuPosition";
@@ -320,7 +320,7 @@ export function useKeyboard({
    * 处理导航键
    */
   const handleNavigation = (event: KeyboardEvent): boolean => {
-    const navKeys = [
+    const navKeys: readonly string[] = [
       KEY_CODES.ARROW_UP,
       KEY_CODES.ARROW_DOWN,
       KEY_CODES.ARROW_LEFT,
@@ -335,8 +335,8 @@ export function useKeyboard({
 
     event.preventDefault();
 
-    let rOff = NAV_DIRECTION.NONE;
-    let cOff = NAV_DIRECTION.NONE;
+    let rOff: number = NAV_DIRECTION.NONE;
+    let cOff: number = NAV_DIRECTION.NONE;
 
     switch (event.key) {
       case KEY_CODES.ARROW_UP:

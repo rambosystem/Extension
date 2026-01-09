@@ -6,7 +6,6 @@ import type { CellPosition } from "./types";
  */
 export interface UseCellEditingOptions {
   tableData: Ref<string[][]>;
-  activeCell: Ref<CellPosition | null>;
   startSingleSelection: (row: number, col: number) => void;
   saveHistory: (state: any) => void;
   moveActiveCell: (
@@ -42,7 +41,6 @@ export interface UseCellEditingReturn {
  */
 export function useCellEditing({
   tableData,
-  activeCell,
   startSingleSelection,
   saveHistory,
   moveActiveCell,
