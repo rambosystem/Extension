@@ -36,7 +36,9 @@
         >
           {{ col }}
           <ColumnResizer
-            v-if="enableColumnResize && Number(index) < displayColumns.length - 1"
+            v-if="
+              enableColumnResize && Number(index) < displayColumns.length - 1
+            "
             @mousedown.stop="startColumnResize(Number(index), $event)"
             @dblclick="handleDoubleClickResize(Number(index))"
           />
@@ -137,7 +139,7 @@
           <!-- Cell Menu Button -->
           <CellMenu
             v-if="shouldShowCellMenu(rowIndex, colIndex)"
-            :row-index="Number(rowIndex)"
+            :row-index="rowIndex"
             :custom-menu-items="customMenuItems"
             :context="createMenuContext(rowIndex)"
             @command="handleCellMenuCommand"
