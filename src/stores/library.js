@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { nextTick } from "vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "../composables/Core/useI18n.js";
-import { getUserProjects } from "../requests/lokalise.js";
+import { getUserProjects } from "../services/translation/index.js";
 
 /**
  * Library 页面状态管理
@@ -194,7 +194,8 @@ export const useLibraryStore = defineStore("library", {
           {
             keyName: "search.title",
             project: "AmazonSearch",
-            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
+            english:
+              "Search Products, Brands and Categories,Search Products, Brands and Categories",
             chinese: "搜索产品",
             japanese: "商品を検索",
             spanish: "Buscar Productos",
@@ -207,7 +208,7 @@ export const useLibraryStore = defineStore("library", {
             japanese: "カートに追加",
             spanish: "Añadir al carrito",
           },
-                    {
+          {
             keyName: "common.welcome",
             project: "Common",
             english: "Welcome",
@@ -226,7 +227,8 @@ export const useLibraryStore = defineStore("library", {
           {
             keyName: "search.title",
             project: "AmazonSearch",
-            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
+            english:
+              "Search Products, Brands and Categories,Search Products, Brands and Categories",
             chinese: "搜索产品",
             japanese: "商品を検索",
             spanish: "Buscar Productos",
@@ -239,7 +241,7 @@ export const useLibraryStore = defineStore("library", {
             japanese: "カートに追加",
             spanish: "Añadir al carrito",
           },
-                    {
+          {
             keyName: "common.welcome",
             project: "Common",
             english: "Welcome",
@@ -258,7 +260,8 @@ export const useLibraryStore = defineStore("library", {
           {
             keyName: "search.title",
             project: "AmazonSearch",
-            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
+            english:
+              "Search Products, Brands and Categories,Search Products, Brands and Categories",
             chinese: "搜索产品",
             japanese: "商品を検索",
             spanish: "Buscar Productos",
@@ -271,7 +274,7 @@ export const useLibraryStore = defineStore("library", {
             japanese: "カートに追加",
             spanish: "Añadir al carrito",
           },
-                    {
+          {
             keyName: "common.welcome",
             project: "Common",
             english: "Welcome",
@@ -290,7 +293,8 @@ export const useLibraryStore = defineStore("library", {
           {
             keyName: "search.title",
             project: "AmazonSearch",
-            english: "Search Products, Brands and Categories,Search Products, Brands and Categories",
+            english:
+              "Search Products, Brands and Categories,Search Products, Brands and Categories",
             chinese: "搜索产品",
             japanese: "商品を検索",
             spanish: "Buscar Productos",

@@ -1,9 +1,17 @@
 <template>
-  <el-dialog :modelValue="uploadStore.uploadDialogVisible" @update:modelValue="uploadStore.setUploadDialogVisible"
-    :title="uploadStore.isUploadSuccess ? 'Upload Success' : 'Upload Setting'" width="500px" top="30vh"
-    :close-on-click-modal="!uploadStore.isUploading" :close-on-press-escape="!uploadStore.isUploading"
-    v-loading="uploadStore.isUploading" element-loading-text="Uploading to Lokalise..."
-    element-loading-spinner="el-icon-loading" @close="uploadStore.closeUploadDialog">
+  <el-dialog
+    :modelValue="uploadStore.uploadDialogVisible"
+    @update:modelValue="uploadStore.setUploadDialogVisible"
+    :title="uploadStore.isUploadSuccess ? 'Upload Success' : 'Upload Setting'"
+    width="500px"
+    top="30vh"
+    :close-on-click-modal="!uploadStore.isUploading"
+    :close-on-press-escape="!uploadStore.isUploading"
+    v-loading="uploadStore.isUploading"
+    element-loading-text="Uploading to Lokalise..."
+    element-loading-spinner="el-icon-loading"
+    @close="uploadStore.closeUploadDialog"
+  >
     <!-- 成功页面 -->
     <div v-if="uploadStore.isUploadSuccess" class="upload-success">
       <div class="success-icon">
@@ -14,27 +22,56 @@
     </div>
 
     <!-- 上传设置表单 -->
-    <el-form v-else :model="uploadStore.uploadForm" label-position="top" @submit.prevent="handleUpload">
+    <el-form
+      v-else
+      :model="uploadStore.uploadForm"
+      label-position="top"
+      @submit.prevent="handleUpload"
+    >
       <el-form-item label="Tag">
-        <AutocompleteInput :modelValue="uploadStore.uploadForm.tag" @update:modelValue="uploadStore.handleTagChange"
-          placeholder="Enter or select tag" :fetch-suggestions="fetchTagSuggestions" :get-project-id="getProjectId"
-          :show-dropdown="true" :dropdown-limit="10" :fetch-suggestions-list="fetchTagSuggestionsList" />
+        <AutocompleteInput
+          :modelValue="uploadStore.uploadForm.tag"
+          @update:modelValue="uploadStore.handleTagChange"
+          placeholder="Enter or select tag"
+          :fetch-suggestions="fetchTagSuggestions"
+          :get-project-id="getProjectId"
+          :show-dropdown="true"
+          :dropdown-limit="10"
+          :fetch-suggestions-list="fetchTagSuggestionsList"
+        />
       </el-form-item>
     </el-form>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button v-if="!uploadStore.isUploadSuccess" @click="uploadStore.closeUploadDialog">Cancel</el-button>
-        <el-button v-if="!uploadStore.isUploadSuccess" type="primary" @click="handleUpload"
-          :disabled="uploadStore.isUploading" :loading="uploadStore.isUploading">
+        <el-button
+          v-if="!uploadStore.isUploadSuccess"
+          @click="uploadStore.closeUploadDialog"
+          >Cancel</el-button
+        >
+        <el-button
+          v-if="!uploadStore.isUploadSuccess"
+          type="primary"
+          @click="handleUpload"
+          :disabled="uploadStore.isUploading"
+          :loading="uploadStore.isUploading"
+        >
           {{ uploadStore.isUploading ? "Uploading..." : "Upload" }}
         </el-button>
-        <el-button v-if="uploadStore.isUploadSuccess && uploadStore.currentProject" type="primary"
-          @click="uploadStore.openLokaliseProject" style="min-width: 120px">
+        <el-button
+          v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
+          type="primary"
+          @click="uploadStore.openLokaliseProject"
+          style="min-width: 120px"
+        >
           View In Lokalise
         </el-button>
-        <el-button v-if="uploadStore.isUploadSuccess && uploadStore.currentProject" type="primary"
-          @click="uploadStore.openLokaliseDownload" style="min-width: 80px">
+        <el-button
+          v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
+          type="primary"
+          @click="uploadStore.openLokaliseDownload"
+          style="min-width: 80px"
+        >
           Build Now
         </el-button>
       </div>
@@ -46,7 +83,7 @@
 import { useUploadStore } from "../../stores/translation/upload.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";
 import AutocompleteInput from "../Common/AutocompleteInput.vue";
-import { autocompleteTags } from "../../requests/autocomplete.js";
+import { autocompleteTags } from "../../services/autocomplete/autocompleteService.js";
 import { debugLog, debugError } from "../../utils/debug.js";
 
 // 使用翻译Store
@@ -118,7 +155,11 @@ const fetchTagSuggestionsList = async (queryString, projectId, limit = 10) => {
       limit,
     });
 
-    const response = await autocompleteTags(projectId, queryString.trim(), limit);
+    const response = await autocompleteTags(
+      projectId,
+      queryString.trim(),
+      limit
+    );
 
     debugLog("[Tag Dropdown] API response:", response);
 

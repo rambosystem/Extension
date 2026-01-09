@@ -8,8 +8,8 @@ import {
   getLanguageIso,
 } from "../../config/languages.js";
 import { ref, reactive } from "vue";
-import { uploadTranslationKeys } from "../../requests/lokalise.js";
-import { searchKeysByNames } from "../../requests/deduplicate.js";
+import { uploadTranslationKeys } from "../../services/translation/index.js";
+import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
 
 const { t } = useI18n();
 

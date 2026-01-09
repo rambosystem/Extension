@@ -1,5 +1,5 @@
 import { ElMessage } from "element-plus";
-import { translate } from "../../requests/lokalise.js";
+import { translate } from "../../services/translation/index.js";
 import { useI18n } from "../Core/useI18n.js";
 import { ref } from "vue";
 

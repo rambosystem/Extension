@@ -3,7 +3,7 @@ import {
   fetchCdnTranslations,
   extractEnglishTexts,
   isTextInCdn,
-} from "../../requests/cdn.js";
+} from "../../services/cdn/index.js";
 
 /**
  * 去重功能管理Hook

@@ -54,7 +54,7 @@ import { ElMessage } from "element-plus";
 import AutocompleteInput from "../Common/AutocompleteInput.vue";
 import { debugLog, debugError } from "../../utils/debug.js";
 import { getAvailableLanguages } from "../../config/languages.js";
-import { autocompleteKeys } from "../../requests/autocomplete.js";
+import { autocompleteKeys } from "../../services/autocomplete/autocompleteService.js";
 
 const { t } = useI18n();
 

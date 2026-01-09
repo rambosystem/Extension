@@ -4,7 +4,7 @@ import { useExcelExport } from "../../composables/Excel/useExcelExport.js";
 import { useI18n } from "../../composables/Core/useI18n.js";
 import { debugLog, debugError } from "../../utils/debug.js";
 import { getAvailableLanguages } from "../../config/languages.js";
-import { searchKeysByNames } from "../../requests/deduplicate.js";
+import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
 
 /**
  * 导出功能状态管理
