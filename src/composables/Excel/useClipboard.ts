@@ -211,6 +211,7 @@ class PasteStrategyManager {
       generateColumnLabel: (index: number) => string;
       saveHistory: (state: any, options?: SaveHistoryOptions) => void;
       startSingleSelection: (row: number, col: number) => void;
+      updateSingleSelectionEnd: (row: number, col: number) => void;
       notifyDataChange?: () => void;
     }
   ): PasteResult {
@@ -300,11 +301,17 @@ class PasteStrategyManager {
       });
     }
 
-    // 7. 更新选区（高亮粘贴区域）
+    // 7. 更新选区（选中整个粘贴区域）
     if (result.success && result.affectedRange) {
+      // 从粘贴区域的左上角开始选择
       options.startSingleSelection(
         result.affectedRange.minRow,
         result.affectedRange.minCol
+      );
+      // 扩展到粘贴区域的右下角，选中整个粘贴区域
+      options.updateSingleSelectionEnd(
+        result.affectedRange.maxRow,
+        result.affectedRange.maxCol
       );
 
       // 触发数据同步
@@ -449,6 +456,7 @@ export interface UseClipboardOptions {
   multiSelections: Ref<SelectionRange[]>;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   startSingleSelection: (row: number, col: number) => void;
+  updateSingleSelectionEnd: (row: number, col: number) => void;
   notifyDataChange?: () => void;
 }
 
@@ -478,6 +486,7 @@ export function useClipboard({
   multiSelections,
   saveHistory,
   startSingleSelection,
+  updateSingleSelectionEnd,
   notifyDataChange,
 }: UseClipboardOptions): UseClipboardReturn {
   // 初始化操作适配器和策略管理器
@@ -618,6 +627,7 @@ export function useClipboard({
       generateColumnLabel,
       saveHistory,
       startSingleSelection,
+      updateSingleSelectionEnd,
       notifyDataChange,
     });
 
@@ -651,6 +661,7 @@ export function useClipboard({
         generateColumnLabel,
         saveHistory,
         startSingleSelection,
+        updateSingleSelectionEnd,
         notifyDataChange,
       });
 

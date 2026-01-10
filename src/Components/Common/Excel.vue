@@ -405,6 +405,7 @@ const {
   multiSelections,
   saveHistory,
   startSingleSelection,
+  updateSingleSelectionEnd,
   notifyDataChange,
 });
 
