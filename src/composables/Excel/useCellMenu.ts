@@ -118,7 +118,7 @@ export function useCellMenu({
       });
     } else if (action === "undo") {
       const result = undoHistory();
-      // 使用公共函数处理撤销操作（与快捷键逻辑保持一致，公共函数内部会处理清除选择和通知数据变化）
+      // 使用公共函数处理撤销操作（与快捷键逻辑保持一致，公共函数内部会处理更新选区和通知数据变化）
       handleUndoRedoOperation({
         result,
         tableData,
@@ -126,11 +126,12 @@ export function useCellMenu({
         columns,
         activeCell,
         clearSelection,
+        startSingleSelection,
         notifyDataChange,
       });
     } else if (action === "redo") {
       const result = redoHistory();
-      // 使用公共函数处理重做操作（与快捷键逻辑保持一致，公共函数内部会处理清除选择和通知数据变化）
+      // 使用公共函数处理重做操作（与快捷键逻辑保持一致，公共函数内部会处理更新选区和通知数据变化）
       handleUndoRedoOperation({
         result,
         tableData,
@@ -138,6 +139,7 @@ export function useCellMenu({
         columns,
         activeCell,
         clearSelection,
+        startSingleSelection,
         notifyDataChange,
       });
     }

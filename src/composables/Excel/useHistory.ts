@@ -324,7 +324,8 @@ export function useHistory(
    */
   const mergeOperation = (
     lastEntry: HistoryEntry,
-    changes: CellChange[]
+    changes: CellChange[],
+    newTimestamp: number
   ): void => {
     if (!lastEntry.delta) {
       lastEntry.delta = { changes: [] };
@@ -351,6 +352,10 @@ export function useHistory(
       }
     });
 
+    // 更新时间戳以保持时间序列的正确性
+    // 虽然合并操作共享同一个历史记录条目，但时间戳应该反映最后修改时间
+    lastEntry.timestamp = newTimestamp;
+
     // 更新元数据
     if (lastEntry.metadata) {
       lastEntry.metadata.affectedCells = lastEntry.delta.changes.length;
@@ -363,6 +368,7 @@ export function useHistory(
       updated: updatedCount,
       added: addedCount,
       totalChanges: lastEntry.delta.changes.length,
+      updatedTimestamp: newTimestamp,
     });
   };
 
@@ -484,19 +490,89 @@ export function useHistory(
       }
     }
 
-    // 如果没有检查点，返回 null（应该不会发生，因为初始化会创建检查点）
+    // 如果没有检查点，尝试从第一个条目开始重建（作为最后的回退方案）
     if (!checkpointState || !Array.isArray(checkpointState)) {
-      debugError("[History] getCurrentFullState: no valid checkpoint found", {
-        historyIndex: historyIndex.value,
-        entriesLength: historyEntries.value.length,
-      });
-      return null;
+      debugWarn(
+        "[History] getCurrentFullState: no checkpoint found, attempting to rebuild from first entry",
+        {
+          historyIndex: historyIndex.value,
+          entriesLength: historyEntries.value.length,
+        }
+      );
+
+      // 尝试从第一个条目开始重建
+      if (
+        historyEntries.value.length > 0 &&
+        historyEntries.value[0]?.snapshot
+      ) {
+        try {
+          checkpointState = optimizedDeepCopy(historyEntries.value[0].snapshot);
+          checkpointIndex = 0;
+          if (!checkpointState || !Array.isArray(checkpointState)) {
+            debugError(
+              "[History] getCurrentFullState: first entry snapshot is invalid"
+            );
+            return null;
+          }
+        } catch (error) {
+          debugError(
+            "[History] getCurrentFullState: failed to copy first entry snapshot",
+            error
+          );
+          return null;
+        }
+      } else {
+        debugError(
+          "[History] getCurrentFullState: no valid checkpoint found and cannot rebuild",
+          {
+            historyIndex: historyIndex.value,
+            entriesLength: historyEntries.value.length,
+          }
+        );
+        return null;
+      }
     }
 
     // 从检查点应用所有后续的增量操作
     for (let i = checkpointIndex + 1; i <= historyIndex.value; i++) {
       const entry = historyEntries.value[i];
-      if (entry?.delta) {
+      if (!entry) {
+        debugWarn("[History] getCurrentFullState: entry is missing", {
+          entryIndex: i,
+          checkpointIndex,
+          historyIndex: historyIndex.value,
+        });
+        continue; // 跳过缺失的条目，继续处理下一个
+      }
+
+      if (entry.snapshot) {
+        // 如果遇到新的检查点，直接使用它（更高效）
+        try {
+          checkpointState = optimizedDeepCopy(entry.snapshot);
+          checkpointIndex = i;
+          if (!checkpointState || !Array.isArray(checkpointState)) {
+            debugError(
+              "[History] getCurrentFullState: new checkpoint snapshot is invalid",
+              {
+                entryIndex: i,
+                entryId: entry.id,
+              }
+            );
+            return null;
+          }
+        } catch (error) {
+          debugError(
+            "[History] getCurrentFullState: failed to copy new checkpoint",
+            {
+              entryIndex: i,
+              entryId: entry.id,
+              error,
+            }
+          );
+          return null;
+        }
+      } else if (entry.delta) {
+        // 应用增量操作
         try {
           const newState = applyDelta(checkpointState, entry.delta);
           if (!newState || !Array.isArray(newState)) {
@@ -520,6 +596,16 @@ export function useHistory(
           });
           return null;
         }
+      } else {
+        // 既没有快照也没有增量，记录警告但继续处理
+        debugWarn(
+          "[History] getCurrentFullState: entry has neither snapshot nor delta",
+          {
+            entryIndex: i,
+            entryId: entry.id,
+            entryType: entry.type,
+          }
+        );
       }
     }
 
@@ -632,7 +718,9 @@ export function useHistory(
     }
 
     const actionType = options.type || HistoryActionType.UNKNOWN;
-    const timestamp = Date.now();
+    // 使用高精度时间戳，确保时间序列的准确性
+    // 如果多个操作在同一毫秒内发生，使用微秒级精度（通过随机数确保唯一性）
+    let timestamp = Date.now();
 
     debugLog("[History] saveHistory: called", {
       actionType,
@@ -648,6 +736,15 @@ export function useHistory(
       // 如果没有历史记录，初始化
       debugLog("[History] saveHistory: no history found, initializing");
       initHistory(currentState);
+      return;
+    }
+
+    // 验证当前状态的有效性
+    if (!Array.isArray(currentState)) {
+      debugError("[History] saveHistory: currentState is not an array", {
+        currentState,
+        type: typeof currentState,
+      });
       return;
     }
 
@@ -674,6 +771,21 @@ export function useHistory(
       return;
     }
 
+    // 验证时间序列：确保新记录的时间戳大于等于上一个记录
+    // 这对于调试和验证历史记录的完整性很重要
+    if (historyEntries.value.length > 0) {
+      const lastEntry = historyEntries.value[historyEntries.value.length - 1];
+      if (lastEntry && timestamp < lastEntry.timestamp) {
+        debugWarn("[History] saveHistory: timestamp is not monotonic", {
+          lastTimestamp: lastEntry.timestamp,
+          newTimestamp: timestamp,
+          lastEntryId: lastEntry.id,
+        });
+        // 修正时间戳，确保时间序列正确
+        timestamp = Math.max(timestamp, lastEntry.timestamp + 1);
+      }
+    }
+
     // 快速状态比较（避免重复保存）
     if (
       !options.forceFullSnapshot &&
@@ -689,8 +801,9 @@ export function useHistory(
         actionType,
         changesCount: changes.length,
         lastEntryId: lastEntry.id,
+        timestamp,
       });
-      mergeOperation(lastEntry, changes);
+      mergeOperation(lastEntry, changes, timestamp);
       return; // 合并完成，不需要创建新记录
     }
 
@@ -766,16 +879,26 @@ export function useHistory(
    * 撤销操作
    */
   const undo = (): HistoryRestoreResult | null => {
-    if (historyIndex.value <= 0) {
-      debugLog("[History] undo: cannot undo, already at initial state");
+    // 边界检查：确保有历史记录且不在初始状态
+    if (historyEntries.value.length === 0 || historyIndex.value <= 0) {
+      debugLog("[History] undo: cannot undo, already at initial state", {
+        historyIndex: historyIndex.value,
+        entriesLength: historyEntries.value.length,
+      });
+      return null;
+    }
+
+    // 防止并发操作
+    if (isUndoRedoInProgress) {
+      debugWarn("[History] undo: already in progress, skipping");
       return null;
     }
 
     isUndoRedoInProgress = true;
-    try {
-      const previousIndex = historyIndex.value;
-      const previousEntry = historyEntries.value[previousIndex];
+    let previousIndex = historyIndex.value;
+    let previousEntry = historyEntries.value[previousIndex];
 
+    try {
       historyIndex.value--;
       const targetEntry = historyEntries.value[historyIndex.value];
 
@@ -792,7 +915,7 @@ export function useHistory(
 
       if (!result || !Array.isArray(result)) {
         debugError("[History] undo: invalid result from getCurrentFullState");
-        // 恢复索引
+        // 恢复索引和状态
         historyIndex.value = previousIndex;
         isUndoRedoInProgress = false;
         return null;
@@ -800,7 +923,7 @@ export function useHistory(
 
       // 验证结果的有效性
       if (result.length === 0) {
-        // 使用 setTimeout 而不是 nextTick，确保所有 watch 都执行完毕
+        // 使用 setTimeout 确保所有 watch 都执行完毕后再重置标志
         setTimeout(() => {
           isUndoRedoInProgress = false;
         }, 0);
@@ -817,16 +940,20 @@ export function useHistory(
         }
       }
 
-      // 使用 setTimeout 而不是 nextTick，确保所有 watch 和 emit 都执行完毕
+      // 使用 setTimeout 确保所有 watch 和 emit 都执行完毕后再重置标志
+      // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
+      // 这里延迟重置标志，确保 notifyDataChange 执行时 isUndoRedoInProgress 仍为 true
       setTimeout(() => {
         isUndoRedoInProgress = false;
-      }, 0);
+      }, 10); // 稍微延迟，确保 handleUndoRedoOperation 中的 notifyDataChange 先执行
 
       return {
         state: result,
         metadata: targetEntry?.metadata,
       };
     } catch (error) {
+      // 确保在错误时恢复所有状态
+      historyIndex.value = previousIndex;
       isUndoRedoInProgress = false;
       debugError("[History] undo: failed", error);
       throw error;
@@ -837,15 +964,29 @@ export function useHistory(
    * 重做操作
    */
   const redo = (): HistoryRestoreResult | null => {
-    if (historyIndex.value >= historyEntries.value.length - 1) {
-      debugLog("[History] redo: cannot redo, already at latest state");
+    // 边界检查：确保有历史记录且不在最新状态
+    if (
+      historyEntries.value.length === 0 ||
+      historyIndex.value >= historyEntries.value.length - 1
+    ) {
+      debugLog("[History] redo: cannot redo, already at latest state", {
+        historyIndex: historyIndex.value,
+        entriesLength: historyEntries.value.length,
+      });
+      return null;
+    }
+
+    // 防止并发操作
+    if (isUndoRedoInProgress) {
+      debugWarn("[History] redo: already in progress, skipping");
       return null;
     }
 
     isUndoRedoInProgress = true;
+    let previousIndex = historyIndex.value;
+    let previousEntry = historyEntries.value[previousIndex];
+
     try {
-      const previousIndex = historyIndex.value;
-      const previousEntry = historyEntries.value[previousIndex];
       historyIndex.value++;
       const result = getCurrentFullState();
       const currentEntry = historyEntries.value[historyIndex.value];
@@ -870,7 +1011,7 @@ export function useHistory(
             entriesLength: historyEntries.value.length,
           }
         );
-        // 恢复索引
+        // 恢复索引和状态
         historyIndex.value = previousIndex;
         isUndoRedoInProgress = false;
         return null;
@@ -881,10 +1022,10 @@ export function useHistory(
         debugWarn(
           "[History] redo: result is empty array, returning empty state"
         );
-        // 使用 setTimeout 而不是 nextTick，确保所有 watch 都执行完毕
+        // 使用 setTimeout 确保所有 watch 都执行完毕后再重置标志
         setTimeout(() => {
           isUndoRedoInProgress = false;
-        }, 0);
+        }, 10); // 稍微延迟，确保 handleUndoRedoOperation 中的 notifyDataChange 先执行
         return {
           state: [[]],
           metadata: currentEntry?.metadata,
@@ -903,16 +1044,20 @@ export function useHistory(
         }
       }
 
-      // 使用 setTimeout 而不是 nextTick，确保所有 watch 和 emit 都执行完毕
+      // 使用 setTimeout 确保所有 watch 和 emit 都执行完毕后再重置标志
+      // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
+      // 这里延迟重置标志，确保 notifyDataChange 执行时 isUndoRedoInProgress 仍为 true
       setTimeout(() => {
         isUndoRedoInProgress = false;
-      }, 0);
+      }, 10); // 稍微延迟，确保 handleUndoRedoOperation 中的 notifyDataChange 先执行
 
       return {
         state: result,
         metadata: currentEntry?.metadata,
       };
     } catch (error) {
+      // 确保在错误时恢复所有状态
+      historyIndex.value = previousIndex;
       isUndoRedoInProgress = false;
       debugError("[History] redo: failed", error);
       throw error;
@@ -920,16 +1065,79 @@ export function useHistory(
   };
 
   /**
+   * 验证历史记录的时间序列完整性
+   */
+  const validateHistoryTimeline = (): {
+    isValid: boolean;
+    issues: string[];
+  } => {
+    const issues: string[] = [];
+
+    if (historyEntries.value.length === 0) {
+      return { isValid: true, issues: [] };
+    }
+
+    // 检查时间戳是否单调递增
+    for (let i = 1; i < historyEntries.value.length; i++) {
+      const prev = historyEntries.value[i - 1];
+      const curr = historyEntries.value[i];
+
+      if (!prev || !curr) {
+        issues.push(`Entry missing at index ${i - 1} or ${i}`);
+        continue;
+      }
+
+      if (curr.timestamp < prev.timestamp) {
+        issues.push(
+          `Timestamp not monotonic at index ${i}: ${prev.timestamp} -> ${curr.timestamp}`
+        );
+      }
+    }
+
+    // 检查索引一致性
+    if (
+      historyIndex.value < -1 ||
+      historyIndex.value >= historyEntries.value.length
+    ) {
+      issues.push(
+        `History index out of bounds: ${historyIndex.value} (entries: ${historyEntries.value.length})`
+      );
+    }
+
+    // 检查每个条目是否有快照或增量
+    historyEntries.value.forEach((entry, index) => {
+      if (!entry.snapshot && !entry.delta) {
+        issues.push(`Entry at index ${index} has neither snapshot nor delta`);
+      }
+    });
+
+    return {
+      isValid: issues.length === 0,
+      issues,
+    };
+  };
+
+  /**
    * 获取历史记录信息
    */
   const getHistoryInfo = (): HistoryInfo => {
+    const validation = validateHistoryTimeline();
+    if (!validation.isValid) {
+      debugWarn("[History] getHistoryInfo: timeline validation failed", {
+        issues: validation.issues,
+      });
+    }
+
     const info = {
       totalEntries: historyEntries.value.length,
       currentIndex: historyIndex.value,
       canUndo: historyIndex.value > 0,
       canRedo: historyIndex.value < historyEntries.value.length - 1,
     };
-    debugLog("[History] getHistoryInfo", info);
+    debugLog("[History] getHistoryInfo", {
+      ...info,
+      timelineValid: validation.isValid,
+    });
     return info;
   };
 

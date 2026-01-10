@@ -403,7 +403,7 @@ export function useKeyboard({
     if (key === KEY_CODES.Z) {
       const result = event.shiftKey ? redoHistory() : undoHistory();
 
-      // 使用公共函数处理撤销/重做操作（与菜单逻辑完全一致，公共函数内部会处理清除选择和通知数据变化）
+      // 使用公共函数处理撤销/重做操作（与菜单逻辑完全一致，公共函数内部会处理更新选区和通知数据变化）
       const success = handleUndoRedoOperation({
         result,
         tableData,
@@ -411,6 +411,7 @@ export function useKeyboard({
         columns,
         activeCell,
         clearSelection,
+        startSingleSelection,
         notifyDataChange,
       });
 
@@ -428,7 +429,7 @@ export function useKeyboard({
     if (key === KEY_CODES.Y) {
       const result = redoHistory();
 
-      // 使用公共函数处理重做操作（与菜单逻辑完全一致，公共函数内部会处理清除选择和通知数据变化）
+      // 使用公共函数处理重做操作（与菜单逻辑完全一致，公共函数内部会处理更新选区和通知数据变化）
       const success = handleUndoRedoOperation({
         result,
         tableData,
@@ -436,6 +437,7 @@ export function useKeyboard({
         columns,
         activeCell,
         clearSelection,
+        startSingleSelection,
         notifyDataChange,
       });
 

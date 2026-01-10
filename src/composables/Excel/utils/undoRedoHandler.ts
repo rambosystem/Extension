@@ -28,6 +28,7 @@ export interface UndoRedoHandlerOptions {
   columns: { value: string[] };
   activeCell?: { value: ActiveCell | null } | null;
   clearSelection?: () => void;
+  startSingleSelection?: (row: number, col: number) => void;
   notifyDataChange?: () => void;
 }
 
@@ -49,6 +50,7 @@ export function handleUndoRedoOperation(
     columns,
     activeCell,
     clearSelection,
+    startSingleSelection,
     notifyDataChange,
   } = options;
 
@@ -108,25 +110,46 @@ export function handleUndoRedoOperation(
   // 验证并调整 activeCell 位置，确保它在有效范围内
   if (activeCell?.value) {
     const maxRows = validatedState.length;
-    const maxCols = validatedState[0]?.length || 0;
+    // 计算最大列数（考虑所有行）
+    const maxCols = Math.max(...validatedState.map((row) => row.length), 1);
 
-    if (activeCell.value.row >= maxRows || activeCell.value.col >= maxCols) {
-      // 如果当前活动单元格超出范围，移动到最后一个有效单元格
+    // 确保 activeCell 在有效范围内
+    const validRow = Math.max(0, Math.min(activeCell.value.row, maxRows - 1));
+    const validCol = Math.max(0, Math.min(activeCell.value.col, maxCols - 1));
+
+    // 如果位置发生变化，更新 activeCell
+    if (
+      activeCell.value.row !== validRow ||
+      activeCell.value.col !== validCol
+    ) {
       activeCell.value = {
-        row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
-        col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
+        row: validRow,
+        col: validCol,
       };
+    }
+
+    // 更新选区到 activeCell 的位置（而不是清除选区）
+    if (startSingleSelection) {
+      startSingleSelection(activeCell.value.row, activeCell.value.col);
+    } else if (clearSelection) {
+      // 如果没有 startSingleSelection，回退到清除选择
+      clearSelection();
+    }
+  } else {
+    // 如果没有 activeCell，清除选择状态
+    if (clearSelection) {
+      clearSelection();
     }
   }
 
-  // 清除选择状态（统一处理，确保快捷键和菜单行为一致）
-  if (clearSelection) {
-    clearSelection();
-  }
-
-  // 通知数据变化（统一处理，确保快捷键和菜单行为一致）
+  // 使用 setTimeout 延迟调用 notifyDataChange()，确保在状态更新完成后再通知
+  // 注意：isUndoRedoInProgress 会在 undo/redo 函数中延迟重置（10ms）
+  // 这里使用较短的延迟（5ms），确保在 isUndoRedoInProgress 重置前执行
+  // 这样 useDataSync 的 watch 在检查 isUndoRedoInProgress 时仍会跳过，避免重复通知
   if (notifyDataChange) {
-    notifyDataChange();
+    setTimeout(() => {
+      notifyDataChange();
+    }, 5);
   }
 
   return true;

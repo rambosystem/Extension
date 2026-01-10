@@ -57,12 +57,14 @@ export function useDataSync({
       tableData,
       () => {
         if (!isUpdatingFromExternal) {
+          // 如果正在进行撤销/重做操作，不触发数据变化通知
+          // handleUndoRedoOperation 会在 isUndoRedoInProgress 重置后手动调用 notifyDataChange
+          // 这样可以避免重复通知
+          if (isUndoRedoInProgress && isUndoRedoInProgress()) {
+            return;
+          }
+          // 正常通知数据变化
           nextTick(() => {
-            // 如果正在进行撤销/重做操作，不触发数据变化通知
-            // 因为撤销/重做本身就是数据变化，不应该触发额外的通知
-            if (isUndoRedoInProgress && isUndoRedoInProgress()) {
-              return;
-            }
             notifyDataChange();
           });
         }
