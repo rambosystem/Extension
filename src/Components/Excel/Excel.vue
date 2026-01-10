@@ -33,9 +33,9 @@
         @cell-dblclick="startEdit" @cell-mouseenter="handleMouseEnter" @cell-input-blur="stopEdit"
         @cell-input-enter="(event) => event && handleInputEnter(event)"
         @cell-input-tab="(event) => event && handleInputTab(event)" @cell-input-esc="cancelEdit"
-        @cell-input-ref="setInputRef" @fill-drag-start="startFillDrag"
-        @cell-menu-command="(command) => handleCellMenuCommand(command)" @cell-menu-custom-action="handleCustomAction"
-        @cell-menu-visible-change="handleMenuVisibleChange" />
+        @cell-input-change="(value, row, col) => { tableData[row][col] = value; }" @cell-input-ref="setInputRef"
+        @fill-drag-start="startFillDrag" @cell-menu-command="(command) => handleCellMenuCommand(command)"
+        @cell-menu-custom-action="handleCustomAction" @cell-menu-visible-change="handleMenuVisibleChange" />
 
       <!-- 虚拟滚动：下方占位符 -->
       <div v-if="virtualScroll.enabled.value && virtualScroll.offsetBottom.value > 0" class="virtual-scroll-spacer"
@@ -1024,7 +1024,7 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
 // ==================== 变量定义 ====================
 // 颜色方案
 $border-color: #e4e7ed;

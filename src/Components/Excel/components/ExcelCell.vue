@@ -22,8 +22,10 @@
         alignItems: cellDisplayStyle.align,
     }" @mousedown="$emit('cell-mousedown', $event)" @dblclick="$emit('cell-dblclick')"
         @mouseenter="$emit('cell-mouseenter')">
-        <input v-if="isEditing" v-model="cellValueModel" class="cell-input" @blur="$emit('cell-input-blur')"
-            @keydown.enter.prevent.stop="$emit('cell-input-enter')" @keydown.tab.prevent.stop="$emit('cell-input-tab')"
+        <input v-if="isEditing" :value="cellValue" @input="handleInput" class="cell-input"
+            @blur="$emit('cell-input-blur')"
+            @keydown.enter.prevent.stop="(e) => $emit('cell-input-enter', e as KeyboardEvent)"
+            @keydown.tab.prevent.stop="(e) => $emit('cell-input-tab', e as KeyboardEvent)"
             @keydown.esc="$emit('cell-input-esc')"
             :ref="(el) => $emit('cell-input-ref', el as HTMLInputElement | null)" />
 
@@ -44,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+// 不再需要 computed，直接使用 props
 import CellMenu from "./CellMenu.vue";
 import FillHandle from "./FillHandle.vue";
 import type { MenuContext } from "../composables/types";
@@ -85,13 +87,14 @@ const props = defineProps<Props>();
 /**
  * ExcelCell 组件 Emits
  */
-defineEmits<{
+const emit = defineEmits<{
     'cell-mousedown': [event: MouseEvent];
     'cell-dblclick': [];
     'cell-mouseenter': [];
     'cell-input-blur': [];
-    'cell-input-enter': [];
-    'cell-input-tab': [];
+    'cell-input-enter': [event?: KeyboardEvent];
+    'cell-input-tab': [event?: KeyboardEvent];
+    'cell-input-change': [value: string, rowIndex: number, colIndex: number];
     'cell-input-esc': [];
     'cell-input-ref': [el: HTMLInputElement | null];
     'fill-drag-start': [];
@@ -100,13 +103,9 @@ defineEmits<{
     'cell-menu-visible-change': [visible: boolean];
 }>();
 
-// 单元格值的双向绑定（用于编辑）
-// 注意：这里使用 v-model 直接绑定到 tableData，由父组件管理状态
-const cellValueModel = computed({
-    get: () => props.cellValue,
-    set: (_value: string) => {
-        // 通过事件通知父组件更新值
-        // 这里不直接修改，由父组件通过 v-model 或事件处理
-    },
-});
+// 单元格输入处理函数
+const handleInput = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    emit('cell-input-change', target.value, props.rowIndex, props.colIndex);
+};
 </script>

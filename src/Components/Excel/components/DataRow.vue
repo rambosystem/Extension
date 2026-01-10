@@ -29,7 +29,9 @@
             @cell-mousedown="$emit('cell-mousedown', rowIndex, colIndex, $event)"
             @cell-dblclick="$emit('cell-dblclick', rowIndex, colIndex)"
             @cell-mouseenter="$emit('cell-mouseenter', rowIndex, colIndex)" @cell-input-blur="$emit('cell-input-blur')"
-            @cell-input-enter="$emit('cell-input-enter')" @cell-input-tab="$emit('cell-input-tab')"
+            @cell-input-enter="(event) => $emit('cell-input-enter', event)"
+            @cell-input-tab="(event) => $emit('cell-input-tab', event)"
+            @cell-input-change="(value, row, col) => $emit('cell-input-change', value, row, col)"
             @cell-input-esc="$emit('cell-input-esc')"
             @cell-input-ref="$emit('cell-input-ref', $event, rowIndex, colIndex)"
             @fill-drag-start="$emit('fill-drag-start', rowIndex, colIndex)"
@@ -95,6 +97,7 @@ defineEmits<{
     'cell-input-enter': [event?: KeyboardEvent];
     'cell-input-tab': [event?: KeyboardEvent];
     'cell-input-esc': [];
+    'cell-input-change': [value: string, rowIndex: number, colIndex: number];
     'cell-input-ref': [el: HTMLInputElement | null, rowIndex: number, colIndex: number];
     'fill-drag-start': [rowIndex: number, colIndex: number];
     'cell-menu-command': [command: { action: string; rowIndex: number }];
