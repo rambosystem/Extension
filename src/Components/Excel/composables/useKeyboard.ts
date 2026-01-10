@@ -356,7 +356,10 @@ export function useKeyboard({
     // 调用程序化复制
     if (copyToClipboard) {
       copyToClipboard().catch((error) => {
-        console.error("Copy shortcut failed:", error);
+        // 错误处理：复制快捷键失败
+        if (import.meta.env.DEV) {
+          console.error("[Keyboard] Copy shortcut failed:", error);
+        }
       });
     }
 
@@ -384,7 +387,10 @@ export function useKeyboard({
     // 调用程序化粘贴
     if (pasteFromClipboard) {
       pasteFromClipboard().catch((error) => {
-        console.error("Paste shortcut failed:", error);
+        // 错误处理：粘贴快捷键失败
+        if (import.meta.env.DEV) {
+          console.error("[Keyboard] Paste shortcut failed:", error);
+        }
       });
     }
 
@@ -652,9 +658,12 @@ export function useKeyboard({
 
       const shortcutConfig = parseShortcut(item.shortcut);
       if (!shortcutConfig) {
-        console.warn(
-          `useKeyboard: Failed to parse shortcut "${item.shortcut}" for menu item "${item.id}"`
-        );
+        // 错误处理：快捷键解析失败
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[Keyboard] Failed to parse shortcut "${item.shortcut}" for menu item "${item.id}"`
+          );
+        }
         continue;
       }
 
@@ -667,10 +676,13 @@ export function useKeyboard({
               continue;
             }
           } catch (error) {
-            console.warn(
-              `useKeyboard: validate function error for menu item "${item.id}":`,
-              error
-            );
+            // 错误处理：验证函数执行失败
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[Keyboard] validate function error for menu item "${item.id}":`,
+                error
+              );
+            }
             continue;
           }
         }

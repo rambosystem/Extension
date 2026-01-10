@@ -1,4 +1,4 @@
-import type { Ref, ComputedRef } from "vue";
+import { watch, type Ref, ComputedRef } from "vue";
 import type { SelectionRange } from "./types";
 import type { UseFillHandleReturn } from "./useFillHandle";
 
@@ -28,26 +28,58 @@ export interface UseSelectionStyleReturn {
   isSelectionBottomRight: (row: number, col: number) => boolean;
   getDragTargetBorderClass: (row: number, col: number) => string[];
   getMultipleDragBorderClass: (row: number, col: number) => string[];
+  clearStyleCache: () => void; // 新增：清除样式缓存
 }
 
 /**
  * 选区样式管理 Composable
+ *
+ * 性能优化：
+ * - 添加样式计算结果缓存，减少重复计算
+ * - 监听选择状态变化，自动清除缓存
  */
 export function useSelectionStyle({
   normalizedSelection,
   multiSelections,
   isMultipleMode,
   isSelecting,
-  isInSelection,
+  isInSelection: _isInSelection, // 保留参数以保持接口一致性，但当前未使用
   isInDragArea,
   fillHandleComposable,
   copiedRange,
   props,
 }: UseSelectionStyleOptions): UseSelectionStyleReturn {
+  // 样式缓存：使用 Map 存储计算结果
+  // Key: `${type}-${row}-${col}`, Value: string[]
+  const borderClassCache = new Map<string, string[]>();
+  const bottomRightCache = new Map<string, boolean>();
+
+  // 监听选择状态变化，清除缓存
+  watch(
+    [
+      normalizedSelection,
+      multiSelections,
+      isMultipleMode,
+      isSelecting,
+      copiedRange,
+    ],
+    () => {
+      borderClassCache.clear();
+      bottomRightCache.clear();
+    },
+    { deep: true }
+  );
   /**
-   * 获取选区边界的 Class
+   * 获取选区边界的 Class（带缓存）
    */
   const getSelectionBorderClass = (row: number, col: number): string[] => {
+    const cacheKey = `selection-${row}-${col}`;
+
+    // 检查缓存
+    if (borderClassCache.has(cacheKey)) {
+      return borderClassCache.get(cacheKey)!;
+    }
+
     const classes: string[] = [];
 
     const isInMultipleMode =
@@ -55,11 +87,13 @@ export function useSelectionStyle({
       (multiSelections?.value?.length ?? 0) > 0;
 
     if (isInMultipleMode) {
+      borderClassCache.set(cacheKey, classes);
       return classes;
     }
 
     const selection = normalizedSelection.value;
     if (!selection) {
+      borderClassCache.set(cacheKey, classes);
       return classes;
     }
 
@@ -70,6 +104,7 @@ export function useSelectionStyle({
       col <= selection.maxCol;
 
     if (!inCurrentSelection) {
+      borderClassCache.set(cacheKey, classes);
       return classes;
     }
 
@@ -82,6 +117,13 @@ export function useSelectionStyle({
     if (isBottom) classes.push("selection-bottom");
     if (isLeft) classes.push("selection-left");
     if (isRight) classes.push("selection-right");
+
+    // 缓存结果（限制缓存大小）
+    if (borderClassCache.size > 2000) {
+      const keysToDelete = Array.from(borderClassCache.keys()).slice(0, 1000);
+      keysToDelete.forEach((key) => borderClassCache.delete(key));
+    }
+    borderClassCache.set(cacheKey, classes);
 
     return classes;
   };
@@ -126,20 +168,41 @@ export function useSelectionStyle({
   };
 
   /**
-   * 判断是否为选区的右下角（用于显示填充手柄）
+   * 判断是否为选区的右下角（用于显示填充手柄，带缓存）
    */
   const isSelectionBottomRight = (row: number, col: number): boolean => {
+    const cacheKey = `bottomRight-${row}-${col}`;
+
+    // 检查缓存
+    if (bottomRightCache.has(cacheKey)) {
+      return bottomRightCache.get(cacheKey)!;
+    }
+
     const isInMultipleMode =
       isMultipleMode?.value === true ||
       (multiSelections?.value?.length ?? 0) > 0;
 
     if (isInMultipleMode) {
+      bottomRightCache.set(cacheKey, false);
       return false;
     }
 
-    if (!normalizedSelection.value) return false;
+    if (!normalizedSelection.value) {
+      bottomRightCache.set(cacheKey, false);
+      return false;
+    }
+
     const { maxRow, maxCol } = normalizedSelection.value;
-    return row === maxRow && col === maxCol;
+    const result = row === maxRow && col === maxCol;
+
+    // 缓存结果（限制缓存大小）
+    if (bottomRightCache.size > 1000) {
+      const keysToDelete = Array.from(bottomRightCache.keys()).slice(0, 500);
+      keysToDelete.forEach((key) => bottomRightCache.delete(key));
+    }
+    bottomRightCache.set(cacheKey, result);
+
+    return result;
   };
 
   /**
@@ -209,11 +272,20 @@ export function useSelectionStyle({
     return classes;
   };
 
+  /**
+   * 清除样式缓存
+   */
+  const clearStyleCache = (): void => {
+    borderClassCache.clear();
+    bottomRightCache.clear();
+  };
+
   return {
     getSelectionBorderClass,
     getCopiedRangeBorderClass,
     isSelectionBottomRight,
     getDragTargetBorderClass,
     getMultipleDragBorderClass,
+    clearStyleCache,
   };
 }

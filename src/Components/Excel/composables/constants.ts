@@ -52,6 +52,9 @@ export const DEFAULT_CONFIG = {
   CELL_PADDING_V: 1, // 单元格垂直内边距
   FONT_SIZE: 13, // 字体大小
   LINE_HEIGHT_RATIO: 1.4, // 行高比例
+  // 虚拟滚动配置
+  VIRTUAL_SCROLL_THRESHOLD: 100, // 启用虚拟滚动的行数阈值
+  VIRTUAL_SCROLL_BUFFER: 5, // 可见区域外的缓冲区行数
 } as const;
 
 // 单元格位置类型

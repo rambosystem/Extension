@@ -25,74 +25,93 @@
         </div>
       </div>
 
-      <div v-for="(_row, rowIndex) in rows" :key="rowIndex" class="excel-row">
-        <div class="excel-cell row-number" :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }" :style="{
-          height: getRowHeight(rowIndex) + 'px',
-          minHeight: getRowHeight(rowIndex) + 'px',
-        }" @mousedown="handleRowNumberMouseDown(rowIndex, $event)" @mouseenter="handleRowNumberMouseEnter(rowIndex)">
-          {{ rowIndex + 1 }}
-          <RowResizer v-if="enableRowResize" @mousedown.stop="startRowResize(rowIndex, $event)"
-            @dblclick="handleDoubleClickRowResize(rowIndex)" />
+      <!-- 虚拟滚动：上方占位符 -->
+      <div v-if="virtualScroll.enabled.value && virtualScroll.offsetTop.value > 0" class="virtual-scroll-spacer"
+        :style="{ height: virtualScroll.offsetTop.value + 'px' }"></div>
+
+      <!-- 数据行（虚拟滚动时只渲染可见行） -->
+      <template v-for="(_rowValue, visibleIndex) in visibleRows"
+        :key="virtualScroll.enabled.value ? virtualScroll.startIndex.value + visibleIndex : visibleIndex">
+        <!-- 计算实际行索引 -->
+        <div class="excel-row">
+          <div class="excel-cell row-number"
+            :class="{ 'active-header': isInSelectionHeader(getActualRowIndex(visibleIndex), 'row') }" :style="{
+              height: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
+              minHeight: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
+            }" @mousedown="handleRowNumberMouseDown(getActualRowIndex(visibleIndex), $event)"
+            @mouseenter="handleRowNumberMouseEnter(getActualRowIndex(visibleIndex))">
+            {{ getActualRowIndex(visibleIndex) + 1 }}
+            <RowResizer v-if="enableRowResize" @mousedown.stop="startRowResize(getActualRowIndex(visibleIndex), $event)"
+              @dblclick="handleDoubleClickRowResize(getActualRowIndex(visibleIndex))" />
+          </div>
+
+          <div v-for="(_col, colIndex) in internalColumns" :key="colIndex" class="excel-cell"
+            :data-row="getActualRowIndex(visibleIndex)" :data-col="colIndex" :class="[
+              {
+                // 仅在非多选状态下，才显示 active 样式
+                active: isActive(getActualRowIndex(visibleIndex), colIndex) && !isMultiSelect,
+                'in-selection': isInSelection(getActualRowIndex(visibleIndex), colIndex),
+                'multi-select':
+                  isMultiSelect && isInSelection(getActualRowIndex(visibleIndex), colIndex),
+                'drag-target': isInDragArea(getActualRowIndex(visibleIndex), colIndex),
+              },
+              getSelectionBorderClass(getActualRowIndex(visibleIndex), colIndex),
+              getCopiedRangeBorderClass(getActualRowIndex(visibleIndex), colIndex),
+              getMultipleDragBorderClass(getActualRowIndex(visibleIndex), colIndex),
+              getDragTargetBorderClass(getActualRowIndex(visibleIndex), colIndex),
+            ]" :style="{
+              ...(colIndex === internalColumns.length - 1
+                ? { flex: 1, minWidth: getColumnWidth(colIndex) + 'px' }
+                : {
+                  width: getColumnWidth(colIndex) + 'px',
+                  minWidth: getColumnWidth(colIndex) + 'px',
+                }),
+              height: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
+              minHeight: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
+              alignItems: getCellDisplayStyle(getActualRowIndex(visibleIndex), colIndex).align,
+            }" @mousedown="
+              handleCellMouseDown(
+                getActualRowIndex(visibleIndex),
+                colIndex,
+                rows.length,
+                internalColumns.length,
+                $event
+              )
+              " @dblclick="startEdit(getActualRowIndex(visibleIndex), colIndex)"
+            @mouseenter="handleMouseEnter(getActualRowIndex(visibleIndex), colIndex)">
+            <input v-if="isEditing(getActualRowIndex(visibleIndex), colIndex)"
+              v-model="tableData[getActualRowIndex(visibleIndex)][colIndex]" class="cell-input" @blur="stopEdit"
+              @keydown.enter.prevent.stop="handleInputEnter" @keydown.tab.prevent.stop="handleInputTab"
+              @keydown.esc="cancelEdit"
+              :ref="(el) => setInputRef(el as HTMLInputElement | null, getActualRowIndex(visibleIndex), colIndex)" />
+
+            <span v-else class="cell-content" :class="{
+              'cell-text-wrap': getCellDisplayStyle(getActualRowIndex(visibleIndex), colIndex).wrap,
+              'cell-text-ellipsis': getCellDisplayStyle(getActualRowIndex(visibleIndex), colIndex)
+                .ellipsis,
+            }">
+              {{ tableData[getActualRowIndex(visibleIndex)][colIndex] }}
+            </span>
+
+            <FillHandle v-if="
+              enableFillHandle &&
+              isSelectionBottomRight(getActualRowIndex(visibleIndex), colIndex) &&
+              !editingCell
+            " @mousedown="startFillDrag(getActualRowIndex(visibleIndex), colIndex)" />
+
+            <!-- Cell Menu Button -->
+            <CellMenu v-if="shouldShowCellMenu(getActualRowIndex(visibleIndex), colIndex)"
+              :row-index="getActualRowIndex(visibleIndex)" :custom-menu-items="customMenuItems"
+              :context="createMenuContext(getActualRowIndex(visibleIndex))" :can-undo="canUndo" :can-redo="canRedo"
+              :can-paste="canPaste" @command="handleCellMenuCommand" @custom-action="handleCustomAction"
+              @visible-change="handleMenuVisibleChange" />
+          </div>
         </div>
+      </template>
 
-        <div v-for="(_col, colIndex) in internalColumns" :key="colIndex" class="excel-cell" :data-row="rowIndex"
-          :data-col="colIndex" :class="[
-            {
-              // 仅在非多选状态下，才显示 active 样式
-              active: isActive(rowIndex, colIndex) && !isMultiSelect,
-              'in-selection': isInSelection(rowIndex, colIndex),
-              'multi-select':
-                isMultiSelect && isInSelection(rowIndex, colIndex),
-              'drag-target': isInDragArea(rowIndex, colIndex),
-            },
-            getSelectionBorderClass(rowIndex, colIndex),
-            getCopiedRangeBorderClass(rowIndex, colIndex),
-            getMultipleDragBorderClass(rowIndex, colIndex),
-            getDragTargetBorderClass(rowIndex, colIndex),
-          ]" :style="{
-            ...(colIndex === internalColumns.length - 1
-              ? { flex: 1, minWidth: getColumnWidth(colIndex) + 'px' }
-              : {
-                width: getColumnWidth(colIndex) + 'px',
-                minWidth: getColumnWidth(colIndex) + 'px',
-              }),
-            height: getRowHeight(rowIndex) + 'px',
-            minHeight: getRowHeight(rowIndex) + 'px',
-            alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
-          }" @mousedown="
-            handleCellMouseDown(
-              rowIndex,
-              colIndex,
-              rows.length,
-              internalColumns.length,
-              $event
-            )
-            " @dblclick="startEdit(rowIndex, colIndex)" @mouseenter="handleMouseEnter(rowIndex, colIndex)">
-          <input v-if="isEditing(rowIndex, colIndex)" v-model="tableData[rowIndex][colIndex]" class="cell-input"
-            @blur="stopEdit" @keydown.enter.prevent.stop="handleInputEnter" @keydown.tab.prevent.stop="handleInputTab"
-            @keydown.esc="cancelEdit" :ref="(el) => setInputRef(el as HTMLInputElement | null, rowIndex, colIndex)" />
-
-          <span v-else class="cell-content" :class="{
-            'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
-            'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
-              .ellipsis,
-          }">
-            {{ tableData[rowIndex][colIndex] }}
-          </span>
-
-          <FillHandle v-if="
-            enableFillHandle &&
-            isSelectionBottomRight(rowIndex, colIndex) &&
-            !editingCell
-          " @mousedown="startFillDrag(rowIndex, colIndex)" />
-
-          <!-- Cell Menu Button -->
-          <CellMenu v-if="shouldShowCellMenu(rowIndex, colIndex)" :row-index="rowIndex"
-            :custom-menu-items="customMenuItems" :context="createMenuContext(rowIndex)" :can-undo="canUndo"
-            :can-redo="canRedo" :can-paste="canPaste" @command="handleCellMenuCommand"
-            @custom-action="handleCustomAction" @visible-change="handleMenuVisibleChange" />
-        </div>
-      </div>
+      <!-- 虚拟滚动：下方占位符 -->
+      <div v-if="virtualScroll.enabled.value && virtualScroll.offsetBottom.value > 0" class="virtual-scroll-spacer"
+        :style="{ height: virtualScroll.offsetBottom.value + 'px' }"></div>
     </div>
   </div>
 </template>
@@ -100,6 +119,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
 import { CellElementCache } from "./composables/utils";
+import { useVirtualScroll } from "./composables/useVirtualScroll";
 import { useHistory } from "./composables/useHistory";
 import { useSelection } from "./composables/useSelection";
 import { useExcelData } from "./composables/useExcelData";
@@ -355,6 +375,38 @@ const { getCellDisplayStyle } = useCellDisplay({
   getRowHeight,
 });
 
+// --- 虚拟滚动管理（大数据量性能优化）---
+const virtualScroll = useVirtualScroll(
+  computed(() => rows.value.length),
+  {
+    threshold: 100, // 超过 100 行启用虚拟滚动
+    bufferSize: 5, // 缓冲区 5 行
+    defaultRowHeight: props.defaultRowHeight || 36,
+  }
+);
+
+// 计算可见行范围
+const visibleRows = computed(() => {
+  if (!virtualScroll.enabled.value) {
+    // 未启用虚拟滚动，返回所有行
+    return rows.value;
+  }
+  // 只返回可见行
+  const start = virtualScroll.startIndex.value;
+  const end = virtualScroll.endIndex.value;
+  return rows.value.slice(start, end + 1);
+});
+
+/**
+ * 获取实际行索引（考虑虚拟滚动）
+ */
+const getActualRowIndex = (visibleIndex: number): number => {
+  if (!virtualScroll.enabled.value) {
+    return visibleIndex;
+  }
+  return virtualScroll.startIndex.value + visibleIndex;
+};
+
 // 智能填充相关函数
 const applyFill = (): void => {
   if (!props.enableFillHandle || !fillHandleComposable) return;
@@ -382,12 +434,58 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
   getData,
   setData,
   emit: (event: "update:modelValue" | "change" | "custom-action", ...args: unknown[]) => {
-    if (event === "update:modelValue") {
-      emit("update:modelValue", args[0] as string[][]);
-    } else if (event === "change") {
-      emit("change", args[0] as string[][]);
-    } else if (event === "custom-action") {
-      emit("custom-action", args[0] as { id: string; context: MenuContext });
+    // 类型安全的事件分发函数
+    // 根据事件类型进行类型检查和分发
+    switch (event) {
+      case "update:modelValue": {
+        const data = args[0];
+        if (Array.isArray(data) && Array.isArray(data[0])) {
+          emit("update:modelValue", data as string[][]);
+        } else {
+          // 使用 debug 工具统一错误处理
+          if (import.meta.env.DEV) {
+            console.warn("[Excel] Invalid data type for update:modelValue", data);
+          }
+        }
+        break;
+      }
+      case "change": {
+        const data = args[0];
+        if (Array.isArray(data) && Array.isArray(data[0])) {
+          emit("change", data as string[][]);
+        } else {
+          // 使用 debug 工具统一错误处理
+          if (import.meta.env.DEV) {
+            console.warn("[Excel] Invalid data type for change", data);
+          }
+        }
+        break;
+      }
+      case "custom-action": {
+        const payload = args[0];
+        if (
+          payload &&
+          typeof payload === "object" &&
+          "id" in payload &&
+          "context" in payload
+        ) {
+          emit("custom-action", payload as { id: string; context: MenuContext });
+        } else {
+          // 使用 debug 工具统一错误处理
+          if (import.meta.env.DEV) {
+            console.warn("[Excel] Invalid payload type for custom-action", payload);
+          }
+        }
+        break;
+      }
+      default: {
+        // TypeScript 会确保所有情况都被处理
+        const _exhaustive: never = event;
+        // 使用 debug 工具统一错误处理
+        if (import.meta.env.DEV) {
+          console.warn("[Excel] Unknown event type", _exhaustive);
+        }
+      }
     }
   },
   initHistory, // 传递 initHistory 函数，用于在数据更新时重新初始化历史记录
@@ -949,6 +1047,24 @@ defineExpose({
 // --- 11. 生命周期管理 ---
 onMounted(() => {
   initHistory(tableData.value);
+
+  // 初始化虚拟滚动
+  nextTick(() => {
+    if (containerRef.value && virtualScroll.enabled.value) {
+      virtualScroll.init(containerRef.value, getRowHeight);
+    }
+  });
+
+  // 监听行高变化，更新虚拟滚动
+  if (virtualScroll.enabled.value && rowHeightComposable) {
+    watch(
+      () => rowHeightComposable?.rowHeights.value,
+      () => {
+        virtualScroll.updateVisibleRange();
+      },
+      { deep: true }
+    );
+  }
 });
 
 // 监听容器引用变化，更新缓存
@@ -977,6 +1093,8 @@ onUnmounted(() => {
   clearInputRefs();
   // 清空 DOM 缓存
   cellElementCache.clear();
+  // 清理虚拟滚动
+  virtualScroll.cleanup();
 });
 </script>
 

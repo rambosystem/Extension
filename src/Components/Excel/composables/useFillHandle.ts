@@ -126,7 +126,10 @@ export function useFillHandle({
       const colIndex = start.col;
 
       if (colIndex < 0 || colIndex >= maxCols) {
-        console.warn(`Invalid column index: ${colIndex}`);
+        // 错误处理：列索引无效
+        if (import.meta.env.DEV) {
+          console.warn(`[FillHandle] Invalid column index: ${colIndex}`);
+        }
         return;
       }
 

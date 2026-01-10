@@ -117,7 +117,7 @@ export function useCellEditing({
   ): void => {
     // 边界检查
     if (row < 0 || row >= getMaxRows() || col < 0 || col >= getMaxCols()) {
-      console.warn(`Invalid cell position: row=${row}, col=${col}`);
+      debugLog(`[CellEditing] Invalid cell position: row=${row}, col=${col}`);
       return;
     }
 

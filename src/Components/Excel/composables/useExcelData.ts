@@ -176,7 +176,10 @@ export function useExcelData({
         .filter((row) => row !== "")
         .map((row) => row.split(CLIPBOARD_SEPARATORS.CELL));
     } catch (error) {
-      console.warn("Failed to parse paste data:", error);
+      // 错误处理：解析粘贴数据失败时返回空数组
+      if (import.meta.env.DEV) {
+        console.warn("[ExcelData] Failed to parse paste data:", error);
+      }
       return [];
     }
   };
@@ -186,7 +189,10 @@ export function useExcelData({
    */
   const setData = (data: string[][]): void => {
     if (!data || !Array.isArray(data)) {
-      console.warn("setData: Invalid data format");
+      // 错误处理：数据格式无效
+      if (import.meta.env.DEV) {
+        console.warn("[ExcelData] setData: Invalid data format");
+      }
       return;
     }
 
@@ -253,7 +259,11 @@ export function useExcelData({
     }
 
     if (row < 0 || col < 0 || !tableData.value[row]) {
-      console.warn(`updateCell: Invalid position row=${row}, col=${col}`);
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[ExcelData] updateCell: Invalid position row=${row}, col=${col}`
+        );
+      }
       return;
     }
 
@@ -276,7 +286,9 @@ export function useExcelData({
    */
   const deleteRow = (rowIndex: number): void => {
     if (rowIndex < 0 || rowIndex >= rows.value.length) {
-      console.warn(`deleteRow: Invalid row index ${rowIndex}`);
+      if (import.meta.env.DEV) {
+        console.warn(`[ExcelData] deleteRow: Invalid row index ${rowIndex}`);
+      }
       return;
     }
 
@@ -300,7 +312,11 @@ export function useExcelData({
    */
   const insertRowBelow = (rowIndex: number): void => {
     if (rowIndex < -1 || rowIndex >= rows.value.length) {
-      console.warn(`insertRowBelow: Invalid row index ${rowIndex}`);
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[ExcelData] insertRowBelow: Invalid row index ${rowIndex}`
+        );
+      }
       return;
     }
 
