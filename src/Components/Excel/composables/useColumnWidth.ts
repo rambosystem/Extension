@@ -67,7 +67,7 @@ export function useColumnWidth({
   };
 
   /**
-   * 处理拖拽逻辑
+   * 处理拖拽逻辑（已使用 requestAnimationFrame 优化，无需额外节流）
    */
   const handleColumnResize = (event: MouseEvent): void => {
     if (!isResizingColumn.value) return;

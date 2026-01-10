@@ -1,4 +1,5 @@
 import type { Ref } from "vue";
+import { DEFAULT_CONFIG } from "./constants";
 
 /**
  * 单元格显示样式
@@ -28,14 +29,24 @@ export interface UseCellDisplayReturn {
 
 /**
  * 单元格显示样式管理 Composable
+ *
+ * 性能优化：
+ * - 使用常量配置替代魔法数字
+ * - 样式计算结果可以进一步优化（如果需要，可以添加缓存）
  */
 export function useCellDisplay({
   tableData,
   getColumnWidth,
   getRowHeight,
 }: UseCellDisplayOptions): UseCellDisplayReturn {
+  // 使用常量配置
+  const PADDING_H = DEFAULT_CONFIG.CELL_PADDING_H;
+  const FONT_SIZE = DEFAULT_CONFIG.FONT_SIZE;
+  const LINE_HEIGHT_RATIO = DEFAULT_CONFIG.LINE_HEIGHT_RATIO;
+
   /**
-   * 计算文本的真实显示宽度
+   * 计算文本的真实显示宽度（区分全角和半角字符）
+   * 全角字符（如中文）宽度约为 13.5px，半角字符（如英文）宽度约为 8.5px
    */
   const getTextDisplayWidth = (text: string): number => {
     let width = 0;
@@ -48,6 +59,11 @@ export function useCellDisplay({
 
   /**
    * 获取单元格显示样式
+   *
+   * 计算逻辑：
+   * 1. 如果文本宽度 <= 可用宽度：正常显示（不换行，不省略）
+   * 2. 如果文本宽度 > 可用宽度 且 行高足够：换行显示
+   * 3. 如果文本宽度 > 可用宽度 且 行高不足：省略显示
    */
   const getCellDisplayStyle = (
     rowIndex: number,
@@ -63,13 +79,10 @@ export function useCellDisplay({
     const columnWidth = getColumnWidth(colIndex);
     const rowHeight = getRowHeight(rowIndex);
 
-    const paddingH = 13;
-    const fontSize = 13;
-    const lineHeightRatio = 1.4;
-    const lineHeightPx = fontSize * lineHeightRatio;
+    const lineHeightPx = FONT_SIZE * LINE_HEIGHT_RATIO;
 
     const textWidth = getTextDisplayWidth(cellText);
-    const availableWidth = columnWidth - paddingH;
+    const availableWidth = columnWidth - PADDING_H;
 
     if (textWidth <= availableWidth) {
       return { wrap: false, ellipsis: false, align: "center" };

@@ -98,7 +98,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
+import { CellElementCache } from "./composables/utils";
 import { useHistory } from "./composables/useHistory";
 import { useSelection } from "./composables/useSelection";
 import { useExcelData } from "./composables/useExcelData";
@@ -380,7 +381,7 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
   props,
   getData,
   setData,
-  emit: (event: string, ...args: any[]) => {
+  emit: (event: "update:modelValue" | "change" | "custom-action", ...args: unknown[]) => {
     if (event === "update:modelValue") {
       emit("update:modelValue", args[0] as string[][]);
     } else if (event === "change") {
@@ -614,13 +615,18 @@ const headerSelectState = ref<HeaderSelectState>({
 // 保存最后一次鼠标位置，用于菜单位置计算
 const lastMousePosition = ref<{ x: number; y: number } | null>(null);
 
-// 获取单元格DOM元素的函数
+// DOM 查询缓存（优化性能，避免重复 querySelector 调用）
+const cellElementCache = new CellElementCache();
+
+// 获取单元格DOM元素的函数（使用缓存优化）
 const getCellElement = (row: number, col: number): HTMLElement | null => {
   if (!containerRef.value) return null;
-  // 通过data属性查找单元格
-  return containerRef.value.querySelector(
-    `.excel-cell[data-row="${row}"][data-col="${col}"]`
-  ) as HTMLElement | null;
+  // 设置容器（如果变化）
+  if (cellElementCache["container"] !== containerRef.value) {
+    cellElementCache.setContainer(containerRef.value);
+  }
+  // 使用缓存查询
+  return cellElementCache.getCellElement(row, col);
 };
 
 // --- Cell Menu Position 管理 ---
@@ -945,17 +951,32 @@ onMounted(() => {
   initHistory(tableData.value);
 });
 
+// 监听容器引用变化，更新缓存
+watch(containerRef, (newContainer) => {
+  if (newContainer) {
+    cellElementCache.setContainer(newContainer);
+  }
+});
+
 onUnmounted(() => {
   // 清理事件监听器，防止内存泄漏
   window.removeEventListener("mouseup", handleMouseUp);
+  window.removeEventListener("mouseup", wrappedHandleMouseUp);
+  window.removeEventListener("mouseup", handleHeaderMouseUp);
   if (props.enableColumnResize) {
     window.removeEventListener("mousemove", handleColumnResizeMove);
   }
   if (props.enableRowResize) {
     window.removeEventListener("mousemove", handleRowResizeMove);
   }
+  // 清理填充手柄事件监听器
+  if (props.enableFillHandle && fillHandleComposable) {
+    fillHandleComposable.cleanup();
+  }
   // 清理输入框引用
   clearInputRefs();
+  // 清空 DOM 缓存
+  cellElementCache.clear();
 });
 </script>
 

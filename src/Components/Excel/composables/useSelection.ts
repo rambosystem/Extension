@@ -93,6 +93,30 @@ export interface UseSelectionOptions {
  * - MULTIPLE 模式：使用 multiSelections 数组
  * - 两种模式通过 isInSelection 函数统一检查，使用同一个"矩阵"记录选择状态
  *
+ * 多选逻辑详解：
+ *
+ * 1. 开始多选（startMultipleSelection）:
+ *    - 检查点击位置是否在已有选区内
+ *    - 如果在，返回包含的选区索引（用于后续删除）
+ *    - 如果不在，将当前 SINGLE 模式选区加入 multiSelections，然后开始新的选择
+ *
+ * 2. 结束多选点击（endMultipleSelectionClick）:
+ *    - 如果点击在已有选区内：
+ *      a. 单格选区：直接删除
+ *      b. 多格选区：拆分成多个单格选区，移除点击的单元格
+ *    - 如果点击在选区外：添加新的单格选区
+ *    - 使用 optimizeSelections 优化选区（合并相邻单元格）
+ *
+ * 3. 结束多选拖选（endMultipleSelectionDrag）:
+ *    - 如果 isCancelMode：从指定选区中移除拖选范围
+ *    - 否则：添加新的选区到 multiSelections
+ *    - 使用 optimizeSelections 优化选区
+ *
+ * 4. 选区优化（optimizeSelections）:
+ *    - 将多个单格选区合并成尽可能大的矩形选区
+ *    - 使用矩阵切割算法，从左上角开始，尽可能向右下扩展
+ *    - 确保所有单元格都被包含，且选区数量最少
+ *
  * 使用方式：
  * ```typescript
  * const excelState = useExcelState();

@@ -120,16 +120,22 @@ export function useHistory(
   const historyIndex = ref(-1);
   let isUndoRedoInProgress = false;
 
-  // 操作合并配置
+  // 操作合并配置（提取为常量，提升可维护性）
   const MERGE_TIME_WINDOW = 500; // 500ms 内的操作可以合并
   const CHECKPOINT_INTERVAL = 10; // 每 10 个增量操作后创建检查点
+  const MAX_HISTORY_ENTRIES = maxHistorySize; // 历史记录最大数量
 
   /**
    * 优化的深拷贝实现
-   * 优先级：JSON 序列化（处理 Vue 响应式对象）> 数组展开 > 结构化克隆
+   * 优先级：结构化克隆（性能最佳）> 数组展开（快速）> JSON 序列化（兼容性）
+   *
+   * 性能优化：
+   * 1. 优先使用 structuredClone（现代浏览器，性能最佳）
+   * 2. 对于字符串二维数组，使用数组展开（比 JSON 快）
+   * 3. 回退到 JSON 序列化（兼容性最好，但性能较差）
    *
    * 注意：Vue 的响应式对象（Proxy）无法被 structuredClone 克隆，
-   * 所以优先使用 JSON 序列化来确保得到纯数据
+   * 所以需要先转换为普通数组
    */
   const optimizedDeepCopy = <T>(data: T): T => {
     if (!data) {
@@ -140,32 +146,10 @@ export function useHistory(
       return data;
     }
 
-    // 1. 对于字符串二维数组（Excel 数据），优先使用 JSON 序列化
-    // 这样可以正确处理 Vue 的响应式对象（Proxy）
+    // 1. 对于字符串二维数组（Excel 数据），优先使用数组展开（性能最佳）
     if (Array.isArray(data)) {
       try {
-        // 先尝试 JSON 序列化（可以处理 Vue Proxy）
-        const jsonString = JSON.stringify(data);
-        const cloned = JSON.parse(jsonString);
-        if (cloned === null || cloned === undefined) {
-          throw new Error("JSON serialization returned null/undefined");
-        }
-        // 验证结果是否为有效的二维数组
-        if (
-          Array.isArray(cloned) &&
-          cloned.every((row) => Array.isArray(row))
-        ) {
-          return cloned as T;
-        }
-      } catch (error) {
-        debugLog(
-          "[History] optimizedDeepCopy: JSON serialization failed, trying array spread",
-          error
-        );
-      }
-
-      // 2. 回退到数组展开方法（如果 JSON 失败）
-      try {
+        // 检查是否为字符串二维数组
         if (
           data.every(
             (row) =>
@@ -173,6 +157,7 @@ export function useHistory(
               row.every((cell) => typeof cell === "string")
           )
         ) {
+          // 使用数组展开方法（比 JSON 序列化快得多）
           const cloned = data.map((row) => {
             // 确保行是普通数组，不是 Proxy
             if (Array.isArray(row)) {
@@ -191,26 +176,28 @@ export function useHistory(
           error
         );
       }
-    }
 
-    // 3. 尝试使用结构化克隆 API（对于非响应式对象）
-    if (typeof structuredClone !== "undefined") {
-      try {
-        const cloned = structuredClone(data);
-        if (cloned === null || cloned === undefined) {
-          throw new Error("structuredClone returned null/undefined");
+      // 2. 尝试使用结构化克隆 API（对于非响应式对象，性能最佳）
+      if (typeof structuredClone !== "undefined") {
+        try {
+          // 先转换为普通数组（去除 Proxy）
+          const plainData = JSON.parse(JSON.stringify(data));
+          const cloned = structuredClone(plainData);
+          if (cloned === null || cloned === undefined) {
+            throw new Error("structuredClone returned null/undefined");
+          }
+          return cloned;
+        } catch (error) {
+          // 结构化克隆失败，继续尝试 JSON
+          debugLog(
+            "[History] optimizedDeepCopy: structuredClone failed, trying JSON",
+            error
+          );
         }
-        return cloned;
-      } catch (error) {
-        // 结构化克隆失败，继续尝试 JSON
-        debugLog(
-          "[History] optimizedDeepCopy: structuredClone failed, trying JSON",
-          error
-        );
       }
     }
 
-    // 4. 最终回退到 JSON 序列化（兼容性最好）
+    // 3. 最终回退到 JSON 序列化（兼容性最好，但性能较差）
     try {
       const cloned = JSON.parse(JSON.stringify(data));
       if (cloned === null || cloned === undefined) {
@@ -860,16 +847,18 @@ export function useHistory(
     historyEntries.value.push(newEntry);
     historyIndex.value++;
 
-    // 处理大小限制
-    if (historyEntries.value.length > maxHistorySize) {
-      const removedEntry = historyEntries.value.shift();
-      historyIndex.value--; // ✅ 修复：索引需要减1
+    // 处理大小限制（优化：批量删除，减少数组操作）
+    if (historyEntries.value.length > MAX_HISTORY_ENTRIES) {
+      const removeCount = historyEntries.value.length - MAX_HISTORY_ENTRIES;
+      const removedEntries = historyEntries.value.splice(0, removeCount);
+      historyIndex.value -= removeCount; // 更新索引
       debugLog(
-        "[History] saveHistory: history size limit reached, removed oldest entry",
+        "[History] saveHistory: history size limit reached, removed oldest entries",
         {
-          removedEntryId: removedEntry?.id,
+          removedCount,
+          removedEntryIds: removedEntries.map((e) => e.id),
           currentSize: historyEntries.value.length,
-          maxSize: maxHistorySize,
+          maxSize: MAX_HISTORY_ENTRIES,
         }
       );
     }
@@ -940,12 +929,14 @@ export function useHistory(
         }
       }
 
-      // 使用 setTimeout 确保所有 watch 和 emit 都执行完毕后再重置标志
+      // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
       // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
-      // 这里延迟重置标志，确保 notifyDataChange 执行时 isUndoRedoInProgress 仍为 true
-      setTimeout(() => {
-        isUndoRedoInProgress = false;
-      }, 10); // 稍微延迟，确保 handleUndoRedoOperation 中的 notifyDataChange 先执行
+      // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
+      Promise.resolve().then(() => {
+        setTimeout(() => {
+          isUndoRedoInProgress = false;
+        }, 0);
+      });
 
       return {
         state: result,
@@ -1044,12 +1035,14 @@ export function useHistory(
         }
       }
 
-      // 使用 setTimeout 确保所有 watch 和 emit 都执行完毕后再重置标志
+      // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
       // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
-      // 这里延迟重置标志，确保 notifyDataChange 执行时 isUndoRedoInProgress 仍为 true
-      setTimeout(() => {
-        isUndoRedoInProgress = false;
-      }, 10); // 稍微延迟，确保 handleUndoRedoOperation 中的 notifyDataChange 先执行
+      // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
+      Promise.resolve().then(() => {
+        setTimeout(() => {
+          isUndoRedoInProgress = false;
+        }, 0);
+      });
 
       return {
         state: result,

@@ -1,4 +1,4 @@
-import { ref, type Ref } from "vue";
+import { ref, onUnmounted, type Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
 import {
   HistoryActionType,
@@ -63,6 +63,9 @@ export function useFillHandle({
     );
   };
 
+  // 保存事件监听器引用，用于清理
+  let mouseUpHandler: (() => void) | null = null;
+
   /**
    * 开始填充拖拽
    */
@@ -76,6 +79,8 @@ export function useFillHandle({
     isDraggingFill.value = true;
     dragStartCell.value = { row: normalizedSelection.maxRow, col };
     dragEndCell.value = { row, col };
+    // 保存引用以便清理
+    mouseUpHandler = onMouseUp;
     window.addEventListener("mouseup", onMouseUp);
   };
 
@@ -184,7 +189,17 @@ export function useFillHandle({
     isDraggingFill.value = false;
     dragStartCell.value = null;
     dragEndCell.value = null;
+    // 清理事件监听器
+    if (mouseUpHandler) {
+      window.removeEventListener("mouseup", mouseUpHandler);
+      mouseUpHandler = null;
+    }
   };
+
+  // 组件卸载时清理事件监听器
+  onUnmounted(() => {
+    cleanup();
+  });
 
   return {
     isDraggingFill,

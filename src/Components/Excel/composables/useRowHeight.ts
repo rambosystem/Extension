@@ -143,21 +143,27 @@ export function useRowHeight({
     event.preventDefault();
   };
 
+  let animationFrameId: number | null = null;
+
   /**
-   * 处理行高调整
+   * 处理行高调整（使用 requestAnimationFrame 优化性能）
    */
   const handleRowResize = (event: MouseEvent): void => {
     if (!isResizingRow.value || resizingRowIndex.value === null) {
       return;
     }
 
-    const deltaY = event.clientY - resizeStartY.value;
-    const newHeight = Math.max(
-      minHeight,
-      Math.min(maxHeight, resizeStartHeight.value + deltaY)
-    );
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-    rowHeights.value.set(resizingRowIndex.value, newHeight);
+    animationFrameId = requestAnimationFrame(() => {
+      const deltaY = event.clientY - resizeStartY.value;
+      const newHeight = Math.max(
+        minHeight,
+        Math.min(maxHeight, resizeStartHeight.value + deltaY)
+      );
+
+      rowHeights.value.set(resizingRowIndex.value!, newHeight);
+    });
   };
 
   /**
@@ -168,6 +174,11 @@ export function useRowHeight({
     resizingRowIndex.value = null;
     resizeStartY.value = 0;
     resizeStartHeight.value = 0;
+
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
   };
 
   /**

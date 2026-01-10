@@ -10,7 +10,7 @@ export interface UseDataSyncOptions {
   };
   getData: () => string[][];
   setData: (data: string[][]) => void;
-  emit: (event: string, ...args: any[]) => void;
+  emit: (event: "update:modelValue" | "change", ...args: unknown[]) => void;
   initHistory?: (state: string[][]) => void; // 新增：初始化历史记录的函数
   isUndoRedoInProgress?: () => boolean; // 新增：检查是否正在撤销/重做
 }
