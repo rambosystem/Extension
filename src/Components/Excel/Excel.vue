@@ -3,111 +3,39 @@
   <div class="excel-container" @keydown="handleKeydown" @copy="handleCopy" @paste="handlePaste"
     @click="handleContainerClick" tabindex="0" ref="containerRef">
     <div class="excel-table" @mouseleave="handleMouseUp">
-      <div class="excel-row header-row">
-        <div class="excel-cell header-cell corner-cell" @mousedown="handleCornerCellClick"></div>
-        <div v-for="(col, index) in displayColumns" :key="col" class="excel-cell header-cell"
-          :class="{ 'active-header': isInSelectionHeader(index, 'col') }" :style="index === displayColumns.length - 1
-            ? {
-              flex: 1,
-              minWidth: getColumnWidth(index) + 'px',
-            }
-            : {
-              width: getColumnWidth(index) + 'px',
-              minWidth: getColumnWidth(index) + 'px',
-            }
-            " @mousedown="handleColumnHeaderMouseDown(index, $event)"
-          @mouseenter="handleColumnHeaderMouseEnter(index)">
-          {{ col }}
-          <ColumnResizer v-if="
-            enableColumnResize && Number(index) < displayColumns.length - 1
-          " @mousedown.stop="startColumnResize(Number(index), $event)"
-            @dblclick="handleDoubleClickResize(Number(index))" />
-        </div>
-      </div>
+      <HeaderRow :display-columns="displayColumns" :get-column-width="getColumnWidth"
+        :is-in-selection-header="isInSelectionHeader" :enable-column-resize="enableColumnResize"
+        @corner-click="() => handleCornerCellClick()" @column-header-mousedown="handleColumnHeaderMouseDown"
+        @column-header-mouseenter="handleColumnHeaderMouseEnter" @column-resize-start="startColumnResize"
+        @column-resize-dblclick="handleDoubleClickResize" />
 
       <!-- 虚拟滚动：上方占位符 -->
       <div v-if="virtualScroll.enabled.value && virtualScroll.offsetTop.value > 0" class="virtual-scroll-spacer"
         :style="{ height: virtualScroll.offsetTop.value + 'px' }"></div>
 
       <!-- 数据行（虚拟滚动时只渲染可见行） -->
-      <template v-for="(_rowValue, visibleIndex) in visibleRows"
-        :key="virtualScroll.enabled.value ? virtualScroll.startIndex.value + visibleIndex : visibleIndex">
-        <!-- 计算实际行索引 -->
-        <div class="excel-row">
-          <div class="excel-cell row-number"
-            :class="{ 'active-header': isInSelectionHeader(getActualRowIndex(visibleIndex), 'row') }" :style="{
-              height: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
-              minHeight: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
-            }" @mousedown="handleRowNumberMouseDown(getActualRowIndex(visibleIndex), $event)"
-            @mouseenter="handleRowNumberMouseEnter(getActualRowIndex(visibleIndex))">
-            {{ getActualRowIndex(visibleIndex) + 1 }}
-            <RowResizer v-if="enableRowResize" @mousedown.stop="startRowResize(getActualRowIndex(visibleIndex), $event)"
-              @dblclick="handleDoubleClickRowResize(getActualRowIndex(visibleIndex))" />
-          </div>
-
-          <div v-for="(_col, colIndex) in internalColumns" :key="colIndex" class="excel-cell"
-            :data-row="getActualRowIndex(visibleIndex)" :data-col="colIndex" :class="[
-              {
-                // 仅在非多选状态下，才显示 active 样式
-                active: isActive(getActualRowIndex(visibleIndex), colIndex) && !isMultiSelect,
-                'in-selection': isInSelection(getActualRowIndex(visibleIndex), colIndex),
-                'multi-select':
-                  isMultiSelect && isInSelection(getActualRowIndex(visibleIndex), colIndex),
-                'drag-target': isInDragArea(getActualRowIndex(visibleIndex), colIndex),
-              },
-              getSelectionBorderClass(getActualRowIndex(visibleIndex), colIndex),
-              getCopiedRangeBorderClass(getActualRowIndex(visibleIndex), colIndex),
-              getMultipleDragBorderClass(getActualRowIndex(visibleIndex), colIndex),
-              getDragTargetBorderClass(getActualRowIndex(visibleIndex), colIndex),
-            ]" :style="{
-              ...(colIndex === internalColumns.length - 1
-                ? { flex: 1, minWidth: getColumnWidth(colIndex) + 'px' }
-                : {
-                  width: getColumnWidth(colIndex) + 'px',
-                  minWidth: getColumnWidth(colIndex) + 'px',
-                }),
-              height: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
-              minHeight: getRowHeight(getActualRowIndex(visibleIndex)) + 'px',
-              alignItems: getCellDisplayStyle(getActualRowIndex(visibleIndex), colIndex).align,
-            }" @mousedown="
-              handleCellMouseDown(
-                getActualRowIndex(visibleIndex),
-                colIndex,
-                rows.length,
-                internalColumns.length,
-                $event
-              )
-              " @dblclick="startEdit(getActualRowIndex(visibleIndex), colIndex)"
-            @mouseenter="handleMouseEnter(getActualRowIndex(visibleIndex), colIndex)">
-            <input v-if="isEditing(getActualRowIndex(visibleIndex), colIndex)"
-              v-model="tableData[getActualRowIndex(visibleIndex)][colIndex]" class="cell-input" @blur="stopEdit"
-              @keydown.enter.prevent.stop="handleInputEnter" @keydown.tab.prevent.stop="handleInputTab"
-              @keydown.esc="cancelEdit"
-              :ref="(el) => setInputRef(el as HTMLInputElement | null, getActualRowIndex(visibleIndex), colIndex)" />
-
-            <span v-else class="cell-content" :class="{
-              'cell-text-wrap': getCellDisplayStyle(getActualRowIndex(visibleIndex), colIndex).wrap,
-              'cell-text-ellipsis': getCellDisplayStyle(getActualRowIndex(visibleIndex), colIndex)
-                .ellipsis,
-            }">
-              {{ tableData[getActualRowIndex(visibleIndex)][colIndex] }}
-            </span>
-
-            <FillHandle v-if="
-              enableFillHandle &&
-              isSelectionBottomRight(getActualRowIndex(visibleIndex), colIndex) &&
-              !editingCell
-            " @mousedown="startFillDrag(getActualRowIndex(visibleIndex), colIndex)" />
-
-            <!-- Cell Menu Button -->
-            <CellMenu v-if="shouldShowCellMenu(getActualRowIndex(visibleIndex), colIndex)"
-              :row-index="getActualRowIndex(visibleIndex)" :custom-menu-items="customMenuItems"
-              :context="createMenuContext(getActualRowIndex(visibleIndex))" :can-undo="canUndo" :can-redo="canRedo"
-              :can-paste="canPaste" @command="handleCellMenuCommand" @custom-action="handleCustomAction"
-              @visible-change="handleMenuVisibleChange" />
-          </div>
-        </div>
-      </template>
+      <DataRow v-for="(_rowValue, visibleIndex) in visibleRows"
+        :key="virtualScroll.enabled.value ? virtualScroll.startIndex.value + visibleIndex : visibleIndex"
+        :row-index="getActualRowIndex(visibleIndex)" :columns="internalColumns" :table-data="tableData"
+        :get-column-width="getColumnWidth" :get-row-height="getRowHeight" :get-cell-display-style="getCellDisplayStyle"
+        :is-in-selection-header="isInSelectionHeader" :is-active="isActive" :is-in-selection="isInSelection"
+        :is-in-drag-area="isInDragArea" :is-editing="isEditing" :is-selection-bottom-right="isSelectionBottomRight"
+        :should-show-cell-menu="shouldShowCellMenu" :get-selection-border-class="getSelectionBorderClass"
+        :get-copied-range-border-class="getCopiedRangeBorderClass"
+        :get-multiple-drag-border-class="getMultipleDragBorderClass"
+        :get-drag-target-border-class="getDragTargetBorderClass" :create-menu-context="createMenuContext"
+        :is-multi-select="isMultiSelect" :editing-cell="editingCell" :enable-row-resize="enableRowResize"
+        :enable-fill-handle="enableFillHandle" :custom-menu-items="customMenuItems" :can-undo="canUndo"
+        :can-redo="canRedo" :can-paste="canPaste" @row-number-mousedown="handleRowNumberMouseDown"
+        @row-number-mouseenter="handleRowNumberMouseEnter" @row-resize-start="startRowResize"
+        @row-resize-dblclick="handleDoubleClickRowResize"
+        @cell-mousedown="(rowIndex, colIndex, event) => handleCellMouseDown(rowIndex, colIndex, rows.length, internalColumns.length, event)"
+        @cell-dblclick="startEdit" @cell-mouseenter="handleMouseEnter" @cell-input-blur="stopEdit"
+        @cell-input-enter="(event) => event && handleInputEnter(event)"
+        @cell-input-tab="(event) => event && handleInputTab(event)" @cell-input-esc="cancelEdit"
+        @cell-input-ref="setInputRef" @fill-drag-start="startFillDrag"
+        @cell-menu-command="(command) => handleCellMenuCommand(command)" @cell-menu-custom-action="handleCustomAction"
+        @cell-menu-visible-change="handleMenuVisibleChange" />
 
       <!-- 虚拟滚动：下方占位符 -->
       <div v-if="virtualScroll.enabled.value && virtualScroll.offsetBottom.value > 0" class="virtual-scroll-spacer"
@@ -144,10 +72,8 @@ import type {
   SelectionRange,
 } from "./composables/types";
 import type { CustomMenuItem } from "./composables/useKeyboard";
-import CellMenu from "./components/CellMenu.vue";
-import FillHandle from "./components/FillHandle.vue";
-import ColumnResizer from "./components/ColumnResizer.vue";
-import RowResizer from "./components/RowResizer.vue";
+import HeaderRow from "./components/HeaderRow.vue";
+import DataRow from "./components/DataRow.vue";
 
 /**
  * Excel 组件 Props
@@ -908,7 +834,7 @@ const handleHeaderMouseUp = (event: MouseEvent): void => {
 /**
  * 处理角单元格点击事件（全选整个表格）
  */
-const handleCornerCellClick = (_event: MouseEvent): void => {
+const handleCornerCellClick = (): void => {
   if (stopEdit) {
     stopEdit();
   }
