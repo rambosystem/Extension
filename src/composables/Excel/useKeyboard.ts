@@ -8,6 +8,12 @@ import {
   type SaveHistoryOptions,
   type HistoryRestoreResult,
 } from "./useHistory";
+import { handleUndoRedoOperation } from "./utils/undoRedoHandler";
+import {
+  handleInsertRowOperation,
+  handleDeleteRowOperation,
+  type RowOperationHandlerOptions,
+} from "./utils/rowOperationHandler";
 
 /**
  * 自定义菜单项配置
@@ -48,6 +54,7 @@ export interface UseKeyboardOptions {
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   undoHistory: () => HistoryRestoreResult | null;
   redoHistory: () => HistoryRestoreResult | null;
+  isUndoRedoInProgress?: () => boolean;
   startEdit: (
     row: number,
     col: number,
@@ -55,11 +62,12 @@ export interface UseKeyboardOptions {
     initialValue?: string
   ) => void;
   deleteSelection: (range: SelectionRange) => void;
-  handleInsertRowBelow: (rowIndex: number) => void;
-  handleDeleteRow: (rowIndexOrIndices: number | number[]) => void;
   tableData: Ref<string[][]>;
   rows: Ref<number[]>;
   columns: Ref<string[]>;
+  insertRowBelow: (rowIndex: number) => void;
+  deleteRow: (rowIndex: number) => void;
+  startSingleSelection: (row: number, col: number) => void;
   getMaxRows: () => number;
   getMaxCols: () => number;
   customMenuItems?: CustomMenuItem[];
@@ -67,6 +75,10 @@ export interface UseKeyboardOptions {
   createMenuContext?: (rowIndex: number) => MenuContext;
   copyToClipboard?: () => Promise<boolean>;
   pasteFromClipboard?: () => Promise<boolean>;
+  clearSelection?: () => void;
+  notifyDataChange?: () => void;
+  exitCopyMode?: () => void;
+  copiedRange?: Ref<SelectionRange | null>;
 }
 
 /**
@@ -280,18 +292,6 @@ const matchShortcut = (
 };
 
 /**
- * 生成列标签（A, B, C, ..., Z, AA, AB, ...）
- */
-const generateColumnLabel = (index: number): string => {
-  if (index < 26) {
-    return String.fromCharCode(65 + index);
-  }
-  const first = Math.floor((index - 26) / 26);
-  const second = (index - 26) % 26;
-  return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
-};
-
-/**
  * Excel 键盘处理 Composable
  */
 export function useKeyboard({
@@ -304,11 +304,12 @@ export function useKeyboard({
   redoHistory,
   startEdit,
   deleteSelection,
-  handleInsertRowBelow,
-  handleDeleteRow,
   tableData,
   rows,
   columns,
+  insertRowBelow,
+  deleteRow,
+  startSingleSelection,
   getMaxRows,
   getMaxCols,
   customMenuItems = [],
@@ -316,7 +317,24 @@ export function useKeyboard({
   createMenuContext,
   copyToClipboard,
   pasteFromClipboard,
+  isUndoRedoInProgress,
+  clearSelection,
+  notifyDataChange,
+  exitCopyMode,
+  copiedRange,
 }: UseKeyboardOptions): UseKeyboardReturn {
+  // 准备行操作工具函数的选项
+  const rowOperationOptions: RowOperationHandlerOptions = {
+    tableData,
+    rows,
+    columns,
+    activeCell,
+    saveHistory,
+    insertRowBelow,
+    deleteRow,
+    startSingleSelection,
+    notifyDataChange: notifyDataChange || (() => {}),
+  };
   /**
    * 处理复制快捷键（Ctrl+C / Cmd+C）
    */
@@ -385,74 +403,22 @@ export function useKeyboard({
     if (key === KEY_CODES.Z) {
       const result = event.shiftKey ? redoHistory() : undoHistory();
 
+      // 使用公共函数处理撤销/重做操作（与菜单逻辑完全一致，公共函数内部会处理清除选择和通知数据变化）
+      const success = handleUndoRedoOperation({
+        result,
+        tableData,
+        rows,
+        columns,
+        activeCell,
+        clearSelection,
+        notifyDataChange,
+      });
+
       // 如果无法撤销/重做，阻止默认行为但返回 true 表示已处理
-      if (!result || !result.state || !Array.isArray(result.state)) {
+      if (!success) {
         event.preventDefault();
         event.stopPropagation();
         return true;
-      }
-
-      // 验证状态的有效性
-      const validatedState = result.state.map((row) => {
-        if (row === null || row === undefined) {
-          return [];
-        }
-        if (Array.isArray(row)) {
-          return row.map((cell) => String(cell ?? ""));
-        }
-        return [];
-      });
-      // 确保至少有一行
-      if (validatedState.length === 0) {
-        validatedState.push([]);
-      }
-
-      tableData.value = validatedState;
-
-      // 始终使用 tableData 的实际大小来调整行列
-      const targetRowCount = validatedState.length;
-      const targetColCount = Math.max(
-        ...validatedState.map((row) => row.length),
-        1
-      );
-
-      // 调整行数量
-      if (rows.value.length !== targetRowCount) {
-        if (rows.value.length > targetRowCount) {
-          rows.value = rows.value.slice(0, targetRowCount);
-        } else {
-          while (rows.value.length < targetRowCount) {
-            rows.value.push(rows.value.length);
-          }
-        }
-      }
-
-      // 调整列数量
-      if (columns.value.length !== targetColCount) {
-        if (columns.value.length > targetColCount) {
-          columns.value = columns.value.slice(0, targetColCount);
-        } else {
-          while (columns.value.length < targetColCount) {
-            columns.value.push(generateColumnLabel(columns.value.length));
-          }
-        }
-      }
-
-      // 验证并调整 activeCell 位置，确保它在有效范围内
-      if (activeCell.value) {
-        const maxRows = validatedState.length;
-        const maxCols = validatedState[0]?.length || 0;
-
-        if (
-          activeCell.value.row >= maxRows ||
-          activeCell.value.col >= maxCols
-        ) {
-          // 如果当前活动单元格超出范围，移动到最后一个有效单元格
-          activeCell.value = {
-            row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
-            col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
-          };
-        }
       }
 
       event.preventDefault();
@@ -462,73 +428,22 @@ export function useKeyboard({
     if (key === KEY_CODES.Y) {
       const result = redoHistory();
 
+      // 使用公共函数处理重做操作（与菜单逻辑完全一致，公共函数内部会处理清除选择和通知数据变化）
+      const success = handleUndoRedoOperation({
+        result,
+        tableData,
+        rows,
+        columns,
+        activeCell,
+        clearSelection,
+        notifyDataChange,
+      });
+
       // 如果无法重做，阻止默认行为但返回 true 表示已处理
-      if (!result || !result.state || !Array.isArray(result.state)) {
+      if (!success) {
         event.preventDefault();
         event.stopPropagation();
         return true;
-      }
-
-      // 验证状态的有效性
-      const validatedState = result.state.map((row) => {
-        if (row === null || row === undefined) {
-          return [];
-        }
-        if (Array.isArray(row)) {
-          return row.map((cell) => String(cell ?? ""));
-        }
-        return [];
-      });
-      // 确保至少有一行
-      if (validatedState.length === 0) {
-        validatedState.push([]);
-      }
-      tableData.value = validatedState;
-
-      // 始终使用 tableData 的实际大小来调整行列
-      const targetRowCount = validatedState.length;
-      const targetColCount = Math.max(
-        ...validatedState.map((row) => row.length),
-        1
-      );
-
-      // 调整行数量
-      if (rows.value.length !== targetRowCount) {
-        if (rows.value.length > targetRowCount) {
-          rows.value = rows.value.slice(0, targetRowCount);
-        } else {
-          while (rows.value.length < targetRowCount) {
-            rows.value.push(rows.value.length);
-          }
-        }
-      }
-
-      // 调整列数量
-      if (columns.value.length !== targetColCount) {
-        if (columns.value.length > targetColCount) {
-          columns.value = columns.value.slice(0, targetColCount);
-        } else {
-          while (columns.value.length < targetColCount) {
-            columns.value.push(generateColumnLabel(columns.value.length));
-          }
-        }
-      }
-
-      // 验证并调整 activeCell 位置，确保它在有效范围内
-      if (activeCell.value) {
-        const maxRows = validatedState.length;
-        const maxCols = validatedState[0]?.length || 0;
-
-        if (
-          activeCell.value.row >= maxRows ||
-          activeCell.value.col >= maxCols
-        ) {
-          // 如果当前活动单元格超出范围，移动到最后一个有效单元格
-          activeCell.value = {
-            row: Math.max(0, Math.min(activeCell.value.row, maxRows - 1)),
-            col: Math.max(0, Math.min(activeCell.value.col, maxCols - 1)),
-          };
-        }
       }
 
       event.preventDefault();
@@ -552,6 +467,11 @@ export function useKeyboard({
     ];
 
     if (!navKeys.includes(event.key)) {
+      return false;
+    }
+
+    // 如果 Enter 键配合 Ctrl/Meta 键，不应该作为导航键处理（应该由 handleInsertRow 处理）
+    if (event.key === KEY_CODES.ENTER && (event.ctrlKey || event.metaKey)) {
       return false;
     }
 
@@ -603,15 +523,22 @@ export function useKeyboard({
     const isCtrlOrCmd = event.ctrlKey || event.metaKey;
     const isCtrlEnter = isCtrlOrCmd && isEnterKey && !event.shiftKey;
 
-    if (!isCtrlEnter || !handleInsertRowBelow || !activeCell.value) {
+    if (!isCtrlEnter || !activeCell.value) {
       return false;
+    }
+
+    // 如果正在进行 undo/redo 操作，不处理插入行
+    if (isUndoRedoInProgress && isUndoRedoInProgress()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return true;
     }
 
     event.preventDefault();
     event.stopPropagation();
 
     const rowIndex = activeCell.value.row;
-    handleInsertRowBelow(rowIndex);
+    handleInsertRowOperation(rowOperationOptions, rowIndex);
 
     return true;
   };
@@ -629,7 +556,7 @@ export function useKeyboard({
     const isCtrlDelete =
       isCtrlOrCmd && isDeleteKey && !event.shiftKey && !event.altKey;
 
-    if (!isCtrlDelete || !handleDeleteRow || !activeCell.value) {
+    if (!isCtrlDelete || !activeCell.value) {
       return false;
     }
 
@@ -639,14 +566,16 @@ export function useKeyboard({
 
     const range = normalizedSelection.value;
     if (range && range.minRow !== range.maxRow) {
+      // 多行删除：删除选中的所有行
       const rowIndices: number[] = [];
       for (let row = range.minRow; row <= range.maxRow; row++) {
         rowIndices.push(row);
       }
-      handleDeleteRow(rowIndices);
+      handleDeleteRowOperation(rowOperationOptions, rowIndices);
     } else {
+      // 单行删除：删除当前活动行
       const rowIndex = activeCell.value.row;
-      handleDeleteRow(rowIndex);
+      handleDeleteRowOperation(rowOperationOptions, rowIndex);
     }
 
     return true;
@@ -796,12 +725,33 @@ export function useKeyboard({
   };
 
   /**
+   * 处理 ESC 键（退出复制状态）
+   * 只有在处于复制状态时才处理，否则让事件正常传播（供弹出框使用）
+   */
+  const handleEscape = (event: KeyboardEvent): boolean => {
+    if (event.key === KEY_CODES.ESCAPE) {
+      // 只有在处于复制状态时才处理 ESC 键
+      if (copiedRange?.value && exitCopyMode) {
+        exitCopyMode();
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
+      // 如果不在复制状态，不处理 ESC 键，让事件正常传播给弹出框
+    }
+    return false;
+  };
+
+  /**
    * 主键盘处理函数
    */
   const handleKeydown = (event: KeyboardEvent): void => {
     if (event.isComposing || event.keyCode === 229) {
       return;
     }
+
+    // ESC 键处理（优先处理，不需要 activeCell）
+    if (handleEscape(event)) return;
 
     if (!activeCell.value) {
       return;

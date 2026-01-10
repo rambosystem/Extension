@@ -1,4 +1,4 @@
-import type { Ref } from "vue";
+import { ref, type Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
 import { HistoryActionType, type SaveHistoryOptions } from "./useHistory";
 
@@ -144,8 +144,7 @@ class CopyStrategyManager {
       r <= normalizedSelection.maxRow;
       r++
     ) {
-      if (!tableData[r]) continue;
-
+      // 即使行不存在或为空，也要复制（空行也要复制）
       const cells: string[] = [];
       for (
         let c = normalizedSelection.minCol;
@@ -324,10 +323,32 @@ class PasteStrategyManager {
 
     try {
       // 处理不同的换行符：\r\n (Windows), \n (Unix), \r (Mac)
-      return clipboardText
-        .split(/\r?\n/)
-        .filter((row) => row !== "")
-        .map((row) => row.split("\t"));
+      // 不过滤空行，保留所有行（包括空行），这样粘贴时可以正确替换原有值
+      const lines = clipboardText.split(/\r?\n/);
+
+      // 先解析所有行，找出最大列数
+      const parsedRows = lines.map((row) => {
+        if (row === "") {
+          // 空行：返回空数组，稍后会根据最大列数补齐
+          return [];
+        }
+        return row.split("\t");
+      });
+
+      // 找出最大列数（用于补齐空行）
+      const maxCols = Math.max(
+        ...parsedRows.map((row) => row.length),
+        1 // 至少1列
+      );
+
+      // 补齐空行，使其包含与最大列数相同的空单元格
+      return parsedRows.map((row) => {
+        if (row.length === 0) {
+          // 空行：返回包含 maxCols 个空字符串的数组
+          return Array.from({ length: maxCols }, () => "");
+        }
+        return row;
+      });
     } catch (error) {
       console.warn("Failed to parse paste data:", error);
       return [];
@@ -380,13 +401,24 @@ class PasteStrategyManager {
     }
 
     // 执行粘贴
+    // 确保空单元格也能替换原有值
     pasteData.forEach((rowArr, rIndex) => {
       const r = startRow + rIndex;
+      // 确保行存在
+      if (!tableData[r]) {
+        tableData[r] = [];
+      }
       rowArr.forEach((cellVal, cIndex) => {
         const c = startCol + cIndex;
-        if (tableData[r]) {
-          tableData[r][c] = cellVal;
+        // 确保列存在
+        if (!tableData[r][c] && tableData[r][c] !== "") {
+          // 如果列不存在，需要扩展
+          while (tableData[r].length <= c) {
+            tableData[r].push("");
+          }
         }
+        // 直接赋值，包括空字符串（空单元格也要替换原有值）
+        tableData[r][c] = cellVal;
       });
     });
 
@@ -429,6 +461,8 @@ export interface UseClipboardReturn {
   copyToClipboard: () => Promise<boolean>;
   pasteFromClipboard: () => Promise<boolean>;
   hasClipboardContent: () => Promise<boolean>;
+  copiedRange: Ref<SelectionRange | null>;
+  exitCopyMode: () => void;
 }
 
 /**
@@ -450,6 +484,14 @@ export function useClipboard({
   const clipboardOps = new BrowserClipboardOperations();
   const copyStrategy = new CopyStrategyManager();
   const pasteStrategy = new PasteStrategyManager();
+
+  // 复制状态管理：保存复制时的选区范围（复制源区域）
+  const copiedRange = ref<SelectionRange | null>(null);
+
+  // 退出复制状态
+  const exitCopyMode = (): void => {
+    copiedRange.value = null;
+  };
 
   // 生成列标题的辅助函数
   const generateColumnLabel = (index: number): string => {
@@ -493,6 +535,18 @@ export function useClipboard({
           console.error("Failed to copy to clipboard:", error);
         });
       }
+      // 保存复制时的选区范围（复制源区域）
+      if (context.normalizedSelection) {
+        copiedRange.value = { ...context.normalizedSelection };
+      } else if (context.activeCell) {
+        // 如果没有选区，只有活动单元格，创建一个单单元格选区
+        copiedRange.value = {
+          minRow: context.activeCell.row,
+          maxRow: context.activeCell.row,
+          minCol: context.activeCell.col,
+          maxCol: context.activeCell.col,
+        };
+      }
     } catch (error) {
       console.error("Copy operation failed:", error);
     }
@@ -519,6 +573,18 @@ export function useClipboard({
 
     try {
       await clipboardOps.copyToClipboard(textToCopy);
+      // 保存复制时的选区范围（复制源区域）
+      if (context.normalizedSelection) {
+        copiedRange.value = { ...context.normalizedSelection };
+      } else if (context.activeCell) {
+        // 如果没有选区，只有活动单元格，创建一个单单元格选区
+        copiedRange.value = {
+          minRow: context.activeCell.row,
+          maxRow: context.activeCell.row,
+          minCol: context.activeCell.col,
+          maxCol: context.activeCell.col,
+        };
+      }
       return true;
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
@@ -557,6 +623,9 @@ export function useClipboard({
 
     if (!result.success) {
       console.warn("Paste failed:", result.error);
+    } else {
+      // 粘贴成功后，清除复制区域样式
+      copiedRange.value = null;
     }
   };
 
@@ -585,6 +654,11 @@ export function useClipboard({
         notifyDataChange,
       });
 
+      if (result.success) {
+        // 粘贴成功后，清除复制区域样式
+        copiedRange.value = null;
+      }
+
       return result.success;
     } catch (error) {
       console.error("Failed to paste from clipboard:", error);
@@ -605,5 +679,7 @@ export function useClipboard({
     copyToClipboard,
     pasteFromClipboard,
     hasClipboardContent,
+    copiedRange,
+    exitCopyMode,
   };
 }

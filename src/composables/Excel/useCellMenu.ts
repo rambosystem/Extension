@@ -1,3 +1,13 @@
+import { type Ref } from "vue";
+import type { CellPosition, SelectionRange } from "./types";
+import { handleUndoRedoOperation } from "./utils/undoRedoHandler";
+import {
+  handleInsertRowOperation,
+  handleDeleteRowOperation,
+  type RowOperationHandlerOptions,
+} from "./utils/rowOperationHandler";
+import type { SaveHistoryOptions } from "./useHistory";
+
 /**
  * 单元格菜单命令
  */
@@ -10,13 +20,21 @@ export interface CellMenuCommand {
  * useCellMenu 选项
  */
 export interface UseCellMenuOptions {
-  handleInsertRowBelow: (rowIndex: number) => void;
-  handleDeleteRow: (rowIndex: number) => void;
   copyToClipboard: () => Promise<boolean>;
   pasteFromClipboard: () => Promise<boolean>;
   undoHistory: () => any | null;
   redoHistory: () => any | null;
-  tableData: any;
+  tableData: Ref<string[][]>;
+  rows: Ref<number[]>;
+  columns: Ref<string[]>;
+  activeCell?: Ref<CellPosition | null> | null;
+  normalizedSelection?: Ref<SelectionRange | null> | null;
+  saveHistory: (state: any, options?: SaveHistoryOptions) => void;
+  insertRowBelow: (rowIndex: number) => void;
+  deleteRow: (rowIndex: number) => void;
+  startSingleSelection: (row: number, col: number) => void;
+  clearSelection?: () => void;
+  notifyDataChange?: () => void;
 }
 
 /**
@@ -30,17 +48,38 @@ export interface UseCellMenuReturn {
  * 单元格菜单管理 Composable
  *
  * 负责处理单元格菜单命令（删除行、插入行、复制、粘贴、撤销、重做等）
- * 使用统一的程序化复制粘贴接口
+ * 使用统一的程序化复制粘贴接口和行操作工具函数
  */
 export function useCellMenu({
-  handleInsertRowBelow,
-  handleDeleteRow,
   copyToClipboard,
   pasteFromClipboard,
   undoHistory,
   redoHistory,
   tableData,
+  rows,
+  columns,
+  activeCell,
+  normalizedSelection,
+  saveHistory,
+  insertRowBelow,
+  deleteRow,
+  startSingleSelection,
+  clearSelection,
+  notifyDataChange,
 }: UseCellMenuOptions): UseCellMenuReturn {
+  // 准备行操作工具函数的选项
+  const rowOperationOptions: RowOperationHandlerOptions = {
+    tableData,
+    rows,
+    columns,
+    activeCell,
+    saveHistory,
+    insertRowBelow,
+    deleteRow,
+    startSingleSelection,
+    notifyDataChange: notifyDataChange || (() => {}),
+  };
+
   /**
    * 处理单元格菜单命令
    */
@@ -52,9 +91,21 @@ export function useCellMenu({
     const { action, rowIndex } = command;
 
     if (action === "deleteRow") {
-      handleDeleteRow(rowIndex);
+      // 检查是否有选区，如果有选区且是多行，删除选中的所有行
+      const selection = normalizedSelection?.value;
+      if (selection && selection.minRow !== selection.maxRow) {
+        // 多行删除：删除选中的所有行
+        const rowIndices: number[] = [];
+        for (let row = selection.minRow; row <= selection.maxRow; row++) {
+          rowIndices.push(row);
+        }
+        handleDeleteRowOperation(rowOperationOptions, rowIndices);
+      } else {
+        // 单行删除：删除指定行
+        handleDeleteRowOperation(rowOperationOptions, rowIndex);
+      }
     } else if (action === "insertRowBelow") {
-      handleInsertRowBelow(rowIndex);
+      handleInsertRowOperation(rowOperationOptions, rowIndex);
     } else if (action === "copy") {
       // 使用程序化复制
       copyToClipboard().catch((error) => {
@@ -67,14 +118,28 @@ export function useCellMenu({
       });
     } else if (action === "undo") {
       const result = undoHistory();
-      if (result && result.state && Array.isArray(result.state)) {
-        tableData.value = result.state;
-      }
+      // 使用公共函数处理撤销操作（与快捷键逻辑保持一致，公共函数内部会处理清除选择和通知数据变化）
+      handleUndoRedoOperation({
+        result,
+        tableData,
+        rows,
+        columns,
+        activeCell,
+        clearSelection,
+        notifyDataChange,
+      });
     } else if (action === "redo") {
       const result = redoHistory();
-      if (result && result.state && Array.isArray(result.state)) {
-        tableData.value = result.state;
-      }
+      // 使用公共函数处理重做操作（与快捷键逻辑保持一致，公共函数内部会处理清除选择和通知数据变化）
+      handleUndoRedoOperation({
+        result,
+        tableData,
+        rows,
+        columns,
+        activeCell,
+        clearSelection,
+        notifyDataChange,
+      });
     }
   };
 

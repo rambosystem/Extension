@@ -13,6 +13,7 @@ export interface UseSelectionStyleOptions {
   isInSelection: (row: number, col: number) => boolean;
   isInDragArea: (row: number, col: number) => boolean;
   fillHandleComposable: UseFillHandleReturn | null;
+  copiedRange?: Ref<SelectionRange | null>;
   props: {
     enableFillHandle?: boolean;
   };
@@ -23,6 +24,7 @@ export interface UseSelectionStyleOptions {
  */
 export interface UseSelectionStyleReturn {
   getSelectionBorderClass: (row: number, col: number) => string[];
+  getCopiedRangeBorderClass: (row: number, col: number) => string[];
   isSelectionBottomRight: (row: number, col: number) => boolean;
   getDragTargetBorderClass: (row: number, col: number) => string[];
   getMultipleDragBorderClass: (row: number, col: number) => string[];
@@ -39,6 +41,7 @@ export function useSelectionStyle({
   isInSelection,
   isInDragArea,
   fillHandleComposable,
+  copiedRange,
   props,
 }: UseSelectionStyleOptions): UseSelectionStyleReturn {
   /**
@@ -79,6 +82,45 @@ export function useSelectionStyle({
     if (isBottom) classes.push("selection-bottom");
     if (isLeft) classes.push("selection-left");
     if (isRight) classes.push("selection-right");
+
+    return classes;
+  };
+
+  /**
+   * 获取复制源区域的边框样式 Class
+   */
+  const getCopiedRangeBorderClass = (row: number, col: number): string[] => {
+    const classes: string[] = [];
+
+    // 检查是否有复制源区域
+    const copied = copiedRange?.value;
+    if (!copied) {
+      return classes;
+    }
+
+    // 检查当前单元格是否在复制源区域内
+    const inCopiedRange =
+      row >= copied.minRow &&
+      row <= copied.maxRow &&
+      col >= copied.minCol &&
+      col <= copied.maxCol;
+
+    if (!inCopiedRange) {
+      return classes;
+    }
+
+    // 确定边界位置
+    const isTop = row === copied.minRow;
+    const isBottom = row === copied.maxRow;
+    const isLeft = col === copied.minCol;
+    const isRight = col === copied.maxCol;
+
+    // 添加边界类和复制状态类
+    if (isTop) classes.push("selection-top");
+    if (isBottom) classes.push("selection-bottom");
+    if (isLeft) classes.push("selection-left");
+    if (isRight) classes.push("selection-right");
+    classes.push("copy-mode");
 
     return classes;
   };
@@ -169,6 +211,7 @@ export function useSelectionStyle({
 
   return {
     getSelectionBorderClass,
+    getCopiedRangeBorderClass,
     isSelectionBottomRight,
     getDragTargetBorderClass,
     getMultipleDragBorderClass,

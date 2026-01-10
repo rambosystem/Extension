@@ -1,76 +1,42 @@
 ## 修改组件需要遵守的规则并同步更新Excel_README.md
 <template>
-  <div
-    class="excel-container"
-    @keydown="handleKeydown"
-    @copy="handleCopy"
-    @paste="handlePaste"
-    @click="handleContainerClick"
-    tabindex="0"
-    ref="containerRef"
-  >
+  <div class="excel-container" @keydown="handleKeydown" @copy="handleCopy" @paste="handlePaste"
+    @click="handleContainerClick" tabindex="0" ref="containerRef">
     <div class="excel-table" @mouseleave="handleMouseUp">
       <div class="excel-row header-row">
-        <div
-          class="excel-cell header-cell corner-cell"
-          @mousedown="handleCornerCellClick"
-        ></div>
-        <div
-          v-for="(col, index) in displayColumns"
-          :key="col"
-          class="excel-cell header-cell"
-          :class="{ 'active-header': isInSelectionHeader(index, 'col') }"
-          :style="
-            index === displayColumns.length - 1
-              ? {
-                  flex: 1,
-                  minWidth: getColumnWidth(index) + 'px',
-                }
-              : {
-                  width: getColumnWidth(index) + 'px',
-                  minWidth: getColumnWidth(index) + 'px',
-                }
-          "
-          @mousedown="handleColumnHeaderMouseDown(index, $event)"
-          @mouseenter="handleColumnHeaderMouseEnter(index)"
-        >
+        <div class="excel-cell header-cell corner-cell" @mousedown="handleCornerCellClick"></div>
+        <div v-for="(col, index) in displayColumns" :key="col" class="excel-cell header-cell"
+          :class="{ 'active-header': isInSelectionHeader(index, 'col') }" :style="index === displayColumns.length - 1
+            ? {
+              flex: 1,
+              minWidth: getColumnWidth(index) + 'px',
+            }
+            : {
+              width: getColumnWidth(index) + 'px',
+              minWidth: getColumnWidth(index) + 'px',
+            }
+            " @mousedown="handleColumnHeaderMouseDown(index, $event)"
+          @mouseenter="handleColumnHeaderMouseEnter(index)">
           {{ col }}
-          <ColumnResizer
-            v-if="
-              enableColumnResize && Number(index) < displayColumns.length - 1
-            "
-            @mousedown.stop="startColumnResize(Number(index), $event)"
-            @dblclick="handleDoubleClickResize(Number(index))"
-          />
+          <ColumnResizer v-if="
+            enableColumnResize && Number(index) < displayColumns.length - 1
+          " @mousedown.stop="startColumnResize(Number(index), $event)"
+            @dblclick="handleDoubleClickResize(Number(index))" />
         </div>
       </div>
 
       <div v-for="(_row, rowIndex) in rows" :key="rowIndex" class="excel-row">
-        <div
-          class="excel-cell row-number"
-          :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }"
-          :style="{
-            height: getRowHeight(rowIndex) + 'px',
-            minHeight: getRowHeight(rowIndex) + 'px',
-          }"
-          @mousedown="handleRowNumberMouseDown(rowIndex, $event)"
-          @mouseenter="handleRowNumberMouseEnter(rowIndex)"
-        >
+        <div class="excel-cell row-number" :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }" :style="{
+          height: getRowHeight(rowIndex) + 'px',
+          minHeight: getRowHeight(rowIndex) + 'px',
+        }" @mousedown="handleRowNumberMouseDown(rowIndex, $event)" @mouseenter="handleRowNumberMouseEnter(rowIndex)">
           {{ rowIndex + 1 }}
-          <RowResizer
-            v-if="enableRowResize"
-            @mousedown.stop="startRowResize(rowIndex, $event)"
-            @dblclick="handleDoubleClickRowResize(rowIndex)"
-          />
+          <RowResizer v-if="enableRowResize" @mousedown.stop="startRowResize(rowIndex, $event)"
+            @dblclick="handleDoubleClickRowResize(rowIndex)" />
         </div>
 
-        <div
-          v-for="(_col, colIndex) in internalColumns"
-          :key="colIndex"
-          class="excel-cell"
-          :data-row="rowIndex"
-          :data-col="colIndex"
-          :class="[
+        <div v-for="(_col, colIndex) in internalColumns" :key="colIndex" class="excel-cell" :data-row="rowIndex"
+          :data-col="colIndex" :class="[
             {
               // 仅在非多选状态下，才显示 active 样式
               active: isActive(rowIndex, colIndex) && !isMultiSelect,
@@ -80,21 +46,20 @@
               'drag-target': isInDragArea(rowIndex, colIndex),
             },
             getSelectionBorderClass(rowIndex, colIndex),
+            getCopiedRangeBorderClass(rowIndex, colIndex),
             getMultipleDragBorderClass(rowIndex, colIndex),
             getDragTargetBorderClass(rowIndex, colIndex),
-          ]"
-          :style="{
+          ]" :style="{
             ...(colIndex === internalColumns.length - 1
               ? { flex: 1, minWidth: getColumnWidth(colIndex) + 'px' }
               : {
-                  width: getColumnWidth(colIndex) + 'px',
-                  minWidth: getColumnWidth(colIndex) + 'px',
-                }),
+                width: getColumnWidth(colIndex) + 'px',
+                minWidth: getColumnWidth(colIndex) + 'px',
+              }),
             height: getRowHeight(rowIndex) + 'px',
             minHeight: getRowHeight(rowIndex) + 'px',
             alignItems: getCellDisplayStyle(rowIndex, colIndex).align,
-          }"
-          @mousedown="
+          }" @mousedown="
             handleCellMouseDown(
               rowIndex,
               colIndex,
@@ -102,55 +67,30 @@
               internalColumns.length,
               $event
             )
-          "
-          @dblclick="startEdit(rowIndex, colIndex)"
-          @mouseenter="handleMouseEnter(rowIndex, colIndex)"
-        >
-          <input
-            v-if="isEditing(rowIndex, colIndex)"
-            v-model="tableData[rowIndex][colIndex]"
-            class="cell-input"
-            @blur="stopEdit"
-            @keydown.enter.prevent.stop="handleInputEnter"
-            @keydown.tab.prevent.stop="handleInputTab"
-            @keydown.esc="cancelEdit"
-            :ref="(el) => setInputRef(el as HTMLInputElement | null, rowIndex, colIndex)"
-          />
+            " @dblclick="startEdit(rowIndex, colIndex)" @mouseenter="handleMouseEnter(rowIndex, colIndex)">
+          <input v-if="isEditing(rowIndex, colIndex)" v-model="tableData[rowIndex][colIndex]" class="cell-input"
+            @blur="stopEdit" @keydown.enter.prevent.stop="handleInputEnter" @keydown.tab.prevent.stop="handleInputTab"
+            @keydown.esc="cancelEdit" :ref="(el) => setInputRef(el as HTMLInputElement | null, rowIndex, colIndex)" />
 
-          <span
-            v-else
-            class="cell-content"
-            :class="{
-              'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
-              'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
-                .ellipsis,
-            }"
-          >
+          <span v-else class="cell-content" :class="{
+            'cell-text-wrap': getCellDisplayStyle(rowIndex, colIndex).wrap,
+            'cell-text-ellipsis': getCellDisplayStyle(rowIndex, colIndex)
+              .ellipsis,
+          }">
             {{ tableData[rowIndex][colIndex] }}
           </span>
 
-          <FillHandle
-            v-if="
-              enableFillHandle &&
-              isSelectionBottomRight(rowIndex, colIndex) &&
-              !editingCell
-            "
-            @mousedown="startFillDrag(rowIndex, colIndex)"
-          />
+          <FillHandle v-if="
+            enableFillHandle &&
+            isSelectionBottomRight(rowIndex, colIndex) &&
+            !editingCell
+          " @mousedown="startFillDrag(rowIndex, colIndex)" />
 
           <!-- Cell Menu Button -->
-          <CellMenu
-            v-if="shouldShowCellMenu(rowIndex, colIndex)"
-            :row-index="rowIndex"
-            :custom-menu-items="customMenuItems"
-            :context="createMenuContext(rowIndex)"
-            :can-undo="canUndo"
-            :can-redo="canRedo"
-            :can-paste="canPaste"
-            @command="handleCellMenuCommand"
-            @custom-action="handleCustomAction"
-            @visible-change="handleMenuVisibleChange"
-          />
+          <CellMenu v-if="shouldShowCellMenu(rowIndex, colIndex)" :row-index="rowIndex"
+            :custom-menu-items="customMenuItems" :context="createMenuContext(rowIndex)" :can-undo="canUndo"
+            :can-redo="canRedo" :can-paste="canPaste" @command="handleCellMenuCommand"
+            @custom-action="handleCustomAction" @visible-change="handleMenuVisibleChange" />
         </div>
       </div>
     </div>
@@ -175,7 +115,6 @@ import { useMouseEvents } from "../../composables/Excel/useMouseEvents";
 import { useDataSync } from "../../composables/Excel/useDataSync";
 import { useCellMenu } from "../../composables/Excel/useCellMenu";
 import { useCellMenuPosition } from "../../composables/Excel/useCellMenuPosition";
-import { useRowOperations } from "../../composables/Excel/useRowOperations";
 import { useResizeHandlers } from "../../composables/Excel/useResizeHandlers";
 import type {
   ColumnWidthConfig,
@@ -335,9 +274,9 @@ const {
 // 智能填充管理（仅在启用时使用）
 const fillHandleComposable = props.enableFillHandle
   ? useFillHandle({
-      getSmartValue,
-      saveHistory,
-    })
+    getSmartValue,
+    saveHistory,
+  })
   : null;
 
 // 列宽管理（仅在启用时使用）
@@ -355,16 +294,16 @@ const getDefaultWidthForComposable = (): number => {
 
 const columnWidthComposable = props.enableColumnResize
   ? useColumnWidth({
-      defaultWidth: getDefaultWidthForComposable(),
-    })
+    defaultWidth: getDefaultWidthForComposable(),
+  })
   : null;
 
 // 行高管理（仅在启用时使用）
 // 传入初始行数，Map会自动处理新增行（使用默认高度）
 const rowHeightComposable = props.enableRowResize
   ? useRowHeight({
-      rowsCount: rows.value.length,
-    })
+    rowsCount: rows.value.length,
+  })
   : null;
 
 // --- 状态管理 ---
@@ -425,9 +364,54 @@ const isInDragArea = (row: number, col: number): boolean => {
   return fillHandleComposable.isInDragArea(row, col);
 };
 
+// --- 数据同步管理（需要在 useClipboard 之前，因为需要 notifyDataChange）---
+const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
+  tableData,
+  props,
+  getData,
+  setData,
+  emit: (event: string, ...args: any[]) => {
+    if (event === "update:modelValue") {
+      emit("update:modelValue", args[0] as string[][]);
+    } else if (event === "change") {
+      emit("change", args[0] as string[][]);
+    } else if (event === "custom-action") {
+      emit("custom-action", args[0] as { id: string; context: MenuContext });
+    }
+  },
+  initHistory, // 传递 initHistory 函数，用于在数据更新时重新初始化历史记录
+  isUndoRedoInProgress, // 传递 isUndoRedoInProgress 函数，防止撤销/重做时清空历史
+});
+
+// 初始化数据同步监听
+initDataSync();
+
+// --- 剪贴板管理（需要在 useSelectionStyle 之前，因为需要 copiedRange）---
+const {
+  handleCopy,
+  handlePaste,
+  copyToClipboard,
+  pasteFromClipboard,
+  hasClipboardContent,
+  copiedRange,
+  exitCopyMode,
+} = useClipboard({
+  editingCell,
+  normalizedSelection,
+  tableData,
+  activeCell,
+  rows,
+  columns: internalColumns,
+  multiSelections,
+  saveHistory,
+  startSingleSelection,
+  notifyDataChange,
+});
+
 // --- 选区样式管理 ---
 const {
   getSelectionBorderClass,
+  getCopiedRangeBorderClass,
   isSelectionBottomRight,
   getDragTargetBorderClass,
   getMultipleDragBorderClass,
@@ -439,6 +423,7 @@ const {
   isInSelection,
   isInDragArea,
   fillHandleComposable,
+  copiedRange,
   props,
 });
 
@@ -538,48 +523,6 @@ function startFillDrag(row: number, col: number): void {
   );
 }
 
-// --- 数据同步管理 ---
-const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
-  tableData,
-  props,
-  getData,
-  setData,
-  emit: (event: string, ...args: any[]) => {
-    if (event === "update:modelValue") {
-      emit("update:modelValue", args[0] as string[][]);
-    } else if (event === "change") {
-      emit("change", args[0] as string[][]);
-    } else if (event === "custom-action") {
-      emit("custom-action", args[0] as { id: string; context: MenuContext });
-    }
-  },
-  initHistory, // 传递 initHistory 函数，用于在数据更新时重新初始化历史记录
-  isUndoRedoInProgress, // 传递 isUndoRedoInProgress 函数，防止撤销/重做时清空历史
-});
-
-// 初始化数据同步监听
-initDataSync();
-
-// --- 剪贴板管理 ---
-const {
-  handleCopy,
-  handlePaste,
-  copyToClipboard,
-  pasteFromClipboard,
-  hasClipboardContent,
-} = useClipboard({
-  editingCell,
-  normalizedSelection,
-  tableData,
-  activeCell,
-  rows,
-  columns: internalColumns,
-  multiSelections,
-  saveHistory,
-  startSingleSelection,
-  notifyDataChange,
-});
-
 // --- 8. 键盘主逻辑 ---
 /**
  * 删除选区内容
@@ -595,18 +538,10 @@ const deleteSelection = (range: SelectionRange): void => {
   }
 };
 
-// --- 行操作管理（统一的插入/删除行逻辑）---
-const { handleInsertRowBelow, handleDeleteRow } = useRowOperations({
-  tableData,
-  rows,
-  activeCell,
-  columns: internalColumns,
-  saveHistory,
-  insertRowBelow,
-  deleteRow,
-  startSingleSelection,
-  notifyDataChange,
-});
+// --- 行操作管理 ---
+// 注意：行操作现在通过工具函数统一处理
+// useKeyboard 和 useCellMenu 都直接使用 rowOperationHandler 工具函数
+// 这样可以确保快捷键和菜单的行为完全一致
 
 // --- Cell Menu 管理 ---
 // 添加历史记录状态的响应式引用
@@ -637,13 +572,21 @@ const updateMenuStates = () => {
 };
 
 const { handleCellMenuCommand } = useCellMenu({
-  handleInsertRowBelow,
-  handleDeleteRow,
   copyToClipboard,
   pasteFromClipboard,
   undoHistory,
   redoHistory,
   tableData,
+  rows,
+  columns: internalColumns,
+  activeCell,
+  normalizedSelection,
+  saveHistory,
+  insertRowBelow,
+  deleteRow,
+  startSingleSelection,
+  clearSelection,
+  notifyDataChange,
 });
 
 // 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义）
@@ -876,11 +819,13 @@ const { handleKeydown } = useKeyboard({
   redoHistory,
   startEdit,
   deleteSelection,
-  handleInsertRowBelow, // 使用统一的插入行处理函数
-  handleDeleteRow, // 使用统一的删除行处理函数
   tableData,
   rows, // 传递行引用，用于恢复行数量
   columns: internalColumns, // 传递列引用，用于恢复列数量
+  insertRowBelow, // 传递基础插入行函数
+  deleteRow, // 传递基础删除行函数
+  startSingleSelection, // 传递单行选择函数
+  isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
   customMenuItems: props.customMenuItems, // 传递自定义菜单项配置
@@ -888,6 +833,10 @@ const { handleKeydown } = useKeyboard({
   createMenuContext: (rowIndex: number) => createMenuContext(rowIndex), // 传递创建上下文函数
   copyToClipboard, // 传递程序化复制函数
   pasteFromClipboard, // 传递程序化粘贴函数
+  clearSelection, // 传递清除选择函数，确保快捷键和菜单行为一致
+  notifyDataChange, // 传递通知数据变化函数，确保快捷键和菜单行为一致
+  exitCopyMode, // 传递退出复制状态函数
+  copiedRange, // 传递复制区域引用，用于判断是否处于复制状态
 });
 
 // 注意：列宽初始化逻辑已移至 getColumnWidth 函数中处理
@@ -1090,11 +1039,13 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-left: none; // 移除左边框，避免与表格左边框重叠
       border-top-left-radius: $border-radius;
     }
+
     .excel-cell:last-child {
       border-top: none; // 移除上边框，避免与表格上边框重叠
       border-right: none; // 移除右边框，避免与表格右边框重叠
       border-top-right-radius: $border-radius;
     }
+
     // 表头行的其他单元格也移除上边框
     .excel-cell {
       border-top: none;
@@ -1108,11 +1059,13 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-left: none; // 移除左边框，避免与表格左边框重叠
       border-bottom-left-radius: $border-radius;
     }
+
     .excel-cell:last-child {
       border-bottom: none; // 移除下边框，避免与表格下边框重叠
       border-right: none; // 移除右边框，避免与表格右边框重叠
       border-bottom-right-radius: $border-radius;
     }
+
     // 最后一行的其他单元格也移除下边框
     .excel-cell {
       border-bottom: none;
@@ -1182,6 +1135,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   // 选中边框方向控制
   &.selection-top {
     z-index: $z-index-selection;
+
     &::after {
       border-top-width: $selection-border-width;
     }
@@ -1190,6 +1144,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   &.selection-bottom {
     border-bottom-color: transparent;
     z-index: $z-index-selection;
+
     &::after {
       border-bottom-width: $selection-border-width;
     }
@@ -1197,6 +1152,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
 
   &.selection-left {
     z-index: $z-index-selection;
+
     &::after {
       border-left-width: $selection-border-width;
     }
@@ -1205,6 +1161,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   &.selection-right {
     border-right-color: transparent;
     z-index: $z-index-selection;
+
     &::after {
       border-right-width: $selection-border-width;
     }
@@ -1218,6 +1175,25 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
 
     &::after {
       border: $selection-border-width solid $primary-color;
+    }
+  }
+
+  // 复制状态：虚线边框
+  &.copy-mode {
+
+    &.selection-top,
+    &.selection-bottom,
+    &.selection-left,
+    &.selection-right {
+      &::after {
+        border-style: dashed !important;
+      }
+    }
+
+    &.active {
+      &::after {
+        border-style: dashed !important;
+      }
     }
   }
 
@@ -1241,6 +1217,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     // 底部边界
     &.drag-target-bottom {
       border-bottom-color: transparent; // 避免与相邻单元格边框重叠
+
       &::after {
         border-bottom-width: $border-width;
       }
@@ -1256,6 +1233,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     // 右侧边界
     &.drag-target-right {
       border-right-color: transparent; // 避免与相邻单元格边框重叠
+
       &::after {
         border-right-width: $border-width;
       }
@@ -1328,6 +1306,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   &:hover {
     background-color: $header-bg !important;
   }
+
   &.active-header:hover {
     background-color: $header-active-bg !important;
   }
@@ -1345,6 +1324,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   &:hover {
     background-color: $header-bg !important;
   }
+
   &.active-header:hover {
     background-color: $header-active-bg !important;
   }

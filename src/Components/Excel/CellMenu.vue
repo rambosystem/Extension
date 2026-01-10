@@ -1,16 +1,8 @@
 <template>
-  <el-dropdown
-    trigger="click"
-    placement="right-start"
-    :show-arrow="false"
-    @command="handleCommand"
-    @visible-change="handleVisibleChange"
-  >
-    <div
-      class="cell-menu-button"
-      :class="{ 'is-active': isMenuOpen }"
-      @mousedown.stop
-    >
+  <el-dropdown trigger="click" placement="right-start" :show-arrow="false" @command="handleCommand"
+    @visible-change="handleVisibleChange">
+    <div class="cell-menu-button" :class="{ 'is-active': isMenuOpen }" @mousedown.stop
+      @keydown.stop="handleButtonKeydown">
       <img src="@/assets/down_arrow.svg" alt="Menu" class="cell-menu-icon" />
     </div>
     <template #dropdown>
@@ -23,41 +15,28 @@
           </div>
         </el-dropdown-item>
         <!-- 粘贴 -->
-        <el-dropdown-item
-          :command="{ action: 'paste', rowIndex }"
-          :disabled="!canPaste"
-        >
+        <el-dropdown-item :command="{ action: 'paste', rowIndex }" :disabled="!canPaste">
           <div class="menu-item-content">
             <span class="menu-item-text">Paste</span>
             <span class="menu-item-shortcut">{{ pasteShortcut }}</span>
           </div>
         </el-dropdown-item>
         <!-- Undo -->
-        <el-dropdown-item
-          divided
-          :command="{ action: 'undo', rowIndex }"
-          :disabled="!canUndo"
-        >
+        <el-dropdown-item divided :command="{ action: 'undo', rowIndex }" :disabled="!canUndo">
           <div class="menu-item-content">
             <span class="menu-item-text">Undo</span>
             <span class="menu-item-shortcut">{{ undoShortcut }}</span>
           </div>
         </el-dropdown-item>
         <!-- Redo -->
-        <el-dropdown-item
-          :command="{ action: 'redo', rowIndex }"
-          :disabled="!canRedo"
-        >
+        <el-dropdown-item :command="{ action: 'redo', rowIndex }" :disabled="!canRedo">
           <div class="menu-item-content">
             <span class="menu-item-text">Redo</span>
             <span class="menu-item-shortcut">{{ redoShortcut }}</span>
           </div>
         </el-dropdown-item>
         <!-- 插入行 -->
-        <el-dropdown-item
-          divided
-          :command="{ action: 'insertRowBelow', rowIndex }"
-        >
+        <el-dropdown-item divided :command="{ action: 'insertRowBelow', rowIndex }">
           <div class="menu-item-content">
             <span class="menu-item-text">Insert Row Below</span>
             <span class="menu-item-shortcut">{{ insertRowShortcut }}</span>
@@ -72,13 +51,8 @@
         </el-dropdown-item>
         <!-- 自定义菜单项 -->
         <template v-if="validatedCustomMenuItems.length > 0">
-          <el-dropdown-item
-            v-for="(item, index) in validatedCustomMenuItems"
-            :key="item.id"
-            :divided="index === 0"
-            :command="{ action: 'custom', id: item.id, rowIndex }"
-            :disabled="isCustomItemDisabled(item)"
-          >
+          <el-dropdown-item v-for="(item, index) in validatedCustomMenuItems" :key="item.id" :divided="index === 0"
+            :command="{ action: 'custom', id: item.id, rowIndex }" :disabled="isCustomItemDisabled(item)">
             <div class="menu-item-content">
               <span class="menu-item-text">{{ item.label }}</span>
               <span v-if="item.shortcut" class="menu-item-shortcut">{{
@@ -256,6 +230,21 @@ const handleCommand = (command: MenuCommand): void => {
 };
 
 /**
+ * 处理菜单按钮键盘事件
+ * 阻止 Ctrl+Enter / Cmd+Enter 触发菜单打开
+ */
+const handleButtonKeydown = (event: KeyboardEvent): void => {
+  const isEnterKey = event.key === "Enter" || event.code === "Enter";
+  const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+
+  // 如果是 Ctrl+Enter 或 Cmd+Enter，阻止事件传播，防止菜单打开
+  if (isEnterKey && isCtrlOrCmd) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+};
+
+/**
  * 处理菜单显示/隐藏状态变化
  */
 const handleVisibleChange = (visible: boolean): void => {
@@ -311,8 +300,7 @@ $transition-fast: 0.05s ease;
     .cell-menu-icon {
       // 使用 filter 将灰色图标变为蓝色
       // 将 #505258 (灰色) 转换为 $primary-color (蓝色)
-      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
-        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
     }
   }
 
@@ -322,8 +310,7 @@ $transition-fast: 0.05s ease;
     background-color: rgba($primary-color, 0.1);
 
     .cell-menu-icon {
-      filter: brightness(0) saturate(100%) invert(27%) sepia(96%)
-        saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
+      filter: brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1352%) hue-rotate(194deg) brightness(98%) contrast(96%);
     }
   }
 }
