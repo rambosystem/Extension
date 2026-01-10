@@ -1,9 +1,10 @@
-import { ref, computed, type Ref, type ComputedRef } from "vue";
+import type { Ref, ComputedRef } from "vue";
 import type {
   CellPosition,
   SelectionRange,
   EndMultipleSelectionDragOptions,
 } from "./types";
+import type { ExcelSelectionState } from "./useExcelState";
 
 /**
  * useSelection 返回值接口
@@ -58,6 +59,17 @@ export interface UseSelectionReturn {
 }
 
 /**
+ * useSelection 选项
+ */
+export interface UseSelectionOptions {
+  /**
+   * 统一状态管理（必需）
+   * 使用统一状态管理，不再创建独立状态
+   */
+  state: ExcelSelectionState;
+}
+
+/**
  * Excel 选择逻辑 Composable
  *
  * 用于通用组件 Excel 的内部状态管理
@@ -80,25 +92,25 @@ export interface UseSelectionReturn {
  * - SINGLE 模式：使用 selectionStart 和 selectionEnd（通过 normalizedSelection 计算）
  * - MULTIPLE 模式：使用 multiSelections 数组
  * - 两种模式通过 isInSelection 函数统一检查，使用同一个"矩阵"记录选择状态
+ *
+ * 使用方式：
+ * ```typescript
+ * const excelState = useExcelState();
+ * const selection = useSelection({ state: excelState.selection });
+ * ```
  */
-export function useSelection(): UseSelectionReturn {
-  const activeCell = ref<CellPosition | null>(null);
-  const selectionStart = ref<CellPosition | null>(null);
-  const selectionEnd = ref<CellPosition | null>(null);
-  const isSelecting = ref<boolean>(false);
-  const multiSelections = ref<SelectionRange[]>([]);
-  const isMultipleMode = ref<boolean>(false);
-
-  // 计算归一化后的选区（始终确保 min <= max）
-  const normalizedSelection = computed<SelectionRange | null>(() => {
-    if (!selectionStart.value || !selectionEnd.value) return null;
-    return {
-      minRow: Math.min(selectionStart.value.row, selectionEnd.value.row),
-      maxRow: Math.max(selectionStart.value.row, selectionEnd.value.row),
-      minCol: Math.min(selectionStart.value.col, selectionEnd.value.col),
-      maxCol: Math.max(selectionStart.value.col, selectionEnd.value.col),
-    };
-  });
+export function useSelection({
+  state,
+}: UseSelectionOptions): UseSelectionReturn {
+  const {
+    activeCell,
+    selectionStart,
+    selectionEnd,
+    isSelecting,
+    multiSelections,
+    isMultipleMode,
+    normalizedSelection,
+  } = state;
 
   /**
    * 判断单元格是否在选区范围内
@@ -469,9 +481,10 @@ export function useSelection(): UseSelectionReturn {
         let targetSelection: SelectionRange | null = null;
 
         if (startRow !== undefined && startCol !== undefined) {
-          targetSelection = multiSelections.value.find((sel) =>
-            isCellInRange(startRow, startCol, sel)
-          );
+          targetSelection =
+            multiSelections.value.find((sel) =>
+              isCellInRange(startRow, startCol, sel)
+            ) ?? null;
 
           if (targetSelection) {
             activeCell.value = { row: startRow, col: startCol };

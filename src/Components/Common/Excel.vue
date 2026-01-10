@@ -102,6 +102,7 @@ import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
 import { useHistory } from "../../composables/Excel/useHistory";
 import { useSelection } from "../../composables/Excel/useSelection";
 import { useExcelData } from "../../composables/Excel/useExcelData";
+import { useExcelState } from "../../composables/Excel/useExcelState";
 import { useKeyboard } from "../../composables/Excel/useKeyboard";
 import { useColumnWidth } from "../../composables/Excel/useColumnWidth";
 import { useRowHeight } from "../../composables/Excel/useRowHeight";
@@ -161,11 +162,17 @@ const emit = defineEmits<{
   "custom-action": [payload: { id: string; context: MenuContext }];
 }>();
 
-// --- 1. 核心逻辑组合 ---
+// --- 1. 统一状态管理 ---
+// 创建统一状态管理，整合核心状态
+const excelState = useExcelState({
+  initialData: props.modelValue,
+});
+
+// 从统一状态获取数据引用
+const { tableData, columns: internalColumns, rows } = excelState.data;
+
+// 使用统一状态的数据操作方法
 const {
-  columns: internalColumns,
-  rows,
-  tableData,
   getSmartValue,
   setData,
   getData,
@@ -174,7 +181,7 @@ const {
   deleteRow,
   insertRowBelow,
 } = useExcelData({
-  initialData: props.modelValue,
+  dataState: excelState.data,
 });
 
 // 使用自定义列标题或默认列标题（仅用于显示）
@@ -194,6 +201,8 @@ const displayColumns = computed<string[]>(() => {
   }
   return internalColumns.value;
 });
+
+// 使用统一状态的选择管理
 const {
   activeCell,
   selectionStart,
@@ -218,7 +227,7 @@ const {
   selectRows,
   selectColumns,
   selectAll,
-} = useSelection();
+} = useSelection({ state: excelState.selection });
 
 /**
  * 判断当前是否处于多单元格选区状态
@@ -309,7 +318,7 @@ const rowHeightComposable = props.enableRowResize
 // --- 状态管理 ---
 const containerRef = ref<HTMLElement | null>(null);
 
-// --- 单元格编辑管理 ---
+// --- 单元格编辑管理（使用统一状态）---
 const {
   editingCell,
   isEditing,
@@ -321,7 +330,8 @@ const {
   handleInputTab,
   clearInputRefs,
 } = useCellEditing({
-  tableData,
+  dataState: excelState.data,
+  editingState: excelState.editing,
   startSingleSelection,
   saveHistory,
   moveActiveCell,
@@ -386,7 +396,7 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
 // 初始化数据同步监听
 initDataSync();
 
-// --- 剪贴板管理（需要在 useSelectionStyle 之前，因为需要 copiedRange）---
+// --- 剪贴板管理（使用统一状态）---
 const {
   handleCopy,
   handlePaste,
@@ -396,13 +406,7 @@ const {
   copiedRange,
   exitCopyMode,
 } = useClipboard({
-  editingCell,
-  normalizedSelection,
-  tableData,
-  activeCell,
-  rows,
-  columns: internalColumns,
-  multiSelections,
+  state: excelState,
   saveHistory,
   startSingleSelection,
   updateSingleSelectionEnd,

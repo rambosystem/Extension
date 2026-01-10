@@ -1,6 +1,7 @@
 import { ref, type Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
 import { HistoryActionType, type SaveHistoryOptions } from "./useHistory";
+import type { ExcelState } from "./useExcelState";
 
 /**
  * 复制上下文
@@ -447,13 +448,11 @@ class PasteStrategyManager {
  * useClipboard 选项
  */
 export interface UseClipboardOptions {
-  editingCell: Ref<CellPosition | null>;
-  normalizedSelection: Ref<SelectionRange | null>;
-  tableData: Ref<string[][]>;
-  activeCell: Ref<CellPosition | null>;
-  rows: Ref<number[]>;
-  columns: Ref<string[]>;
-  multiSelections: Ref<SelectionRange[]>;
+  /**
+   * 统一状态管理（必需）
+   * 使用统一状态管理，不再使用独立参数
+   */
+  state: ExcelState;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   startSingleSelection: (row: number, col: number) => void;
   updateSingleSelectionEnd: (row: number, col: number) => void;
@@ -474,21 +473,43 @@ export interface UseClipboardReturn {
 }
 
 /**
- * 剪贴板管理 Composable（重构版本）
+ * 剪贴板管理 Composable
+ *
+ * 使用统一状态管理，提供剪贴板操作方法
+ *
+ * 使用方式：
+ * ```typescript
+ * const excelState = useExcelState();
+ * const clipboard = useClipboard({
+ *   state: excelState,
+ *   saveHistory,
+ *   startSingleSelection,
+ *   updateSingleSelectionEnd,
+ *   notifyDataChange,
+ * });
+ * ```
  */
 export function useClipboard({
-  editingCell,
-  normalizedSelection,
-  tableData,
-  activeCell,
-  rows,
-  columns,
-  multiSelections,
+  state,
   saveHistory,
   startSingleSelection,
   updateSingleSelectionEnd,
   notifyDataChange,
 }: UseClipboardOptions): UseClipboardReturn {
+  const {
+    editing: { editingCell: actualEditingCell },
+    selection: {
+      normalizedSelection: actualNormalizedSelection,
+      activeCell: actualActiveCell,
+      multiSelections: actualMultiSelections,
+    },
+    data: {
+      tableData: actualTableData,
+      rows: actualRows,
+      columns: actualColumns,
+    },
+  } = state;
+
   // 初始化操作适配器和策略管理器
   const clipboardOps = new BrowserClipboardOperations();
   const copyStrategy = new CopyStrategyManager();
@@ -502,8 +523,13 @@ export function useClipboard({
     copiedRange.value = null;
   };
 
-  // 生成列标题的辅助函数
+  // 生成列标题的辅助函数（从统一状态获取）
   const generateColumnLabel = (index: number): string => {
+    // 如果列已存在，直接返回
+    if (index < actualColumns.value.length) {
+      return actualColumns.value[index];
+    }
+    // 否则生成新的列标题
     if (index < 26) {
       return String.fromCharCode(65 + index);
     }
@@ -517,12 +543,12 @@ export function useClipboard({
    */
   const handleCopy = (event: ClipboardEvent): void => {
     const context: CopyContext = {
-      isEditing: !!editingCell.value,
-      editingCell: editingCell.value,
-      activeCell: activeCell.value,
-      normalizedSelection: normalizedSelection.value,
-      multiSelections: multiSelections.value,
-      tableData: tableData.value,
+      isEditing: !!actualEditingCell.value,
+      editingCell: actualEditingCell.value,
+      activeCell: actualActiveCell.value,
+      normalizedSelection: actualNormalizedSelection.value,
+      multiSelections: actualMultiSelections.value,
+      tableData: actualTableData.value,
     };
 
     const textToCopy = copyStrategy.getCopyText(context);
@@ -566,12 +592,12 @@ export function useClipboard({
    */
   const copyToClipboard = async (): Promise<boolean> => {
     const context: CopyContext = {
-      isEditing: !!editingCell.value,
-      editingCell: editingCell.value,
-      activeCell: activeCell.value,
-      normalizedSelection: normalizedSelection.value,
-      multiSelections: multiSelections.value,
-      tableData: tableData.value,
+      isEditing: !!actualEditingCell.value,
+      editingCell: actualEditingCell.value,
+      activeCell: actualActiveCell.value,
+      normalizedSelection: actualNormalizedSelection.value,
+      multiSelections: actualMultiSelections.value,
+      tableData: actualTableData.value,
     };
 
     const textToCopy = copyStrategy.getCopyText(context);
@@ -606,12 +632,12 @@ export function useClipboard({
    */
   const handlePaste = (event: ClipboardEvent): void => {
     const context: PasteContext = {
-      isEditing: !!editingCell.value,
-      editingCell: editingCell.value,
-      activeCell: activeCell.value,
-      normalizedSelection: normalizedSelection.value,
+      isEditing: !!actualEditingCell.value,
+      editingCell: actualEditingCell.value,
+      activeCell: actualActiveCell.value,
+      normalizedSelection: actualNormalizedSelection.value,
       clipboardText: event.clipboardData?.getData("text") || "",
-      tableData: tableData.value,
+      tableData: actualTableData.value,
     };
 
     // 如果是编辑模式，让浏览器原生处理
@@ -622,8 +648,8 @@ export function useClipboard({
     event.preventDefault();
 
     const result = pasteStrategy.executePaste(context, {
-      rows,
-      columns,
+      rows: actualRows,
+      columns: actualColumns,
       generateColumnLabel,
       saveHistory,
       startSingleSelection,
@@ -647,17 +673,17 @@ export function useClipboard({
       const clipboardText = await clipboardOps.readFromClipboard();
 
       const context: PasteContext = {
-        isEditing: !!editingCell.value,
-        editingCell: editingCell.value,
-        activeCell: activeCell.value,
-        normalizedSelection: normalizedSelection.value,
+        isEditing: !!actualEditingCell.value,
+        editingCell: actualEditingCell.value,
+        activeCell: actualActiveCell.value,
+        normalizedSelection: actualNormalizedSelection.value,
         clipboardText,
-        tableData: tableData.value,
+        tableData: actualTableData.value,
       };
 
       const result = pasteStrategy.executePaste(context, {
-        rows,
-        columns,
+        rows: actualRows,
+        columns: actualColumns,
         generateColumnLabel,
         saveHistory,
         startSingleSelection,

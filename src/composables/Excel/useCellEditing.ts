@@ -1,4 +1,5 @@
-import { ref, nextTick, type Ref } from "vue";
+import { nextTick } from "vue";
+import type { Ref } from "vue";
 import type { CellPosition } from "./types";
 import {
   HistoryActionType,
@@ -6,12 +7,17 @@ import {
   type SaveHistoryOptions,
 } from "./useHistory";
 import { debugLog } from "../../utils/debug.js";
+import type { ExcelDataState, ExcelEditingState } from "./useExcelState";
 
 /**
  * 单元格编辑管理 Composable 选项
  */
 export interface UseCellEditingOptions {
-  tableData: Ref<string[][]>;
+  /**
+   * 统一状态管理（必需）
+   */
+  dataState: ExcelDataState;
+  editingState: ExcelEditingState;
   startSingleSelection: (row: number, col: number) => void;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   moveActiveCell: (
@@ -49,9 +55,20 @@ export interface UseCellEditingReturn {
  * 单元格编辑管理 Composable
  *
  * 负责管理单元格的编辑状态、输入框引用和编辑相关操作
+ *
+ * 使用方式：
+ * ```typescript
+ * const excelState = useExcelState();
+ * const editing = useCellEditing({
+ *   dataState: excelState.data,
+ *   editingState: excelState.editing,
+ *   // ... 其他选项
+ * });
+ * ```
  */
 export function useCellEditing({
-  tableData,
+  dataState,
+  editingState,
   startSingleSelection,
   saveHistory,
   moveActiveCell,
@@ -59,7 +76,8 @@ export function useCellEditing({
   getMaxCols,
   containerRef,
 }: UseCellEditingOptions): UseCellEditingReturn {
-  const editingCell = ref<CellPosition | null>(null);
+  const { tableData } = dataState;
+  const { editingCell } = editingState;
   let beforeEditSnapshot: string | null = null;
 
   // DOM Refs for Inputs

@@ -1,13 +1,17 @@
-import { ref, type Ref } from "vue";
 import { DEFAULT_CONFIG, CLIPBOARD_SEPARATORS } from "./constants";
+import type { ExcelDataState } from "./useExcelState";
 
 /**
  * Excel 数据管理 Composable 选项
  */
 export interface UseExcelDataOptions {
+  /**
+   * 统一状态管理（必需）
+   * 使用统一状态管理，不再创建独立状态
+   */
+  dataState: ExcelDataState;
   rowsCount?: number;
   colsCount?: number;
-  initialData?: string[][] | null;
 }
 
 /**
@@ -22,9 +26,6 @@ interface Dimensions {
  * Excel 数据管理 Composable 返回值
  */
 export interface UseExcelDataReturn {
-  columns: Ref<string[]>;
-  rows: Ref<number[]>;
-  tableData: Ref<string[][]>;
   getSmartValue: (value: string, step: number) => string;
   generateClipboardText: (
     range: { minRow: number; maxRow: number; minCol: number; maxCol: number },
@@ -42,42 +43,19 @@ export interface UseExcelDataReturn {
 /**
  * Excel 数据管理 Composable
  *
- * 用于通用组件 Excel 的内部状态管理
+ * 提供数据操作方法，使用统一状态管理
  *
  * 设计原则：
- * - 通用组件（Components/Common/）应该自包含，不依赖 Store
- * - 每个组件实例拥有独立的状态，保证组件的可复用性
- * - 这是通用组件的标准做法，符合组件化设计原则
+ * - 不再创建独立状态，统一使用 ExcelState
+ * - 提供数据操作方法（setData, updateCell, deleteRow 等）
+ * - 所有操作直接作用于统一状态
  */
 export function useExcelData({
+  dataState,
   rowsCount = DEFAULT_CONFIG.ROWS_COUNT,
   colsCount = DEFAULT_CONFIG.COLS_COUNT,
-  initialData = null,
-}: UseExcelDataOptions = {}): UseExcelDataReturn {
-  // 根据实际数据动态计算行列数
-  const calculateDimensions = (
-    data: string[][] | null | undefined,
-    allowEmpty = false
-  ): Dimensions => {
-    // 处理无效数据或空数组
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      return allowEmpty
-        ? { rows: 0, cols: 0 }
-        : { rows: rowsCount, cols: colsCount };
-    }
-
-    const actualRows = data.length;
-    // 根据实际数据的列数计算，不使用默认 colsCount 作为最小值
-    const rowLengths = data.map((row) => (Array.isArray(row) ? row.length : 0));
-    const actualCols = Math.max(...rowLengths, 0);
-
-    return { rows: actualRows, cols: actualCols };
-  };
-
-  // 初始化时根据数据计算维度（初始化时允许空数组）
-  const initialDimensions = calculateDimensions(initialData, true);
-  const actualRowsCount = initialDimensions.rows;
-  const actualColsCount = initialDimensions.cols;
+}: UseExcelDataOptions): UseExcelDataReturn {
+  const { tableData, columns, rows } = dataState;
 
   // 生成列标题（支持超过26列：A-Z, AA-AZ, BA-BZ...）
   const generateColumnLabel = (index: number): string => {
@@ -89,17 +67,26 @@ export function useExcelData({
     return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
   };
 
-  // 基础数据生成（动态）
-  const columns = ref<string[]>(
-    Array.from({ length: actualColsCount }, (_, i) => generateColumnLabel(i))
-  );
-  const rows = ref<number[]>(
-    Array.from({ length: actualRowsCount }, (_, i) => i)
-  );
+  // 根据实际数据动态计算行列数
+  const calculateDimensions = (
+    data: string[][] | null | undefined,
+    allowEmpty = false
+  ): Dimensions => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return allowEmpty
+        ? { rows: 0, cols: 0 }
+        : { rows: rowsCount, cols: colsCount };
+    }
+
+    const actualRows = data.length;
+    const rowLengths = data.map((row) => (Array.isArray(row) ? row.length : 0));
+    const actualCols = Math.max(...rowLengths, 0);
+
+    return { rows: actualRows, cols: actualCols };
+  };
 
   // 更新行列数
   const updateDimensions = (data: string[][]): void => {
-    // setData 时允许空数组（保持空状态）
     const { rows: newRows, cols: newCols } = calculateDimensions(data, true);
 
     // 更新列
@@ -122,33 +109,6 @@ export function useExcelData({
       rows.value = rows.value.slice(0, newRows);
     }
   };
-
-  // 初始化表格数据
-  const initializeTableData = (): string[][] => {
-    if (initialData && Array.isArray(initialData) && initialData.length > 0) {
-      // 使用初始数据，确保数据格式正确
-      const data = initialData.map((row) => {
-        if (Array.isArray(row)) {
-          const rowData = [...row];
-          // 确保每行的列数一致（补齐到最大列数）
-          while (rowData.length < actualColsCount) {
-            rowData.push("");
-          }
-          return rowData;
-        }
-        return Array.from({ length: actualColsCount }, () => "");
-      });
-
-      return data;
-    }
-
-    // 默认创建空表格
-    return Array.from({ length: actualRowsCount }, () =>
-      Array.from({ length: actualColsCount }, () => "")
-    );
-  };
-
-  const tableData = ref<string[][]>(initializeTableData());
 
   /**
    * 智能填充算法
@@ -355,9 +315,6 @@ export function useExcelData({
   };
 
   return {
-    columns,
-    rows,
-    tableData,
     getSmartValue,
     generateClipboardText,
     parsePasteData,
