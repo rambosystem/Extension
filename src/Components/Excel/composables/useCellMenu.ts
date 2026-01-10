@@ -1,11 +1,11 @@
 import { type Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
-import { handleUndoRedoOperation } from "./utils/undoRedoHandler";
+import { handleUndoRedoOperation } from "../utils/undoRedoHandler";
 import {
   handleInsertRowOperation,
   handleDeleteRowOperation,
   type RowOperationHandlerOptions,
-} from "./utils/rowOperationHandler";
+} from "../utils/rowOperationHandler";
 import type { SaveHistoryOptions } from "./useHistory";
 
 /**

@@ -1,10 +1,10 @@
 import { nextTick, type Ref } from "vue";
-import type { CellPosition } from "../types";
+import type { CellPosition } from "../composables/types";
 import {
   HistoryActionType,
   type SaveHistoryOptions,
   type CellChange,
-} from "../useHistory";
+} from "../composables/useHistory";
 
 /**
  * 行操作处理选项

@@ -2,9 +2,9 @@ import { ElMessage } from "element-plus";
 // @ts-ignore - JS module without type declarations
 import { t } from "../../../utils/i18n.js";
 // @ts-ignore - JS module without type declarations
-import { useExportStore } from "../../stores/translation/export.js";
+import { useExportStore } from "../../../stores/translation/export.js";
 // @ts-ignore - JS module without type declarations
-import { getAvailableLanguages } from "../../config/languages.js";
+import { getAvailableLanguages } from "../../../config/languages.js";
 import * as XLSX from "xlsx";
 
 /**

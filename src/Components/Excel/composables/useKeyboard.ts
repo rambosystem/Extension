@@ -8,12 +8,12 @@ import {
   type SaveHistoryOptions,
   type HistoryRestoreResult,
 } from "./useHistory";
-import { handleUndoRedoOperation } from "./utils/undoRedoHandler";
+import { handleUndoRedoOperation } from "../utils/undoRedoHandler";
 import {
   handleInsertRowOperation,
   handleDeleteRowOperation,
   type RowOperationHandlerOptions,
-} from "./utils/rowOperationHandler";
+} from "../utils/rowOperationHandler";
 
 /**
  * 自定义菜单项配置
