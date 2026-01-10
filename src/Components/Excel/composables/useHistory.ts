@@ -5,7 +5,7 @@ import {
   debugInfo,
   debugWarn,
   debugError,
-} from "../../utils/debug.js";
+} from "../../../utils/debug.js";
 
 /**
  * 操作类型枚举

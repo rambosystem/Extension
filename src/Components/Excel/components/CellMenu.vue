@@ -71,9 +71,9 @@ import { ref, computed } from "vue";
 import {
   normalizeShortcutForPlatform,
   buildShortcut,
-} from "../../composables/Excel/useKeyboard";
-import type { CustomMenuItem } from "../../composables/Excel/useKeyboard";
-import type { MenuContext } from "../../composables/Excel/types";
+} from "../composables/useKeyboard";
+import type { CustomMenuItem } from "../composables/useKeyboard";
+import type { MenuContext } from "../composables/types";
 
 /**
  * CellMenu - 单元格菜单组件

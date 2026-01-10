@@ -1,6 +1,6 @@
 import { ElMessage } from "element-plus";
 // @ts-ignore - JS module without type declarations
-import { t } from "../../utils/i18n.js";
+import { t } from "../../../utils/i18n.js";
 // @ts-ignore - JS module without type declarations
 import { useExportStore } from "../../stores/translation/export.js";
 // @ts-ignore - JS module without type declarations

@@ -99,34 +99,34 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
-import { useHistory } from "../../composables/Excel/useHistory";
-import { useSelection } from "../../composables/Excel/useSelection";
-import { useExcelData } from "../../composables/Excel/useExcelData";
-import { useExcelState } from "../../composables/Excel/useExcelState";
-import { useKeyboard } from "../../composables/Excel/useKeyboard";
-import { useColumnWidth } from "../../composables/Excel/useColumnWidth";
-import { useRowHeight } from "../../composables/Excel/useRowHeight";
-import { useFillHandle } from "../../composables/Excel/useFillHandle";
-import { useCellEditing } from "../../composables/Excel/useCellEditing";
-import { useClipboard } from "../../composables/Excel/useClipboard";
-import { useCellDisplay } from "../../composables/Excel/useCellDisplay";
-import { useSizeManager } from "../../composables/Excel/useSizeManager";
-import { useSelectionStyle } from "../../composables/Excel/useSelectionStyle";
-import { useMouseEvents } from "../../composables/Excel/useMouseEvents";
-import { useDataSync } from "../../composables/Excel/useDataSync";
-import { useCellMenu } from "../../composables/Excel/useCellMenu";
-import { useCellMenuPosition } from "../../composables/Excel/useCellMenuPosition";
-import { useResizeHandlers } from "../../composables/Excel/useResizeHandlers";
+import { useHistory } from "./composables/useHistory";
+import { useSelection } from "./composables/useSelection";
+import { useExcelData } from "./composables/useExcelData";
+import { useExcelState } from "./composables/useExcelState";
+import { useKeyboard } from "./composables/useKeyboard";
+import { useColumnWidth } from "./composables/useColumnWidth";
+import { useRowHeight } from "./composables/useRowHeight";
+import { useFillHandle } from "./composables/useFillHandle";
+import { useCellEditing } from "./composables/useCellEditing";
+import { useClipboard } from "./composables/useClipboard";
+import { useCellDisplay } from "./composables/useCellDisplay";
+import { useSizeManager } from "./composables/useSizeManager";
+import { useSelectionStyle } from "./composables/useSelectionStyle";
+import { useMouseEvents } from "./composables/useMouseEvents";
+import { useDataSync } from "./composables/useDataSync";
+import { useCellMenu } from "./composables/useCellMenu";
+import { useCellMenuPosition } from "./composables/useCellMenuPosition";
+import { useResizeHandlers } from "./composables/useResizeHandlers";
 import type {
   ColumnWidthConfig,
   MenuContext,
   SelectionRange,
-} from "../../composables/Excel/types";
-import type { CustomMenuItem } from "../../composables/Excel/useKeyboard";
-import CellMenu from "../Excel/CellMenu.vue";
-import FillHandle from "../Excel/FillHandle.vue";
-import ColumnResizer from "../Excel/ColumnResizer.vue";
-import RowResizer from "../Excel/RowResizer.vue";
+} from "./composables/types";
+import type { CustomMenuItem } from "./composables/useKeyboard";
+import CellMenu from "./components/CellMenu.vue";
+import FillHandle from "./components/FillHandle.vue";
+import ColumnResizer from "./components/ColumnResizer.vue";
+import RowResizer from "./components/RowResizer.vue";
 
 /**
  * Excel 组件 Props
@@ -869,7 +869,7 @@ const setColumnWidth = (colIndex: number, width: number): void => {
  * - setColumnWidth(colIndex, width): 设置指定列的宽度
  * - tableData: 表格数据的响应式引用（只读）
  *
- * 使用示例请参考组件文档：src/composables/Excel/README.md
+   * 使用示例请参考组件文档：src/Components/Excel/README.md
  */
 defineExpose({
   /**
