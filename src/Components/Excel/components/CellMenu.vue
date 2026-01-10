@@ -57,7 +57,7 @@
               <span class="menu-item-text">{{ item.label }}</span>
               <span v-if="item.shortcut" class="menu-item-shortcut">{{
                 normalizeShortcut(item.shortcut)
-              }}</span>
+                }}</span>
             </div>
           </el-dropdown-item>
         </template>
@@ -73,7 +73,7 @@ import {
   buildShortcut,
 } from "../composables/useKeyboard";
 import type { CustomMenuItem } from "../composables/useKeyboard";
-import type { MenuContext } from "../composables/types";
+import type { MenuContext } from "../composables/useCellMenuPosition";
 
 /**
  * CellMenu - 单元格菜单组件

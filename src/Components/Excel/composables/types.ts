@@ -1,4 +1,4 @@
-import type { Ref, ComputedRef } from "vue";
+// Types for Excel component
 
 /**
  * 单元格位置
