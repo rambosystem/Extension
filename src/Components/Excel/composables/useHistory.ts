@@ -216,37 +216,6 @@ export function useHistory(
   };
 
   /**
-   * 快速状态比较
-   * 如果提供了变化列表，只比较这些位置
-   */
-  const quickStateCompare = (
-    oldState: string[][],
-    newState: string[][],
-    changes?: CellChange[]
-  ): boolean => {
-    // 如果提供了变化列表，只比较这些位置
-    if (changes && changes.length > 0) {
-      return changes.every((change) => {
-        const oldVal = oldState[change.row]?.[change.col] ?? "";
-        const newVal = newState[change.row]?.[change.col] ?? "";
-        return oldVal === change.oldValue && newVal === change.newValue;
-      });
-    }
-
-    // 快速长度检查
-    if (oldState.length !== newState.length) return false;
-
-    // 对于大数据，可以进一步优化：只比较非空单元格
-    // 这里为了简单，使用 JSON 比较（但已经比每次都比较快）
-    try {
-      return JSON.stringify(oldState) === JSON.stringify(newState);
-    } catch (error) {
-      debugWarn("[History] quickStateCompare: failed", error);
-      return false;
-    }
-  };
-
-  /**
    * 检测数据变化（如果未提供变化列表）
    */
   const detectChanges = (
@@ -787,14 +756,6 @@ export function useHistory(
       }
     }
 
-    // 快速状态比较（避免重复保存）
-    if (
-      !options.forceFullSnapshot &&
-      !quickStateCompare(lastFullState, currentState, changes)
-    ) {
-      // 状态确实有变化，继续保存
-    }
-
     // 判断是否应该合并操作
     const lastEntry = historyEntries.value[historyIndex.value];
     if (canMergeOperation(lastEntry, actionType, timestamp)) {
@@ -948,14 +909,10 @@ export function useHistory(
         }
       }
 
-      // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
-      // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
-      // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
-      Promise.resolve().then(() => {
-        setTimeout(() => {
-          isUndoRedoInProgress = false;
-        }, 10);
-      });
+      // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
+      setTimeout(() => {
+        isUndoRedoInProgress = false;
+      }, 10);
       return {
         state: result,
         metadata: targetEntry?.metadata,
@@ -1059,14 +1016,10 @@ export function useHistory(
         }
       }
 
-      // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
-      // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
-      // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
-      Promise.resolve().then(() => {
-        setTimeout(() => {
-          isUndoRedoInProgress = false;
-        }, 10);
-      });
+      // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
+      setTimeout(() => {
+        isUndoRedoInProgress = false;
+      }, 10);
 
       return {
         state: result,
