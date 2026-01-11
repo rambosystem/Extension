@@ -35,7 +35,10 @@
             @cell-input-esc="$emit('cell-input-esc')"
             @cell-input-ref="$emit('cell-input-ref', $event, rowIndex, colIndex)"
             @fill-drag-start="$emit('fill-drag-start', rowIndex, colIndex)"
-            @cell-menu-command="(cmd) => $emit('cell-menu-command', { action: cmd, rowIndex: rowIndex })"
+            @cell-menu-command="(cmd) => {
+              const normalized = typeof cmd === 'string' ? { action: cmd, rowIndex } : cmd;
+              $emit('cell-menu-command', normalized);
+            }"
             @cell-menu-custom-action="$emit('cell-menu-custom-action', $event)"
             @cell-menu-visible-change="$emit('cell-menu-visible-change', $event)" />
     </div>

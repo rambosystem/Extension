@@ -945,10 +945,11 @@ export function useHistory(
       // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
       // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
       // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
-      setTimeout(() => {
-        isUndoRedoInProgress = false;
-      }, 10);
-
+      Promise.resolve().then(() => {
+        setTimeout(() => {
+          isUndoRedoInProgress = false;
+        }, 10);
+      });
       return {
         state: result,
         metadata: targetEntry?.metadata,
@@ -1049,9 +1050,11 @@ export function useHistory(
       // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
       // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
       // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
-      setTimeout(() => {
-        isUndoRedoInProgress = false;
-      }, 10);
+      Promise.resolve().then(() => {
+        setTimeout(() => {
+          isUndoRedoInProgress = false;
+        }, 10);
+      });
 
       return {
         state: result,
