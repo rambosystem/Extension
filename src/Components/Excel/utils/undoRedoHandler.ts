@@ -117,24 +117,23 @@ export function handleUndoRedoOperation(
   const applyChangeSelection = (): boolean => {
     if (startSingleSelection && updateSingleSelectionEnd) {
       const meta = result?.metadata || {};
-      if (typeof meta.insertedRowIndex === "number") {
-        const row = Math.max(0, Math.min(meta.insertedRowIndex, maxRows - 1));
+      const range = meta.selectionRange;
+      if (
+        range &&
+        typeof range.minRow === "number" &&
+        typeof range.maxRow === "number" &&
+        typeof range.minCol === "number" &&
+        typeof range.maxCol === "number"
+      ) {
+        const safeMinRow = Math.max(0, Math.min(range.minRow, maxRows - 1));
+        const safeMaxRow = Math.max(0, Math.min(range.maxRow, maxRows - 1));
+        const safeMinCol = Math.max(0, Math.min(range.minCol, maxCols - 1));
+        const safeMaxCol = Math.max(0, Math.min(range.maxCol, maxCols - 1));
         if (activeCell?.value) {
-          activeCell.value = { row, col: 0 };
+          activeCell.value = { row: safeMinRow, col: safeMinCol };
         }
-        startSingleSelection(row, 0);
-        updateSingleSelectionEnd(row, Math.max(0, maxCols - 1));
-        return true;
-      }
-
-      if (Array.isArray(meta.deletedRowIndices) && meta.deletedRowIndices.length > 0) {
-        const minDeleted = Math.min(...meta.deletedRowIndices);
-        const row = Math.max(0, Math.min(minDeleted, maxRows - 1));
-        if (activeCell?.value) {
-          activeCell.value = { row, col: 0 };
-        }
-        startSingleSelection(row, 0);
-        updateSingleSelectionEnd(row, Math.max(0, maxCols - 1));
+        startSingleSelection(safeMinRow, safeMinCol);
+        updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
         return true;
       }
     }

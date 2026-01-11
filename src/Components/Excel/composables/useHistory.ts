@@ -40,6 +40,7 @@ export interface HistoryEntry {
   type: HistoryActionType;
   timestamp: number;
   description?: string;
+  changes?: CellChange[];
 
   // 增量快照（用于小范围操作）
   delta?: {
@@ -284,10 +285,29 @@ export function useHistory(
     changes: CellChange[],
     newTimestamp: number
   ): void => {
+    const mergeChanges = (
+      baseChanges: CellChange[] = [],
+      nextChanges: CellChange[]
+    ): CellChange[] => {
+      const merged = [...baseChanges];
+      nextChanges.forEach((change) => {
+        const existingIndex = merged.findIndex(
+          (c) => c.row === change.row && c.col === change.col
+        );
+        if (existingIndex >= 0) {
+          merged[existingIndex].newValue = change.newValue;
+        } else {
+          merged.push(change);
+        }
+      });
+      return merged;
+    };
+
     if (lastEntry.snapshot) {
       // Snapshot entry: apply changes directly to snapshot so redo/undo stays correct.
       lastEntry.snapshot = applyDelta(lastEntry.snapshot, { changes });
       lastEntry.delta = undefined;
+      lastEntry.changes = mergeChanges(lastEntry.changes, changes);
     } else {
       if (!lastEntry.delta) {
         lastEntry.delta = { changes: [] };
@@ -332,6 +352,7 @@ export function useHistory(
         totalChanges: lastEntry.delta.changes.length,
         updatedTimestamp: newTimestamp,
       });
+      lastEntry.changes = mergeChanges(lastEntry.changes, changes);
     }
 
     if (lastEntry.snapshot) {
@@ -793,11 +814,65 @@ export function useHistory(
       type: actionType,
       timestamp,
       description: options.description,
+      changes: changes.length > 0 ? changes : undefined,
       metadata: {
         affectedCells: changes.length,
         ...options.metadata,
       },
     };
+
+    if (Array.isArray(currentState) && currentState.length > 0) {
+      const maxColIndex =
+        Math.max(...currentState.map((row) => row?.length || 0), 1) - 1;
+      const selectionRange: Record<string, number> = {};
+
+      if (actionType === HistoryActionType.ROW_INSERT) {
+        const insertedRow = options.metadata?.insertedRowIndex;
+        if (typeof insertedRow === "number") {
+          selectionRange.minRow = insertedRow;
+          selectionRange.maxRow = insertedRow;
+          selectionRange.minCol = 0;
+          selectionRange.maxCol = Math.max(0, maxColIndex);
+        }
+      } else if (actionType === HistoryActionType.ROW_DELETE) {
+        const deletedRows = options.metadata?.deletedRowIndices;
+        if (Array.isArray(deletedRows) && deletedRows.length > 0) {
+          selectionRange.minRow = Math.min(...deletedRows);
+          selectionRange.maxRow = Math.max(...deletedRows);
+          selectionRange.minCol = 0;
+          selectionRange.maxCol = Math.max(0, maxColIndex);
+        }
+      } else if (changes.length > 0) {
+        let minRow = Infinity;
+        let maxRow = -Infinity;
+        let minCol = Infinity;
+        let maxCol = -Infinity;
+        changes.forEach((change) => {
+          minRow = Math.min(minRow, change.row);
+          maxRow = Math.max(maxRow, change.row);
+          minCol = Math.min(minCol, change.col);
+          maxCol = Math.max(maxCol, change.col);
+        });
+        if (
+          Number.isFinite(minRow) &&
+          Number.isFinite(maxRow) &&
+          Number.isFinite(minCol) &&
+          Number.isFinite(maxCol)
+        ) {
+          selectionRange.minRow = minRow;
+          selectionRange.maxRow = maxRow;
+          selectionRange.minCol = minCol;
+          selectionRange.maxCol = maxCol;
+        }
+      }
+
+      if (Object.keys(selectionRange).length > 0) {
+        newEntry.metadata = {
+          ...newEntry.metadata,
+          selectionRange,
+        };
+      }
+    }
 
     if (shouldCheckpoint) {
       // 创建完整快照
@@ -869,7 +944,9 @@ export function useHistory(
 
       const result = getCurrentFullState();
       const changes =
-        currentState && result
+        previousEntry?.changes && previousEntry.changes.length > 0
+          ? previousEntry.changes
+          : currentState && result
           ? detectChanges(currentState, result)
           : undefined;
 
@@ -959,7 +1036,9 @@ export function useHistory(
       const result = getCurrentFullState();
       const currentEntry = historyEntries.value[historyIndex.value];
       const changes =
-        currentState && result
+        currentEntry?.changes && currentEntry.changes.length > 0
+          ? currentEntry.changes
+          : currentState && result
           ? detectChanges(currentState, result)
           : undefined;
 
