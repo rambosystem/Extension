@@ -79,6 +79,7 @@ export interface UseHistoryReturn {
 export interface HistoryRestoreResult {
   state: string[][];
   metadata?: Record<string, any>;
+  changes?: CellChange[];
 }
 
 /**
@@ -901,10 +902,15 @@ export function useHistory(
     let previousEntry = historyEntries.value[previousIndex];
 
     try {
+      const currentState = getCurrentFullState();
       historyIndex.value--;
       const targetEntry = historyEntries.value[historyIndex.value];
 
       const result = getCurrentFullState();
+      const changes =
+        currentState && result
+          ? detectChanges(currentState, result)
+          : undefined;
 
       debugLog("[History] undo: executed", {
         fromIndex: previousIndex,
@@ -953,6 +959,7 @@ export function useHistory(
       return {
         state: result,
         metadata: targetEntry?.metadata,
+        changes,
       };
     } catch (error) {
       // 确保在错误时恢复所有状态
@@ -990,9 +997,14 @@ export function useHistory(
     let previousEntry = historyEntries.value[previousIndex];
 
     try {
+      const currentState = getCurrentFullState();
       historyIndex.value++;
       const result = getCurrentFullState();
       const currentEntry = historyEntries.value[historyIndex.value];
+      const changes =
+        currentState && result
+          ? detectChanges(currentState, result)
+          : undefined;
 
       debugLog("[History] redo: executed", {
         fromIndex: previousIndex,
@@ -1059,6 +1071,7 @@ export function useHistory(
       return {
         state: result,
         metadata: currentEntry?.metadata,
+        changes,
       };
     } catch (error) {
       // 确保在错误时恢复所有状态

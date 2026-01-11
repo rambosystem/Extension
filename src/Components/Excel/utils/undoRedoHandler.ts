@@ -22,13 +22,16 @@ export interface ActiveCell {
  * 撤销/重做处理选项
  */
 export interface UndoRedoHandlerOptions {
-  result: { state: string[][]; metadata?: Record<string, any> } | null;
+  result:
+    | { state: string[][]; metadata?: Record<string, any>; changes?: any[] }
+    | null;
   tableData: { value: string[][] };
   rows: { value: number[] };
   columns: { value: string[] };
   activeCell?: { value: ActiveCell | null } | null;
   clearSelection?: () => void;
   startSingleSelection?: (row: number, col: number) => void;
+  updateSingleSelectionEnd?: (row: number, col: number) => void;
   notifyDataChange?: () => void;
 }
 
@@ -51,6 +54,7 @@ export function handleUndoRedoOperation(
     activeCell,
     clearSelection,
     startSingleSelection,
+    updateSingleSelectionEnd,
     notifyDataChange,
   } = options;
 
@@ -107,38 +111,118 @@ export function handleUndoRedoOperation(
     }
   }
 
-  // 验证并调整 activeCell 位置，确保它在有效范围内
-  if (activeCell?.value) {
-    const maxRows = validatedState.length;
-    // 计算最大列数（考虑所有行）
-    const maxCols = Math.max(...validatedState.map((row) => row.length), 1);
+  const maxRows = validatedState.length;
+  const maxCols = Math.max(...validatedState.map((row) => row.length), 1);
 
-    // 确保 activeCell 在有效范围内
-    const validRow = Math.max(0, Math.min(activeCell.value.row, maxRows - 1));
-    const validCol = Math.max(0, Math.min(activeCell.value.col, maxCols - 1));
+  const applyChangeSelection = (): boolean => {
+    if (startSingleSelection && updateSingleSelectionEnd) {
+      const meta = result?.metadata || {};
+      if (typeof meta.insertedRowIndex === "number") {
+        const row = Math.max(0, Math.min(meta.insertedRowIndex, maxRows - 1));
+        if (activeCell?.value) {
+          activeCell.value = { row, col: 0 };
+        }
+        startSingleSelection(row, 0);
+        updateSingleSelectionEnd(row, Math.max(0, maxCols - 1));
+        return true;
+      }
 
-    // 如果位置发生变化，更新 activeCell
+      if (Array.isArray(meta.deletedRowIndices) && meta.deletedRowIndices.length > 0) {
+        const minDeleted = Math.min(...meta.deletedRowIndices);
+        const row = Math.max(0, Math.min(minDeleted, maxRows - 1));
+        if (activeCell?.value) {
+          activeCell.value = { row, col: 0 };
+        }
+        startSingleSelection(row, 0);
+        updateSingleSelectionEnd(row, Math.max(0, maxCols - 1));
+        return true;
+      }
+    }
+
     if (
-      activeCell.value.row !== validRow ||
-      activeCell.value.col !== validCol
+      !result?.changes ||
+      !Array.isArray(result.changes) ||
+      result.changes.length === 0 ||
+      !startSingleSelection ||
+      !updateSingleSelectionEnd
     ) {
+      return false;
+    }
+
+    let minRow = Infinity;
+    let maxRow = -Infinity;
+    let minCol = Infinity;
+    let maxCol = -Infinity;
+
+    result.changes.forEach((change: any) => {
+      if (
+        typeof change?.row !== "number" ||
+        typeof change?.col !== "number"
+      ) {
+        return;
+      }
+      minRow = Math.min(minRow, change.row);
+      maxRow = Math.max(maxRow, change.row);
+      minCol = Math.min(minCol, change.col);
+      maxCol = Math.max(maxCol, change.col);
+    });
+
+    if (
+      !Number.isFinite(minRow) ||
+      !Number.isFinite(maxRow) ||
+      !Number.isFinite(minCol) ||
+      !Number.isFinite(maxCol)
+    ) {
+      return false;
+    }
+
+    const safeMinRow = Math.max(0, Math.min(minRow, maxRows - 1));
+    const safeMaxRow = Math.max(0, Math.min(maxRow, maxRows - 1));
+    const safeMinCol = Math.max(0, Math.min(minCol, maxCols - 1));
+    const safeMaxCol = Math.max(0, Math.min(maxCol, maxCols - 1));
+
+    if (activeCell?.value) {
       activeCell.value = {
-        row: validRow,
-        col: validCol,
+        row: safeMinRow,
+        col: safeMinCol,
       };
     }
 
-    // 更新选区到 activeCell 的位置（而不是清除选区）
-    if (startSingleSelection) {
-      startSingleSelection(activeCell.value.row, activeCell.value.col);
-    } else if (clearSelection) {
-      // 如果没有 startSingleSelection，回退到清除选择
-      clearSelection();
-    }
-  } else {
-    // 如果没有 activeCell，清除选择状态
-    if (clearSelection) {
-      clearSelection();
+    startSingleSelection(safeMinRow, safeMinCol);
+    updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
+    return true;
+  };
+
+  if (!applyChangeSelection()) {
+    // 验证并调整 activeCell 位置，确保它在有效范围内
+    if (activeCell?.value) {
+      // 确保 activeCell 在有效范围内
+      const validRow = Math.max(0, Math.min(activeCell.value.row, maxRows - 1));
+      const validCol = Math.max(0, Math.min(activeCell.value.col, maxCols - 1));
+
+      // 如果位置发生变化，更新 activeCell
+      if (
+        activeCell.value.row !== validRow ||
+        activeCell.value.col !== validCol
+      ) {
+        activeCell.value = {
+          row: validRow,
+          col: validCol,
+        };
+      }
+
+      // 更新选区到 activeCell 的位置（而不是清除选区）
+      if (startSingleSelection) {
+        startSingleSelection(activeCell.value.row, activeCell.value.col);
+      } else if (clearSelection) {
+        // 如果没有 startSingleSelection，回退到清除选择
+        clearSelection();
+      }
+    } else {
+      // 如果没有 activeCell，清除选择状态
+      if (clearSelection) {
+        clearSelection();
+      }
     }
   }
 

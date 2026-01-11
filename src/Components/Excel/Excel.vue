@@ -585,6 +585,27 @@ const updateHistoryState = () => {
   canRedo.value = canRedoFn();
 };
 
+// 包装历史方法，确保 canUndo/canRedo 同步
+const saveHistoryWithState = (
+  state: any,
+  options: Parameters<typeof saveHistory>[1]
+) => {
+  saveHistory(state, options);
+  updateHistoryState();
+};
+
+const undoHistoryWithState = () => {
+  const result = undoHistory();
+  updateHistoryState();
+  return result;
+};
+
+const redoHistoryWithState = () => {
+  const result = redoHistory();
+  updateHistoryState();
+  return result;
+};
+
 // 检查剪贴板是否有内容
 const checkClipboard = async () => {
   try {
@@ -604,17 +625,18 @@ const updateMenuStates = () => {
 const { handleCellMenuCommand } = useCellMenu({
   copyToClipboard,
   pasteFromClipboard,
-  undoHistory,
-  redoHistory,
+  undoHistory: undoHistoryWithState,
+  redoHistory: redoHistoryWithState,
   tableData,
   rows,
   columns: internalColumns,
   activeCell,
   normalizedSelection,
-  saveHistory,
+  saveHistory: saveHistoryWithState,
   insertRowBelow,
   deleteRow,
   startSingleSelection,
+  updateSingleSelectionEnd,
   clearSelection,
   notifyDataChange,
 });
@@ -849,9 +871,9 @@ const { handleKeydown } = useKeyboard({
   editingCell,
   normalizedSelection,
   moveActiveCell,
-  saveHistory,
-  undoHistory,
-  redoHistory,
+  saveHistory: saveHistoryWithState,
+  undoHistory: undoHistoryWithState,
+  redoHistory: redoHistoryWithState,
   startEdit,
   deleteSelection,
   tableData,
@@ -860,6 +882,7 @@ const { handleKeydown } = useKeyboard({
   insertRowBelow, // 传递基础插入行函数
   deleteRow, // 传递基础删除行函数
   startSingleSelection, // 传递单行选择函数
+  updateSingleSelectionEnd,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,

@@ -68,6 +68,7 @@ export interface UseKeyboardOptions {
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
   startSingleSelection: (row: number, col: number) => void;
+  updateSingleSelectionEnd?: (row: number, col: number) => void;
   getMaxRows: () => number;
   getMaxCols: () => number;
   customMenuItems?: CustomMenuItem[];
@@ -310,6 +311,7 @@ export function useKeyboard({
   insertRowBelow,
   deleteRow,
   startSingleSelection,
+  updateSingleSelectionEnd,
   getMaxRows,
   getMaxCols,
   customMenuItems = [],
@@ -418,6 +420,7 @@ export function useKeyboard({
         activeCell,
         clearSelection,
         startSingleSelection,
+        updateSingleSelectionEnd,
         notifyDataChange,
       });
 
@@ -444,6 +447,7 @@ export function useKeyboard({
         activeCell,
         clearSelection,
         startSingleSelection,
+        updateSingleSelectionEnd,
         notifyDataChange,
       });
 
