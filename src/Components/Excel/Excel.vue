@@ -217,6 +217,57 @@ const isMultiSelect = computed<boolean>(() => {
   return false;
 });
 
+// --- 历史状态与选区应用 ---
+const canUndo = ref(false);
+const canRedo = ref(false);
+const canPaste = ref(false);
+
+const updateHistoryState = () => {
+  canUndo.value = canUndoFn();
+  canRedo.value = canRedoFn();
+};
+
+const applySelectionRange = (range?: {
+  minRow: number;
+  maxRow: number;
+  minCol: number;
+  maxCol: number;
+}): void => {
+  if (
+    !range ||
+    !Number.isFinite(range.minRow) ||
+    !Number.isFinite(range.maxRow) ||
+    !Number.isFinite(range.minCol) ||
+    !Number.isFinite(range.maxCol)
+  ) {
+    clearSelection();
+    return;
+  }
+
+  startSingleSelection(range.minRow, range.minCol);
+  updateSingleSelectionEnd(range.maxRow, range.maxCol);
+};
+
+const saveHistoryWithState = (
+  state: any,
+  options: Parameters<typeof saveHistory>[1]
+) => {
+  saveHistory(state, options);
+  updateHistoryState();
+};
+
+const undoHistoryWithState = () => {
+  const result = undoHistory();
+  updateHistoryState();
+  return result;
+};
+
+const redoHistoryWithState = () => {
+  const result = redoHistory();
+  updateHistoryState();
+  return result;
+};
+
 const {
   initHistory,
   saveHistory,
@@ -418,6 +469,28 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
   isUndoRedoInProgress, // 传递 isUndoRedoInProgress 函数，防止撤销/重做时清空历史
 });
 
+// --- 撤销/重做高亮 ---
+const undoRedoFlash = ref(false);
+let undoRedoFlashTimer: number | null = null;
+
+const triggerUndoRedoFlash = (): void => {
+  if (undoRedoFlashTimer !== null) {
+    window.clearTimeout(undoRedoFlashTimer);
+  }
+  undoRedoFlash.value = true;
+  undoRedoFlashTimer = window.setTimeout(() => {
+    undoRedoFlash.value = false;
+    undoRedoFlashTimer = null;
+  }, 260);
+};
+
+const notifyDataChangeWithUndoFlash = (): void => {
+  notifyDataChange();
+  if (isUndoRedoInProgress()) {
+    triggerUndoRedoFlash();
+  }
+};
+
 // 初始化数据同步监听
 initDataSync();
 
@@ -432,10 +505,10 @@ const {
   exitCopyMode,
 } = useClipboard({
   state: excelState,
-  saveHistory,
+  saveHistory: saveHistoryWithState,
   startSingleSelection,
   updateSingleSelectionEnd,
-  notifyDataChange,
+  notifyDataChange: notifyDataChangeWithUndoFlash,
 });
 
 // --- 选区样式管理 ---
@@ -574,38 +647,6 @@ const deleteSelection = (range: SelectionRange): void => {
 // 这样可以确保快捷键和菜单的行为完全一致
 
 // --- Cell Menu 管理 ---
-// 添加历史记录状态的响应式引用
-const canUndo = ref(false);
-const canRedo = ref(false);
-const canPaste = ref(false);
-
-// 更新历史记录状态
-const updateHistoryState = () => {
-  canUndo.value = canUndoFn();
-  canRedo.value = canRedoFn();
-};
-
-// 包装历史方法，确保 canUndo/canRedo 同步
-const saveHistoryWithState = (
-  state: any,
-  options: Parameters<typeof saveHistory>[1]
-) => {
-  saveHistory(state, options);
-  updateHistoryState();
-};
-
-const undoHistoryWithState = () => {
-  const result = undoHistory();
-  updateHistoryState();
-  return result;
-};
-
-const redoHistoryWithState = () => {
-  const result = redoHistory();
-  updateHistoryState();
-  return result;
-};
-
 // 检查剪贴板是否有内容
 const checkClipboard = async () => {
   try {
@@ -637,8 +678,9 @@ const { handleCellMenuCommand } = useCellMenu({
   deleteRow,
   startSingleSelection,
   updateSingleSelectionEnd,
+  applySelectionRange,
   clearSelection,
-  notifyDataChange,
+  notifyDataChange: notifyDataChangeWithUndoFlash,
 });
 
 // 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义）
@@ -883,6 +925,7 @@ const { handleKeydown } = useKeyboard({
   deleteRow, // 传递基础删除行函数
   startSingleSelection, // 传递单行选择函数
   updateSingleSelectionEnd,
+  applySelectionRange,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
@@ -892,7 +935,7 @@ const { handleKeydown } = useKeyboard({
   copyToClipboard, // 传递程序化复制函数
   pasteFromClipboard, // 传递程序化粘贴函数
   clearSelection, // 传递清除选择函数，确保快捷键和菜单行为一致
-  notifyDataChange, // 传递通知数据变化函数，确保快捷键和菜单行为一致
+  notifyDataChange: notifyDataChangeWithUndoFlash, // 传递通知数据变化函数，确保快捷键和菜单行为一致
   exitCopyMode, // 传递退出复制状态函数
   copiedRange, // 传递复制区域引用，用于判断是否处于复制状态
 });

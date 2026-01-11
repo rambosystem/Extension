@@ -32,6 +32,12 @@ export interface UndoRedoHandlerOptions {
   clearSelection?: () => void;
   startSingleSelection?: (row: number, col: number) => void;
   updateSingleSelectionEnd?: (row: number, col: number) => void;
+  applySelectionRange?: (range?: {
+    minRow: number;
+    maxRow: number;
+    minCol: number;
+    maxCol: number;
+  }) => void;
   notifyDataChange?: () => void;
 }
 
@@ -55,6 +61,7 @@ export function handleUndoRedoOperation(
     clearSelection,
     startSingleSelection,
     updateSingleSelectionEnd,
+    applySelectionRange,
     notifyDataChange,
   } = options;
 
@@ -129,11 +136,20 @@ export function handleUndoRedoOperation(
         const safeMaxRow = Math.max(0, Math.min(range.maxRow, maxRows - 1));
         const safeMinCol = Math.max(0, Math.min(range.minCol, maxCols - 1));
         const safeMaxCol = Math.max(0, Math.min(range.maxCol, maxCols - 1));
-        if (activeCell?.value) {
-          activeCell.value = { row: safeMinRow, col: safeMinCol };
+        if (applySelectionRange) {
+          applySelectionRange({
+            minRow: safeMinRow,
+            maxRow: safeMaxRow,
+            minCol: safeMinCol,
+            maxCol: safeMaxCol,
+          });
+        } else {
+          if (activeCell?.value) {
+            activeCell.value = { row: safeMinRow, col: safeMinCol };
+          }
+          startSingleSelection(safeMinRow, safeMinCol);
+          updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
         }
-        startSingleSelection(safeMinRow, safeMinCol);
-        updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
         return true;
       }
     }
@@ -187,8 +203,17 @@ export function handleUndoRedoOperation(
       };
     }
 
-    startSingleSelection(safeMinRow, safeMinCol);
-    updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
+    if (applySelectionRange) {
+      applySelectionRange({
+        minRow: safeMinRow,
+        maxRow: safeMaxRow,
+        minCol: safeMinCol,
+        maxCol: safeMaxCol,
+      });
+    } else {
+      startSingleSelection(safeMinRow, safeMinCol);
+      updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
+    }
     return true;
   };
 

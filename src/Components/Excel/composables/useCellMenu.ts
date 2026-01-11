@@ -34,6 +34,12 @@ export interface UseCellMenuOptions {
   deleteRow: (rowIndex: number) => void;
   startSingleSelection: (row: number, col: number) => void;
   updateSingleSelectionEnd?: (row: number, col: number) => void;
+  applySelectionRange?: (range?: {
+    minRow: number;
+    maxRow: number;
+    minCol: number;
+    maxCol: number;
+  }) => void;
   clearSelection?: () => void;
   notifyDataChange?: () => void;
 }
@@ -66,6 +72,7 @@ export function useCellMenu({
   deleteRow,
   startSingleSelection,
   updateSingleSelectionEnd,
+  applySelectionRange,
   clearSelection,
   notifyDataChange,
 }: UseCellMenuOptions): UseCellMenuReturn {
@@ -130,6 +137,7 @@ export function useCellMenu({
         clearSelection,
         startSingleSelection,
         updateSingleSelectionEnd,
+        applySelectionRange,
         notifyDataChange,
       });
     } else if (action === "redo") {
@@ -144,6 +152,7 @@ export function useCellMenu({
         clearSelection,
         startSingleSelection,
         updateSingleSelectionEnd,
+        applySelectionRange,
         notifyDataChange,
       });
     }
