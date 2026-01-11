@@ -314,49 +314,62 @@ export function useHistory(
     changes: CellChange[],
     newTimestamp: number
   ): void => {
-    if (!lastEntry.delta) {
-      lastEntry.delta = { changes: [] };
-    }
-
-    const initialChangesCount = lastEntry.delta.changes.length;
-    let updatedCount = 0;
-    let addedCount = 0;
-
-    // 合并变化：相同单元格的变化合并，不同单元格的变化追加
-    changes.forEach((change) => {
-      const existingIndex = lastEntry.delta!.changes.findIndex(
-        (c) => c.row === change.row && c.col === change.col
-      );
-
-      if (existingIndex >= 0) {
-        // 更新现有变化（保留原始 oldValue）
-        lastEntry.delta!.changes[existingIndex].newValue = change.newValue;
-        updatedCount++;
-      } else {
-        // 添加新变化
-        lastEntry.delta!.changes.push(change);
-        addedCount++;
+    if (lastEntry.snapshot) {
+      // Snapshot entry: apply changes directly to snapshot so redo/undo stays correct.
+      lastEntry.snapshot = applyDelta(lastEntry.snapshot, { changes });
+      lastEntry.delta = undefined;
+    } else {
+      if (!lastEntry.delta) {
+        lastEntry.delta = { changes: [] };
       }
-    });
 
-    // 更新时间戳以保持时间序列的正确性
-    // 虽然合并操作共享同一个历史记录条目，但时间戳应该反映最后修改时间
-    lastEntry.timestamp = newTimestamp;
+      const initialChangesCount = lastEntry.delta.changes.length;
+      let updatedCount = 0;
+      let addedCount = 0;
 
-    // 更新元数据
-    if (lastEntry.metadata) {
-      lastEntry.metadata.affectedCells = lastEntry.delta.changes.length;
+      // 合并变化：相同单元格的变化合并，不同单元格的变化追加
+      changes.forEach((change) => {
+        const existingIndex = lastEntry.delta!.changes.findIndex(
+          (c) => c.row === change.row && c.col === change.col
+        );
+
+        if (existingIndex >= 0) {
+          // 更新现有变化（保留原始 oldValue）
+          lastEntry.delta!.changes[existingIndex].newValue = change.newValue;
+          updatedCount++;
+        } else {
+          // 添加新变化
+          lastEntry.delta!.changes.push(change);
+          addedCount++;
+        }
+      });
+
+      // 更新时间戳以保持时间序列的正确性
+      // 虽然合并操作共享同一个历史记录条目，但时间戳应该反映最后修改时间
+      lastEntry.timestamp = newTimestamp;
+
+      // 更新元数据
+      if (lastEntry.metadata) {
+        lastEntry.metadata.affectedCells = lastEntry.delta.changes.length;
+      }
+
+      debugLog("[History] mergeOperation: completed", {
+        entryId: lastEntry.id,
+        initialChanges: initialChangesCount,
+        newChanges: changes.length,
+        updated: updatedCount,
+        added: addedCount,
+        totalChanges: lastEntry.delta.changes.length,
+        updatedTimestamp: newTimestamp,
+      });
     }
 
-    debugLog("[History] mergeOperation: completed", {
-      entryId: lastEntry.id,
-      initialChanges: initialChangesCount,
-      newChanges: changes.length,
-      updated: updatedCount,
-      added: addedCount,
-      totalChanges: lastEntry.delta.changes.length,
-      updatedTimestamp: newTimestamp,
-    });
+    if (lastEntry.snapshot) {
+      lastEntry.timestamp = newTimestamp;
+      if (lastEntry.metadata) {
+        lastEntry.metadata.affectedCells = changes.length;
+      }
+    }
   };
 
   /**
@@ -855,7 +868,7 @@ export function useHistory(
       debugLog(
         "[History] saveHistory: history size limit reached, removed oldest entries",
         {
-          removedCount,
+          removeCount,
           removedEntryIds: removedEntries.map((e) => e.id),
           currentSize: historyEntries.value.length,
           maxSize: MAX_HISTORY_ENTRIES,
@@ -912,10 +925,10 @@ export function useHistory(
 
       // 验证结果的有效性
       if (result.length === 0) {
-        // 使用 setTimeout 确保所有 watch 都执行完毕后再重置标志
+        // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
         setTimeout(() => {
           isUndoRedoInProgress = false;
-        }, 0);
+        }, 10);
         return {
           state: [[]],
           metadata: targetEntry?.metadata,
@@ -932,11 +945,9 @@ export function useHistory(
       // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
       // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
       // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
-      Promise.resolve().then(() => {
-        setTimeout(() => {
-          isUndoRedoInProgress = false;
-        }, 0);
-      });
+      setTimeout(() => {
+        isUndoRedoInProgress = false;
+      }, 10);
 
       return {
         state: result,
@@ -1013,10 +1024,10 @@ export function useHistory(
         debugWarn(
           "[History] redo: result is empty array, returning empty state"
         );
-        // 使用 setTimeout 确保所有 watch 都执行完毕后再重置标志
+        // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
         setTimeout(() => {
           isUndoRedoInProgress = false;
-        }, 10); // 稍微延迟，确保 handleUndoRedoOperation 中的 notifyDataChange 先执行
+        }, 10);
         return {
           state: [[]],
           metadata: currentEntry?.metadata,
@@ -1038,11 +1049,9 @@ export function useHistory(
       // 使用 Promise 链式处理确保所有 watch 和 emit 都执行完毕后再重置标志
       // 注意：notifyDataChange 会在 handleUndoRedoOperation 中通过 setTimeout 调用
       // 这里使用微任务确保在下一个事件循环中重置，避免状态不一致
-      Promise.resolve().then(() => {
-        setTimeout(() => {
-          isUndoRedoInProgress = false;
-        }, 0);
-      });
+      setTimeout(() => {
+        isUndoRedoInProgress = false;
+      }, 10);
 
       return {
         state: result,

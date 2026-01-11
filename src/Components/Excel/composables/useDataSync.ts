@@ -76,16 +76,21 @@ export function useDataSync({
 }: UseDataSyncOptions): UseDataSyncReturn {
   // 使用 ref 替代闭包变量，提升可维护性和可追踪性
   const isUpdatingFromExternal = ref(false);
+  const isInternalUpdateEmitted = ref(false);
 
   /**
    * 通知外部数据变化
    */
   const notifyDataChange = (): void => {
     const data = getData();
+    isInternalUpdateEmitted.value = true;
     if (props.modelValue !== null) {
       emit("update:modelValue", data);
     }
     emit("change", data);
+    nextTick(() => {
+      isInternalUpdateEmitted.value = false;
+    });
   };
 
   /**
@@ -127,7 +132,8 @@ export function useDataSync({
       if (
         initHistory &&
         newValue.length > 0 &&
-        (!isUndoRedoInProgress || !isUndoRedoInProgress())
+        (!isUndoRedoInProgress || !isUndoRedoInProgress()) &&
+        !isInternalUpdateEmitted.value
       ) {
         initHistory(newValue);
       }
