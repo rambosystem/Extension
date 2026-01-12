@@ -256,6 +256,42 @@ export function useHistory(
     return incrementalCount >= CHECKPOINT_INTERVAL;
   };
 
+  const buildSelectionRangeFromChanges = (
+    changes: CellChange[]
+  ): Record<string, number> | null => {
+    if (!changes || changes.length === 0) {
+      return null;
+    }
+
+    let minRow = Infinity;
+    let maxRow = -Infinity;
+    let minCol = Infinity;
+    let maxCol = -Infinity;
+
+    changes.forEach((change) => {
+      minRow = Math.min(minRow, change.row);
+      maxRow = Math.max(maxRow, change.row);
+      minCol = Math.min(minCol, change.col);
+      maxCol = Math.max(maxCol, change.col);
+    });
+
+    if (
+      !Number.isFinite(minRow) ||
+      !Number.isFinite(maxRow) ||
+      !Number.isFinite(minCol) ||
+      !Number.isFinite(maxCol)
+    ) {
+      return null;
+    }
+
+    return {
+      minRow,
+      maxRow,
+      minCol,
+      maxCol,
+    };
+  };
+
   /**
    * 判断是否可以合并操作
    */
@@ -359,6 +395,15 @@ export function useHistory(
       lastEntry.timestamp = newTimestamp;
       if (lastEntry.metadata) {
         lastEntry.metadata.affectedCells = changes.length;
+      }
+    }
+
+    if (lastEntry.metadata && lastEntry.type === HistoryActionType.CELL_EDIT) {
+      const selectionRange = buildSelectionRangeFromChanges(
+        lastEntry.changes || []
+      );
+      if (selectionRange) {
+        lastEntry.metadata.selectionRange = selectionRange;
       }
     }
   };
@@ -858,27 +903,13 @@ export function useHistory(
           selectionRange.minCol = 0;
           selectionRange.maxCol = Math.max(0, maxColIndex);
         }
-      } else if (changes.length > 0) {
-        let minRow = Infinity;
-        let maxRow = -Infinity;
-        let minCol = Infinity;
-        let maxCol = -Infinity;
-        changes.forEach((change) => {
-          minRow = Math.min(minRow, change.row);
-          maxRow = Math.max(maxRow, change.row);
-          minCol = Math.min(minCol, change.col);
-          maxCol = Math.max(maxCol, change.col);
-        });
-        if (
-          Number.isFinite(minRow) &&
-          Number.isFinite(maxRow) &&
-          Number.isFinite(minCol) &&
-          Number.isFinite(maxCol)
-        ) {
-          selectionRange.minRow = minRow;
-          selectionRange.maxRow = maxRow;
-          selectionRange.minCol = minCol;
-          selectionRange.maxCol = maxCol;
+      } else {
+        const rangeFromChanges = buildSelectionRangeFromChanges(changes);
+        if (rangeFromChanges) {
+          selectionRange.minRow = rangeFromChanges.minRow;
+          selectionRange.maxRow = rangeFromChanges.maxRow;
+          selectionRange.minCol = rangeFromChanges.minCol;
+          selectionRange.maxCol = rangeFromChanges.maxCol;
         }
       }
 
