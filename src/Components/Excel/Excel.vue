@@ -160,6 +160,7 @@ const {
   isMultipleMode,
   startSingleSelection,
   updateSingleSelectionEnd,
+  applySelectionRange: applySelectionRangeSafe,
   startMultipleSelection,
   updateMultipleSelectionEnd,
   endMultipleSelectionClick,
@@ -227,25 +228,31 @@ const updateHistoryState = () => {
   canRedo.value = canRedoFn();
 };
 
-const applySelectionRange = (range?: {
+const applySelectionRangeSafe = (range?: {
   minRow: number;
   maxRow: number;
   minCol: number;
   maxCol: number;
 }): void => {
-  if (
-    !range ||
-    !Number.isFinite(range.minRow) ||
-    !Number.isFinite(range.maxRow) ||
-    !Number.isFinite(range.minCol) ||
-    !Number.isFinite(range.maxCol)
-  ) {
+  if (!range || rows.value.length === 0 || internalColumns.value.length === 0) {
     clearSelection();
     return;
   }
 
-  startSingleSelection(range.minRow, range.minCol);
-  updateSingleSelectionEnd(range.maxRow, range.maxCol);
+  const maxRowIndex = rows.value.length - 1;
+  const maxColIndex = internalColumns.value.length - 1;
+
+  const minRow = Math.max(0, Math.min(range.minRow, maxRowIndex));
+  const maxRow = Math.max(0, Math.min(range.maxRow, maxRowIndex));
+  const minCol = Math.max(0, Math.min(range.minCol, maxColIndex));
+  const maxCol = Math.max(0, Math.min(range.maxCol, maxColIndex));
+
+  applySelectionRange({
+    minRow,
+    maxRow,
+    minCol,
+    maxCol,
+  });
 };
 
 const saveHistoryWithState = (
@@ -484,11 +491,8 @@ const triggerUndoRedoFlash = (): void => {
   }, 260);
 };
 
-const notifyDataChangeWithUndoFlash = (): void => {
-  notifyDataChange();
-  if (isUndoRedoInProgress()) {
-    triggerUndoRedoFlash();
-  }
+const triggerSelectionFlash = (): void => {
+  triggerUndoRedoFlash();
 };
 
 // 初始化数据同步监�?
@@ -509,7 +513,7 @@ const {
   saveHistory: saveHistoryWithState,
   startSingleSelection,
   updateSingleSelectionEnd,
-  notifyDataChange: notifyDataChangeWithUndoFlash,
+  notifyDataChange,
 });
 
 // --- 选区样式管理 ---
@@ -680,9 +684,10 @@ const { handleCellMenuCommand } = useCellMenu({
   deleteRow,
   startSingleSelection,
   updateSingleSelectionEnd,
-  applySelectionRange,
+  applySelectionRange: applySelectionRangeSafe,
   clearSelection,
-  notifyDataChange: notifyDataChangeWithUndoFlash,
+  notifyDataChange,
+  triggerSelectionFlash,
 });
 
 // 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义�?
@@ -938,7 +943,8 @@ const { handleKeydown } = useKeyboard({
   cutToClipboard,
   pasteFromClipboard, // 传递程序化粘贴函数
   clearSelection, // 传递清除选择函数，确保快捷键和菜单行为一�?
-  notifyDataChange: notifyDataChangeWithUndoFlash, // 传递通知数据变化函数，确保快捷键和菜单行为一�?
+  notifyDataChange,
+  triggerSelectionFlash, // 传递撤销/重做高亮触发
   exitCopyMode, // 传递退出复制状态函�?
   copiedRange, // 传递复制区域引用，用于判断是否处于复制状�?
 });

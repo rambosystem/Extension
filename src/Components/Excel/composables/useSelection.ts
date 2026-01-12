@@ -19,6 +19,7 @@ export interface UseSelectionReturn {
   isMultipleMode: Ref<boolean>;
   startSingleSelection: (row: number, col: number) => void;
   updateSingleSelectionEnd: (row: number, col: number) => void;
+  applySelectionRange: (range?: SelectionRange | null) => void;
   startMultipleSelection: (
     row: number,
     col: number
@@ -611,6 +612,16 @@ export function useSelection({
     selectionEnd.value = { row, col };
   };
 
+  const applySelectionRange = (range?: SelectionRange | null): void => {
+    if (!range) {
+      clearSelection();
+      return;
+    }
+
+    startSingleSelection(range.minRow, range.minCol);
+    updateSingleSelectionEnd(range.maxRow, range.maxCol);
+  };
+
   const isActive = (row: number, col: number): boolean => {
     return activeCell.value?.row === row && activeCell.value?.col === col;
   };
@@ -921,6 +932,7 @@ export function useSelection({
     isMultipleMode,
     startSingleSelection,
     updateSingleSelectionEnd,
+    applySelectionRange,
     startMultipleSelection,
     updateMultipleSelectionEnd,
     endMultipleSelectionClick,

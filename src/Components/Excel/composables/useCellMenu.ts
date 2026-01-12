@@ -40,6 +40,7 @@ export interface UseCellMenuOptions {
     minCol: number;
     maxCol: number;
   }) => void;
+  triggerSelectionFlash?: () => void;
   clearSelection?: () => void;
   notifyDataChange?: () => void;
 }
@@ -73,6 +74,7 @@ export function useCellMenu({
   startSingleSelection,
   updateSingleSelectionEnd,
   applySelectionRange,
+  triggerSelectionFlash,
   clearSelection,
   notifyDataChange,
 }: UseCellMenuOptions): UseCellMenuReturn {
@@ -138,6 +140,7 @@ export function useCellMenu({
         startSingleSelection,
         updateSingleSelectionEnd,
         applySelectionRange,
+        triggerSelectionFlash,
         notifyDataChange,
       });
     } else if (action === "redo") {
@@ -153,6 +156,7 @@ export function useCellMenu({
         startSingleSelection,
         updateSingleSelectionEnd,
         applySelectionRange,
+        triggerSelectionFlash,
         notifyDataChange,
       });
     }

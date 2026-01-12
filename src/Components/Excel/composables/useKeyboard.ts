@@ -75,6 +75,7 @@ export interface UseKeyboardOptions {
     minCol: number;
     maxCol: number;
   }) => void;
+  triggerSelectionFlash?: () => void;
   getMaxRows: () => number;
   getMaxCols: () => number;
   customMenuItems?: CustomMenuItem[];
@@ -320,6 +321,7 @@ export function useKeyboard({
   startSingleSelection,
   updateSingleSelectionEnd,
   applySelectionRange,
+  triggerSelectionFlash,
   getMaxRows,
   getMaxCols,
   customMenuItems = [],
@@ -461,6 +463,7 @@ export function useKeyboard({
         startSingleSelection,
         updateSingleSelectionEnd,
         applySelectionRange,
+        triggerSelectionFlash,
         notifyDataChange,
       });
 
@@ -489,6 +492,7 @@ export function useKeyboard({
         startSingleSelection,
         updateSingleSelectionEnd,
         applySelectionRange,
+        triggerSelectionFlash,
         notifyDataChange,
       });
 

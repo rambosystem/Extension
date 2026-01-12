@@ -40,6 +40,7 @@ export interface UndoRedoHandlerOptions {
     minCol: number;
     maxCol: number;
   }) => void;
+  triggerSelectionFlash?: () => void;
   notifyDataChange?: () => void;
 }
 
@@ -64,6 +65,7 @@ export function handleUndoRedoOperation(
     startSingleSelection,
     updateSingleSelectionEnd,
     applySelectionRange,
+    triggerSelectionFlash,
     notifyDataChange,
   } = options;
 
@@ -247,6 +249,10 @@ export function handleUndoRedoOperation(
         clearSelection();
       }
     }
+  }
+
+  if (triggerSelectionFlash) {
+    triggerSelectionFlash();
   }
 
   // 使用 setTimeout 延迟调用 notifyDataChange()，确保在状态更新完成后再通知
