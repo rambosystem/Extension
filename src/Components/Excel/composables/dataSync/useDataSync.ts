@@ -11,6 +11,7 @@ export interface UseDataSyncOptions {
   getData: () => string[][];
   setData: (data: string[][]) => void;
   emit: (event: "update:modelValue" | "change", ...args: unknown[]) => void;
+  onEmitSync?: (data: string[][]) => void;
   initHistory?: (state: string[][]) => void;
   isUndoRedoInProgress?: () => boolean;
 }
@@ -83,6 +84,7 @@ export function useDataSync({
   getData,
   setData,
   emit,
+  onEmitSync,
   initHistory,
   isUndoRedoInProgress,
 }: UseDataSyncOptions): UseDataSyncReturn {
@@ -111,6 +113,7 @@ export function useDataSync({
     isInternalUpdateEmitted.value = true;
     emitModelUpdate(payload);
     emitChange(payload);
+    onEmitSync?.(payload);
     nextTick(() => {
       isInternalUpdateEmitted.value = false;
     });

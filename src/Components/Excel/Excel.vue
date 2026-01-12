@@ -68,6 +68,7 @@ import { useDataSync } from "./composables/dataSync/useDataSync";
 import { useCellMenu } from "./composables/useCellMenu";
 import { useCellMenuPosition } from "./composables/useCellMenuPosition";
 import { useResizeHandlers } from "./composables/rowColumnOps/useResizeHandlers";
+import { createExcelEventBus } from "./composables/eventBus/useExcelEventBus";
 import type {
   ColumnWidthConfig,
   MenuContext,
@@ -185,6 +186,92 @@ const selectionService = createSelectionService({
   selection,
 });
 
+const selectionServiceWithEvents = {
+  ...selectionService,
+  applyRange: (range?: SelectionRange | null) => {
+    selectionService.applyRange(range);
+    eventBus.emit("selection", { action: "applyRange", range });
+  },
+  startSingleSelection: (row: number, col: number) => {
+    selectionService.startSingleSelection(row, col);
+    eventBus.emit("selection", {
+      action: "startSingleSelection",
+      range: { minRow: row, maxRow: row, minCol: col, maxCol: col },
+    });
+  },
+  updateSingleSelectionEnd: (row: number, col: number) => {
+    selectionService.updateSingleSelectionEnd(row, col);
+    eventBus.emit("selection", {
+      action: "updateSingleSelectionEnd",
+      range: { minRow: row, maxRow: row, minCol: col, maxCol: col },
+    });
+  },
+  clear: () => {
+    selectionService.clear();
+    eventBus.emit("selection", { action: "clear" });
+  },
+  selectRow: (rowIndex: number) => {
+    selectionService.selectRow(rowIndex);
+    eventBus.emit("selection", {
+      action: "selectRow",
+      range: {
+        minRow: rowIndex,
+        maxRow: rowIndex,
+        minCol: 0,
+        maxCol: Math.max(0, internalColumns.value.length - 1),
+      },
+    });
+  },
+  selectColumn: (colIndex: number) => {
+    selectionService.selectColumn(colIndex);
+    eventBus.emit("selection", {
+      action: "selectColumn",
+      range: {
+        minRow: 0,
+        maxRow: Math.max(0, rows.value.length - 1),
+        minCol: colIndex,
+        maxCol: colIndex,
+      },
+    });
+  },
+  selectRows: (startRow: number, endRow: number) => {
+    selectionService.selectRows(startRow, endRow);
+    eventBus.emit("selection", {
+      action: "selectRows",
+      range: {
+        minRow: startRow,
+        maxRow: endRow,
+        minCol: 0,
+        maxCol: Math.max(0, internalColumns.value.length - 1),
+      },
+    });
+  },
+  selectColumns: (startCol: number, endCol: number) => {
+    selectionService.selectColumns(startCol, endCol);
+    eventBus.emit("selection", {
+      action: "selectColumns",
+      range: {
+        minRow: 0,
+        maxRow: Math.max(0, rows.value.length - 1),
+        minCol: startCol,
+        maxCol: endCol,
+      },
+    });
+  },
+  selectAll: (rowCount: number, colCount: number) => {
+    selectionService.selectAll(rowCount, colCount);
+    eventBus.emit("selection", {
+      action: "selectAll",
+      range: {
+        minRow: 0,
+        maxRow: Math.max(0, rowCount - 1),
+        minCol: 0,
+        maxCol: Math.max(0, colCount - 1),
+      },
+    });
+  },
+};
+
 /**
  * 判断当前是否处于多单元格选区状�?
  *
@@ -226,6 +313,8 @@ const isMultiSelect = computed<boolean>(() => {
   return false;
 });
 
+const eventBus = createExcelEventBus();
+
 // --- 历史状态与选区应用 ---
 const canUndo = ref(false);
 const canRedo = ref(false);
@@ -242,17 +331,26 @@ const saveHistoryWithState = (
   options: Parameters<typeof saveHistory>[1]
 ) => {
   saveHistory(state, options);
+  eventBus.emit("history", {
+    action: "save",
+    info: {
+      type: options?.type,
+      description: options?.description,
+    },
+  });
   updateHistoryState();
 };
 
 const undoHistoryWithState = () => {
   const result = undoHistory();
+  eventBus.emit("history", { action: "undo" });
   updateHistoryState();
   return result;
 };
 
 const redoHistoryWithState = () => {
   const result = redoHistory();
+  eventBus.emit("history", { action: "redo" });
   updateHistoryState();
   return result;
 };
@@ -266,6 +364,11 @@ const {
   canRedo: canRedoFn,
   isUndoRedoInProgress,
 } = useHistory();
+
+const initHistoryWithEvents = (data: string[][]): void => {
+  initHistory(data);
+  eventBus.emit("history", { action: "init", info: { rows: data.length } });
+};
 
 // 智能填充管理（仅在启用时使用�?
 const fillHandleComposable = props.enableFillHandle
@@ -459,9 +562,13 @@ const {
       }
     }
   },
-  initHistory, // 传�?initHistory 函数，用于在数据更新时重新初始化历史记录
+  onEmitSync: (data) => {
+    eventBus.emit("modelUpdate", { data });
+    eventBus.emit("change", { data });
+  },
+  initHistory: initHistoryWithEvents, // 传�?initHistory 函数，用于在数据更新时重新初始化历史记录
   isUndoRedoInProgress, // 传�?isUndoRedoInProgress 函数，防止撤销/重做时清空历�?
-  });
+});
 
 // --- 撤销/重做高亮 ---
 const undoRedoFlash = ref(false);
@@ -498,7 +605,7 @@ const {
 } = useClipboard({
   state: excelState,
   saveHistory: saveHistoryWithState,
-  selectionService,
+  selectionService: selectionServiceWithEvents,
   emitSync,
 });
 
@@ -659,7 +766,7 @@ const undoRedoService = createUndoRedoService({
   rows,
   columns: internalColumns,
   activeCell,
-  selectionService,
+  selectionService: selectionServiceWithEvents,
   triggerSelectionFlash,
   emitSync,
 });
@@ -677,7 +784,7 @@ const { handleCellMenuCommand } = useCellMenu({
   saveHistory: saveHistoryWithState,
   insertRowBelow,
   deleteRow,
-  selectionService,
+  selectionService: selectionServiceWithEvents,
   undoRedoService,
   emitSync,
 });
@@ -922,7 +1029,7 @@ const { handleKeydown } = useKeyboard({
   columns: internalColumns, // 传递列引用，用于恢复列数量
   insertRowBelow, // 传递基础插入行函�?
   deleteRow, // 传递基础删除行函�?
-  selectionService,
+  selectionService: selectionServiceWithEvents,
   undoRedoService,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
