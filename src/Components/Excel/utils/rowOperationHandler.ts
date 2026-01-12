@@ -51,6 +51,15 @@ export function handleInsertRowOperation(
     metadata: {
       insertedRowIndex: rowIndex + 1,
       insertedRowCount: 1,
+      // 保存操作时的活动单元格位置，用于 undo/redo 时恢复选区
+      selectionRange: options.activeCell?.value
+        ? {
+            minRow: options.activeCell.value.row,
+            maxRow: options.activeCell.value.row,
+            minCol: options.activeCell.value.col,
+            maxCol: options.activeCell.value.col,
+          }
+        : undefined,
     },
   });
 
@@ -117,6 +126,15 @@ export function handleDeleteRowOperation(
     metadata: {
       deletedRowIndices: [rowIndex],
       deletedRowCount: 1,
+      // 保存删除前的活动单元格位置，用于 undo/redo 时恢复选区
+      selectionRange: activeCell?.value
+        ? {
+            minRow: activeCell.value.row,
+            maxRow: activeCell.value.row,
+            minCol: activeCell.value.col,
+            maxCol: activeCell.value.col,
+          }
+        : undefined,
     },
   });
 
@@ -214,6 +232,15 @@ export function handleDeleteRowsOperation(
     metadata: {
       deletedRowIndices: validIndices,
       deletedRowCount: validIndices.length,
+      // 保存删除前的活动单元格位置，用于 undo/redo 时恢复选区
+      selectionRange: activeCell?.value
+        ? {
+            minRow: activeCell.value.row,
+            maxRow: activeCell.value.row,
+            minCol: activeCell.value.col,
+            maxCol: activeCell.value.col,
+          }
+        : undefined,
     },
   });
 

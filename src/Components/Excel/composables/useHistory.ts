@@ -839,6 +839,8 @@ export function useHistory(
         selectionRange.minCol = presetSelectionRange.minCol;
         selectionRange.maxCol = presetSelectionRange.maxCol;
       } else if (actionType === HistoryActionType.ROW_INSERT) {
+        // 对于插入行操作，如果 metadata 中没有预设 selectionRange，
+        // 则选中插入的行（默认行为）
         const insertedRow = options.metadata?.insertedRowIndex;
         if (typeof insertedRow === "number") {
           selectionRange.minRow = insertedRow;
@@ -847,6 +849,8 @@ export function useHistory(
           selectionRange.maxCol = Math.max(0, maxColIndex);
         }
       } else if (actionType === HistoryActionType.ROW_DELETE) {
+        // 对于删除行操作，如果 metadata 中没有预设 selectionRange，
+        // 则选中被删除行的位置（默认行为）
         const deletedRows = options.metadata?.deletedRowIndices;
         if (Array.isArray(deletedRows) && deletedRows.length > 0) {
           selectionRange.minRow = Math.min(...deletedRows);
