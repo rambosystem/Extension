@@ -160,7 +160,7 @@ const {
   isMultipleMode,
   startSingleSelection,
   updateSingleSelectionEnd,
-  applySelectionRange: applySelectionRangeSafe,
+  applySelectionRange,
   startMultipleSelection,
   updateMultipleSelectionEnd,
   endMultipleSelectionClick,
@@ -670,7 +670,6 @@ const updateMenuStates = () => {
 
 const { handleCellMenuCommand } = useCellMenu({
   copyToClipboard,
-  cutToClipboard,
   pasteFromClipboard,
   undoHistory: undoHistoryWithState,
   redoHistory: redoHistoryWithState,
