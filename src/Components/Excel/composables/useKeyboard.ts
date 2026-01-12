@@ -9,12 +9,12 @@ import {
   type HistoryRestoreResult,
 } from "./history/useHistory";
 import type { SelectionService } from "./selection/selectionService";
-import { handleUndoRedoOperation } from "../utils/undoRedoHandler";
 import {
   handleInsertRowOperation,
   handleDeleteRowOperation,
   type RowOperationHandlerOptions,
 } from "./rowColumnOps/rowOperationHandler";
+import type { UndoRedoService } from "./history/undoRedoService";
 
 /**
  * 自定义菜单项配置
@@ -69,7 +69,7 @@ export interface UseKeyboardOptions {
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
   selectionService: SelectionService;
-  triggerSelectionFlash?: () => void;
+  undoRedoService: UndoRedoService;
   getMaxRows: () => number;
   getMaxCols: () => number;
   customMenuItems?: CustomMenuItem[];
@@ -312,7 +312,7 @@ export function useKeyboard({
   insertRowBelow,
   deleteRow,
   selectionService,
-  triggerSelectionFlash,
+  undoRedoService,
   getMaxRows,
   getMaxCols,
   customMenuItems = [],
@@ -443,16 +443,7 @@ export function useKeyboard({
       const result = event.shiftKey ? redoHistory() : undoHistory();
 
       // 使用公共函数处理撤销/重做操作（与菜单逻辑完全一致，公共函数内部会处理更新选区和通知数据变化）
-      const success = handleUndoRedoOperation({
-        result,
-        tableData,
-        rows,
-        columns,
-        activeCell,
-        selectionService,
-        triggerSelectionFlash,
-        notifyDataChange,
-      });
+      const success = undoRedoService.apply(result);
 
       // 如果无法撤销/重做，阻止默认行为但返回 true 表示已处理
       if (!success) {
@@ -469,16 +460,7 @@ export function useKeyboard({
       const result = redoHistory();
 
       // 使用公共函数处理重做操作（与菜单逻辑完全一致，公共函数内部会处理更新选区和通知数据变化）
-      const success = handleUndoRedoOperation({
-        result,
-        tableData,
-        rows,
-        columns,
-        activeCell,
-        selectionService,
-        triggerSelectionFlash,
-        notifyDataChange,
-      });
+      const success = undoRedoService.apply(result);
 
       // 如果无法重做，阻止默认行为但返回 true 表示已处理
       if (!success) {

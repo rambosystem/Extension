@@ -1,12 +1,12 @@
 import { type Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
-import { handleUndoRedoOperation } from "../utils/undoRedoHandler";
 import {
   handleInsertRowOperation,
   handleDeleteRowOperation,
   type RowOperationHandlerOptions,
 } from "./rowColumnOps/rowOperationHandler";
 import type { SaveHistoryOptions } from "./history/useHistory";
+import type { UndoRedoService } from "./history/undoRedoService";
 import type { SelectionService } from "./selection/selectionService";
 
 /**
@@ -34,7 +34,7 @@ export interface UseCellMenuOptions {
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
   selectionService: SelectionService;
-  triggerSelectionFlash?: () => void;
+  undoRedoService: UndoRedoService;
   notifyDataChange?: () => void;
 }
 
@@ -65,7 +65,7 @@ export function useCellMenu({
   insertRowBelow,
   deleteRow,
   selectionService,
-  triggerSelectionFlash,
+  undoRedoService,
   notifyDataChange,
 }: UseCellMenuOptions): UseCellMenuReturn {
   // 准备行操作工具函数的选项
@@ -120,29 +120,11 @@ export function useCellMenu({
     } else if (action === "undo") {
       const result = undoHistory();
       // 使用公共函数处理撤销操作（与快捷键逻辑保持一致，公共函数内部会处理更新选区和通知数据变化）
-      handleUndoRedoOperation({
-        result,
-        tableData,
-        rows,
-        columns,
-        activeCell,
-        selectionService,
-        triggerSelectionFlash,
-        notifyDataChange,
-      });
+      undoRedoService.apply(result);
     } else if (action === "redo") {
       const result = redoHistory();
       // 使用公共函数处理重做操作（与快捷键逻辑保持一致，公共函数内部会处理更新选区和通知数据变化）
-      handleUndoRedoOperation({
-        result,
-        tableData,
-        rows,
-        columns,
-        activeCell,
-        selectionService,
-        triggerSelectionFlash,
-        notifyDataChange,
-      });
+      undoRedoService.apply(result);
     }
   };
 

@@ -51,6 +51,7 @@ import { useVirtualScroll } from "./composables/useVirtualScroll";
 import { useHistory } from "./composables/history/useHistory";
 import { useSelection } from "./composables/selection/useSelection";
 import { createSelectionService } from "./composables/selection/selectionService";
+import { createUndoRedoService } from "./composables/history/undoRedoService";
 import { useExcelData } from "./composables/useExcelData";
 import { useExcelState } from "./composables/useExcelState";
 import { useKeyboard } from "./composables/useKeyboard";
@@ -648,6 +649,16 @@ const updateMenuStates = () => {
   checkClipboard();
 };
 
+const undoRedoService = createUndoRedoService({
+  tableData,
+  rows,
+  columns: internalColumns,
+  activeCell,
+  selectionService,
+  triggerSelectionFlash,
+  notifyDataChange,
+});
+
 const { handleCellMenuCommand } = useCellMenu({
   copyToClipboard,
   pasteFromClipboard,
@@ -662,8 +673,8 @@ const { handleCellMenuCommand } = useCellMenu({
   insertRowBelow,
   deleteRow,
   selectionService,
+  undoRedoService,
   notifyDataChange,
-  triggerSelectionFlash,
 });
 
 // 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义�?
@@ -907,6 +918,7 @@ const { handleKeydown } = useKeyboard({
   insertRowBelow, // 传递基础插入行函�?
   deleteRow, // 传递基础删除行函�?
   selectionService,
+  undoRedoService,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
@@ -917,7 +929,6 @@ const { handleKeydown } = useKeyboard({
   cutToClipboard,
   pasteFromClipboard, // 传递程序化粘贴函数
   notifyDataChange,
-  triggerSelectionFlash, // 传递撤销/重做高亮触发
   exitCopyMode, // 传递退出复制状态函�?
   copiedRange, // 传递复制区域引用，用于判断是否处于复制状�?
 });
