@@ -825,8 +825,20 @@ export function useHistory(
       const maxColIndex =
         Math.max(...currentState.map((row) => row?.length || 0), 1) - 1;
       const selectionRange: Record<string, number> = {};
+      const presetSelectionRange = options.metadata?.selectionRange;
 
-      if (actionType === HistoryActionType.ROW_INSERT) {
+      if (
+        presetSelectionRange &&
+        typeof presetSelectionRange.minRow === "number" &&
+        typeof presetSelectionRange.maxRow === "number" &&
+        typeof presetSelectionRange.minCol === "number" &&
+        typeof presetSelectionRange.maxCol === "number"
+      ) {
+        selectionRange.minRow = presetSelectionRange.minRow;
+        selectionRange.maxRow = presetSelectionRange.maxRow;
+        selectionRange.minCol = presetSelectionRange.minCol;
+        selectionRange.maxCol = presetSelectionRange.maxCol;
+      } else if (actionType === HistoryActionType.ROW_INSERT) {
         const insertedRow = options.metadata?.insertedRowIndex;
         if (typeof insertedRow === "number") {
           selectionRange.minRow = insertedRow;
@@ -975,7 +987,7 @@ export function useHistory(
         }, 10);
         return {
           state: [[]],
-          metadata: targetEntry?.metadata,
+          metadata: previousEntry?.metadata, // 使用被撤回操作的 metadata
         };
       }
 
@@ -992,7 +1004,7 @@ export function useHistory(
       }, 10);
       return {
         state: result,
-        metadata: targetEntry?.metadata,
+        metadata: previousEntry?.metadata, // 使用被撤回操作的 metadata（包含 selectionRange）
         changes,
       };
     } catch (error) {
@@ -1077,9 +1089,21 @@ export function useHistory(
         setTimeout(() => {
           isUndoRedoInProgress = false;
         }, 10);
+
+        // 为 redo 准备 metadata，优先使用 redoSelectionRange
+        const redoMetadata = currentEntry?.metadata
+          ? {
+              ...currentEntry.metadata,
+              // 如果有 redoSelectionRange，用它替换 selectionRange
+              selectionRange:
+                currentEntry.metadata.redoSelectionRange ||
+                currentEntry.metadata.selectionRange,
+            }
+          : undefined;
+
         return {
           state: [[]],
-          metadata: currentEntry?.metadata,
+          metadata: redoMetadata,
         };
       }
 
@@ -1100,9 +1124,20 @@ export function useHistory(
         isUndoRedoInProgress = false;
       }, 10);
 
+      // 为 redo 准备 metadata，优先使用 redoSelectionRange
+      const redoMetadata = currentEntry?.metadata
+        ? {
+            ...currentEntry.metadata,
+            // 如果有 redoSelectionRange，用它替换 selectionRange
+            selectionRange:
+              currentEntry.metadata.redoSelectionRange ||
+              currentEntry.metadata.selectionRange,
+          }
+        : undefined;
+
       return {
         state: result,
-        metadata: currentEntry?.metadata,
+        metadata: redoMetadata,
         changes,
       };
     } catch (error) {

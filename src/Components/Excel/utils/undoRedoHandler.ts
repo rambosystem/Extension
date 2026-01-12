@@ -22,9 +22,11 @@ export interface ActiveCell {
  * 撤销/重做处理选项
  */
 export interface UndoRedoHandlerOptions {
-  result:
-    | { state: string[][]; metadata?: Record<string, any>; changes?: any[] }
-    | null;
+  result: {
+    state: string[][];
+    metadata?: Record<string, any>;
+    changes?: any[];
+  } | null;
   tableData: { value: string[][] };
   rows: { value: number[] };
   columns: { value: string[] };
@@ -170,10 +172,7 @@ export function handleUndoRedoOperation(
     let maxCol = -Infinity;
 
     result.changes.forEach((change: any) => {
-      if (
-        typeof change?.row !== "number" ||
-        typeof change?.col !== "number"
-      ) {
+      if (typeof change?.row !== "number" || typeof change?.col !== "number") {
         return;
       }
       minRow = Math.min(minRow, change.row);

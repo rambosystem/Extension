@@ -109,13 +109,13 @@ const emit = defineEmits<{
   "custom-action": [payload: { id: string; context: MenuContext }];
 }>();
 
-// --- 1. 统一状态管理 ---
-// 创建统一状态管理，整合核心状态
+// --- 1. 统一状态管�?---
+// 创建统一状态管理，整合核心状�?
 const excelState = useExcelState({
   initialData: props.modelValue,
 });
 
-// 从统一状态获取数据引用
+// 从统一状态获取数据引�?
 const { tableData, columns: internalColumns, rows } = excelState.data;
 
 // 使用统一状态的数据操作方法
@@ -131,7 +131,7 @@ const {
   dataState: excelState.data,
 });
 
-// 使用自定义列标题或默认列标题（仅用于显示）
+// 使用自定义列标题或默认列标题（仅用于显示�?
 const displayColumns = computed<string[]>(() => {
   if (
     props.columnNames &&
@@ -142,7 +142,7 @@ const displayColumns = computed<string[]>(() => {
     return props.columnNames
       .slice(0, internalColumns.value.length)
       .map((name, index) => {
-        // 如果自定义列标题数量不足，用默认的补齐
+        // 如果自定义列标题数量不足，用默认的补�?
         return name || internalColumns.value[index] || "";
       });
   }
@@ -177,17 +177,17 @@ const {
 } = useSelection({ state: excelState.selection });
 
 /**
- * 判断当前是否处于多单元格选区状态
+ * 判断当前是否处于多单元格选区状�?
  *
- * 判断逻辑：
+ * 判断逻辑�?
  * 1. 如果处于 MULTIPLE 模式（isMultipleMode === true），返回 true
  * 2. 如果多选列表中有多个选区（multiSelections.length > 1），返回 true
- * 3. 如果多选列表中有一个选区，且该选区不是单格选区，返回 true
- * 4. 如果 selectionStart 和 selectionEnd 不相等，返回 true
+ * 3. 如果多选列表中有一个选区，且该选区不是单格选区，返�?true
+ * 4. 如果 selectionStart �?selectionEnd 不相等，返回 true
  * 5. 否则返回 false
  */
 const isMultiSelect = computed<boolean>(() => {
-  // 1. 检查是否处于 MULTIPLE 模式
+  // 1. 检查是否处�?MULTIPLE 模式
   if (isMultipleMode.value) {
     return true;
   }
@@ -278,7 +278,7 @@ const {
   isUndoRedoInProgress,
 } = useHistory();
 
-// 智能填充管理（仅在启用时使用）
+// 智能填充管理（仅在启用时使用�?
 const fillHandleComposable = props.enableFillHandle
   ? useFillHandle({
     getSmartValue,
@@ -286,9 +286,9 @@ const fillHandleComposable = props.enableFillHandle
   })
   : null;
 
-// 列宽管理（仅在启用时使用）
+// 列宽管理（仅在启用时使用�?
 // 传入初始列数，Map会自动处理新增列（使用默认宽度）
-// 注意：如果 defaultColumnWidth 是对象，useColumnWidth 的 defaultWidth 使用 others 值
+// 注意：如�?defaultColumnWidth 是对象，useColumnWidth �?defaultWidth 使用 others �?
 const getDefaultWidthForComposable = (): number => {
   if (
     typeof props.defaultColumnWidth === "object" &&
@@ -305,7 +305,7 @@ const columnWidthComposable = props.enableColumnResize
   })
   : null;
 
-// 行高管理（仅在启用时使用）
+// 行高管理（仅在启用时使用�?
 // 传入初始行数，Map会自动处理新增行（使用默认高度）
 const rowHeightComposable = props.enableRowResize
   ? useRowHeight({
@@ -313,7 +313,7 @@ const rowHeightComposable = props.enableRowResize
   })
   : null;
 
-// --- 状态管理 ---
+// --- 状态管�?---
 const containerRef = ref<HTMLElement | null>(null);
 
 // --- 单元格编辑管理（使用统一状态）---
@@ -345,24 +345,24 @@ const { getColumnWidth, getRowHeight } = useSizeManager({
   rowHeightComposable,
 });
 
-// --- 单元格显示样式管理 ---
+// --- 单元格显示样式管�?---
 const { getCellDisplayStyle } = useCellDisplay({
   tableData,
   getColumnWidth,
   getRowHeight,
 });
 
-// --- 虚拟滚动管理（大数据量性能优化）---
+// --- 虚拟滚动管理（大数据量性能优化�?--
 const virtualScroll = useVirtualScroll(
   computed(() => rows.value.length),
   {
-    threshold: 100, // 超过 100 行启用虚拟滚动
-    bufferSize: 5, // 缓冲区 5 行
+    threshold: 100, // 超过 100 行启用虚拟滚�?
+    bufferSize: 5, // 缓冲�?5 �?
     defaultRowHeight: props.defaultRowHeight || 36,
   }
 );
 
-// 计算可见行范围
+// 计算可见行范�?
 const visibleRows = computed(() => {
   if (!virtualScroll.enabled.value) {
     // 未启用虚拟滚动，返回所有行
@@ -375,7 +375,7 @@ const visibleRows = computed(() => {
 });
 
 /**
- * 获取实际行索引（考虑虚拟滚动）
+ * 获取实际行索引（考虑虚拟滚动�?
  */
 const getActualRowIndex = (visibleIndex: number): number => {
   if (!virtualScroll.enabled.value) {
@@ -404,14 +404,14 @@ const isInDragArea = (row: number, col: number): boolean => {
   return fillHandleComposable.isInDragArea(row, col);
 };
 
-// --- 数据同步管理（需要在 useClipboard 之前，因为需要 notifyDataChange）---
+// --- 数据同步管理（需要在 useClipboard 之前，因为需�?notifyDataChange�?--
 const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
   tableData,
   props,
   getData,
   setData,
   emit: (event: "update:modelValue" | "change" | "custom-action", ...args: unknown[]) => {
-    // 类型安全的事件分发函数
+    // 类型安全的事件分发函�?
     // 根据事件类型进行类型检查和分发
     switch (event) {
       case "update:modelValue": {
@@ -456,7 +456,7 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
         break;
       }
       default: {
-        // TypeScript 会确保所有情况都被处理
+        // TypeScript 会确保所有情况都被处�?
         const _exhaustive: never = event;
         // 使用 debug 工具统一错误处理
         if (import.meta.env.DEV) {
@@ -465,8 +465,8 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
       }
     }
   },
-  initHistory, // 传递 initHistory 函数，用于在数据更新时重新初始化历史记录
-  isUndoRedoInProgress, // 传递 isUndoRedoInProgress 函数，防止撤销/重做时清空历史
+  initHistory, // 传�?initHistory 函数，用于在数据更新时重新初始化历史记录
+  isUndoRedoInProgress, // 传�?isUndoRedoInProgress 函数，防止撤销/重做时清空历�?
 });
 
 // --- 撤销/重做高亮 ---
@@ -491,7 +491,7 @@ const notifyDataChangeWithUndoFlash = (): void => {
   }
 };
 
-// 初始化数据同步监听
+// 初始化数据同步监�?
 initDataSync();
 
 // --- 剪贴板管理（使用统一状态）---
@@ -499,6 +499,7 @@ const {
   handleCopy,
   handlePaste,
   copyToClipboard,
+  cutToClipboard,
   pasteFromClipboard,
   hasClipboardContent,
   copiedRange,
@@ -530,11 +531,11 @@ const {
   props,
 });
 
-// --- 鼠标事件管理（先定义，供 resize handlers 使用）---
+// --- 鼠标事件管理（先定义，供 resize handlers 使用�?--
 // 定义临时函数引用
 let handleMouseUpRef: ((event: MouseEvent) => void) | null = null;
 
-// --- 尺寸调整处理器 ---
+// --- 尺寸调整处理�?---
 const {
   startColumnResize,
   startRowResize,
@@ -584,7 +585,7 @@ const {
   handleRowResize: handleRowResizeMove,
 });
 
-// 包装 handleMouseUp，保存鼠标位置
+// 包装 handleMouseUp，保存鼠标位�?
 const wrappedHandleMouseUp = (event: MouseEvent): void => {
   lastMousePosition.value = {
     x: event.clientX,
@@ -593,7 +594,7 @@ const wrappedHandleMouseUp = (event: MouseEvent): void => {
   handleMouseUp(event);
 };
 
-// 包装 handleCellMouseDown，让它注册包装后的 handleMouseUp
+// 包装 handleCellMouseDown，让它注册包装后�?handleMouseUp
 const handleCellMouseDown = (
   rowIndex: number,
   colIndex: number,
@@ -601,16 +602,16 @@ const handleCellMouseDown = (
   maxCols: number,
   event: MouseEvent | null = null
 ): void => {
-  // 普通单元格选择，不需要特殊处理
+  // 普通单元格选择，不需要特殊处�?
 
-  // 调用原始函数，但需要替换它内部注册的 mouseup 事件
+  // 调用原始函数，但需要替换它内部注册�?mouseup 事件
   // 先移除可能存在的原始事件监听
   window.removeEventListener("mouseup", handleMouseUp);
 
-  // 调用原始函数（它会重新注册 mouseup，但我们会在之后替换）
+  // 调用原始函数（它会重新注�?mouseup，但我们会在之后替换�?
   originalHandleCellMouseDown(rowIndex, colIndex, maxRows, maxCols, event);
 
-  // 移除原始注册的 handleMouseUp，注册我们的包装版本
+  // 移除原始注册�?handleMouseUp，注册我们的包装版本
   window.removeEventListener("mouseup", handleMouseUp);
   window.addEventListener("mouseup", wrappedHandleMouseUp);
 };
@@ -618,7 +619,7 @@ const handleCellMouseDown = (
 // 更新引用
 handleMouseUpRef = wrappedHandleMouseUp;
 
-// 填充拖拽开始
+// 填充拖拽开�?
 function startFillDrag(row: number, col: number): void {
   if (!props.enableFillHandle || !fillHandleComposable) return;
   fillHandleComposable.startFillDrag(row, col, normalizedSelection.value, () =>
@@ -641,13 +642,13 @@ const deleteSelection = (range: SelectionRange): void => {
   }
 };
 
-// --- 行操作管理 ---
+// --- 行操作管�?---
 // 注意：行操作现在通过工具函数统一处理
-// useKeyboard 和 useCellMenu 都直接使用 rowOperationHandler 工具函数
-// 这样可以确保快捷键和菜单的行为完全一致
+// useKeyboard �?useCellMenu 都直接使�?rowOperationHandler 工具函数
+// 这样可以确保快捷键和菜单的行为完全一�?
 
 // --- Cell Menu 管理 ---
-// 检查剪贴板是否有内容
+// 检查剪贴板是否有内�?
 const checkClipboard = async () => {
   try {
     canPaste.value = await hasClipboardContent();
@@ -665,6 +666,7 @@ const updateMenuStates = () => {
 
 const { handleCellMenuCommand } = useCellMenu({
   copyToClipboard,
+  cutToClipboard,
   pasteFromClipboard,
   undoHistory: undoHistoryWithState,
   redoHistory: redoHistoryWithState,
@@ -683,13 +685,13 @@ const { handleCellMenuCommand } = useCellMenu({
   notifyDataChange: notifyDataChangeWithUndoFlash,
 });
 
-// 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义）
+// 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义�?
 interface HeaderSelectState {
   isSelecting: boolean;
   type: "row" | "col" | null;
   startIndex: number | null;
   isMultipleMode: boolean;
-  lastSelectType: "row" | "col" | null; // 保留最近一次的行/列选择类型，用于菜单位置计算
+  lastSelectType: "row" | "col" | null; // 保留最近一次的�?列选择类型，用于菜单位置计�?
 }
 
 const headerSelectState = ref<HeaderSelectState>({
@@ -703,10 +705,10 @@ const headerSelectState = ref<HeaderSelectState>({
 // 保存最后一次鼠标位置，用于菜单位置计算
 const lastMousePosition = ref<{ x: number; y: number } | null>(null);
 
-// DOM 查询缓存（优化性能，避免重复 querySelector 调用）
+// DOM 查询缓存（优化性能，避免重�?querySelector 调用�?
 const cellElementCache = new CellElementCache();
 
-// 获取单元格DOM元素的函数（使用缓存优化）
+// 获取单元格DOM元素的函数（使用缓存优化�?
 const getCellElement = (row: number, col: number): HTMLElement | null => {
   if (!containerRef.value) return null;
   // 设置容器（如果变化）
@@ -745,7 +747,7 @@ const handleCustomAction = (payload: {
 };
 
 /**
- * 处理菜单可见性变化
+ * 处理菜单可见性变�?
  */
 const handleMenuVisibleChange = (visible: boolean): void => {
   if (visible) {
@@ -754,7 +756,7 @@ const handleMenuVisibleChange = (visible: boolean): void => {
 };
 
 /**
- * 处理容器点击事件（点击空白区域时清除选择）
+ * 处理容器点击事件（点击空白区域时清除选择�?
  */
 const handleContainerClick = (event: MouseEvent): void => {
   const target = event.target as HTMLElement;
@@ -766,7 +768,7 @@ const handleContainerClick = (event: MouseEvent): void => {
   }
 };
 
-// handleCellMouseDown 已经在上面定义，这里不需要重新定义
+// handleCellMouseDown 已经在上面定义，这里不需要重新定�?
 
 /**
  * 处理行号鼠标按下事件
@@ -793,7 +795,7 @@ const handleRowNumberMouseDown = (
     lastSelectType: null,
   };
 
-  // 全选该行
+  // 全选该�?
   selectRow(rowIndex, internalColumns.value.length, isCtrlClick);
 
   // 注册全局事件
@@ -801,7 +803,7 @@ const handleRowNumberMouseDown = (
 };
 
 /**
- * 处理列标题鼠标按下事件
+ * 处理列标题鼠标按下事�?
  */
 const handleColumnHeaderMouseDown = (
   colIndex: number,
@@ -828,7 +830,7 @@ const handleColumnHeaderMouseDown = (
     lastSelectType: null,
   };
 
-  // 全选该列
+  // 全选该�?
   selectColumn(colIndex, rows.value.length, isCtrlClick);
 
   // 注册全局事件
@@ -836,7 +838,7 @@ const handleColumnHeaderMouseDown = (
 };
 
 /**
- * 处理行号鼠标进入事件（拖选时）
+ * 处理行号鼠标进入事件（拖选时�?
  */
 const handleRowNumberMouseEnter = (rowIndex: number): void => {
   if (
@@ -853,8 +855,8 @@ const handleRowNumberMouseEnter = (rowIndex: number): void => {
 };
 
 /**
- * 处理列标题鼠标进入事件（拖选时）
- * @param {number} colIndex - 列索引
+ * 处理列标题鼠标进入事件（拖选时�?
+ * @param {number} colIndex - 列索�?
  */
 const handleColumnHeaderMouseEnter = (colIndex: number): void => {
   if (
@@ -871,7 +873,7 @@ const handleColumnHeaderMouseEnter = (colIndex: number): void => {
 };
 
 /**
- * 处理行号/列标题鼠标抬起事件
+ * 处理行号/列标题鼠标抬起事�?
  */
 const handleHeaderMouseUp = (event: MouseEvent): void => {
   if (!headerSelectState.value.isSelecting) return;
@@ -882,7 +884,7 @@ const handleHeaderMouseUp = (event: MouseEvent): void => {
     y: event.clientY,
   };
 
-  // 清理状态
+  // 清理状�?
   headerSelectState.value = {
     isSelecting: false,
     type: null,
@@ -903,7 +905,7 @@ const handleCornerCellClick = (): void => {
     stopEdit();
   }
 
-  // 全选整个表格
+  // 全选整个表�?
   selectAll(rows.value.length, internalColumns.value.length);
 };
 
@@ -921,28 +923,29 @@ const { handleKeydown } = useKeyboard({
   tableData,
   rows, // 传递行引用，用于恢复行数量
   columns: internalColumns, // 传递列引用，用于恢复列数量
-  insertRowBelow, // 传递基础插入行函数
-  deleteRow, // 传递基础删除行函数
+  insertRowBelow, // 传递基础插入行函�?
+  deleteRow, // 传递基础删除行函�?
   startSingleSelection, // 传递单行选择函数
   updateSingleSelectionEnd,
   applySelectionRange,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
-  customMenuItems: props.customMenuItems, // 传递自定义菜单项配置
-  handleCustomAction, // 传递自定义菜单项处理函数
+  customMenuItems: props.customMenuItems, // 传递自定义菜单项配�?
+  handleCustomAction, // 传递自定义菜单项处理函�?
   createMenuContext: (rowIndex: number) => createMenuContext(rowIndex), // 传递创建上下文函数
   copyToClipboard, // 传递程序化复制函数
+  cutToClipboard,
   pasteFromClipboard, // 传递程序化粘贴函数
-  clearSelection, // 传递清除选择函数，确保快捷键和菜单行为一致
-  notifyDataChange: notifyDataChangeWithUndoFlash, // 传递通知数据变化函数，确保快捷键和菜单行为一致
-  exitCopyMode, // 传递退出复制状态函数
-  copiedRange, // 传递复制区域引用，用于判断是否处于复制状态
+  clearSelection, // 传递清除选择函数，确保快捷键和菜单行为一�?
+  notifyDataChange: notifyDataChangeWithUndoFlash, // 传递通知数据变化函数，确保快捷键和菜单行为一�?
+  exitCopyMode, // 传递退出复制状态函�?
+  copiedRange, // 传递复制区域引用，用于判断是否处于复制状�?
 });
 
-// 注意：列宽初始化逻辑已移至 getColumnWidth 函数中处理
-// 当 defaultColumnWidth 为对象类型时，getColumnWidth 会自动处理 Key 列和其他列的宽度
-// 用户手动调整的宽度会保存在 columnWidthComposable.columnWidths Map 中，优先级最高
+// 注意：列宽初始化逻辑已移�?getColumnWidth 函数中处�?
+// �?defaultColumnWidth 为对象类型时，getColumnWidth 会自动处�?Key 列和其他列的宽度
+// 用户手动调整的宽度会保存�?columnWidthComposable.columnWidths Map 中，优先级最�?
 
 /**
  * 设置指定列的宽度
@@ -955,12 +958,12 @@ const setColumnWidth = (colIndex: number, width: number): void => {
 
 // --- 10. 暴露方法给父组件 ---
 /**
- * Excel 组件暴露的方法和属性
+ * Excel 组件暴露的方法和属�?
  *
  * 通过 ref 可以访问以下方法和属性：
  * - getData(): 获取表格数据的深拷贝
  * - setData(data): 设置整个表格数据
- * - updateCell(row, col, value): 更新单个单元格
+ * - updateCell(row, col, value): 更新单个单元�?
  * - clearData(): 清空所有单元格数据
  * - setColumnWidth(colIndex, width): 设置指定列的宽度
  * - tableData: 表格数据的响应式引用（只读）
@@ -972,7 +975,7 @@ defineExpose({
    * 获取表格数据
    * @method getData
    * @returns {string[][]} 表格数据的深拷贝
-   * @description 返回当前表格数据的深拷贝，不会影响原始数据
+   * @description 返回当前表格数据的深拷贝，不会影响原始数�?
    * @example
    * const data = excelRef.value.getData();
    * console.log(data); // [["A1", "B1"], ["A2", "B2"]]
@@ -991,14 +994,14 @@ defineExpose({
    */
   setData: setDataWithSync,
   /**
-   * 更新单个单元格
+   * 更新单个单元�?
    * @method updateCell
-   * @param {number} row - 行索引（从0开始）
-   * @param {number} col - 列索引（从0开始）
-   * @param {string} value - 新值
-   * @description 更新指定单元格的值，如果超出当前范围会自动扩展行列
+   * @param {number} row - 行索引（�?开始）
+   * @param {number} col - 列索引（�?开始）
+   * @param {string} value - 新�?
+   * @description 更新指定单元格的值，如果超出当前范围会自动扩展行�?
    * @example
-   * excelRef.value.updateCell(0, 0, "新值");
+   * excelRef.value.updateCell(0, 0, "新�?);
    */
   updateCell: (row: number, col: number, value: string) => {
     updateCell(row, col, value);
@@ -1016,8 +1019,8 @@ defineExpose({
     });
   },
   /**
-   * 获取当前表格数据（响应式引用）
-   * 表格数据的响应式引用，可以直接访问但建议使用 getData() 获取深拷贝
+   * 获取当前表格数据（响应式引用�?
+   * 表格数据的响应式引用，可以直接访问但建议使用 getData() 获取深拷�?
    * @readonly
    * @example
    * const data = excelRef.value.tableData;
@@ -1027,7 +1030,7 @@ defineExpose({
   /**
    * 设置指定列的宽度
    * @method setColumnWidth
-   * @param {number} colIndex - 列索引（从0开始）
+   * @param {number} colIndex - 列索引（�?开始）
    * @param {number} width - 宽度（像素）
    * @description 手动设置指定列的宽度，仅在启用列宽调整时生效
    * @example
@@ -1040,14 +1043,14 @@ defineExpose({
 onMounted(() => {
   initHistory(tableData.value);
 
-  // 初始化虚拟滚动
+  // 初始化虚拟滚�?
   nextTick(() => {
     if (containerRef.value && virtualScroll.enabled.value) {
       virtualScroll.init(containerRef.value, getRowHeight);
     }
   });
 
-  // 监听行高变化，更新虚拟滚动
+  // 监听行高变化，更新虚拟滚�?
   if (virtualScroll.enabled.value && rowHeightComposable) {
     watch(
       () => rowHeightComposable?.rowHeights.value,
@@ -1059,7 +1062,7 @@ onMounted(() => {
   }
 });
 
-// 监听容器引用变化，更新缓存
+// 监听容器引用变化，更新缓�?
 watch(containerRef, (newContainer) => {
   if (newContainer) {
     cellElementCache.setContainer(newContainer);
@@ -1077,11 +1080,11 @@ onUnmounted(() => {
   if (props.enableRowResize) {
     window.removeEventListener("mousemove", handleRowResizeMove);
   }
-  // 清理填充手柄事件监听器
+  // 清理填充手柄事件监听�?
   if (props.enableFillHandle && fillHandleComposable) {
     fillHandleComposable.cleanup();
   }
-  // 清理输入框引用
+  // 清理输入框引�?
   clearInputRefs();
   // 清空 DOM 缓存
   cellElementCache.clear();
@@ -1136,7 +1139,7 @@ $transition-fast: 0.05s ease;
 $transition-normal: 0.15s ease;
 $transition-slow: 0.2s;
 
-// 字体族
+// 字体�?
 $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
   "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -1145,11 +1148,11 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
 .excel-container {
   padding: $container-padding;
   overflow-y: auto;
-  overflow-x: hidden; // 隐藏横向滚动条
+  overflow-x: hidden; // 隐藏横向滚动�?
   outline: none;
   font-family: $font-family;
   width: 100%;
-  height: 100%; // 确保容器有高度，才能显示滚动条
+  height: 100%; // 确保容器有高度，才能显示滚动�?
   box-sizing: border-box;
 }
 
@@ -1167,8 +1170,8 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   margin: 0;
   padding: 0;
 
-  // 圆角处理：表头行的第一个和最后一个单元格需要圆角
-  // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边框
+  // 圆角处理：表头行的第一个和最后一个单元格需要圆�?
+  // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边�?
   .excel-row:first-child {
     .excel-cell:first-child {
       border-top: none; // 移除上边框，避免与表格上边框重叠
@@ -1182,13 +1185,13 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-top-right-radius: $border-radius;
     }
 
-    // 表头行的其他单元格也移除上边框
+    // 表头行的其他单元格也移除上边�?
     .excel-cell {
       border-top: none;
     }
   }
 
-  // 底部圆角处理：最后一行的第一个和最后一个单元格需要圆角
+  // 底部圆角处理：最后一行的第一个和最后一个单元格需要圆�?
   .excel-row:last-child {
     .excel-cell:first-child {
       border-bottom: none; // 移除下边框，避免与表格下边框重叠
@@ -1202,7 +1205,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-bottom-right-radius: $border-radius;
     }
 
-    // 最后一行的其他单元格也移除下边框
+    // 最后一行的其他单元格也移除下边�?
     .excel-cell {
       border-bottom: none;
     }
@@ -1225,7 +1228,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   padding: 0;
 }
 
-// ==================== 单元格样式 ====================
+// ==================== 单元格样�?====================
 .excel-cell {
   // 基础样式
   border-right: $border-width solid $border-color;
@@ -1241,7 +1244,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   overflow: visible;
   transition: background-color $transition-fast;
 
-  // 交互状态
+  // 交互状�?
   &:hover:not(.active):not(.in-selection):not(.header-cell):not(.row-number) {
     background-color: $cell-hover-bg;
   }
@@ -1255,7 +1258,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     background-color: #f5f7fa;
   }
 
-  // 选中边框伪元素（统一管理）
+  // 选中边框伪元素（统一管理�?
   &::after {
     content: "";
     position: absolute;
@@ -1303,7 +1306,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     }
   }
 
-  // 激活状态
+  // 激活状�?
   &.active {
     z-index: $z-index-active !important;
     background-color: $white;
@@ -1376,7 +1379,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     }
   }
 
-  // 单元格内容
+  // 单元格内�?
   .cell-content {
     display: block;
     width: 100%;
@@ -1400,7 +1403,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     }
   }
 
-  // 输入框
+  // 输入�?
   .cell-input {
     padding: 0 $cell-padding-h;
     width: 100%;
@@ -1411,10 +1414,10 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   }
 }
 
-// ==================== 表头和行号 ====================
+// ==================== 表头和行�?====================
 .header-cell,
 .row-number {
-  display: flex; // 确保是 flex 布局
+  display: flex; // 确保�?flex 布局
   background: $header-bg;
   font-weight: $font-weight-bold;
   font-size: $font-size-header;
@@ -1435,7 +1438,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   height: $default-row-height;
   min-height: $default-row-height;
   padding: 0 $cell-padding-h; // 与数据单元格对齐
-  justify-content: flex-start; // 表头左对齐
+  justify-content: flex-start; // 表头左对�?
   text-align: left;
 
   // 禁用 hover 效果
@@ -1475,7 +1478,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   align-items: center;
 }
 
-// ==================== 输入框样式（独立定义） ====================
+// ==================== 输入框样式（独立定义�?====================
 .cell-input {
   overflow: hidden;
   text-overflow: ellipsis;

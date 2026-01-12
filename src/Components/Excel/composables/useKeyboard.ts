@@ -81,6 +81,7 @@ export interface UseKeyboardOptions {
   handleCustomAction?: (payload: { id: string; context: MenuContext }) => void;
   createMenuContext?: (rowIndex: number) => MenuContext;
   copyToClipboard?: () => Promise<boolean>;
+  cutToClipboard?: () => Promise<boolean>;
   pasteFromClipboard?: () => Promise<boolean>;
   clearSelection?: () => void;
   notifyDataChange?: () => void;
@@ -325,6 +326,7 @@ export function useKeyboard({
   handleCustomAction,
   createMenuContext,
   copyToClipboard,
+  cutToClipboard,
   pasteFromClipboard,
   isUndoRedoInProgress,
   clearSelection,
@@ -333,6 +335,7 @@ export function useKeyboard({
   copiedRange,
 }: UseKeyboardOptions): UseKeyboardReturn {
   // 准备行操作工具函数的选项
+
   const rowOperationOptions: RowOperationHandlerOptions = {
     tableData,
     rows,
@@ -368,6 +371,35 @@ export function useKeyboard({
         // 错误处理：复制快捷键失败
         if (import.meta.env.DEV) {
           console.error("[Keyboard] Copy shortcut failed:", error);
+        }
+      });
+    }
+
+    return true;
+  };
+
+  /**
+   * Cut shortcut (Ctrl+X / Cmd+X)
+   */
+  const handleCutShortcut = (event: KeyboardEvent): boolean => {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    const isXKey = event.key.toLowerCase() === "x";
+
+    if (!isCtrlOrCmd || !isXKey) {
+      return false;
+    }
+
+    // Allow native cut while editing.
+    if (editingCell.value) {
+      return false;
+    }
+
+    event.preventDefault();
+
+    if (cutToClipboard) {
+      cutToClipboard().catch((error) => {
+        if (import.meta.env.DEV) {
+          console.error("[Keyboard] Cut shortcut failed:", error);
         }
       });
     }
@@ -587,7 +619,7 @@ export function useKeyboard({
 
     const range = normalizedSelection.value;
     if (range && range.minRow !== range.maxRow) {
-      // 多行删除：删除选中的所有行
+      // 多行删除：删除选中所有行
       const rowIndices: number[] = [];
       for (let row = range.minRow; row <= range.maxRow; row++) {
         rowIndices.push(row);
@@ -603,7 +635,7 @@ export function useKeyboard({
   };
 
   /**
-   * 处理删除键(删除选区内容）
+   * 处理删除键（删除选区内容）
    */
   const handleDelete = (event: KeyboardEvent): boolean => {
     if (event.ctrlKey || event.metaKey) {
@@ -764,8 +796,8 @@ export function useKeyboard({
         event.stopPropagation();
         return true;
       }
-      // 如果不在复制状态，不处理 ESC 键，让事件正常传播给弹出框
     }
+    // 如果不在复制状态，不处理 ESC 键，让事件正常传播给弹出框
     return false;
   };
 
@@ -786,6 +818,7 @@ export function useKeyboard({
 
     if (handleUndoRedo(event)) return;
     if (handleCopyShortcut(event)) return;
+    if (handleCutShortcut(event)) return;
     if (handlePasteShortcut(event)) return;
     if (editingCell.value) return;
     if (handleInsertRow(event)) return;

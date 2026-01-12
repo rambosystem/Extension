@@ -36,6 +36,12 @@ export interface PasteResult {
   rowsAdded: number;
   colsAdded: number;
   error?: string;
+  changes?: Array<{
+    row: number;
+    col: number;
+    oldValue: string;
+    newValue: string;
+  }>;
 }
 
 /**
@@ -214,6 +220,8 @@ class PasteStrategyManager {
       startSingleSelection: (row: number, col: number) => void;
       updateSingleSelectionEnd: (row: number, col: number) => void;
       notifyDataChange?: () => void;
+      skipHistorySave?: boolean; // 跳过历史记录保存（用于剪切-粘贴原子操作）
+      sourceRange?: SelectionRange | null; // 复制/剪切源区域（用于撤回时恢复选区）
     }
   ): PasteResult {
     // 1. 编辑模式：不处理（让浏览器原生处理输入框的粘贴）
@@ -255,7 +263,7 @@ class PasteStrategyManager {
       options
     );
 
-    // 6. 保存历史记录（在粘贴完成后，使用修改后的状态）
+    // 6. 检测粘贴引起的变化并保存历史记录（在粘贴完成后，使用修改后的状态）
     if (result.success) {
       // 检测粘贴引起的变化
       const changes: Array<{
@@ -293,13 +301,25 @@ class PasteStrategyManager {
         }
       }
 
-      options.saveHistory(context.tableData, {
-        type: HistoryActionType.PASTE,
-        description: `Paste ${pasteData.length}x${
-          pasteData[0]?.length || 0
-        } cells`,
-        changes: changes.length > 0 ? changes : undefined,
-      });
+      // 将变化信息添加到结果中
+      result.changes = changes;
+
+      // 只有在不跳过历史记录保存时才保存（剪切-粘贴时会跳过，统一保存）
+      if (!options.skipHistorySave) {
+        options.saveHistory(context.tableData, {
+          type: HistoryActionType.PASTE,
+          description: `Paste ${pasteData.length}x${
+            pasteData[0]?.length || 0
+          } cells`,
+          changes: changes.length > 0 ? changes : undefined,
+          metadata: {
+            // 撤回时选区应该回到复制源区域（如果有的话）
+            selectionRange: options.sourceRange || result.affectedRange,
+            // 重做时选区应该回到粘贴目标区域
+            redoSelectionRange: result.affectedRange,
+          },
+        });
+      }
     }
 
     // 7. 更新选区（选中整个粘贴区域）
@@ -466,6 +486,7 @@ export interface UseClipboardReturn {
   handleCopy: (event: ClipboardEvent) => void;
   handlePaste: (event: ClipboardEvent) => void;
   copyToClipboard: () => Promise<boolean>;
+  cutToClipboard: () => Promise<boolean>;
   pasteFromClipboard: () => Promise<boolean>;
   hasClipboardContent: () => Promise<boolean>;
   copiedRange: Ref<SelectionRange | null>;
@@ -517,10 +538,12 @@ export function useClipboard({
 
   // 复制状态管理：保存复制时的选区范围（复制源区域）
   const copiedRange = ref<SelectionRange | null>(null);
+  const cutRange = ref<SelectionRange | null>(null);
 
   // 退出复制状态
   const exitCopyMode = (): void => {
     copiedRange.value = null;
+    cutRange.value = null;
   };
 
   // 生成列标题的辅助函数（从统一状态获取）
@@ -536,6 +559,149 @@ export function useClipboard({
     const first = Math.floor((index - 26) / 26);
     const second = (index - 26) % 26;
     return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
+  };
+
+  const recordCutRange = (context: CopyContext): void => {
+    if (context.normalizedSelection) {
+      cutRange.value = { ...context.normalizedSelection };
+    } else if (context.activeCell) {
+      cutRange.value = {
+        minRow: context.activeCell.row,
+        maxRow: context.activeCell.row,
+        minCol: context.activeCell.col,
+        maxCol: context.activeCell.col,
+      };
+    } else {
+      cutRange.value = null;
+    }
+    copiedRange.value = cutRange.value ? { ...cutRange.value } : null;
+  };
+
+  const clearRange = (
+    range: SelectionRange
+  ): Array<{
+    row: number;
+    col: number;
+    oldValue: string;
+    newValue: string;
+  }> => {
+    const changes: Array<{
+      row: number;
+      col: number;
+      oldValue: string;
+      newValue: string;
+    }> = [];
+
+    for (let r = range.minRow; r <= range.maxRow; r++) {
+      if (!actualTableData.value[r]) continue;
+      for (let c = range.minCol; c <= range.maxCol; c++) {
+        if (actualTableData.value[r][c] === undefined) {
+          continue;
+        }
+        const oldValue = actualTableData.value[r]?.[c] ?? "";
+        if (oldValue !== "") {
+          changes.push({
+            row: r,
+            col: c,
+            oldValue,
+            newValue: "",
+          });
+        }
+        actualTableData.value[r][c] = "";
+      }
+    }
+
+    return changes;
+  };
+
+  const isRangeOverlap = (
+    source: SelectionRange,
+    target: SelectionRange
+  ): boolean => {
+    const rowOverlap =
+      source.minRow <= target.maxRow && source.maxRow >= target.minRow;
+    const colOverlap =
+      source.minCol <= target.maxCol && source.maxCol >= target.minCol;
+    return rowOverlap && colOverlap;
+  };
+
+  const clearCutSourceIfNeeded = (
+    result: PasteResult,
+    pasteChanges: Array<{
+      row: number;
+      col: number;
+      oldValue: string;
+      newValue: string;
+    }>
+  ): void => {
+    if (!cutRange.value) {
+      return;
+    }
+
+    if (
+      result.affectedRange &&
+      isRangeOverlap(cutRange.value, result.affectedRange)
+    ) {
+      cutRange.value = null;
+      copiedRange.value = null;
+      return;
+    }
+
+    const cutChanges = clearRange(cutRange.value);
+
+    // 将剪切源的清除和粘贴操作合并为一条历史记录
+    if (cutChanges.length > 0 || pasteChanges.length > 0) {
+      // 合并粘贴变化和剪切源清除变化
+      const allChanges = [...pasteChanges, ...cutChanges];
+
+      saveHistory(actualTableData.value, {
+        type: HistoryActionType.PASTE,
+        description: `Cut and paste ${pasteChanges.length} cell(s)`,
+        changes: allChanges.length > 0 ? allChanges : undefined,
+        metadata: {
+          isCutPaste: true,
+          pasteRange: result.affectedRange,
+          cutRange: cutRange.value,
+          // 撤回时选区应该回到剪切源区域
+          selectionRange: cutRange.value,
+          // 重做时选区应该回到粘贴目标区域
+          redoSelectionRange: result.affectedRange,
+        },
+      });
+
+      if (notifyDataChange) {
+        notifyDataChange();
+      }
+    }
+
+    cutRange.value = null;
+    copiedRange.value = null;
+  };
+
+  const cutToClipboard = async (): Promise<boolean> => {
+    const context: CopyContext = {
+      isEditing: !!actualEditingCell.value,
+      editingCell: actualEditingCell.value,
+      activeCell: actualActiveCell.value,
+      normalizedSelection: actualNormalizedSelection.value,
+      multiSelections: actualMultiSelections.value,
+      tableData: actualTableData.value,
+    };
+
+    const textToCopy = copyStrategy.getCopyText(context);
+
+    if (textToCopy === null || textToCopy === "") {
+      return false;
+    }
+
+    try {
+      await clipboardOps.copyToClipboard(textToCopy);
+      recordCutRange(context);
+      return true;
+    } catch (error) {
+      console.error("Failed to cut to clipboard:", error);
+      return false;
+    }
   };
 
   /**
@@ -620,6 +786,7 @@ export function useClipboard({
           maxCol: context.activeCell.col,
         };
       }
+      cutRange.value = null;
       return true;
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
@@ -647,6 +814,9 @@ export function useClipboard({
 
     event.preventDefault();
 
+    // 如果处于剪切模式，跳过历史记录保存，由 clearCutSourceIfNeeded 统一保存
+    const isCutMode = !!cutRange.value;
+
     const result = pasteStrategy.executePaste(context, {
       rows: actualRows,
       columns: actualColumns,
@@ -655,13 +825,18 @@ export function useClipboard({
       startSingleSelection,
       updateSingleSelectionEnd,
       notifyDataChange,
+      skipHistorySave: isCutMode,
+      sourceRange: copiedRange.value, // 传递复制源区域
     });
 
     if (!result.success) {
       console.warn("Paste failed:", result.error);
     } else {
-      // 粘贴成功后，清除复制区域样式
-      copiedRange.value = null;
+      // 粘贴成功后，清除复制/剪切区域样式
+      clearCutSourceIfNeeded(result, result.changes || []);
+      if (!cutRange.value) {
+        copiedRange.value = null;
+      }
     }
   };
 
@@ -681,6 +856,9 @@ export function useClipboard({
         tableData: actualTableData.value,
       };
 
+      // 如果处于剪切模式，跳过历史记录保存，由 clearCutSourceIfNeeded 统一保存
+      const isCutMode = !!cutRange.value;
+
       const result = pasteStrategy.executePaste(context, {
         rows: actualRows,
         columns: actualColumns,
@@ -689,11 +867,16 @@ export function useClipboard({
         startSingleSelection,
         updateSingleSelectionEnd,
         notifyDataChange,
+        skipHistorySave: isCutMode,
+        sourceRange: copiedRange.value, // 传递复制源区域
       });
 
       if (result.success) {
         // 粘贴成功后，清除复制区域样式
-        copiedRange.value = null;
+        clearCutSourceIfNeeded(result, result.changes || []);
+        if (!cutRange.value) {
+          copiedRange.value = null;
+        }
       }
 
       return result.success;
@@ -714,6 +897,7 @@ export function useClipboard({
     handleCopy,
     handlePaste,
     copyToClipboard,
+    cutToClipboard,
     pasteFromClipboard,
     hasClipboardContent,
     copiedRange,
