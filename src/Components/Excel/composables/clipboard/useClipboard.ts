@@ -1,7 +1,9 @@
 import { ref, type Ref } from "vue";
-import type { CellPosition, SelectionRange } from "./types";
-import { HistoryActionType, type SaveHistoryOptions } from "./useHistory";
-import type { ExcelState } from "./useExcelState";
+import type { CellPosition, SelectionRange } from "../types";
+import { HistoryActionType, type SaveHistoryOptions } from "../history/useHistory";
+import type { ExcelState } from "../useExcelState";
+import { getCopyText, parseClipboardText } from "./clipboardParser";
+import type { SelectionService } from "../selection/selectionService";
 
 /**
  * 复制上下文
@@ -111,99 +113,6 @@ export class BrowserClipboardOperations implements ClipboardOperations {
 }
 
 /**
- * 复制策略：确定复制什么内容
- */
-class CopyStrategyManager {
-  /**
-   * 获取要复制的文本
-   */
-  getCopyText(context: CopyContext): string | null {
-    // 1. 编辑模式：不复制（让浏览器原生处理输入框的复制）
-    if (context.isEditing) {
-      return null;
-    }
-
-    // 2. 多选区域：合并为一个大矩形复制
-    if (context.multiSelections.length > 1) {
-      return this.copyMultipleSelections(context);
-    }
-
-    // 3. 单选区域：标准矩形复制
-    if (context.normalizedSelection) {
-      return this.copyRectangularSelection(context);
-    }
-
-    // 4. 无选区：复制当前单元格
-    if (context.activeCell) {
-      return this.copySingleCell(context);
-    }
-
-    return null;
-  }
-
-  private copyRectangularSelection(context: CopyContext): string {
-    const { normalizedSelection, tableData } = context;
-    if (!normalizedSelection) return "";
-
-    const rows: string[] = [];
-    for (
-      let r = normalizedSelection.minRow;
-      r <= normalizedSelection.maxRow;
-      r++
-    ) {
-      // 即使行不存在或为空，也要复制（空行也要复制）
-      const cells: string[] = [];
-      for (
-        let c = normalizedSelection.minCol;
-        c <= normalizedSelection.maxCol;
-        c++
-      ) {
-        cells.push(tableData[r]?.[c] ?? "");
-      }
-      rows.push(cells.join("\t"));
-    }
-    return rows.join("\n");
-  }
-
-  private copyMultipleSelections(context: CopyContext): string {
-    // 找到所有选区的边界
-    const { multiSelections, tableData } = context;
-
-    const minRow = Math.min(...multiSelections.map((s) => s.minRow));
-    const maxRow = Math.max(...multiSelections.map((s) => s.maxRow));
-    const minCol = Math.min(...multiSelections.map((s) => s.minCol));
-    const maxCol = Math.max(...multiSelections.map((s) => s.maxCol));
-
-    // 创建一个大矩形，未选中的区域用空字符串填充
-    const rows: string[] = [];
-    for (let r = minRow; r <= maxRow; r++) {
-      const cells: string[] = [];
-      for (let c = minCol; c <= maxCol; c++) {
-        // 检查该单元格是否在任一选区内
-        const isInSelection = multiSelections.some(
-          (sel) =>
-            r >= sel.minRow &&
-            r <= sel.maxRow &&
-            c >= sel.minCol &&
-            c <= sel.maxCol
-        );
-
-        cells.push(isInSelection ? tableData[r]?.[c] ?? "" : "");
-      }
-      rows.push(cells.join("\t"));
-    }
-    return rows.join("\n");
-  }
-
-  private copySingleCell(context: CopyContext): string {
-    const { activeCell, tableData } = context;
-    if (!activeCell) return "";
-
-    return tableData[activeCell.row]?.[activeCell.col] ?? "";
-  }
-}
-
-/**
  * 粘贴策略：确定粘贴到哪里、如何粘贴
  */
 class PasteStrategyManager {
@@ -217,8 +126,7 @@ class PasteStrategyManager {
       columns: Ref<string[]>;
       generateColumnLabel: (index: number) => string;
       saveHistory: (state: any, options?: SaveHistoryOptions) => void;
-      startSingleSelection: (row: number, col: number) => void;
-      updateSingleSelectionEnd: (row: number, col: number) => void;
+      selectionService: SelectionService;
       notifyDataChange?: () => void;
       skipHistorySave?: boolean; // 跳过历史记录保存（用于剪切-粘贴原子操作）
       sourceRange?: SelectionRange | null; // 复制/剪切源区域（用于撤回时恢复选区）
@@ -236,7 +144,7 @@ class PasteStrategyManager {
     }
 
     // 2. 解析粘贴数据
-    const pasteData = this.parsePasteData(context.clipboardText);
+    const pasteData = parseClipboardText(context.clipboardText);
     if (pasteData.length === 0) {
       return {
         success: false,
@@ -325,12 +233,12 @@ class PasteStrategyManager {
     // 7. 更新选区（选中整个粘贴区域）
     if (result.success && result.affectedRange) {
       // 从粘贴区域的左上角开始选择
-      options.startSingleSelection(
+      options.selectionService.startSingleSelection(
         result.affectedRange.minRow,
         result.affectedRange.minCol
       );
       // 扩展到粘贴区域的右下角，选中整个粘贴区域
-      options.updateSingleSelectionEnd(
+      options.selectionService.updateSingleSelectionEnd(
         result.affectedRange.maxRow,
         result.affectedRange.maxCol
       );
@@ -342,45 +250,6 @@ class PasteStrategyManager {
     }
 
     return result;
-  }
-
-  private parsePasteData(clipboardText: string): string[][] {
-    if (!clipboardText || typeof clipboardText !== "string") {
-      return [];
-    }
-
-    try {
-      // 处理不同的换行符：\r\n (Windows), \n (Unix), \r (Mac)
-      // 不过滤空行，保留所有行（包括空行），这样粘贴时可以正确替换原有值
-      const lines = clipboardText.split(/\r?\n/);
-
-      // 先解析所有行，找出最大列数
-      const parsedRows = lines.map((row) => {
-        if (row === "") {
-          // 空行：返回空数组，稍后会根据最大列数补齐
-          return [];
-        }
-        return row.split("\t");
-      });
-
-      // 找出最大列数（用于补齐空行）
-      const maxCols = Math.max(
-        ...parsedRows.map((row) => row.length),
-        1 // 至少1列
-      );
-
-      // 补齐空行，使其包含与最大列数相同的空单元格
-      return parsedRows.map((row) => {
-        if (row.length === 0) {
-          // 空行：返回包含 maxCols 个空字符串的数组
-          return Array.from({ length: maxCols }, () => "");
-        }
-        return row;
-      });
-    } catch (error) {
-      console.warn("Failed to parse paste data:", error);
-      return [];
-    }
   }
 
   private applyPasteData(
@@ -474,8 +343,7 @@ export interface UseClipboardOptions {
    */
   state: ExcelState;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
-  startSingleSelection: (row: number, col: number) => void;
-  updateSingleSelectionEnd: (row: number, col: number) => void;
+  selectionService: SelectionService;
   notifyDataChange?: () => void;
 }
 
@@ -504,8 +372,7 @@ export interface UseClipboardReturn {
  * const clipboard = useClipboard({
  *   state: excelState,
  *   saveHistory,
- *   startSingleSelection,
- *   updateSingleSelectionEnd,
+ *   selectionService,
  *   notifyDataChange,
  * });
  * ```
@@ -513,8 +380,7 @@ export interface UseClipboardReturn {
 export function useClipboard({
   state,
   saveHistory,
-  startSingleSelection,
-  updateSingleSelectionEnd,
+  selectionService,
   notifyDataChange,
 }: UseClipboardOptions): UseClipboardReturn {
   const {
@@ -533,7 +399,6 @@ export function useClipboard({
 
   // 初始化操作适配器和策略管理器
   const clipboardOps = new BrowserClipboardOperations();
-  const copyStrategy = new CopyStrategyManager();
   const pasteStrategy = new PasteStrategyManager();
 
   // 复制状态管理：保存复制时的选区范围（复制源区域）
@@ -688,7 +553,7 @@ export function useClipboard({
       tableData: actualTableData.value,
     };
 
-    const textToCopy = copyStrategy.getCopyText(context);
+    const textToCopy = getCopyText(context);
 
     if (textToCopy === null || textToCopy === "") {
       return false;
@@ -717,7 +582,7 @@ export function useClipboard({
       tableData: actualTableData.value,
     };
 
-    const textToCopy = copyStrategy.getCopyText(context);
+    const textToCopy = getCopyText(context);
 
     // 如果返回 null，说明应该让浏览器原生处理（如：编辑模式）
     if (textToCopy === null) {
@@ -766,7 +631,7 @@ export function useClipboard({
       tableData: actualTableData.value,
     };
 
-    const textToCopy = copyStrategy.getCopyText(context);
+    const textToCopy = getCopyText(context);
 
     if (textToCopy === null || textToCopy === "") {
       return false;
@@ -822,8 +687,7 @@ export function useClipboard({
       columns: actualColumns,
       generateColumnLabel,
       saveHistory,
-      startSingleSelection,
-      updateSingleSelectionEnd,
+      selectionService,
       notifyDataChange,
       skipHistorySave: isCutMode,
       sourceRange: copiedRange.value, // 传递复制源区域
@@ -864,8 +728,7 @@ export function useClipboard({
         columns: actualColumns,
         generateColumnLabel,
         saveHistory,
-        startSingleSelection,
-        updateSingleSelectionEnd,
+        selectionService,
         notifyDataChange,
         skipHistorySave: isCutMode,
         sourceRange: copiedRange.value, // 传递复制源区域

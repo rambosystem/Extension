@@ -3,8 +3,8 @@ import type {
   CellPosition,
   SelectionRange,
   EndMultipleSelectionDragOptions,
-} from "./types";
-import type { ExcelSelectionState } from "./useExcelState";
+} from "../types";
+import type { ExcelSelectionState } from "../useExcelState";
 
 /**
  * useSelection 返回值接口

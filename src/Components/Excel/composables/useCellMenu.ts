@@ -5,8 +5,9 @@ import {
   handleInsertRowOperation,
   handleDeleteRowOperation,
   type RowOperationHandlerOptions,
-} from "../utils/rowOperationHandler";
-import type { SaveHistoryOptions } from "./useHistory";
+} from "./rowColumnOps/rowOperationHandler";
+import type { SaveHistoryOptions } from "./history/useHistory";
+import type { SelectionService } from "./selection/selectionService";
 
 /**
  * 单元格菜单命令
@@ -32,16 +33,8 @@ export interface UseCellMenuOptions {
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
-  startSingleSelection: (row: number, col: number) => void;
-  updateSingleSelectionEnd?: (row: number, col: number) => void;
-  applySelectionRange?: (range?: {
-    minRow: number;
-    maxRow: number;
-    minCol: number;
-    maxCol: number;
-  }) => void;
+  selectionService: SelectionService;
   triggerSelectionFlash?: () => void;
-  clearSelection?: () => void;
   notifyDataChange?: () => void;
 }
 
@@ -71,11 +64,8 @@ export function useCellMenu({
   saveHistory,
   insertRowBelow,
   deleteRow,
-  startSingleSelection,
-  updateSingleSelectionEnd,
-  applySelectionRange,
+  selectionService,
   triggerSelectionFlash,
-  clearSelection,
   notifyDataChange,
 }: UseCellMenuOptions): UseCellMenuReturn {
   // 准备行操作工具函数的选项
@@ -87,7 +77,7 @@ export function useCellMenu({
     saveHistory,
     insertRowBelow,
     deleteRow,
-    startSingleSelection,
+    selectionService,
     notifyDataChange: notifyDataChange || (() => {}),
   };
 
@@ -136,10 +126,7 @@ export function useCellMenu({
         rows,
         columns,
         activeCell,
-        clearSelection,
-        startSingleSelection,
-        updateSingleSelectionEnd,
-        applySelectionRange,
+        selectionService,
         triggerSelectionFlash,
         notifyDataChange,
       });
@@ -152,10 +139,7 @@ export function useCellMenu({
         rows,
         columns,
         activeCell,
-        clearSelection,
-        startSingleSelection,
-        updateSingleSelectionEnd,
-        applySelectionRange,
+        selectionService,
         triggerSelectionFlash,
         notifyDataChange,
       });

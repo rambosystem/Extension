@@ -1,6 +1,6 @@
 import { watch, type Ref, ComputedRef } from "vue";
-import type { SelectionRange } from "./types";
-import type { UseFillHandleReturn } from "./useFillHandle";
+import type { SelectionRange } from "../types";
+import type { UseFillHandleReturn } from "../useFillHandle";
 
 /**
  * useSelectionStyle 选项

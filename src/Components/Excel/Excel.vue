@@ -48,24 +48,25 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
 import { CellElementCache } from "./composables/utils";
 import { useVirtualScroll } from "./composables/useVirtualScroll";
-import { useHistory } from "./composables/useHistory";
-import { useSelection } from "./composables/useSelection";
+import { useHistory } from "./composables/history/useHistory";
+import { useSelection } from "./composables/selection/useSelection";
+import { createSelectionService } from "./composables/selection/selectionService";
 import { useExcelData } from "./composables/useExcelData";
 import { useExcelState } from "./composables/useExcelState";
 import { useKeyboard } from "./composables/useKeyboard";
-import { useColumnWidth } from "./composables/useColumnWidth";
-import { useRowHeight } from "./composables/useRowHeight";
+import { useColumnWidth } from "./composables/rowColumnOps/useColumnWidth";
+import { useRowHeight } from "./composables/rowColumnOps/useRowHeight";
 import { useFillHandle } from "./composables/useFillHandle";
 import { useCellEditing } from "./composables/useCellEditing";
-import { useClipboard } from "./composables/useClipboard";
+import { useClipboard } from "./composables/clipboard/useClipboard";
 import { useCellDisplay } from "./composables/useCellDisplay";
 import { useSizeManager } from "./composables/useSizeManager";
-import { useSelectionStyle } from "./composables/useSelectionStyle";
+import { useSelectionStyle } from "./composables/selection/useSelectionStyle";
 import { useMouseEvents } from "./composables/useMouseEvents";
-import { useDataSync } from "./composables/useDataSync";
+import { useDataSync } from "./composables/dataSync/useDataSync";
 import { useCellMenu } from "./composables/useCellMenu";
 import { useCellMenuPosition } from "./composables/useCellMenuPosition";
-import { useResizeHandlers } from "./composables/useResizeHandlers";
+import { useResizeHandlers } from "./composables/rowColumnOps/useResizeHandlers";
 import type {
   ColumnWidthConfig,
   MenuContext,
@@ -150,6 +151,7 @@ const displayColumns = computed<string[]>(() => {
 });
 
 // 使用统一状态的选择管理
+const selection = useSelection({ state: excelState.selection });
 const {
   activeCell,
   selectionStart,
@@ -160,7 +162,6 @@ const {
   isMultipleMode,
   startSingleSelection,
   updateSingleSelectionEnd,
-  applySelectionRange,
   startMultipleSelection,
   updateMultipleSelectionEnd,
   endMultipleSelectionClick,
@@ -175,7 +176,13 @@ const {
   selectRows,
   selectColumns,
   selectAll,
-} = useSelection({ state: excelState.selection });
+} = selection;
+
+const selectionService = createSelectionService({
+  rows,
+  columns: internalColumns,
+  selection,
+});
 
 /**
  * 判断当前是否处于多单元格选区状�?
@@ -228,32 +235,6 @@ const updateHistoryState = () => {
   canRedo.value = canRedoFn();
 };
 
-const applySelectionRangeSafe = (range?: {
-  minRow: number;
-  maxRow: number;
-  minCol: number;
-  maxCol: number;
-}): void => {
-  if (!range || rows.value.length === 0 || internalColumns.value.length === 0) {
-    clearSelection();
-    return;
-  }
-
-  const maxRowIndex = rows.value.length - 1;
-  const maxColIndex = internalColumns.value.length - 1;
-
-  const minRow = Math.max(0, Math.min(range.minRow, maxRowIndex));
-  const maxRow = Math.max(0, Math.min(range.maxRow, maxRowIndex));
-  const minCol = Math.max(0, Math.min(range.minCol, maxColIndex));
-  const maxCol = Math.max(0, Math.min(range.maxCol, maxColIndex));
-
-  applySelectionRange({
-    minRow,
-    maxRow,
-    minCol,
-    maxCol,
-  });
-};
 
 const saveHistoryWithState = (
   state: any,
@@ -511,8 +492,7 @@ const {
 } = useClipboard({
   state: excelState,
   saveHistory: saveHistoryWithState,
-  startSingleSelection,
-  updateSingleSelectionEnd,
+  selectionService,
   notifyDataChange,
 });
 
@@ -681,10 +661,7 @@ const { handleCellMenuCommand } = useCellMenu({
   saveHistory: saveHistoryWithState,
   insertRowBelow,
   deleteRow,
-  startSingleSelection,
-  updateSingleSelectionEnd,
-  applySelectionRange: applySelectionRangeSafe,
-  clearSelection,
+  selectionService,
   notifyDataChange,
   triggerSelectionFlash,
 });
@@ -929,9 +906,7 @@ const { handleKeydown } = useKeyboard({
   columns: internalColumns, // 传递列引用，用于恢复列数量
   insertRowBelow, // 传递基础插入行函�?
   deleteRow, // 传递基础删除行函�?
-  startSingleSelection, // 传递单行选择函数
-  updateSingleSelectionEnd,
-  applySelectionRange,
+  selectionService,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
@@ -941,7 +916,6 @@ const { handleKeydown } = useKeyboard({
   copyToClipboard, // 传递程序化复制函数
   cutToClipboard,
   pasteFromClipboard, // 传递程序化粘贴函数
-  clearSelection, // 传递清除选择函数，确保快捷键和菜单行为一�?
   notifyDataChange,
   triggerSelectionFlash, // 传递撤销/重做高亮触发
   exitCopyMode, // 传递退出复制状态函�?

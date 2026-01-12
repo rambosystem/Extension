@@ -1,11 +1,14 @@
-import { ref, type Ref } from "vue";
-import { DEFAULT_CONFIG } from "./constants";
+import type { Ref } from "vue";
+import { DEFAULT_CONFIG } from "../constants";
 import {
   debugLog,
   debugInfo,
   debugWarn,
   debugError,
-} from "../../../utils/debug.js";
+} from "../../../../utils/debug.js";
+import { optimizedDeepCopy } from "./historySerialize";
+import { buildSelectionRangeFromChanges } from "./historySelectionRange";
+import { createHistoryState } from "./historyState";
 
 /**
  * 操作类型枚举
@@ -118,103 +121,12 @@ export interface HistoryInfo {
 export function useHistory(
   maxHistorySize: number = DEFAULT_CONFIG.MAX_HISTORY_SIZE
 ): UseHistoryReturn {
-  const historyEntries: Ref<HistoryEntry[]> = ref([]);
-  const historyIndex = ref(-1);
-  let isUndoRedoInProgress = false;
+  const historyState = createHistoryState(maxHistorySize);
+  const historyEntries = historyState.historyEntries as Ref<HistoryEntry[]>;
+  const historyIndex = historyState.historyIndex;
+  const { MERGE_TIME_WINDOW, CHECKPOINT_INTERVAL, MAX_HISTORY_ENTRIES } =
+    historyState.config;
 
-  // 操作合并配置（提取为常量，提升可维护性）
-  const MERGE_TIME_WINDOW = 500; // 500ms 内的操作可以合并
-  const CHECKPOINT_INTERVAL = 10; // 每 10 个增量操作后创建检查点
-  const MAX_HISTORY_ENTRIES = maxHistorySize; // 历史记录最大数量
-
-  /**
-   * 优化的深拷贝实现
-   * 优先级：结构化克隆（性能最佳）> 数组展开（快速）> JSON 序列化（兼容性）
-   *
-   * 性能优化：
-   * 1. 优先使用 structuredClone（现代浏览器，性能最佳）
-   * 2. 对于字符串二维数组，使用数组展开（比 JSON 快）
-   * 3. 回退到 JSON 序列化（兼容性最好，但性能较差）
-   *
-   * 注意：Vue 的响应式对象（Proxy）无法被 structuredClone 克隆，
-   * 所以需要先转换为普通数组
-   */
-  const optimizedDeepCopy = <T>(data: T): T => {
-    if (!data) {
-      debugError(
-        "[History] optimizedDeepCopy: data is null or undefined",
-        data
-      );
-      return data;
-    }
-
-    // 1. 对于字符串二维数组（Excel 数据），优先使用数组展开（性能最佳）
-    if (Array.isArray(data)) {
-      try {
-        // 检查是否为字符串二维数组
-        if (
-          data.every(
-            (row) =>
-              Array.isArray(row) &&
-              row.every((cell) => typeof cell === "string")
-          )
-        ) {
-          // 使用数组展开方法（比 JSON 序列化快得多）
-          const cloned = data.map((row) => {
-            // 确保行是普通数组，不是 Proxy
-            if (Array.isArray(row)) {
-              return [...row];
-            }
-            return [];
-          }) as T;
-          if (!Array.isArray(cloned)) {
-            throw new Error("Array map failed to return array");
-          }
-          return cloned;
-        }
-      } catch (error) {
-        debugLog(
-          "[History] optimizedDeepCopy: array spread failed, trying structuredClone",
-          error
-        );
-      }
-
-      // 2. 尝试使用结构化克隆 API（对于非响应式对象，性能最佳）
-      if (typeof structuredClone !== "undefined") {
-        try {
-          // 先转换为普通数组（去除 Proxy）
-          const plainData = JSON.parse(JSON.stringify(data));
-          const cloned = structuredClone(plainData);
-          if (cloned === null || cloned === undefined) {
-            throw new Error("structuredClone returned null/undefined");
-          }
-          return cloned;
-        } catch (error) {
-          // 结构化克隆失败，继续尝试 JSON
-          debugLog(
-            "[History] optimizedDeepCopy: structuredClone failed, trying JSON",
-            error
-          );
-        }
-      }
-    }
-
-    // 3. 最终回退到 JSON 序列化（兼容性最好，但性能较差）
-    try {
-      const cloned = JSON.parse(JSON.stringify(data));
-      if (cloned === null || cloned === undefined) {
-        throw new Error("JSON serialization returned null/undefined");
-      }
-      return cloned;
-    } catch (error) {
-      debugError("[History] optimizedDeepCopy: all methods failed", error);
-      throw new Error(
-        `Failed to deep copy data: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
-  };
 
   /**
    * 检测数据变化（如果未提供变化列表）
@@ -256,41 +168,6 @@ export function useHistory(
     return incrementalCount >= CHECKPOINT_INTERVAL;
   };
 
-  const buildSelectionRangeFromChanges = (
-    changes: CellChange[]
-  ): Record<string, number> | null => {
-    if (!changes || changes.length === 0) {
-      return null;
-    }
-
-    let minRow = Infinity;
-    let maxRow = -Infinity;
-    let minCol = Infinity;
-    let maxCol = -Infinity;
-
-    changes.forEach((change) => {
-      minRow = Math.min(minRow, change.row);
-      maxRow = Math.max(maxRow, change.row);
-      minCol = Math.min(minCol, change.col);
-      maxCol = Math.max(maxCol, change.col);
-    });
-
-    if (
-      !Number.isFinite(minRow) ||
-      !Number.isFinite(maxRow) ||
-      !Number.isFinite(minCol) ||
-      !Number.isFinite(maxCol)
-    ) {
-      return null;
-    }
-
-    return {
-      minRow,
-      maxRow,
-      minCol,
-      maxCol,
-    };
-  };
 
   /**
    * 判断是否可以合并操作
@@ -748,7 +625,7 @@ export function useHistory(
     }
 
     // 如果正在进行撤销/重做操作，不保存历史记录
-    if (isUndoRedoInProgress) {
+    if (historyState.getUndoRedoInProgress()) {
       debugLog("[History] saveHistory: skipped (undo/redo in progress)");
       return;
     }
@@ -975,12 +852,12 @@ export function useHistory(
     }
 
     // 防止并发操作
-    if (isUndoRedoInProgress) {
+    if (historyState.getUndoRedoInProgress()) {
       debugWarn("[History] undo: already in progress, skipping");
       return null;
     }
 
-    isUndoRedoInProgress = true;
+    historyState.setUndoRedoInProgress(true);
     let previousIndex = historyIndex.value;
     let previousEntry = historyEntries.value[previousIndex];
 
@@ -1010,7 +887,7 @@ export function useHistory(
         debugError("[History] undo: invalid result from getCurrentFullState");
         // 恢复索引和状态
         historyIndex.value = previousIndex;
-        isUndoRedoInProgress = false;
+        historyState.setUndoRedoInProgress(false);
         return null;
       }
 
@@ -1018,7 +895,7 @@ export function useHistory(
       if (result.length === 0) {
         // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
         setTimeout(() => {
-          isUndoRedoInProgress = false;
+          historyState.setUndoRedoInProgress(false);
         }, 10);
         return {
           state: [[]],
@@ -1035,7 +912,7 @@ export function useHistory(
 
       // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
       setTimeout(() => {
-        isUndoRedoInProgress = false;
+        historyState.setUndoRedoInProgress(false);
       }, 10);
       return {
         state: result,
@@ -1045,7 +922,7 @@ export function useHistory(
     } catch (error) {
       // 确保在错误时恢复所有状态
       historyIndex.value = previousIndex;
-      isUndoRedoInProgress = false;
+      historyState.setUndoRedoInProgress(false);
       debugError("[History] undo: failed", error);
       throw error;
     }
@@ -1068,12 +945,12 @@ export function useHistory(
     }
 
     // 防止并发操作
-    if (isUndoRedoInProgress) {
+    if (historyState.getUndoRedoInProgress()) {
       debugWarn("[History] redo: already in progress, skipping");
       return null;
     }
 
-    isUndoRedoInProgress = true;
+    historyState.setUndoRedoInProgress(true);
     let previousIndex = historyIndex.value;
     let previousEntry = historyEntries.value[previousIndex];
 
@@ -1111,7 +988,7 @@ export function useHistory(
         );
         // 恢复索引和状态
         historyIndex.value = previousIndex;
-        isUndoRedoInProgress = false;
+        historyState.setUndoRedoInProgress(false);
         return null;
       }
 
@@ -1122,7 +999,7 @@ export function useHistory(
         );
         // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
         setTimeout(() => {
-          isUndoRedoInProgress = false;
+          historyState.setUndoRedoInProgress(false);
         }, 10);
 
         // 为 redo 准备 metadata，优先使用 redoSelectionRange
@@ -1156,7 +1033,7 @@ export function useHistory(
 
       // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
       setTimeout(() => {
-        isUndoRedoInProgress = false;
+        historyState.setUndoRedoInProgress(false);
       }, 10);
 
       // 为 redo 准备 metadata，优先使用 redoSelectionRange
@@ -1178,7 +1055,7 @@ export function useHistory(
     } catch (error) {
       // 确保在错误时恢复所有状态
       historyIndex.value = previousIndex;
-      isUndoRedoInProgress = false;
+      historyState.setUndoRedoInProgress(false);
       debugError("[History] redo: failed", error);
       throw error;
     }
@@ -1287,7 +1164,7 @@ export function useHistory(
     redo,
     canUndo: () => historyIndex.value > 0,
     canRedo: () => historyIndex.value < historyEntries.value.length - 1,
-    isUndoRedoInProgress: () => isUndoRedoInProgress,
+    isUndoRedoInProgress: () => historyState.getUndoRedoInProgress(),
     getHistoryInfo,
     clearHistory,
     getHistoryEntries,

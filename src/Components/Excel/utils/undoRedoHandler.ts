@@ -31,15 +31,17 @@ export interface UndoRedoHandlerOptions {
   rows: { value: number[] };
   columns: { value: string[] };
   activeCell?: { value: ActiveCell | null } | null;
-  clearSelection?: () => void;
-  startSingleSelection?: (row: number, col: number) => void;
-  updateSingleSelectionEnd?: (row: number, col: number) => void;
-  applySelectionRange?: (range?: {
-    minRow: number;
-    maxRow: number;
-    minCol: number;
-    maxCol: number;
-  }) => void;
+  selectionService?: {
+    applyRange: (range?: {
+      minRow: number;
+      maxRow: number;
+      minCol: number;
+      maxCol: number;
+    } | null) => void;
+    startSingleSelection: (row: number, col: number) => void;
+    updateSingleSelectionEnd?: (row: number, col: number) => void;
+    clear: () => void;
+  };
   triggerSelectionFlash?: () => void;
   notifyDataChange?: () => void;
 }
@@ -61,10 +63,7 @@ export function handleUndoRedoOperation(
     rows,
     columns,
     activeCell,
-    clearSelection,
-    startSingleSelection,
-    updateSingleSelectionEnd,
-    applySelectionRange,
+    selectionService,
     triggerSelectionFlash,
     notifyDataChange,
   } = options;
@@ -126,7 +125,7 @@ export function handleUndoRedoOperation(
   const maxCols = Math.max(...validatedState.map((row) => row.length), 1);
 
   const applyChangeSelection = (): boolean => {
-    if (startSingleSelection && updateSingleSelectionEnd) {
+    if (selectionService) {
       const meta = result?.metadata || {};
       const range = meta.selectionRange;
       if (
@@ -140,20 +139,15 @@ export function handleUndoRedoOperation(
         const safeMaxRow = Math.max(0, Math.min(range.maxRow, maxRows - 1));
         const safeMinCol = Math.max(0, Math.min(range.minCol, maxCols - 1));
         const safeMaxCol = Math.max(0, Math.min(range.maxCol, maxCols - 1));
-        if (applySelectionRange) {
-          applySelectionRange({
-            minRow: safeMinRow,
-            maxRow: safeMaxRow,
-            minCol: safeMinCol,
-            maxCol: safeMaxCol,
-          });
-        } else {
-          if (activeCell?.value) {
-            activeCell.value = { row: safeMinRow, col: safeMinCol };
-          }
-          startSingleSelection(safeMinRow, safeMinCol);
-          updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
+        if (activeCell?.value) {
+          activeCell.value = { row: safeMinRow, col: safeMinCol };
         }
+        selectionService.applyRange({
+          minRow: safeMinRow,
+          maxRow: safeMaxRow,
+          minCol: safeMinCol,
+          maxCol: safeMaxCol,
+        });
         return true;
       }
     }
@@ -162,8 +156,7 @@ export function handleUndoRedoOperation(
       !result?.changes ||
       !Array.isArray(result.changes) ||
       result.changes.length === 0 ||
-      !startSingleSelection ||
-      !updateSingleSelectionEnd
+      !selectionService
     ) {
       return false;
     }
@@ -204,17 +197,12 @@ export function handleUndoRedoOperation(
       };
     }
 
-    if (applySelectionRange) {
-      applySelectionRange({
-        minRow: safeMinRow,
-        maxRow: safeMaxRow,
-        minCol: safeMinCol,
-        maxCol: safeMaxCol,
-      });
-    } else {
-      startSingleSelection(safeMinRow, safeMinCol);
-      updateSingleSelectionEnd(safeMaxRow, safeMaxCol);
-    }
+    selectionService.applyRange({
+      minRow: safeMinRow,
+      maxRow: safeMaxRow,
+      minCol: safeMinCol,
+      maxCol: safeMaxCol,
+    });
     return true;
   };
 
@@ -237,17 +225,17 @@ export function handleUndoRedoOperation(
       }
 
       // 更新选区到 activeCell 的位置（而不是清除选区）
-      if (startSingleSelection) {
-        startSingleSelection(activeCell.value.row, activeCell.value.col);
-      } else if (clearSelection) {
-        // 如果没有 startSingleSelection，回退到清除选择
-        clearSelection();
+      if (selectionService) {
+        selectionService.startSingleSelection(
+          activeCell.value.row,
+          activeCell.value.col
+        );
+      } else {
+        selectionService?.clear();
       }
     } else {
       // 如果没有 activeCell，清除选择状态
-      if (clearSelection) {
-        clearSelection();
-      }
+      selectionService?.clear();
     }
   }
 

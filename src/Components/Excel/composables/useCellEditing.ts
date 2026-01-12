@@ -5,7 +5,7 @@ import {
   HistoryActionType,
   type CellChange,
   type SaveHistoryOptions,
-} from "./useHistory";
+} from "./history/useHistory";
 import { debugLog } from "../../../utils/debug.js";
 import type { ExcelDataState, ExcelEditingState } from "./useExcelState";
 

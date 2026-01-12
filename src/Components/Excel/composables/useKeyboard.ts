@@ -7,13 +7,14 @@ import {
   type CellChange,
   type SaveHistoryOptions,
   type HistoryRestoreResult,
-} from "./useHistory";
+} from "./history/useHistory";
+import type { SelectionService } from "./selection/selectionService";
 import { handleUndoRedoOperation } from "../utils/undoRedoHandler";
 import {
   handleInsertRowOperation,
   handleDeleteRowOperation,
   type RowOperationHandlerOptions,
-} from "../utils/rowOperationHandler";
+} from "./rowColumnOps/rowOperationHandler";
 
 /**
  * 自定义菜单项配置
@@ -67,14 +68,7 @@ export interface UseKeyboardOptions {
   columns: Ref<string[]>;
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
-  startSingleSelection: (row: number, col: number) => void;
-  updateSingleSelectionEnd?: (row: number, col: number) => void;
-  applySelectionRange?: (range?: {
-    minRow: number;
-    maxRow: number;
-    minCol: number;
-    maxCol: number;
-  }) => void;
+  selectionService: SelectionService;
   triggerSelectionFlash?: () => void;
   getMaxRows: () => number;
   getMaxCols: () => number;
@@ -84,7 +78,6 @@ export interface UseKeyboardOptions {
   copyToClipboard?: () => Promise<boolean>;
   cutToClipboard?: () => Promise<boolean>;
   pasteFromClipboard?: () => Promise<boolean>;
-  clearSelection?: () => void;
   notifyDataChange?: () => void;
   exitCopyMode?: () => void;
   copiedRange?: Ref<SelectionRange | null>;
@@ -318,9 +311,7 @@ export function useKeyboard({
   columns,
   insertRowBelow,
   deleteRow,
-  startSingleSelection,
-  updateSingleSelectionEnd,
-  applySelectionRange,
+  selectionService,
   triggerSelectionFlash,
   getMaxRows,
   getMaxCols,
@@ -331,7 +322,6 @@ export function useKeyboard({
   cutToClipboard,
   pasteFromClipboard,
   isUndoRedoInProgress,
-  clearSelection,
   notifyDataChange,
   exitCopyMode,
   copiedRange,
@@ -346,7 +336,7 @@ export function useKeyboard({
     saveHistory,
     insertRowBelow,
     deleteRow,
-    startSingleSelection,
+    selectionService,
     notifyDataChange: notifyDataChange || (() => {}),
   };
   /**
@@ -459,10 +449,7 @@ export function useKeyboard({
         rows,
         columns,
         activeCell,
-        clearSelection,
-        startSingleSelection,
-        updateSingleSelectionEnd,
-        applySelectionRange,
+        selectionService,
         triggerSelectionFlash,
         notifyDataChange,
       });
@@ -488,10 +475,7 @@ export function useKeyboard({
         rows,
         columns,
         activeCell,
-        clearSelection,
-        startSingleSelection,
-        updateSingleSelectionEnd,
-        applySelectionRange,
+        selectionService,
         triggerSelectionFlash,
         notifyDataChange,
       });

@@ -4,7 +4,7 @@ import {
   HistoryActionType,
   type SaveHistoryOptions,
   type CellChange,
-} from "./useHistory";
+} from "./history/useHistory";
 
 /**
  * useFillHandle 选项

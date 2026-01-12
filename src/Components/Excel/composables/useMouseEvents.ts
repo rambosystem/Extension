@@ -1,8 +1,8 @@
 import type { Ref } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
 import type { UseFillHandleReturn } from "./useFillHandle";
-import type { UseColumnWidthReturn } from "./useColumnWidth";
-import type { UseRowHeightReturn } from "./useRowHeight";
+import type { UseColumnWidthReturn } from "./rowColumnOps/useColumnWidth";
+import type { UseRowHeightReturn } from "./rowColumnOps/useRowHeight";
 
 /**
  * useMouseEvents 选项

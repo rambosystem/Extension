@@ -1,9 +1,10 @@
 import { nextTick, type Ref } from "vue";
-import type { CellPosition } from "../composables/types";
+import type { CellPosition } from "../types";
+import type { SelectionService } from "../selection/selectionService";
 import {
   HistoryActionType,
   type SaveHistoryOptions,
-} from "../composables/useHistory";
+} from "../history/useHistory";
 
 /**
  * 行操作处理选项
@@ -16,7 +17,7 @@ export interface RowOperationHandlerOptions {
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
-  startSingleSelection: (row: number, col: number) => void;
+  selectionService: SelectionService;
   notifyDataChange: () => void;
 }
 
@@ -33,7 +34,13 @@ export function handleInsertRowOperation(
   options: RowOperationHandlerOptions,
   rowIndex: number
 ): boolean {
-  const { tableData, saveHistory, insertRowBelow, notifyDataChange } = options;
+  const {
+    tableData,
+    saveHistory,
+    insertRowBelow,
+    notifyDataChange,
+    selectionService,
+  } = options;
 
   if (typeof rowIndex !== "number" || rowIndex < 0) {
     return false;
@@ -92,7 +99,7 @@ export function handleDeleteRowOperation(
     activeCell,
     saveHistory,
     deleteRow,
-    startSingleSelection,
+    selectionService,
     notifyDataChange,
   } = options;
 
@@ -147,16 +154,16 @@ export function handleDeleteRowOperation(
     if (currentRow === rowIndex) {
       // 如果删除的是当前活动行
       if (rowIndex < newRowCount) {
-        startSingleSelection(rowIndex, safeCol);
+        selectionService.startSingleSelection(rowIndex, safeCol);
       } else {
         const newRow = Math.max(0, rowIndex - 1);
-        startSingleSelection(newRow, safeCol);
+        selectionService.startSingleSelection(newRow, safeCol);
       }
     } else if (currentRow > rowIndex) {
       // 如果当前活动行在删除行下方，需要上移
       const newRow = currentRow - 1;
       const safeRow = Math.min(newRow, newRowCount - 1);
-      startSingleSelection(safeRow, safeCol);
+      selectionService.startSingleSelection(safeRow, safeCol);
     }
   }
 
@@ -188,7 +195,7 @@ export function handleDeleteRowsOperation(
     activeCell,
     saveHistory,
     deleteRow,
-    startSingleSelection,
+    selectionService,
     notifyDataChange,
   } = options;
 
@@ -257,16 +264,16 @@ export function handleDeleteRowsOperation(
       // 如果当前活动行被删除，移动到第一个被删除行的位置
       const targetRow = Math.min(minDeletedRow, newRowCount - 1);
       if (targetRow >= 0) {
-        startSingleSelection(targetRow, safeCol);
+        selectionService.startSingleSelection(targetRow, safeCol);
       } else if (newRowCount > 0) {
-        startSingleSelection(0, safeCol);
+        selectionService.startSingleSelection(0, safeCol);
       }
     } else if (currentRow > maxDeletedRow) {
       // 如果当前活动行在删除行下方，需要上移
       const deletedCount = oldRowCount - newRowCount;
       const newRow = currentRow - deletedCount;
       const safeRow = Math.min(newRow, newRowCount - 1);
-      startSingleSelection(safeRow, safeCol);
+      selectionService.startSingleSelection(safeRow, safeCol);
     }
   }
 

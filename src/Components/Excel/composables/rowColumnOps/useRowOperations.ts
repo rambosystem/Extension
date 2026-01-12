@@ -1,9 +1,10 @@
 import { nextTick, type Ref } from "vue";
-import type { CellPosition } from "./types";
+import type { CellPosition } from "../types";
+import type { SelectionService } from "../selection/selectionService";
 import {
   HistoryActionType,
   type SaveHistoryOptions,
-} from "./useHistory";
+} from "../history/useHistory";
 
 /**
  * useRowOperations 选项
@@ -16,7 +17,7 @@ export interface UseRowOperationsOptions {
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
-  startSingleSelection: (row: number, col: number) => void;
+  selectionService: SelectionService;
   notifyDataChange: () => void;
 }
 
@@ -40,7 +41,7 @@ export function useRowOperations({
   saveHistory,
   insertRowBelow,
   deleteRow,
-  startSingleSelection,
+  selectionService,
   notifyDataChange,
 }: UseRowOperationsOptions): UseRowOperationsReturn {
   /**
@@ -128,15 +129,15 @@ export function useRowOperations({
       if (isCurrentRowDeleted) {
         const targetRow = Math.min(minDeletedRow, newRowCount - 1);
         if (targetRow >= 0) {
-          startSingleSelection(targetRow, safeCol);
+          selectionService.startSingleSelection(targetRow, safeCol);
         } else if (newRowCount > 0) {
-          startSingleSelection(0, safeCol);
+          selectionService.startSingleSelection(0, safeCol);
         }
       } else if (currentRow > maxDeletedRow) {
         const deletedCount = oldRowCount - newRowCount;
         const newRow = currentRow - deletedCount;
         const safeRow = Math.min(newRow, newRowCount - 1);
-        startSingleSelection(safeRow, safeCol);
+        selectionService.startSingleSelection(safeRow, safeCol);
       }
     }
 
@@ -183,15 +184,15 @@ export function useRowOperations({
 
       if (currentRow === rowIndexOrIndices) {
         if (rowIndexOrIndices < newRowCount) {
-          startSingleSelection(rowIndexOrIndices, safeCol);
+          selectionService.startSingleSelection(rowIndexOrIndices, safeCol);
         } else {
           const newRow = Math.max(0, rowIndexOrIndices - 1);
-          startSingleSelection(newRow, safeCol);
+          selectionService.startSingleSelection(newRow, safeCol);
         }
       } else if (currentRow > rowIndexOrIndices) {
         const newRow = currentRow - 1;
         const safeRow = Math.min(newRow, newRowCount - 1);
-        startSingleSelection(safeRow, safeCol);
+        selectionService.startSingleSelection(safeRow, safeCol);
       }
     }
 

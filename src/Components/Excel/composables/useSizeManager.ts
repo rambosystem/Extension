@@ -1,6 +1,6 @@
 import type { ColumnWidthConfig } from "./types";
-import type { UseColumnWidthReturn } from "./useColumnWidth";
-import type { UseRowHeightReturn } from "./useRowHeight";
+import type { UseColumnWidthReturn } from "./rowColumnOps/useColumnWidth";
+import type { UseRowHeightReturn } from "./rowColumnOps/useRowHeight";
 
 /**
  * useSizeManager 选项
