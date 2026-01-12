@@ -19,7 +19,8 @@ export interface UseDataSyncOptions {
  * useDataSync 返回值
  */
 export interface UseDataSyncReturn {
-  notifyDataChange: () => void;
+  emitChange: (data?: string[][]) => void;
+  emitModelUpdate: (data?: string[][]) => void;
   initDataSync: () => void;
   setDataWithSync: (data: string[][]) => void;
 }
@@ -81,13 +82,24 @@ export function useDataSync({
   /**
    * 通知外部数据变化
    */
-  const notifyDataChange = (): void => {
-    const data = getData();
-    isInternalUpdateEmitted.value = true;
-    if (props.modelValue !== null) {
-      emit("update:modelValue", data);
+  const emitModelUpdate = (data?: string[][]): void => {
+    if (props.modelValue === null) {
+      return;
     }
-    emit("change", data);
+    const payload = data ?? getData();
+    emit("update:modelValue", payload);
+  };
+
+  const emitChange = (data?: string[][]): void => {
+    const payload = data ?? getData();
+    emit("change", payload);
+  };
+
+  const emitDataChange = (data?: string[][]): void => {
+    const payload = data ?? getData();
+    isInternalUpdateEmitted.value = true;
+    emitModelUpdate(payload);
+    emitChange(payload);
     nextTick(() => {
       isInternalUpdateEmitted.value = false;
     });
@@ -102,7 +114,7 @@ export function useDataSync({
       return true;
     }
     // 如果正在进行撤销/重做操作，跳过通知
-    // handleUndoRedoOperation 会在 isUndoRedoInProgress 重置后手动调用 notifyDataChange
+    // handleUndoRedoOperation 会在 isUndoRedoInProgress 重置后手动调用 emitModelUpdate/emitChange
     if (isUndoRedoInProgress && isUndoRedoInProgress()) {
       return true;
     }
@@ -157,7 +169,7 @@ export function useDataSync({
         }
         // 使用 nextTick 确保所有数据更新完成后再通知
         nextTick(() => {
-          notifyDataChange();
+          emitDataChange();
         });
       },
       { deep: true }
@@ -186,7 +198,7 @@ export function useDataSync({
 
     nextTick(() => {
       isUpdatingFromExternal.value = false;
-      notifyDataChange();
+      emitDataChange();
 
       // 设置数据后，重新初始化历史记录
       if (initHistory && data.length > 0) {
@@ -196,7 +208,8 @@ export function useDataSync({
   };
 
   return {
-    notifyDataChange,
+    emitChange,
+    emitModelUpdate,
     initDataSync,
     setDataWithSync,
   };

@@ -1,3 +1,5 @@
+import type { SelectionRange } from "../types";
+
 export interface CellChangeLike {
   row: number;
   col: number;
@@ -5,7 +7,7 @@ export interface CellChangeLike {
 
 export const buildSelectionRangeFromChanges = (
   changes: CellChangeLike[]
-): Record<string, number> | null => {
+): SelectionRange | null => {
   if (!changes || changes.length === 0) {
     return null;
   }

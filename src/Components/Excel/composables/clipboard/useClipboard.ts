@@ -1,6 +1,9 @@
 import { ref, type Ref } from "vue";
 import type { CellPosition, SelectionRange } from "../types";
-import { HistoryActionType, type SaveHistoryOptions } from "../history/useHistory";
+import {
+  HistoryActionType,
+  type SaveHistoryOptions,
+} from "../history/useHistory";
 import type { ExcelState } from "../useExcelState";
 import { getCopyText, parseClipboardText } from "./clipboardParser";
 import type { SelectionService } from "../selection/selectionService";
@@ -127,7 +130,8 @@ class PasteStrategyManager {
       generateColumnLabel: (index: number) => string;
       saveHistory: (state: any, options?: SaveHistoryOptions) => void;
       selectionService: SelectionService;
-      notifyDataChange?: () => void;
+      emitChange?: () => void;
+      emitModelUpdate?: () => void;
       skipHistorySave?: boolean; // 跳过历史记录保存（用于剪切-粘贴原子操作）
       sourceRange?: SelectionRange | null; // 复制/剪切源区域（用于撤回时恢复选区）
     }
@@ -222,9 +226,10 @@ class PasteStrategyManager {
           changes: changes.length > 0 ? changes : undefined,
           metadata: {
             // 撤回时选区应该回到复制源区域（如果有的话）
-            selectionRange: options.sourceRange || result.affectedRange,
+            selectionRange:
+              options.sourceRange || (result.affectedRange ?? undefined),
             // 重做时选区应该回到粘贴目标区域
-            redoSelectionRange: result.affectedRange,
+            redoSelectionRange: result.affectedRange ?? undefined,
           },
         });
       }
@@ -244,9 +249,8 @@ class PasteStrategyManager {
       );
 
       // 触发数据同步
-      if (options.notifyDataChange) {
-        options.notifyDataChange();
-      }
+      options.emitModelUpdate?.();
+      options.emitChange?.();
     }
 
     return result;
@@ -344,7 +348,8 @@ export interface UseClipboardOptions {
   state: ExcelState;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   selectionService: SelectionService;
-  notifyDataChange?: () => void;
+  emitChange?: () => void;
+  emitModelUpdate?: () => void;
 }
 
 /**
@@ -373,7 +378,8 @@ export interface UseClipboardReturn {
  *   state: excelState,
  *   saveHistory,
  *   selectionService,
- *   notifyDataChange,
+ *   emitChange,
+ *   emitModelUpdate,
  * });
  * ```
  */
@@ -381,7 +387,8 @@ export function useClipboard({
   state,
   saveHistory,
   selectionService,
-  notifyDataChange,
+  emitChange,
+  emitModelUpdate,
 }: UseClipboardOptions): UseClipboardReturn {
   const {
     editing: { editingCell: actualEditingCell },
@@ -528,15 +535,14 @@ export function useClipboard({
           pasteRange: result.affectedRange,
           cutRange: cutRange.value,
           // 撤回时选区应该回到剪切源区域
-          selectionRange: cutRange.value,
+          selectionRange: cutRange.value ?? undefined,
           // 重做时选区应该回到粘贴目标区域
-          redoSelectionRange: result.affectedRange,
+          redoSelectionRange: result.affectedRange ?? undefined,
         },
       });
 
-      if (notifyDataChange) {
-        notifyDataChange();
-      }
+      emitModelUpdate?.();
+      emitChange?.();
     }
 
     cutRange.value = null;
@@ -688,7 +694,8 @@ export function useClipboard({
       generateColumnLabel,
       saveHistory,
       selectionService,
-      notifyDataChange,
+      emitChange,
+      emitModelUpdate,
       skipHistorySave: isCutMode,
       sourceRange: copiedRange.value, // 传递复制源区域
     });
@@ -729,7 +736,8 @@ export function useClipboard({
         generateColumnLabel,
         saveHistory,
         selectionService,
-        notifyDataChange,
+        emitChange,
+        emitModelUpdate,
         skipHistorySave: isCutMode,
         sourceRange: copiedRange.value, // 传递复制源区域
       });

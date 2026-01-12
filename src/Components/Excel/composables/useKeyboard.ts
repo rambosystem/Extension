@@ -78,7 +78,8 @@ export interface UseKeyboardOptions {
   copyToClipboard?: () => Promise<boolean>;
   cutToClipboard?: () => Promise<boolean>;
   pasteFromClipboard?: () => Promise<boolean>;
-  notifyDataChange?: () => void;
+  emitChange?: () => void;
+  emitModelUpdate?: () => void;
   exitCopyMode?: () => void;
   copiedRange?: Ref<SelectionRange | null>;
 }
@@ -322,7 +323,8 @@ export function useKeyboard({
   cutToClipboard,
   pasteFromClipboard,
   isUndoRedoInProgress,
-  notifyDataChange,
+  emitChange,
+  emitModelUpdate,
   exitCopyMode,
   copiedRange,
 }: UseKeyboardOptions): UseKeyboardReturn {
@@ -337,7 +339,8 @@ export function useKeyboard({
     insertRowBelow,
     deleteRow,
     selectionService,
-    notifyDataChange: notifyDataChange || (() => {}),
+    emitChange: emitChange || (() => {}),
+    emitModelUpdate: emitModelUpdate || (() => {}),
   };
   /**
    * 处理复制快捷键（Ctrl+C / Cmd+C）

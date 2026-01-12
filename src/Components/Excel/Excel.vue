@@ -393,11 +393,12 @@ const isInDragArea = (row: number, col: number): boolean => {
   return fillHandleComposable.isInDragArea(row, col);
 };
 
-// --- 数据同步管理（需要在 useClipboard 之前，因为需�?notifyDataChange�?--
-const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
-  tableData,
-  props,
-  getData,
+// --- 数据同步管理（需要在 useClipboard 之前，因为需�?emitModelUpdate/emitChange�?--
+const { emitChange, emitModelUpdate, initDataSync, setDataWithSync } =
+  useDataSync({
+    tableData,
+    props,
+    getData,
   setData,
   emit: (event: "update:modelValue" | "change" | "custom-action", ...args: unknown[]) => {
     // 类型安全的事件分发函�?
@@ -456,7 +457,7 @@ const { notifyDataChange, initDataSync, setDataWithSync } = useDataSync({
   },
   initHistory, // 传�?initHistory 函数，用于在数据更新时重新初始化历史记录
   isUndoRedoInProgress, // 传�?isUndoRedoInProgress 函数，防止撤销/重做时清空历�?
-});
+  });
 
 // --- 撤销/重做高亮 ---
 const undoRedoFlash = ref(false);
@@ -494,7 +495,8 @@ const {
   state: excelState,
   saveHistory: saveHistoryWithState,
   selectionService,
-  notifyDataChange,
+  emitChange,
+  emitModelUpdate,
 });
 
 // --- 选区样式管理 ---
@@ -656,7 +658,8 @@ const undoRedoService = createUndoRedoService({
   activeCell,
   selectionService,
   triggerSelectionFlash,
-  notifyDataChange,
+  emitChange,
+  emitModelUpdate,
 });
 
 const { handleCellMenuCommand } = useCellMenu({
@@ -674,7 +677,8 @@ const { handleCellMenuCommand } = useCellMenu({
   deleteRow,
   selectionService,
   undoRedoService,
-  notifyDataChange,
+  emitChange,
+  emitModelUpdate,
 });
 
 // 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义�?
@@ -721,7 +725,8 @@ const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
   multiSelections,
   tableData,
   updateCell,
-  notifyDataChange,
+  emitChange,
+  emitModelUpdate,
   getData,
   setDataWithSync,
   lastMousePosition,
@@ -928,7 +933,8 @@ const { handleKeydown } = useKeyboard({
   copyToClipboard, // 传递程序化复制函数
   cutToClipboard,
   pasteFromClipboard, // 传递程序化粘贴函数
-  notifyDataChange,
+  emitChange,
+  emitModelUpdate,
   exitCopyMode, // 传递退出复制状态函�?
   copiedRange, // 传递复制区域引用，用于判断是否处于复制状�?
 });
@@ -996,7 +1002,8 @@ defineExpose({
   updateCell: (row: number, col: number, value: string) => {
     updateCell(row, col, value);
     nextTick(() => {
-      notifyDataChange();
+      emitModelUpdate();
+      emitChange();
     });
   },
   /**
@@ -1005,7 +1012,8 @@ defineExpose({
   clearData: () => {
     clearData();
     nextTick(() => {
-      notifyDataChange();
+      emitModelUpdate();
+      emitChange();
     });
   },
   /**

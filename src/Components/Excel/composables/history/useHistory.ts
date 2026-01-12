@@ -9,6 +9,7 @@ import {
 import { optimizedDeepCopy } from "./historySerialize";
 import { buildSelectionRangeFromChanges } from "./historySelectionRange";
 import { createHistoryState } from "./historyState";
+import type { SelectionRange } from "../types";
 
 /**
  * 操作类型枚举
@@ -54,10 +55,14 @@ export interface HistoryEntry {
   snapshot?: string[][];
 
   // 元数据
-  metadata?: {
-    affectedCells?: number;
-    [key: string]: any;
-  };
+  metadata?: HistoryMetadata;
+}
+
+export interface HistoryMetadata {
+  affectedCells?: number;
+  selectionRange?: SelectionRange;
+  redoSelectionRange?: SelectionRange;
+  [key: string]: any;
 }
 
 /**
@@ -82,7 +87,7 @@ export interface UseHistoryReturn {
  */
 export interface HistoryRestoreResult {
   state: string[][];
-  metadata?: Record<string, any>;
+  metadata?: HistoryMetadata;
   changes?: CellChange[];
 }
 
@@ -94,7 +99,7 @@ export interface SaveHistoryOptions {
   description?: string;
   forceFullSnapshot?: boolean; // 强制使用完整快照
   changes?: CellChange[]; // 提供变化列表以优化性能
-  metadata?: Record<string, any>;
+  metadata?: HistoryMetadata;
 }
 
 /**
@@ -746,7 +751,7 @@ export function useHistory(
     if (Array.isArray(currentState) && currentState.length > 0) {
       const maxColIndex =
         Math.max(...currentState.map((row) => row?.length || 0), 1) - 1;
-      const selectionRange: Record<string, number> = {};
+      let selectionRange: SelectionRange | null = null;
       const presetSelectionRange = options.metadata?.selectionRange;
 
       if (
@@ -756,41 +761,44 @@ export function useHistory(
         typeof presetSelectionRange.minCol === "number" &&
         typeof presetSelectionRange.maxCol === "number"
       ) {
-        selectionRange.minRow = presetSelectionRange.minRow;
-        selectionRange.maxRow = presetSelectionRange.maxRow;
-        selectionRange.minCol = presetSelectionRange.minCol;
-        selectionRange.maxCol = presetSelectionRange.maxCol;
+        selectionRange = {
+          minRow: presetSelectionRange.minRow,
+          maxRow: presetSelectionRange.maxRow,
+          minCol: presetSelectionRange.minCol,
+          maxCol: presetSelectionRange.maxCol,
+        };
       } else if (actionType === HistoryActionType.ROW_INSERT) {
         // 对于插入行操作，如果 metadata 中没有预设 selectionRange，
         // 则选中插入的行（默认行为）
         const insertedRow = options.metadata?.insertedRowIndex;
         if (typeof insertedRow === "number") {
-          selectionRange.minRow = insertedRow;
-          selectionRange.maxRow = insertedRow;
-          selectionRange.minCol = 0;
-          selectionRange.maxCol = Math.max(0, maxColIndex);
+          selectionRange = {
+            minRow: insertedRow,
+            maxRow: insertedRow,
+            minCol: 0,
+            maxCol: Math.max(0, maxColIndex),
+          };
         }
       } else if (actionType === HistoryActionType.ROW_DELETE) {
         // 对于删除行操作，如果 metadata 中没有预设 selectionRange，
         // 则选中被删除行的位置（默认行为）
         const deletedRows = options.metadata?.deletedRowIndices;
         if (Array.isArray(deletedRows) && deletedRows.length > 0) {
-          selectionRange.minRow = Math.min(...deletedRows);
-          selectionRange.maxRow = Math.max(...deletedRows);
-          selectionRange.minCol = 0;
-          selectionRange.maxCol = Math.max(0, maxColIndex);
+          selectionRange = {
+            minRow: Math.min(...deletedRows),
+            maxRow: Math.max(...deletedRows),
+            minCol: 0,
+            maxCol: Math.max(0, maxColIndex),
+          };
         }
       } else {
         const rangeFromChanges = buildSelectionRangeFromChanges(changes);
         if (rangeFromChanges) {
-          selectionRange.minRow = rangeFromChanges.minRow;
-          selectionRange.maxRow = rangeFromChanges.maxRow;
-          selectionRange.minCol = rangeFromChanges.minCol;
-          selectionRange.maxCol = rangeFromChanges.maxCol;
+          selectionRange = rangeFromChanges;
         }
       }
 
-      if (Object.keys(selectionRange).length > 0) {
+      if (selectionRange) {
         newEntry.metadata = {
           ...newEntry.metadata,
           selectionRange,
@@ -893,7 +901,7 @@ export function useHistory(
 
       // 验证结果的有效性
       if (result.length === 0) {
-        // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
+        // 使用 setTimeout 确保 emitModelUpdate/emitChange 先执行完毕后再重置标志
         setTimeout(() => {
           historyState.setUndoRedoInProgress(false);
         }, 10);
@@ -910,7 +918,7 @@ export function useHistory(
         }
       }
 
-      // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
+      // 使用 setTimeout 确保 emitModelUpdate/emitChange 先执行完毕后再重置标志
       setTimeout(() => {
         historyState.setUndoRedoInProgress(false);
       }, 10);
@@ -997,7 +1005,7 @@ export function useHistory(
         debugWarn(
           "[History] redo: result is empty array, returning empty state"
         );
-        // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
+        // 使用 setTimeout 确保 emitModelUpdate/emitChange 先执行完毕后再重置标志
         setTimeout(() => {
           historyState.setUndoRedoInProgress(false);
         }, 10);
@@ -1031,7 +1039,7 @@ export function useHistory(
         }
       }
 
-      // 使用 setTimeout 确保 notifyDataChange 先执行完毕后再重置标志
+      // 使用 setTimeout 确保 emitModelUpdate/emitChange 先执行完毕后再重置标志
       setTimeout(() => {
         historyState.setUndoRedoInProgress(false);
       }, 10);

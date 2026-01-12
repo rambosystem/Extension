@@ -1,6 +1,7 @@
 import type { Ref } from "vue";
 import { handleUndoRedoOperation } from "../../utils/undoRedoHandler";
 import type { SelectionService } from "../selection/selectionService";
+import type { HistoryRestoreResult } from "./useHistory";
 
 export interface UndoRedoServiceOptions {
   tableData: Ref<string[][]>;
@@ -9,11 +10,12 @@ export interface UndoRedoServiceOptions {
   activeCell?: Ref<{ row: number; col: number } | null> | null;
   selectionService: SelectionService;
   triggerSelectionFlash?: () => void;
-  notifyDataChange?: () => void;
+  emitChange?: () => void;
+  emitModelUpdate?: () => void;
 }
 
 export interface UndoRedoService {
-  apply: (result: { state: string[][]; metadata?: Record<string, any> } | null) => boolean;
+  apply: (result: HistoryRestoreResult | null) => boolean;
 }
 
 export const createUndoRedoService = (
@@ -26,7 +28,8 @@ export const createUndoRedoService = (
     activeCell,
     selectionService,
     triggerSelectionFlash,
-    notifyDataChange,
+    emitChange,
+    emitModelUpdate,
   } = options;
 
   return {
@@ -39,7 +42,8 @@ export const createUndoRedoService = (
         activeCell,
         selectionService,
         triggerSelectionFlash,
-        notifyDataChange,
+        emitChange,
+        emitModelUpdate,
       }),
   };
 };
