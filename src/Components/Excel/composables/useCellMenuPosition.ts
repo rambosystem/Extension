@@ -36,8 +36,7 @@ export interface UseCellMenuPositionOptions {
   multiSelections: Ref<SelectionRange[]>;
   tableData: Ref<string[][]>;
   updateCell: (row: number, col: number, value: string) => void;
-  emitChange: () => void;
-  emitModelUpdate: () => void;
+  emitSync: () => void;
   getData: () => string[][];
   setDataWithSync: (data: string[][]) => void;
   lastMousePosition?: Ref<MousePosition | null>;
@@ -65,8 +64,7 @@ export function useCellMenuPosition({
   multiSelections,
   tableData,
   updateCell,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
   getData,
   setDataWithSync,
   lastMousePosition,
@@ -300,8 +298,7 @@ export function useCellMenuPosition({
       updateCell: (row: number, col: number, value: string) => {
         updateCell(row, col, value);
         nextTick(() => {
-          emitModelUpdate();
-          emitChange();
+          emitSync();
         });
       },
       getData: () => getData(),

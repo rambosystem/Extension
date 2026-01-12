@@ -43,8 +43,7 @@ export interface UndoRedoHandlerOptions {
     clear: () => void;
   };
   triggerSelectionFlash?: () => void;
-  emitChange?: () => void;
-  emitModelUpdate?: () => void;
+  emitSync?: () => void;
 }
 
 /**
@@ -66,8 +65,7 @@ export function handleUndoRedoOperation(
     activeCell,
     selectionService,
     triggerSelectionFlash,
-    emitChange,
-    emitModelUpdate,
+    emitSync,
   } = options;
 
   // 如果无法撤销/重做，返回 false
@@ -245,14 +243,13 @@ export function handleUndoRedoOperation(
     triggerSelectionFlash();
   }
 
-  // 使用 setTimeout 延迟调用 emitModelUpdate/emitChange，确保在状态更新完成后再通知
+  // 使用 setTimeout 延迟调用 emitSync，确保在状态更新完成后再通知
   // 注意：isUndoRedoInProgress 会在 undo/redo 函数中延迟重置（10ms）
   // 这里使用较短的延迟（5ms），确保在 isUndoRedoInProgress 重置前执行
   // 这样 useDataSync 的 watch 在检查 isUndoRedoInProgress 时仍会跳过，避免重复通知
-  if (emitChange || emitModelUpdate) {
+  if (emitSync) {
     setTimeout(() => {
-      emitModelUpdate?.();
-      emitChange?.();
+      emitSync?.();
     }, 5);
   }
 

@@ -18,8 +18,7 @@ export interface UseRowOperationsOptions {
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
   selectionService: SelectionService;
-  emitChange: () => void;
-  emitModelUpdate: () => void;
+  emitSync: () => void;
 }
 
 /**
@@ -43,8 +42,7 @@ export function useRowOperations({
   insertRowBelow,
   deleteRow,
   selectionService,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
 }: UseRowOperationsOptions): UseRowOperationsReturn {
   /**
    * 统一的插入行处理函数
@@ -69,8 +67,7 @@ export function useRowOperations({
     });
 
     nextTick(() => {
-      emitModelUpdate();
-      emitChange();
+      emitSync();
     });
   };
 
@@ -145,8 +142,7 @@ export function useRowOperations({
     }
 
     nextTick(() => {
-      emitModelUpdate();
-      emitChange();
+      emitSync();
     });
   };
 
@@ -201,8 +197,7 @@ export function useRowOperations({
     }
 
     nextTick(() => {
-      emitModelUpdate();
-      emitChange();
+      emitSync();
     });
   };
 

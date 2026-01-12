@@ -393,13 +393,17 @@ const isInDragArea = (row: number, col: number): boolean => {
   return fillHandleComposable.isInDragArea(row, col);
 };
 
-// --- 数据同步管理（需要在 useClipboard 之前，因为需�?emitModelUpdate/emitChange�?--
-const { emitChange, emitModelUpdate, initDataSync, setDataWithSync } =
-  useDataSync({
+// --- 数据同步管理（需要在 useClipboard 之前，因为需�?emitSync�?--
+const {
+  emitSync,
+  initDataSync,
+  setDataWithSync,
+  runExternalUpdate,
+} = useDataSync({
     tableData,
     props,
     getData,
-  setData,
+    setData,
   emit: (event: "update:modelValue" | "change" | "custom-action", ...args: unknown[]) => {
     // 类型安全的事件分发函�?
     // 根据事件类型进行类型检查和分发
@@ -495,8 +499,7 @@ const {
   state: excelState,
   saveHistory: saveHistoryWithState,
   selectionService,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
 });
 
 // --- 选区样式管理 ---
@@ -658,8 +661,7 @@ const undoRedoService = createUndoRedoService({
   activeCell,
   selectionService,
   triggerSelectionFlash,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
 });
 
 const { handleCellMenuCommand } = useCellMenu({
@@ -677,8 +679,7 @@ const { handleCellMenuCommand } = useCellMenu({
   deleteRow,
   selectionService,
   undoRedoService,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
 });
 
 // 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义�?
@@ -725,8 +726,7 @@ const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
   multiSelections,
   tableData,
   updateCell,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
   getData,
   setDataWithSync,
   lastMousePosition,
@@ -933,8 +933,7 @@ const { handleKeydown } = useKeyboard({
   copyToClipboard, // 传递程序化复制函数
   cutToClipboard,
   pasteFromClipboard, // 传递程序化粘贴函数
-  emitChange,
-  emitModelUpdate,
+  emitSync,
   exitCopyMode, // 传递退出复制状态函�?
   copiedRange, // 传递复制区域引用，用于判断是否处于复制状�?
 });
@@ -1000,20 +999,16 @@ defineExpose({
    * excelRef.value.updateCell(0, 0, "新�?);
    */
   updateCell: (row: number, col: number, value: string) => {
-    updateCell(row, col, value);
-    nextTick(() => {
-      emitModelUpdate();
-      emitChange();
+    runExternalUpdate(() => updateCell(row, col, value), {
+      emitSync: true,
     });
   },
   /**
    * 清空表格数据
    */
   clearData: () => {
-    clearData();
-    nextTick(() => {
-      emitModelUpdate();
-      emitChange();
+    runExternalUpdate(() => clearData(), {
+      emitSync: true,
     });
   },
   /**

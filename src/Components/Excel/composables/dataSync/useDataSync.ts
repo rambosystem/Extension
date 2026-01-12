@@ -19,10 +19,21 @@ export interface UseDataSyncOptions {
  * useDataSync 返回值
  */
 export interface UseDataSyncReturn {
+  emitSync: (data?: string[][]) => void;
   emitChange: (data?: string[][]) => void;
   emitModelUpdate: (data?: string[][]) => void;
   initDataSync: () => void;
   setDataWithSync: (data: string[][]) => void;
+  runExternalUpdate: (
+    mutation: () => void,
+    options?: {
+      emitSync?: boolean;
+      emitChange?: boolean;
+      emitModelUpdate?: boolean;
+      reinitHistory?: boolean;
+      data?: string[][];
+    }
+  ) => void;
 }
 
 /**
@@ -95,13 +106,43 @@ export function useDataSync({
     emit("change", payload);
   };
 
-  const emitDataChange = (data?: string[][]): void => {
+  const emitSync = (data?: string[][]): void => {
     const payload = data ?? getData();
     isInternalUpdateEmitted.value = true;
     emitModelUpdate(payload);
     emitChange(payload);
     nextTick(() => {
       isInternalUpdateEmitted.value = false;
+    });
+  };
+
+  const runExternalUpdate = (
+    mutation: () => void,
+    options?: {
+      emitSync?: boolean;
+      emitChange?: boolean;
+      emitModelUpdate?: boolean;
+      reinitHistory?: boolean;
+      data?: string[][];
+    }
+  ): void => {
+    isUpdatingFromExternal.value = true;
+    mutation();
+
+    nextTick(() => {
+      isUpdatingFromExternal.value = false;
+
+      if (options?.emitSync || options?.emitModelUpdate) {
+        emitModelUpdate(options.data);
+      }
+
+      if (options?.emitSync || options?.emitChange) {
+        emitChange(options.data);
+      }
+
+      if (options?.reinitHistory && initHistory && options?.data?.length) {
+        initHistory(options.data);
+      }
     });
   };
 
@@ -169,7 +210,7 @@ export function useDataSync({
         }
         // 使用 nextTick 确保所有数据更新完成后再通知
         nextTick(() => {
-          emitDataChange();
+          emitSync();
         });
       },
       { deep: true }
@@ -193,24 +234,19 @@ export function useDataSync({
    * 用于程序化设置数据，确保正确同步
    */
   const setDataWithSync = (data: string[][]): void => {
-    isUpdatingFromExternal.value = true;
-    setData(data);
-
-    nextTick(() => {
-      isUpdatingFromExternal.value = false;
-      emitDataChange();
-
-      // 设置数据后，重新初始化历史记录
-      if (initHistory && data.length > 0) {
-        initHistory(data);
-      }
+    runExternalUpdate(() => setData(data), {
+      emitSync: true,
+      reinitHistory: true,
+      data,
     });
   };
 
   return {
+    emitSync,
     emitChange,
     emitModelUpdate,
     initDataSync,
     setDataWithSync,
+    runExternalUpdate,
   };
 }

@@ -10,8 +10,7 @@ export interface UndoRedoServiceOptions {
   activeCell?: Ref<{ row: number; col: number } | null> | null;
   selectionService: SelectionService;
   triggerSelectionFlash?: () => void;
-  emitChange?: () => void;
-  emitModelUpdate?: () => void;
+  emitSync?: () => void;
 }
 
 export interface UndoRedoService {
@@ -28,8 +27,7 @@ export const createUndoRedoService = (
     activeCell,
     selectionService,
     triggerSelectionFlash,
-    emitChange,
-    emitModelUpdate,
+    emitSync,
   } = options;
 
   return {
@@ -42,8 +40,7 @@ export const createUndoRedoService = (
         activeCell,
         selectionService,
         triggerSelectionFlash,
-        emitChange,
-        emitModelUpdate,
+        emitSync,
       }),
   };
 };

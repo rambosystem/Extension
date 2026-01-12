@@ -18,8 +18,7 @@ export interface RowOperationHandlerOptions {
   insertRowBelow: (rowIndex: number) => void;
   deleteRow: (rowIndex: number) => void;
   selectionService: SelectionService;
-  emitChange: () => void;
-  emitModelUpdate: () => void;
+  emitSync: () => void;
 }
 
 /**
@@ -39,8 +38,7 @@ export function handleInsertRowOperation(
     tableData,
     saveHistory,
     insertRowBelow,
-    emitChange,
-    emitModelUpdate,
+    emitSync,
     selectionService,
   } = options;
 
@@ -74,8 +72,7 @@ export function handleInsertRowOperation(
 
   // 在下一个 tick 通知数据变化
   nextTick(() => {
-    emitModelUpdate();
-    emitChange();
+    emitSync();
   });
 
   return true;
@@ -103,8 +100,7 @@ export function handleDeleteRowOperation(
     saveHistory,
     deleteRow,
     selectionService,
-    emitChange,
-    emitModelUpdate,
+    emitSync,
   } = options;
 
   // 处理多行删除
@@ -173,8 +169,7 @@ export function handleDeleteRowOperation(
 
   // 在下一个 tick 通知数据变化
   nextTick(() => {
-    emitModelUpdate();
-    emitChange();
+    emitSync();
   });
 
   return true;
@@ -201,8 +196,7 @@ export function handleDeleteRowsOperation(
     saveHistory,
     deleteRow,
     selectionService,
-    emitChange,
-    emitModelUpdate,
+    emitSync,
   } = options;
 
   if (!Array.isArray(rowIndices) || rowIndices.length === 0) {
@@ -285,8 +279,7 @@ export function handleDeleteRowsOperation(
 
   // 在下一个 tick 通知数据变化
   nextTick(() => {
-    emitModelUpdate();
-    emitChange();
+    emitSync();
   });
 
   return true;

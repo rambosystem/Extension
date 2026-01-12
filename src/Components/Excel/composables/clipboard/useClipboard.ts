@@ -130,8 +130,7 @@ class PasteStrategyManager {
       generateColumnLabel: (index: number) => string;
       saveHistory: (state: any, options?: SaveHistoryOptions) => void;
       selectionService: SelectionService;
-      emitChange?: () => void;
-      emitModelUpdate?: () => void;
+      emitSync?: () => void;
       skipHistorySave?: boolean; // 跳过历史记录保存（用于剪切-粘贴原子操作）
       sourceRange?: SelectionRange | null; // 复制/剪切源区域（用于撤回时恢复选区）
     }
@@ -249,8 +248,7 @@ class PasteStrategyManager {
       );
 
       // 触发数据同步
-      options.emitModelUpdate?.();
-      options.emitChange?.();
+      options.emitSync?.();
     }
 
     return result;
@@ -348,8 +346,7 @@ export interface UseClipboardOptions {
   state: ExcelState;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   selectionService: SelectionService;
-  emitChange?: () => void;
-  emitModelUpdate?: () => void;
+  emitSync?: () => void;
 }
 
 /**
@@ -378,8 +375,7 @@ export interface UseClipboardReturn {
  *   state: excelState,
  *   saveHistory,
  *   selectionService,
- *   emitChange,
- *   emitModelUpdate,
+ *   emitSync,
  * });
  * ```
  */
@@ -387,8 +383,7 @@ export function useClipboard({
   state,
   saveHistory,
   selectionService,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
 }: UseClipboardOptions): UseClipboardReturn {
   const {
     editing: { editingCell: actualEditingCell },
@@ -541,8 +536,7 @@ export function useClipboard({
         },
       });
 
-      emitModelUpdate?.();
-      emitChange?.();
+      emitSync?.();
     }
 
     cutRange.value = null;
@@ -694,8 +688,7 @@ export function useClipboard({
       generateColumnLabel,
       saveHistory,
       selectionService,
-      emitChange,
-      emitModelUpdate,
+      emitSync,
       skipHistorySave: isCutMode,
       sourceRange: copiedRange.value, // 传递复制源区域
     });
@@ -736,8 +729,7 @@ export function useClipboard({
         generateColumnLabel,
         saveHistory,
         selectionService,
-        emitChange,
-        emitModelUpdate,
+        emitSync,
         skipHistorySave: isCutMode,
         sourceRange: copiedRange.value, // 传递复制源区域
       });

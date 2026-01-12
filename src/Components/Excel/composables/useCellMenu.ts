@@ -35,8 +35,7 @@ export interface UseCellMenuOptions {
   deleteRow: (rowIndex: number) => void;
   selectionService: SelectionService;
   undoRedoService: UndoRedoService;
-  emitChange?: () => void;
-  emitModelUpdate?: () => void;
+  emitSync?: () => void;
 }
 
 /**
@@ -67,8 +66,7 @@ export function useCellMenu({
   deleteRow,
   selectionService,
   undoRedoService,
-  emitChange,
-  emitModelUpdate,
+  emitSync,
 }: UseCellMenuOptions): UseCellMenuReturn {
   // 准备行操作工具函数的选项
   const rowOperationOptions: RowOperationHandlerOptions = {
@@ -80,8 +78,7 @@ export function useCellMenu({
     insertRowBelow,
     deleteRow,
     selectionService,
-    emitChange: emitChange || (() => {}),
-    emitModelUpdate: emitModelUpdate || (() => {}),
+    emitSync: emitSync || (() => {}),
   };
 
   /**
