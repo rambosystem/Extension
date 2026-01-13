@@ -456,23 +456,6 @@ export function useKeyboard({
       return true;
     }
 
-    if (key === KEY_CODES.Y && !isMacPlatform()) {
-      const result = redoHistory();
-
-      // 使用公共函数处理重做操作（与菜单逻辑完全一致，公共函数内部会处理更新选区和通知数据变化）
-      const success = undoRedoService.apply(result);
-
-      // 如果无法重做，阻止默认行为但返回 true 表示已处理
-      if (!success) {
-        event.preventDefault();
-        event.stopPropagation();
-        return true;
-      }
-
-      event.preventDefault();
-      return true;
-    }
-
     return false;
   };
 

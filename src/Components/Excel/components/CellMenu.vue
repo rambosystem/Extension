@@ -130,10 +130,7 @@ const isMenuOpen = ref(false);
 const copyShortcut = computed(() => buildShortcut("C"));
 const pasteShortcut = computed(() => buildShortcut("V"));
 const undoShortcut = computed(() => buildShortcut("Z"));
-const redoShortcut = computed(() => {
-  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-  return isMac ? buildShortcut("Z", { shift: true }) : buildShortcut("Y");
-});
+const redoShortcut = computed(() => buildShortcut("Z", { shift: true }));
 const insertRowShortcut = computed(() => buildShortcut("Enter"));
 const deleteRowShortcut = computed(() => buildShortcut("Delete"));
 
