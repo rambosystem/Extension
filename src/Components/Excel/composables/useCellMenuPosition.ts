@@ -1,5 +1,6 @@
 import { computed, nextTick, type Ref, type ComputedRef } from "vue";
 import type { CellPosition, SelectionRange } from "./types";
+import { HistoryActionType, type SaveHistoryOptions } from "./history/useHistory";
 
 /**
  * 菜单上下文对象
@@ -14,6 +15,7 @@ export interface MenuContext {
   updateCell: (row: number, col: number, value: string) => void;
   getData: () => string[][];
   setData: (data: string[][]) => void;
+  commitHistory: (options?: SaveHistoryOptions) => void;
 }
 
 /**
@@ -39,6 +41,7 @@ export interface UseCellMenuPositionOptions {
   emitSync: () => void;
   getData: () => string[][];
   setDataWithSync: (data: string[][]) => void;
+  saveHistory: (state: string[][], options?: SaveHistoryOptions) => void;
   lastMousePosition?: Ref<MousePosition | null>;
   getCellElement?: (row: number, col: number) => HTMLElement | null;
 }
@@ -67,6 +70,7 @@ export function useCellMenuPosition({
   emitSync,
   getData,
   setDataWithSync,
+  saveHistory,
   lastMousePosition,
   getCellElement,
 }: UseCellMenuPositionOptions): UseCellMenuPositionReturn {
@@ -148,6 +152,34 @@ export function useCellMenuPosition({
       return {
         row: selection.minRow,
         col: selection.minCol,
+      };
+    }
+
+    const rowCount = tableData.value.length;
+    const colCount =
+      rowCount > 0
+        ? Math.max(
+            ...tableData.value.map((row) =>
+              Array.isArray(row) ? row.length : 0
+            )
+          )
+        : 0;
+
+    const isFullColumnSelection =
+      rowCount > 0 &&
+      selection.minCol === selection.maxCol &&
+      selection.minRow === 0 &&
+      selection.maxRow === rowCount - 1;
+    const isFullRowSelection =
+      colCount > 0 &&
+      selection.minRow === selection.maxRow &&
+      selection.minCol === 0 &&
+      selection.maxCol === colCount - 1;
+
+    if ((isFullColumnSelection || isFullRowSelection) && activeCell.value) {
+      return {
+        row: activeCell.value.row,
+        col: activeCell.value.col,
       };
     }
 
@@ -304,6 +336,24 @@ export function useCellMenuPosition({
       getData: () => getData(),
       setData: (data: string[][]) => {
         setDataWithSync(data);
+      },
+      commitHistory: (options?: SaveHistoryOptions) => {
+        const selection =
+          effectiveSelection ||
+          (activeCell.value
+            ? {
+                minRow: activeCell.value.row,
+                maxRow: activeCell.value.row,
+                minCol: activeCell.value.col,
+                maxCol: activeCell.value.col,
+              }
+            : undefined);
+        saveHistory(tableData.value, {
+          type: HistoryActionType.BULK_OPERATION,
+          description: "Custom menu action",
+          metadata: selection ? { selectionRange: selection } : undefined,
+          ...options,
+        });
       },
     };
   };

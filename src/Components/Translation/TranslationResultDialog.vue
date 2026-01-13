@@ -767,8 +767,13 @@ const handleCustomAction = ({ id, context }) => {
       return;
     }
 
-    const { normalizedSelection, multiSelections, isMultipleMode, updateCell } =
-      context;
+    const {
+      normalizedSelection,
+      multiSelections,
+      isMultipleMode,
+      updateCell,
+      commitHistory,
+    } = context;
 
     // 获取 baseline key
     const baselineKey =
@@ -797,35 +802,47 @@ const handleCustomAction = ({ id, context }) => {
     const translationResult = translationCoreStore.translationResult || [];
     const { prefix } = parsed;
 
-    // 收集所有需要处理的单元格行索引
-    let targetRows = [];
+    const getTargetRowsFromContext = () => {
+      const rowCount = Array.isArray(context?.tableData)
+        ? context.tableData.length
+        : 0;
+      if (rowCount <= 0) {
+        return [];
+      }
 
-    // 多选模式：处理所有包含第一列（Key列）的单元格
-    if (isMultipleMode && multiSelections && multiSelections.length > 0) {
-      // 收集所有在第一列的单元格行索引（去重）
-      const targetRowsSet = new Set();
+      const clampRow = (row) => Math.max(0, Math.min(row, rowCount - 1));
+      const rows = new Set();
 
-      // 遍历所有选区，收集所有在第一列的单元格
-      for (const selection of multiSelections) {
-        // 检查选区是否包含第一列（minCol <= 0 <= maxCol）
-        if (selection.minCol <= 0 && selection.maxCol >= 0) {
-          // 如果选区包含第一列，收集该选区的所有行
-          for (let row = selection.minRow; row <= selection.maxRow; row++) {
-            targetRowsSet.add(row);
+      if (isMultipleMode && multiSelections && multiSelections.length > 0) {
+        for (const selection of multiSelections) {
+          if (selection.minCol <= 0 && selection.maxCol >= 0) {
+            const start = clampRow(selection.minRow);
+            const end = clampRow(selection.maxRow);
+            for (let row = start; row <= end; row++) {
+              rows.add(row);
+            }
           }
         }
+      } else if (normalizedSelection) {
+        if (
+          normalizedSelection.minCol <= 0 &&
+          normalizedSelection.maxCol >= 0
+        ) {
+          const start = clampRow(normalizedSelection.minRow);
+          const end = clampRow(normalizedSelection.maxRow);
+          for (let row = start; row <= end; row++) {
+            rows.add(row);
+          }
+        }
+      } else if (context?.activeCell && context.activeCell.col === 0) {
+        rows.add(clampRow(context.activeCell.row));
       }
 
-      // 转换为数组并排序
-      targetRows = Array.from(targetRowsSet).sort((a, b) => a - b);
-    } else if (normalizedSelection) {
-      // 单选模式：使用 normalizedSelection
-      const { minRow, maxRow } = normalizedSelection;
-      // 按顺序生成行索引数组
-      for (let row = minRow; row <= maxRow; row++) {
-        targetRows.push(row);
-      }
-    }
+      return Array.from(rows).sort((a, b) => a - b);
+    };
+
+    // 收集所有需要处理的单元格行索引
+    const targetRows = getTargetRowsFromContext();
 
     // 如果有符合条件的单元格，按顺序重新生成所有 key
     if (targetRows.length > 0) {
@@ -854,6 +871,12 @@ const handleCustomAction = ({ id, context }) => {
         // 生成新的 key（会自动处理缺失的 key 和唯一性）
         const value = generateNextAvailableKey(baselineKey, usedKeys);
         updateCell(row, 0, value);
+      }
+
+      if (typeof commitHistory === "function") {
+        commitHistory({
+          description: "Auto Increment",
+        });
       }
     }
   }

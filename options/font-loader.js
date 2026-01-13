@@ -1,0 +1,44 @@
+// 动态加载字体，添加错误处理和超时检测
+(function() {
+  try {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap';
+    
+    // 添加 preconnect 以优化加载
+    const preconnect1 = document.createElement('link');
+    preconnect1.rel = 'preconnect';
+    preconnect1.href = 'https://fonts.googleapis.com';
+    const preconnect2 = document.createElement('link');
+    preconnect2.rel = 'preconnect';
+    preconnect2.href = 'https://fonts.gstatic.com';
+    preconnect2.crossOrigin = 'anonymous';
+    
+    document.head.appendChild(preconnect1);
+    document.head.appendChild(preconnect2);
+    document.head.appendChild(link);
+    
+    // 监听字体加载完成，如果加载失败则移除 link 标签
+    if (document.fonts) {
+      // 使用 Promise.race 来检测字体加载或超时
+      Promise.race([
+        document.fonts.ready,
+        new Promise(function(resolve) {
+          setTimeout(resolve, 3000); // 3 秒超时
+        })
+      ]).then(function() {
+        // 检查字体是否真的加载成功
+        if (!document.fonts.check('1em "JetBrains Mono"')) {
+          // 字体未加载成功，移除 link 标签以避免控制台错误
+          link.remove();
+        }
+      }).catch(function(error) {
+        // 静默处理错误
+        console.warn('Font loading check failed:', error);
+      });
+    }
+  } catch (error) {
+    // 静默处理错误，使用备用字体
+    console.warn('Failed to load JetBrains Mono font:', error);
+  }
+})();

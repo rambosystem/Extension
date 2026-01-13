@@ -836,6 +836,7 @@ const { shouldShowCellMenu, createMenuContext } = useCellMenuPosition({
   emitSync,
   getData,
   setDataWithSync,
+  saveHistory: saveHistoryWithState,
   lastMousePosition,
   getCellElement,
 });
@@ -847,6 +848,9 @@ const handleCustomAction = (payload: {
   id: string;
   context: MenuContext;
 }): void => {
+  if (containerRef.value) {
+    containerRef.value.focus();
+  }
   emit("custom-action", payload);
 };
 
