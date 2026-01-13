@@ -5,6 +5,7 @@
     <div class="excel-table" @mouseleave="handleMouseUp">
       <HeaderRow :display-columns="displayColumns" :get-column-width="getColumnWidth"
         :is-in-selection-header="isInSelectionHeader" :enable-column-resize="enableColumnResize"
+        :sticky-header="enableHeaderSticky"
         @corner-click="() => handleCornerCellClick()" @column-header-mousedown="handleColumnHeaderMouseDown"
         @column-header-mouseenter="handleColumnHeaderMouseEnter" @column-resize-start="startColumnResize"
         @column-resize-dblclick="handleDoubleClickResize" />
@@ -87,6 +88,7 @@ interface Props {
   defaultColumnWidth?: number | ColumnWidthConfig;
   enableRowResize?: boolean;
   defaultRowHeight?: number;
+  enableHeaderSticky?: boolean;
   modelValue?: string[][] | null;
   columnNames?: string[] | null;
   customMenuItems?: CustomMenuItem[];
@@ -99,6 +101,7 @@ const props = withDefaults(defineProps<Props>(), {
   defaultColumnWidth: 100,
   enableRowResize: true,
   defaultRowHeight: 36,
+  enableHeaderSticky: false,
   modelValue: null,
   columnNames: null,
   customMenuItems: () => [],
@@ -1275,7 +1278,9 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   outline: none;
   font-family: $font-family;
   width: 100%;
-  height: 100%; // 确保容器有高度，才能显示滚动�?
+  height: var(--excel-container-height, 100%);
+  min-height: var(--excel-container-min-height, auto);
+  max-height: var(--excel-container-max-height, none);
   box-sizing: border-box;
 }
 
@@ -1349,6 +1354,13 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   display: flex;
   margin: 0;
   padding: 0;
+}
+
+.header-row-sticky {
+  position: sticky;
+  top: 0;
+  z-index: $z-index-selection-overlay + 1;
+  background: $header-bg;
 }
 
 // ==================== 单元格样�?====================

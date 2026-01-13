@@ -34,7 +34,7 @@
           <Excel ref="excelRef" v-model="excelData" @change="handleExcelDataChange" :enableColumnResize="true"
             :enableRowResize="false" :enableFillHandle="true" :defaultColumnWidth="calculatedColumnWidth"
             :columnNames="getColumnConfig.columnNames" :custom-menu-items="customMenuItems"
-            @custom-action="handleCustomAction" />
+            @custom-action="handleCustomAction" :enable-header-sticky="true" />
         </div>
       </el-form-item>
       <div class="dialog-button-container">
@@ -885,12 +885,21 @@ const handleCustomAction = ({ id, context }) => {
 
 <style lang="scss" scoped>
 .excel-wrapper {
-  min-height: 400px;
-  max-height: 600px;
+  height: 56vh;
+  display: flex;
+  flex-direction: column;
   position: relative;
   width: 100%;
-  overflow-y: auto; // 只允许垂直滚动条，禁止横向滚动条
-  overflow-x: hidden; // 隐藏横向滚动条
+  overflow: hidden;
+}
+
+:deep(.excel-wrapper .excel-container) {
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .dialog-button-container {

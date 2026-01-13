@@ -1,5 +1,5 @@
 <template>
-    <div class="excel-row header-row">
+    <div class="excel-row header-row" :class="{ 'header-row-sticky': stickyHeader }">
         <div class="excel-cell header-cell corner-cell" @mousedown="$emit('corner-click')"></div>
         <div v-for="(col, index) in displayColumns" :key="col" class="excel-cell header-cell"
             :class="{ 'active-header': isInSelectionHeader(index, 'col') }" :style="index === displayColumns.length - 1
@@ -32,6 +32,7 @@ interface Props {
     getColumnWidth: (index: number) => number;
     isInSelectionHeader: (index: number, type: 'col' | 'row') => boolean;
     enableColumnResize?: boolean;
+    stickyHeader?: boolean;
 }
 
 defineProps<Props>();
