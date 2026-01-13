@@ -12,6 +12,7 @@ import {
 export interface UseFillHandleOptions {
   getSmartValue: (value: string, step: number) => string;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
+  isCellEditable?: (row: number, col: number) => boolean;
 }
 
 /**
@@ -44,6 +45,7 @@ export interface UseFillHandleReturn {
 export function useFillHandle({
   getSmartValue,
   saveHistory,
+  isCellEditable,
 }: UseFillHandleOptions): UseFillHandleReturn {
   const isDraggingFill = ref<boolean>(false);
   const dragStartCell = ref<CellPosition | null>(null);
@@ -124,6 +126,13 @@ export function useFillHandle({
 
     if (end.row > start.row) {
       const colIndex = start.col;
+
+      if (isCellEditable && !isCellEditable(start.row, colIndex)) {
+        isDraggingFill.value = false;
+        dragStartCell.value = null;
+        dragEndCell.value = null;
+        return;
+      }
 
       if (colIndex < 0 || colIndex >= maxCols) {
         // 错误处理：列索引无效

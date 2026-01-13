@@ -70,6 +70,7 @@ export interface UseKeyboardOptions {
   deleteRow: (rowIndex: number) => void;
   selectionService: SelectionService;
   undoRedoService: UndoRedoService;
+  isCellEditable?: (row: number, col: number) => boolean;
   getMaxRows: () => number;
   getMaxCols: () => number;
   customMenuItems?: CustomMenuItem[];
@@ -313,6 +314,7 @@ export function useKeyboard({
   deleteRow,
   selectionService,
   undoRedoService,
+  isCellEditable,
   getMaxRows,
   getMaxCols,
   customMenuItems = [],
@@ -723,6 +725,10 @@ export function useKeyboard({
       col >= maxCols ||
       !tableData.value[row]
     ) {
+      return false;
+    }
+
+    if (isCellEditable && !isCellEditable(row, col)) {
       return false;
     }
 

@@ -26,6 +26,7 @@ export interface UseCellEditingOptions {
     maxRows: number,
     maxCols: number
   ) => void;
+  isCellEditable?: (row: number, col: number) => boolean;
   getMaxRows: () => number;
   getMaxCols: () => number;
   containerRef: Ref<HTMLElement | null>;
@@ -72,6 +73,7 @@ export function useCellEditing({
   startSingleSelection,
   saveHistory,
   moveActiveCell,
+  isCellEditable,
   getMaxRows,
   getMaxCols,
   containerRef,
@@ -118,6 +120,11 @@ export function useCellEditing({
     // 边界检查
     if (row < 0 || row >= getMaxRows() || col < 0 || col >= getMaxCols()) {
       debugLog(`[CellEditing] Invalid cell position: row=${row}, col=${col}`);
+      return;
+    }
+
+    if (isCellEditable && !isCellEditable(row, col)) {
+      debugLog("[CellEditing] startEdit: cell is not editable", { row, col });
       return;
     }
 

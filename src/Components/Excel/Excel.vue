@@ -90,6 +90,7 @@ interface Props {
   modelValue?: string[][] | null;
   columnNames?: string[] | null;
   customMenuItems?: CustomMenuItem[];
+  readOnlyColumns?: string[] | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -315,6 +316,19 @@ const isMultiSelect = computed<boolean>(() => {
 
 const eventBus = createExcelEventBus();
 
+const normalizeColumnName = (value: string | undefined | null): string =>
+  String(value ?? "").trim().toUpperCase();
+
+const readOnlyColumnSet = computed<Set<string>>(() => {
+  const configured = props.readOnlyColumns ?? ["EN"];
+  return new Set(configured.map((name) => normalizeColumnName(name)));
+});
+
+const isCellEditable = (_row: number, col: number): boolean => {
+  const colName = normalizeColumnName(displayColumns.value[col]);
+  return !readOnlyColumnSet.value.has(colName);
+};
+
 // --- 历史状态与选区应用 ---
 const canUndo = ref(false);
 const canRedo = ref(false);
@@ -375,6 +389,7 @@ const fillHandleComposable = props.enableFillHandle
   ? useFillHandle({
     getSmartValue,
     saveHistory,
+    isCellEditable,
   })
   : null;
 
@@ -425,6 +440,7 @@ const {
   startSingleSelection,
   saveHistory,
   moveActiveCell,
+  isCellEditable,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
   containerRef,
@@ -606,6 +622,7 @@ const {
   state: excelState,
   saveHistory: saveHistoryWithState,
   selectionService: selectionServiceWithEvents,
+  isCellEditable,
   emitSync,
 });
 
@@ -732,6 +749,7 @@ const deleteSelection = (range: SelectionRange): void => {
   for (let r = range.minRow; r <= range.maxRow; r++) {
     if (!tableData.value[r]) continue;
     for (let c = range.minCol; c <= range.maxCol; c++) {
+      if (!isCellEditable(r, c)) continue;
       if (tableData.value[r][c] !== undefined) {
         tableData.value[r][c] = "";
       }
@@ -1035,6 +1053,7 @@ const { handleKeydown } = useKeyboard({
   deleteRow, // 传递基础删除行函�?
   selectionService: selectionServiceWithEvents,
   undoRedoService,
+  isCellEditable,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,

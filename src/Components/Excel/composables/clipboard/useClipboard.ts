@@ -130,6 +130,7 @@ class PasteStrategyManager {
       generateColumnLabel: (index: number) => string;
       saveHistory: (state: any, options?: SaveHistoryOptions) => void;
       selectionService: SelectionService;
+      isCellEditable?: (row: number, col: number) => boolean;
       emitSync?: () => void;
       skipHistorySave?: boolean; // 跳过历史记录保存（用于剪切-粘贴原子操作）
       sourceRange?: SelectionRange | null; // 复制/剪切源区域（用于撤回时恢复选区）
@@ -198,6 +199,9 @@ class PasteStrategyManager {
           const cIndex = c - startCol;
           const oldVal = rowBefore[c] ?? "";
           const newVal = rowData[cIndex] ?? "";
+          if (options.isCellEditable && !options.isCellEditable(r, c)) {
+            continue;
+          }
 
           // 记录所有变化（包括值相同的情况，因为这是粘贴操作）
           // 但为了优化，只记录实际有值变化的单元格
@@ -263,6 +267,7 @@ class PasteStrategyManager {
       rows: Ref<number[]>;
       columns: Ref<string[]>;
       generateColumnLabel: (index: number) => string;
+      isCellEditable?: (row: number, col: number) => boolean;
     }
   ): PasteResult {
     let rowsAdded = 0;
@@ -309,6 +314,9 @@ class PasteStrategyManager {
       }
       rowArr.forEach((cellVal, cIndex) => {
         const c = startCol + cIndex;
+        if (options.isCellEditable && !options.isCellEditable(r, c)) {
+          return;
+        }
         // 确保列存在
         if (!tableData[r][c] && tableData[r][c] !== "") {
           // 如果列不存在，需要扩展
@@ -346,6 +354,7 @@ export interface UseClipboardOptions {
   state: ExcelState;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   selectionService: SelectionService;
+  isCellEditable?: (row: number, col: number) => boolean;
   emitSync?: () => void;
 }
 
@@ -375,6 +384,7 @@ export interface UseClipboardReturn {
  *   state: excelState,
  *   saveHistory,
  *   selectionService,
+ *   isCellEditable,
  *   emitSync,
  * });
  * ```
@@ -383,6 +393,7 @@ export function useClipboard({
   state,
   saveHistory,
   selectionService,
+  isCellEditable,
   emitSync,
 }: UseClipboardOptions): UseClipboardReturn {
   const {
@@ -688,6 +699,7 @@ export function useClipboard({
       generateColumnLabel,
       saveHistory,
       selectionService,
+      isCellEditable,
       emitSync,
       skipHistorySave: isCutMode,
       sourceRange: copiedRange.value, // 传递复制源区域
@@ -729,6 +741,7 @@ export function useClipboard({
         generateColumnLabel,
         saveHistory,
         selectionService,
+        isCellEditable,
         emitSync,
         skipHistorySave: isCutMode,
         sourceRange: copiedRange.value, // 传递复制源区域
