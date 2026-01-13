@@ -34,6 +34,7 @@
           <Excel ref="excelRef" v-model="excelData" @change="handleExcelDataChange" :enableColumnResize="true"
             :enableRowResize="false" :enableFillHandle="true" :defaultColumnWidth="calculatedColumnWidth"
             :columnNames="getColumnConfig.columnNames" :custom-menu-items="customMenuItems"
+            :enable-row-scroll-step="true"
             @custom-action="handleCustomAction" :enable-header-sticky="true" />
         </div>
       </el-form-item>

@@ -1,14 +1,13 @@
 ## 修改组件需要遵守的规则并同步更新Excel_README.md
 <template>
   <div class="excel-container" @keydown="handleKeydown" @copy="handleCopy" @paste="handlePaste"
-    @click="handleContainerClick" tabindex="0" ref="containerRef">
+    @click="handleContainerClick" @wheel="handleRowWheel" tabindex="0" ref="containerRef">
     <div class="excel-table" @mouseleave="handleMouseUp">
       <HeaderRow :display-columns="displayColumns" :get-column-width="getColumnWidth"
         :is-in-selection-header="isInSelectionHeader" :enable-column-resize="enableColumnResize"
-        :sticky-header="enableHeaderSticky"
-        @corner-click="() => handleCornerCellClick()" @column-header-mousedown="handleColumnHeaderMouseDown"
-        @column-header-mouseenter="handleColumnHeaderMouseEnter" @column-resize-start="startColumnResize"
-        @column-resize-dblclick="handleDoubleClickResize" />
+        :sticky-header="enableHeaderSticky" @corner-click="() => handleCornerCellClick()"
+        @column-header-mousedown="handleColumnHeaderMouseDown" @column-header-mouseenter="handleColumnHeaderMouseEnter"
+        @column-resize-start="startColumnResize" @column-resize-dblclick="handleDoubleClickResize" />
 
       <!-- 虚拟滚动：上方占位符 -->
       <div v-if="virtualScroll.enabled.value && virtualScroll.offsetTop.value > 0" class="virtual-scroll-spacer"
@@ -88,6 +87,7 @@ interface Props {
   defaultColumnWidth?: number | ColumnWidthConfig;
   enableRowResize?: boolean;
   defaultRowHeight?: number;
+  enableRowScrollStep?: boolean;
   enableHeaderSticky?: boolean;
   modelValue?: string[][] | null;
   columnNames?: string[] | null;
@@ -101,6 +101,7 @@ const props = withDefaults(defineProps<Props>(), {
   defaultColumnWidth: 100,
   enableRowResize: true,
   defaultRowHeight: 36,
+  enableRowScrollStep: true,
   enableHeaderSticky: false,
   modelValue: null,
   columnNames: null,
@@ -124,6 +125,66 @@ const excelState = useExcelState({
 
 // 从统一状态获取数据引�?
 const { tableData, columns: internalColumns, rows } = excelState.data;
+
+// 滚动步进控制：确保每次滚动对齐整行高度
+const wheelAccumulator = ref(0);
+
+const getRowTop = (rowIndex: number): number => {
+  let top = 0;
+  for (let i = 0; i < rowIndex; i++) {
+    top += getRowHeight(i);
+  }
+  return top;
+};
+
+const getRowIndexByScrollTop = (scrollTop: number): number => {
+  let offset = 0;
+  for (let i = 0; i < rows.value.length; i++) {
+    const height = getRowHeight(i);
+    if (offset + height > scrollTop) {
+      return i;
+    }
+    offset += height;
+  }
+  return Math.max(0, rows.value.length - 1);
+};
+
+const scrollToRowIndex = (rowIndex: number): void => {
+  if (!containerRef.value) return;
+  const clampedIndex = Math.max(0, Math.min(rows.value.length - 1, rowIndex));
+  containerRef.value.scrollTop = getRowTop(clampedIndex);
+};
+
+const handleRowWheel = (event: WheelEvent): void => {
+  if (!props.enableRowScrollStep) return;
+  if (!rows.value.length || !containerRef.value) return;
+  event.preventDefault();
+
+  wheelAccumulator.value += event.deltaY;
+
+  const currentTop = containerRef.value.scrollTop;
+  const currentIndex = getRowIndexByScrollTop(currentTop);
+  const currentRowHeight = getRowHeight(currentIndex);
+  if (Math.abs(wheelAccumulator.value) < currentRowHeight) return;
+
+  const direction = wheelAccumulator.value > 0 ? 1 : -1;
+  const steps = Math.max(1, Math.floor(Math.abs(wheelAccumulator.value) / currentRowHeight));
+  wheelAccumulator.value = 0;
+
+  const currentRowTop = getRowTop(currentIndex);
+  const currentRowBottom = currentRowTop + currentRowHeight;
+  let targetIndex = currentIndex + direction * steps;
+
+  if (steps === 1) {
+    if (direction < 0 && currentTop > currentRowTop + 1) {
+      targetIndex = currentIndex;
+    } else if (direction > 0 && currentTop < currentRowBottom - 1) {
+      targetIndex = currentIndex + 1;
+    }
+  }
+
+  scrollToRowIndex(targetIndex);
+};
 
 // 使用统一状态的数据操作方法
 const {
@@ -522,10 +583,10 @@ const {
   setDataWithSync,
   runExternalUpdate,
 } = useDataSync({
-    tableData,
-    props,
-    getData,
-    setData,
+  tableData,
+  props,
+  getData,
+  setData,
   emit: (event: "update:modelValue" | "change" | "custom-action", ...args: unknown[]) => {
     // 类型安全的事件分发函�?
     // 根据事件类型进行类型检查和分发
@@ -1240,7 +1301,9 @@ $selection-border-width: 2px;
 $border-radius: 8px;
 $cell-padding-h: 11px;
 $cell-padding-v: 1px;
-$container-padding: 10px 10px 20px 10px;
+$container-padding: 0px 20px 0px 0px;
+$container-margin: 10px 10px 10px 10px;
+
 $row-number-width: 40px;
 $default-row-height: 36px;
 
@@ -1259,6 +1322,7 @@ $z-index-selection-overlay: 5;
 $z-index-resizer: 10;
 $z-index-active: 10;
 $z-index-fill-handle: 20;
+$z-index-header: 30;
 
 // 过渡动画
 $transition-fast: 0.05s ease;
@@ -1273,6 +1337,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
 // ==================== 容器样式 ====================
 .excel-container {
   padding: $container-padding;
+  margin: $container-margin;
   overflow-y: auto;
   overflow-x: hidden; // 隐藏横向滚动�?
   outline: none;
@@ -1359,7 +1424,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
 .header-row-sticky {
   position: sticky;
   top: 0;
-  z-index: $z-index-selection-overlay + 1;
+  z-index: $z-index-header;
   background: $header-bg;
 }
 
