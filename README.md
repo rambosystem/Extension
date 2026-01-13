@@ -27,82 +27,42 @@
 ## 项目结构
 
 ```
-src/
-├── Components/           # 组件目录
-│   ├── Common/          # 通用组件
-│   │   ├── CodeEditor.vue      # 代码编辑器
-│   │   ├── ConfirmDialog.vue   # 确认对话框
-│   │   ├── EditableCell.vue    # 可编辑单元格
-│   │   ├── Excel.vue           # Excel 表格组件（类 Excel 功能）
-│   │   ├── LoadingButton.vue   # 加载按钮
-│   │   └── SaveableInput.vue   # 可保存输入框
-│   ├── Terms/           # 术语相关组件
-│   │   ├── TermsCard.vue       # 术语卡片
-│   │   └── Weight-Item.vue     # 权重项
-│   ├── Translation/     # 翻译相关组件
-│   │   ├── DeduplicateDialog.vue      # 去重对话框
-│   │   ├── TranslationSetting.vue     # 翻译设置
-│   │   ├── TranslationForm.vue       # 翻译表单
-│   │   └── TranslationResultDialog.vue # 翻译结果对话框
-│   └── Upload/          # 上传相关组件
-│       └── UploadSettingsDialog.vue  # 上传设置对话框
-├── composables/         # 组合式函数
-│   ├── Core/            # 核心功能
-│   │   ├── useI18n.js           # 国际化
-│   │   └── useCacheValidation.js # 缓存验证
-│   ├── Excel/           # Excel 相关
-│   │   ├── README.md            # Excel 组件文档
-│   │   ├── constants.js         # Excel 组件常量
-│   │   ├── useColumnWidth.js   # 列宽管理
-│   │   ├── useExcelData.js     # 数据管理
-│   │   ├── useExcelExport.js   # Excel 导出
-│   │   ├── useFillHandle.js    # 智能填充
-│   │   ├── useHistory.js       # 历史记录
-│   │   ├── useKeyboard.js      # 键盘处理
-│   │   ├── useRowHeight.js     # 行高管理
-│   │   └── useSelection.js     # 选择逻辑
-│   ├── Translation/     # 翻译相关
-│   │   ├── useDeduplicate.js           # 去重逻辑
-│   │   ├── useDeduplicateDialog.js     # 去重对话框
-│   │   ├── useTranslation.js          # 翻译核心
-│   │   ├── useTranslationCache.js     # 翻译缓存
-│   │   └── useTranslationStorage.js   # 翻译存储
-│   └── Upload/          # 上传相关
-│       └── useLokaliseUpload.js       # Lokalise 上传
-├── config/              # 配置文件
-│   └── prompts.js       # AI 提示词配置
-├── locales/             # 国际化文件
-│   ├── en.json          # 英文语言包
-│   └── zh_CN.json       # 中文语言包
-├── requests/            # API 请求
-│   ├── cdn.js           # CDN 请求
-│   ├── deepseek.js      # DeepSeek API
-│   ├── lokalise.js      # Lokalise API
-│   ├── termMatch.js     # 术语匹配 API
-│   └── terms.js         # 术语管理 API
-├── stores/              # Pinia 状态管理
-│   ├── app.js           # 应用全局状态
-│   ├── index.js         # Store 导出
-│   ├── settings/        # 设置模块
-│   │   ├── api.js       # API 设置
-│   │   └── translation.js # 翻译设置
-│   ├── translation/      # 翻译模块
-│   │   ├── core.js      # 翻译核心功能
-│   │   ├── upload.js    # 上传功能
-│   │   ├── export.js    # 导出功能
-│   │   └── deduplicate.js # 去重功能
-│   └── terms.js         # 术语状态
-├── utils/               # 工具函数
-│   ├── apiValidation.js # API 验证
-│   └── debug.js         # 调试日志控制
-├── Views/               # 页面视图
-│   ├── Settings.vue     # 设置页面
-│   └── Translation.vue # 翻译页面
-├── App.vue              # 弹窗应用
-├── Options.vue          # 选项页面
-├── main.js              # 弹窗入口
-├── options.js           # 选项页面入口
-└── style.css            # 全局样式
+.
+├── manifest.json                 # 扩展配置（MV3）
+├── background.js                 # Service Worker
+├── content.js                    # 内容脚本
+├── popup/                        # 弹窗入口 HTML
+│   └── popup.html
+├── options/                      # 选项页入口 HTML
+│   └── options.html
+├── images/                       # 扩展图标
+├── src/
+│   ├── App.vue                   # 弹窗应用
+│   ├── Options.vue               # 选项页应用
+│   ├── main.js                   # 弹窗入口
+│   ├── options.js                # 选项页入口
+│   ├── style.css                 # 全局样式
+│   ├── assets/                   # 静态资源
+│   ├── Components/               # 组件
+│   │   ├── Common/               # 通用组件
+│   │   ├── Excel/                # Excel 表格组件（含 composables/components）
+│   │   ├── Library/              # 术语库相关组件
+│   │   ├── Terms/                # 术语相关组件
+│   │   ├── Translation/          # 翻译相关组件
+│   │   └── Upload/               # 上传相关组件
+│   ├── Views/                    # 页面视图
+│   │   ├── Translation.vue
+│   │   ├── Settings.vue
+│   │   └── Library.vue
+│   ├── api/                      # API 适配层
+│   ├── services/                 # 业务服务层
+│   ├── composables/              # 组合式函数
+│   ├── stores/                   # Pinia 状态管理
+│   ├── utils/                    # 工具函数
+│   ├── config/                   # 配置文件
+│   └── locales/                  # 国际化文件
+│       └── en.json
+└── vite.config.js                # 构建配置
 ```
 
 ## 状态管理架构
@@ -568,7 +528,7 @@ if (result.success) {
 
 ### 概述
 
-Excel 组件是一个功能完整的类 Excel 表格组件，位于 `src/Components/Common/Excel.vue`。组件采用 Vue 3 Composition API 开发，通过 Composables 实现模块化设计。
+Excel 组件是一个功能完整的类 Excel 表格组件，位于 `src/Components/Excel/Excel.vue`。组件采用 Vue 3 Composition API 开发，通过 Composables 实现模块化设计。
 
 ### 核心特性
 
@@ -591,7 +551,7 @@ Excel 组件是一个功能完整的类 Excel 表格组件，位于 `src/Compone
 
 <script setup>
 import { ref } from "vue";
-import Excel from "@/Components/Common/Excel.vue";
+import Excel from "@/Components/Excel/Excel.vue";
 
 const excelData = ref([
   ["姓名", "年龄", "城市"],
@@ -626,7 +586,7 @@ const excelData = ref([
 
 <script setup>
 import { ref } from "vue";
-import Excel from "@/Components/Common/Excel.vue";
+import Excel from "@/Components/Excel/Excel.vue";
 
 const excelRef = ref(null);
 const excelData = ref([]);
@@ -647,7 +607,7 @@ const handleSetData = () => {
 
 ### 详细文档
 
-完整的 API 文档和使用指南请参考：[Excel 组件文档](./src/composables/Excel/README.md)
+完整的实现和内部 composables 可参考 `src/Components/Excel/`。
 
 ### 1. 组件开发规范
 
@@ -770,7 +730,7 @@ const handleEvent = () => {
 
 #### 请求函数
 
-- 所有 API 请求放在 `requests/` 目录
+- API 请求适配放在 `src/api/`，业务编排与聚合放在 `src/services/`
 - 使用 async/await 处理异步请求
 - 统一的错误处理机制
 
@@ -1019,7 +979,7 @@ debugError("错误日志");
 
 ### 3. 添加新 API
 
-1. 在 `requests/` 目录创建新的 API 文件
+1. 在 `src/api/` 目录创建新的 API 文件（需要业务组合时在 `src/services/` 中封装）
 2. 定义请求和响应类型
 3. 添加错误处理机制
 4. 在 Store 中集成 API 调用
