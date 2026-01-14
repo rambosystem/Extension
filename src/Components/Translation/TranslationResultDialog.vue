@@ -6,14 +6,14 @@
         <div class="dialog-title-wrapper">
           <span class="dialog-title">{{
             t("translation.translationResult")
-          }}</span>
+            }}</span>
           <div v-if="translationCoreStore.loadingStates.translation" class="loading-indicator">
             <el-icon class="is-loading">
               <Loading />
             </el-icon>
             <span class="loading-text">{{
               translationCoreStore.getStatusText()
-            }}</span>
+              }}</span>
             <span v-if="translationCoreStore.translationProgress.total > 0" class="progress-counter">
               {{ translationCoreStore.translationProgress.finished }} /
               {{ translationCoreStore.translationProgress.total }}
@@ -34,14 +34,13 @@
           <Excel ref="excelRef" v-model="excelData" @change="handleExcelDataChange" :enableColumnResize="true"
             :enableRowResize="false" :enableFillHandle="true" :defaultColumnWidth="calculatedColumnWidth"
             :columnNames="getColumnConfig.columnNames" :custom-menu-items="customMenuItems"
-            :enable-row-scroll-step="true"
-            @custom-action="handleCustomAction" :enable-header-sticky="true" />
+            :enable-row-scroll-step="true" @custom-action="handleCustomAction" :enable-header-sticky="true" />
         </div>
       </el-form-item>
       <div class="dialog-button-container">
         <el-button @click="translationCoreStore.closeDialog()">{{
           t("common.cancel")
-        }}</el-button>
+          }}</el-button>
         <el-button type="primary" @click="
           exportStore.exportExcel(translationCoreStore.translationResult)
           " :disabled="translationCoreStore.isTranslating">{{ t("translation.exportExcel") }}</el-button>
@@ -885,16 +884,17 @@ const handleCustomAction = ({ id, context }) => {
 </script>
 
 <style lang="scss" scoped>
-.excel-wrapper {
+:deep(.excel-wrapper) {
   height: 56vh;
   display: flex;
   flex-direction: column;
   position: relative;
   width: 100%;
   overflow: hidden;
+  margin: 0 10px;
 }
 
-:deep(.excel-wrapper .excel-container) {
+:deep(.excel-container) {
   flex: 1;
   min-height: 0;
   max-height: 100%;

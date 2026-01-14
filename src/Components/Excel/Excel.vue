@@ -1301,8 +1301,8 @@ $selection-border-width: 2px;
 $border-radius: 8px;
 $cell-padding-h: 11px;
 $cell-padding-v: 1px;
-$container-padding: 0px 20px 0px 0px;
-$container-margin: 10px 10px 10px 10px;
+$container-padding: 0;
+$container-margin: 0;
 
 $row-number-width: 40px;
 $default-row-height: 36px;
@@ -1339,7 +1339,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   padding: $container-padding;
   margin: $container-margin;
   overflow-y: auto;
-  overflow-x: hidden; // 隐藏横向滚动�?
+  overflow-x: hidden; // 隐藏横向滚动条
   outline: none;
   font-family: $font-family;
   width: 100%;
@@ -1347,14 +1347,49 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   min-height: var(--excel-container-min-height, auto);
   max-height: var(--excel-container-max-height, none);
   box-sizing: border-box;
+  border: $border-width solid $border-color;
+  border-radius: $border-radius;
+
+  // 防止滚动条撑开容器，预留滚动条空间
+  scrollbar-gutter: stable;
+
+  // 自定义滚动条样式，使其悬浮在内容上方
+  &::-webkit-scrollbar {
+    width: 8px; // 滚动条宽度
+    height: 0; // 隐藏横向滚动条
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent; // 滚动条轨道透明
+    margin: 4px 0; // 上下留出空间
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2); // 滚动条颜色
+    border-radius: 4px; // 圆角
+    border: 2px solid transparent; // 透明边框，用于创建悬浮效果
+    background-clip: padding-box; // 背景不延伸到边框区域
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.3); // 悬停时颜色加深
+      background-clip: padding-box;
+    }
+
+    &:active {
+      background: rgba(0, 0, 0, 0.4); // 点击时颜色更深
+      background-clip: padding-box;
+    }
+  }
+
+  // Firefox 滚动条样式
+  scrollbar-width:thin; // 细滚动条
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent; // 滚动条颜色和轨道颜色
 }
 
 .excel-table {
   display: block;
   background: transparent;
   font-size: $font-size-base;
-  border: $border-width solid $border-color;
-  border-radius: $border-radius;
   overflow: visible;
   user-select: none;
   width: 100%;
@@ -1363,8 +1398,8 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   margin: 0;
   padding: 0;
 
-  // 圆角处理：表头行的第一个和最后一个单元格需要圆�?
-  // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边�?
+  // 圆角处理：表头行的第一个和最后一个单元格需要圆角
+  // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边框
   .excel-row:first-child {
     .excel-cell:first-child {
       border-top: none; // 移除上边框，避免与表格上边框重叠
@@ -1428,7 +1463,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   background: $header-bg;
 }
 
-// ==================== 单元格样�?====================
+// ==================== 单元格样式====================
 .excel-cell {
   // 基础样式
   border-right: $border-width solid $border-color;
@@ -1444,7 +1479,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   overflow: visible;
   transition: background-color $transition-fast;
 
-  // 交互状�?
+  // 交互状态
   &:hover:not(.active):not(.in-selection):not(.header-cell):not(.row-number) {
     background-color: $cell-hover-bg;
   }
@@ -1458,7 +1493,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     background-color: #f5f7fa;
   }
 
-  // 选中边框伪元素（统一管理�?
+  // 选中边框伪元素（统一管理）
   &::after {
     content: "";
     position: absolute;
@@ -1506,7 +1541,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     }
   }
 
-  // 激活状�?
+  // 激活状态
   &.active {
     z-index: $z-index-active !important;
     background-color: $white;
@@ -1579,7 +1614,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     }
   }
 
-  // 单元格内�?
+  // 单元格内容
   .cell-content {
     display: block;
     width: 100%;
@@ -1603,7 +1638,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     }
   }
 
-  // 输入�?
+  // 输入框
   .cell-input {
     padding: 0 $cell-padding-h;
     width: 100%;
@@ -1614,10 +1649,10 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   }
 }
 
-// ==================== 表头和行�?====================
+// ==================== 表头和行号====================
 .header-cell,
 .row-number {
-  display: flex; // 确保�?flex 布局
+  display: flex; // 确保flex 布局
   background: $header-bg;
   font-weight: $font-weight-bold;
   font-size: $font-size-header;
@@ -1638,7 +1673,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   height: $default-row-height;
   min-height: $default-row-height;
   padding: 0 $cell-padding-h; // 与数据单元格对齐
-  justify-content: flex-start; // 表头左对�?
+  justify-content: flex-start; // 表头左对齐
   text-align: left;
 
   // 禁用 hover 效果
@@ -1678,7 +1713,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   align-items: center;
 }
 
-// ==================== 输入框样式（独立定义�?====================
+// ==================== 输入框样式（独立定义）====================
 .cell-input {
   overflow: hidden;
   text-overflow: ellipsis;
