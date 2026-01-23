@@ -175,14 +175,16 @@ export function useVirtualScroll(
       for (let i = 0; i < range.start; i++) {
         topHeight += getRowHeight(i);
       }
-      offsetTop.value = topHeight;
+      // 使用 Math.floor 确保上方占位符不会因为亚像素偏差撑开容器
+      offsetTop.value = Math.floor(topHeight);
 
       // 计算下方占位符高度
       let bottomHeight = 0;
       for (let i = range.end + 1; i < totalRows.value; i++) {
         bottomHeight += getRowHeight(i);
       }
-      offsetBottom.value = bottomHeight;
+      // 使用 Math.floor 确保下方占位符不会因为亚像素偏差撑开容器
+      offsetBottom.value = Math.floor(bottomHeight);
 
       // 计算总高度
       let total = 0;

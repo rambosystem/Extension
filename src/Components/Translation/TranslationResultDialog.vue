@@ -927,7 +927,7 @@ const handleCustomAction = ({ id, context }) => {
 }
 
 :deep(.excel-wrapper) {
-  min-height: 0;
+  min-height: 0; // 强制 min-height 为 0，防止 flex 布局下被内容撑开
   max-height: calc(round(nearest, 56vh, 36px));
   display: flex;
   flex-direction: column;

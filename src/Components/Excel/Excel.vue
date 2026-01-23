@@ -1421,7 +1421,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   font-family: $font-family;
   width: 100%;
   height: var(--excel-container-height, 100%);
-  min-height: var(--excel-container-min-height, auto);
+  min-height: 0; // 强制 min-height 为 0，防止 flex 布局下被内容撑开
   max-height: var(--excel-container-max-height, none);
   box-sizing: border-box;
   border: $border-width solid $border-color;
@@ -1432,13 +1432,14 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   display: block;
   background: transparent;
   font-size: $font-size-base;
-  overflow: visible;
+  overflow: hidden; // 关键：隐藏虚拟滚动占位符可能产生的亚像素溢出
   user-select: none;
   width: 100%;
   box-sizing: border-box;
   position: relative;
   margin: 0;
   padding: 0;
+  padding-bottom: 1px; // 增加 1px 缓冲，防止亚像素计算导致的意外滚动条
 
   // 圆角处理：表头行的第一个和最后一个单元格需要圆角
   // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边框
