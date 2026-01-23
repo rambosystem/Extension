@@ -1,45 +1,110 @@
 ## 修改组件需要遵守的规则并同步更新Excel_README.md
 <template>
-  <div class="excel-container" @keydown="handleKeydown" @copy="handleCopy" @paste="handlePaste"
-    @click="handleContainerClick" @wheel="handleRowWheel" tabindex="0" ref="containerRef">
+  <div
+    class="excel-container"
+    @keydown="handleKeydown"
+    @copy="handleCopy"
+    @paste="handlePaste"
+    @click="handleContainerClick"
+    @wheel="handleRowWheel"
+    tabindex="0"
+    ref="containerRef"
+  >
     <div class="excel-table" @mouseleave="handleMouseUp">
-      <HeaderRow :display-columns="displayColumns" :get-column-width="getColumnWidth"
-        :is-in-selection-header="isInSelectionHeader" :enable-column-resize="enableColumnResize"
-        :sticky-header="enableHeaderSticky" @corner-click="() => handleCornerCellClick()"
-        @column-header-mousedown="handleColumnHeaderMouseDown" @column-header-mouseenter="handleColumnHeaderMouseEnter"
-        @column-resize-start="startColumnResize" @column-resize-dblclick="handleDoubleClickResize" />
+      <HeaderRow
+        :display-columns="displayColumns"
+        :get-column-width="getColumnWidth"
+        :is-in-selection-header="isInSelectionHeader"
+        :enable-column-resize="enableColumnResize"
+        :sticky-header="enableHeaderSticky"
+        @corner-click="() => handleCornerCellClick()"
+        @column-header-mousedown="handleColumnHeaderMouseDown"
+        @column-header-mouseenter="handleColumnHeaderMouseEnter"
+        @column-resize-start="startColumnResize"
+        @column-resize-dblclick="handleDoubleClickResize"
+      />
 
       <!-- 虚拟滚动：上方占位符 -->
-      <div v-if="virtualScroll.enabled.value && virtualScroll.offsetTop.value > 0" class="virtual-scroll-spacer"
-        :style="{ height: virtualScroll.offsetTop.value + 'px' }"></div>
+      <div
+        v-if="virtualScroll.enabled.value && virtualScroll.offsetTop.value > 0"
+        class="virtual-scroll-spacer"
+        :style="{ height: virtualScroll.offsetTop.value + 'px' }"
+      ></div>
 
       <!-- 数据行（虚拟滚动时只渲染可见行） -->
-      <DataRow v-for="(_rowValue, visibleIndex) in visibleRows"
-        :key="virtualScroll.enabled.value ? virtualScroll.startIndex.value + visibleIndex : visibleIndex"
-        :row-index="getActualRowIndex(visibleIndex)" :columns="internalColumns" :table-data="tableData"
-        :get-column-width="getColumnWidth" :get-row-height="getRowHeight" :get-cell-display-style="getCellDisplayStyle"
-        :is-in-selection-header="isInSelectionHeader" :is-active="isActive" :is-in-selection="isInSelection"
-        :is-in-drag-area="isInDragArea" :is-editing="isEditing" :is-selection-bottom-right="isSelectionBottomRight"
-        :should-show-cell-menu="shouldShowCellMenu" :get-selection-border-class="getSelectionBorderClass"
+      <DataRow
+        v-for="(_rowValue, visibleIndex) in visibleRows"
+        :key="
+          virtualScroll.enabled.value
+            ? virtualScroll.startIndex.value + visibleIndex
+            : visibleIndex
+        "
+        :row-index="getActualRowIndex(visibleIndex)"
+        :columns="internalColumns"
+        :table-data="tableData"
+        :get-column-width="getColumnWidth"
+        :get-row-height="getRowHeight"
+        :get-cell-display-style="getCellDisplayStyle"
+        :is-in-selection-header="isInSelectionHeader"
+        :is-active="isActive"
+        :is-in-selection="isInSelection"
+        :is-in-drag-area="isInDragArea"
+        :is-editing="isEditing"
+        :is-selection-bottom-right="isSelectionBottomRight"
+        :should-show-cell-menu="shouldShowCellMenu"
+        :get-selection-border-class="getSelectionBorderClass"
         :get-copied-range-border-class="getCopiedRangeBorderClass"
         :get-multiple-drag-border-class="getMultipleDragBorderClass"
-        :get-drag-target-border-class="getDragTargetBorderClass" :create-menu-context="createMenuContext"
-        :is-multi-select="isMultiSelect" :editing-cell="editingCell" :enable-row-resize="enableRowResize"
-        :enable-fill-handle="enableFillHandle" :custom-menu-items="customMenuItems" :can-undo="canUndo"
-        :can-redo="canRedo" :can-paste="canPaste" @row-number-mousedown="handleRowNumberMouseDown"
-        @row-number-mouseenter="handleRowNumberMouseEnter" @row-resize-start="startRowResize"
+        :get-drag-target-border-class="getDragTargetBorderClass"
+        :create-menu-context="createMenuContext"
+        :is-multi-select="isMultiSelect"
+        :editing-cell="editingCell"
+        :enable-row-resize="enableRowResize"
+        :enable-fill-handle="enableFillHandle"
+        :custom-menu-items="customMenuItems"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :can-paste="canPaste"
+        @row-number-mousedown="handleRowNumberMouseDown"
+        @row-number-mouseenter="handleRowNumberMouseEnter"
+        @row-resize-start="startRowResize"
         @row-resize-dblclick="handleDoubleClickRowResize"
-        @cell-mousedown="(rowIndex, colIndex, event) => handleCellMouseDown(rowIndex, colIndex, rows.length, internalColumns.length, event)"
-        @cell-dblclick="startEdit" @cell-mouseenter="handleMouseEnter" @cell-input-blur="stopEdit"
+        @cell-mousedown="
+          (rowIndex, colIndex, event) =>
+            handleCellMouseDown(
+              rowIndex,
+              colIndex,
+              rows.length,
+              internalColumns.length,
+              event
+            )
+        "
+        @cell-dblclick="startEdit"
+        @cell-mouseenter="handleMouseEnter"
+        @cell-input-blur="stopEdit"
         @cell-input-enter="(event) => event && handleInputEnter(event)"
-        @cell-input-tab="(event) => event && handleInputTab(event)" @cell-input-esc="cancelEdit"
-        @cell-input-change="(value, row, col) => { tableData[row][col] = value; }" @cell-input-ref="setInputRef"
-        @fill-drag-start="startFillDrag" @cell-menu-command="(command) => handleCellMenuCommand(command)"
-        @cell-menu-custom-action="handleCustomAction" @cell-menu-visible-change="handleMenuVisibleChange" />
+        @cell-input-tab="(event) => event && handleInputTab(event)"
+        @cell-input-esc="cancelEdit"
+        @cell-input-change="
+          (value, row, col) => {
+            tableData[row][col] = value;
+          }
+        "
+        @cell-input-ref="setInputRef"
+        @fill-drag-start="startFillDrag"
+        @cell-menu-command="(command) => handleCellMenuCommand(command)"
+        @cell-menu-custom-action="handleCustomAction"
+        @cell-menu-visible-change="handleMenuVisibleChange"
+      />
 
       <!-- 虚拟滚动：下方占位符 -->
-      <div v-if="virtualScroll.enabled.value && virtualScroll.offsetBottom.value > 0" class="virtual-scroll-spacer"
-        :style="{ height: virtualScroll.offsetBottom.value + 'px' }"></div>
+      <div
+        v-if="
+          virtualScroll.enabled.value && virtualScroll.offsetBottom.value > 0
+        "
+        class="virtual-scroll-spacer"
+        :style="{ height: virtualScroll.offsetBottom.value + 'px' }"
+      ></div>
     </div>
   </div>
 </template>
@@ -168,7 +233,10 @@ const handleRowWheel = (event: WheelEvent): void => {
   if (Math.abs(wheelAccumulator.value) < currentRowHeight) return;
 
   const direction = wheelAccumulator.value > 0 ? 1 : -1;
-  const steps = Math.max(1, Math.floor(Math.abs(wheelAccumulator.value) / currentRowHeight));
+  const steps = Math.max(
+    1,
+    Math.floor(Math.abs(wheelAccumulator.value) / currentRowHeight)
+  );
   wheelAccumulator.value = 0;
 
   const currentRowTop = getRowTop(currentIndex);
@@ -381,7 +449,9 @@ const isMultiSelect = computed<boolean>(() => {
 const eventBus = createExcelEventBus();
 
 const normalizeColumnName = (value: string | undefined | null): string =>
-  String(value ?? "").trim().toUpperCase();
+  String(value ?? "")
+    .trim()
+    .toUpperCase();
 
 const readOnlyColumnSet = computed<Set<string>>(() => {
   const configured = props.readOnlyColumns ?? ["EN"];
@@ -402,7 +472,6 @@ const updateHistoryState = () => {
   canUndo.value = canUndoFn();
   canRedo.value = canRedoFn();
 };
-
 
 const saveHistoryWithState = (
   state: any,
@@ -451,10 +520,10 @@ const initHistoryWithEvents = (data: string[][]): void => {
 // 智能填充管理（仅在启用时使用�?
 const fillHandleComposable = props.enableFillHandle
   ? useFillHandle({
-    getSmartValue,
-    saveHistory,
-    isCellEditable,
-  })
+      getSmartValue,
+      saveHistory,
+      isCellEditable,
+    })
   : null;
 
 // 列宽管理（仅在启用时使用�?
@@ -472,16 +541,16 @@ const getDefaultWidthForComposable = (): number => {
 
 const columnWidthComposable = props.enableColumnResize
   ? useColumnWidth({
-    defaultWidth: getDefaultWidthForComposable(),
-  })
+      defaultWidth: getDefaultWidthForComposable(),
+    })
   : null;
 
 // 行高管理（仅在启用时使用�?
 // 传入初始行数，Map会自动处理新增行（使用默认高度）
 const rowHeightComposable = props.enableRowResize
   ? useRowHeight({
-    rowsCount: rows.value.length,
-  })
+      rowsCount: rows.value.length,
+    })
   : null;
 
 // --- 状态管�?---
@@ -577,78 +646,86 @@ const isInDragArea = (row: number, col: number): boolean => {
 };
 
 // --- 数据同步管理（需要在 useClipboard 之前，因为需�?emitSync�?--
-const {
-  emitSync,
-  initDataSync,
-  setDataWithSync,
-  runExternalUpdate,
-} = useDataSync({
-  tableData,
-  props,
-  getData,
-  setData,
-  emit: (event: "update:modelValue" | "change" | "custom-action", ...args: unknown[]) => {
-    // 类型安全的事件分发函�?
-    // 根据事件类型进行类型检查和分发
-    switch (event) {
-      case "update:modelValue": {
-        const data = args[0];
-        if (Array.isArray(data) && Array.isArray(data[0])) {
-          emit("update:modelValue", data as string[][]);
-        } else {
+const { emitSync, initDataSync, setDataWithSync, runExternalUpdate } =
+  useDataSync({
+    tableData,
+    props,
+    getData,
+    setData,
+    emit: (
+      event: "update:modelValue" | "change" | "custom-action",
+      ...args: unknown[]
+    ) => {
+      // 类型安全的事件分发函�?
+      // 根据事件类型进行类型检查和分发
+      switch (event) {
+        case "update:modelValue": {
+          const data = args[0];
+          if (Array.isArray(data) && Array.isArray(data[0])) {
+            emit("update:modelValue", data as string[][]);
+          } else {
+            // 使用 debug 工具统一错误处理
+            if (import.meta.env.DEV) {
+              console.warn(
+                "[Excel] Invalid data type for update:modelValue",
+                data
+              );
+            }
+          }
+          break;
+        }
+        case "change": {
+          const data = args[0];
+          if (Array.isArray(data) && Array.isArray(data[0])) {
+            emit("change", data as string[][]);
+          } else {
+            // 使用 debug 工具统一错误处理
+            if (import.meta.env.DEV) {
+              console.warn("[Excel] Invalid data type for change", data);
+            }
+          }
+          break;
+        }
+        case "custom-action": {
+          const payload = args[0];
+          if (
+            payload &&
+            typeof payload === "object" &&
+            "id" in payload &&
+            "context" in payload
+          ) {
+            emit(
+              "custom-action",
+              payload as { id: string; context: MenuContext }
+            );
+          } else {
+            // 使用 debug 工具统一错误处理
+            if (import.meta.env.DEV) {
+              console.warn(
+                "[Excel] Invalid payload type for custom-action",
+                payload
+              );
+            }
+          }
+          break;
+        }
+        default: {
+          // TypeScript 会确保所有情况都被处�?
+          const _exhaustive: never = event;
           // 使用 debug 工具统一错误处理
           if (import.meta.env.DEV) {
-            console.warn("[Excel] Invalid data type for update:modelValue", data);
+            console.warn("[Excel] Unknown event type", _exhaustive);
           }
         }
-        break;
       }
-      case "change": {
-        const data = args[0];
-        if (Array.isArray(data) && Array.isArray(data[0])) {
-          emit("change", data as string[][]);
-        } else {
-          // 使用 debug 工具统一错误处理
-          if (import.meta.env.DEV) {
-            console.warn("[Excel] Invalid data type for change", data);
-          }
-        }
-        break;
-      }
-      case "custom-action": {
-        const payload = args[0];
-        if (
-          payload &&
-          typeof payload === "object" &&
-          "id" in payload &&
-          "context" in payload
-        ) {
-          emit("custom-action", payload as { id: string; context: MenuContext });
-        } else {
-          // 使用 debug 工具统一错误处理
-          if (import.meta.env.DEV) {
-            console.warn("[Excel] Invalid payload type for custom-action", payload);
-          }
-        }
-        break;
-      }
-      default: {
-        // TypeScript 会确保所有情况都被处�?
-        const _exhaustive: never = event;
-        // 使用 debug 工具统一错误处理
-        if (import.meta.env.DEV) {
-          console.warn("[Excel] Unknown event type", _exhaustive);
-        }
-      }
-    }
-  },
-  onEmitSync: (data) => {
-    eventBus.emit("modelUpdate", { data });
-    eventBus.emit("change", { data });
-  },
-  initHistory: initHistoryWithEvents, // 传�?initHistory 函数，用于在数据更新时重新初始化历史记录
-  isUndoRedoInProgress, // 传�?isUndoRedoInProgress 函数，防止撤销/重做时清空历�?
-});
+    },
+    onEmitSync: (data) => {
+      eventBus.emit("modelUpdate", { data });
+      eventBus.emit("change", { data });
+    },
+    initHistory: initHistoryWithEvents, // 传�?initHistory 函数，用于在数据更新时重新初始化历史记录
+    isUndoRedoInProgress, // 传�?isUndoRedoInProgress 函数，防止撤销/重做时清空历�?
+  });
 
 // --- 撤销/重做高亮 ---
 const undoRedoFlash = ref(false);
@@ -1157,7 +1234,7 @@ const setColumnWidth = (colIndex: number, width: number): void => {
  * - setColumnWidth(colIndex, width): 设置指定列的宽度
  * - tableData: 表格数据的响应式引用（只读）
  *
-   * 使用示例请参考组件文档：src/Components/Excel/README.md
+ * 使用示例请参考组件文档：src/Components/Excel/README.md
  */
 defineExpose({
   /**
@@ -1349,41 +1426,6 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   box-sizing: border-box;
   border: $border-width solid $border-color;
   border-radius: $border-radius;
-
-  // 防止滚动条撑开容器，预留滚动条空间
-  scrollbar-gutter: stable;
-
-  // 自定义滚动条样式，使其悬浮在内容上方
-  &::-webkit-scrollbar {
-    width: 8px; // 滚动条宽度
-    height: 0; // 隐藏横向滚动条
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent; // 滚动条轨道透明
-    margin: 4px 0; // 上下留出空间
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2); // 滚动条颜色
-    border-radius: 4px; // 圆角
-    border: 2px solid transparent; // 透明边框，用于创建悬浮效果
-    background-clip: padding-box; // 背景不延伸到边框区域
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.3); // 悬停时颜色加深
-      background-clip: padding-box;
-    }
-
-    &:active {
-      background: rgba(0, 0, 0, 0.4); // 点击时颜色更深
-      background-clip: padding-box;
-    }
-  }
-
-  // Firefox 滚动条样式
-  scrollbar-width:thin; // 细滚动条
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent; // 滚动条颜色和轨道颜色
 }
 
 .excel-table {
@@ -1413,13 +1455,13 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-top-right-radius: $border-radius;
     }
 
-    // 表头行的其他单元格也移除上边�?
+    // 表头行的其他单元格也移除上边框
     .excel-cell {
       border-top: none;
     }
   }
 
-  // 底部圆角处理：最后一行的第一个和最后一个单元格需要圆�?
+  // 底部圆角处理：最后一行的第一个和最后一个单元格需要圆角
   .excel-row:last-child {
     .excel-cell:first-child {
       border-bottom: none; // 移除下边框，避免与表格下边框重叠
@@ -1433,7 +1475,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-bottom-right-radius: $border-radius;
     }
 
-    // 最后一行的其他单元格也移除下边�?
+    // 最后一行的其他单元格也移除下边框
     .excel-cell {
       border-bottom: none;
     }
@@ -1554,7 +1596,6 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
 
   // 复制状态：虚线边框
   &.copy-mode {
-
     &.selection-top,
     &.selection-bottom,
     &.selection-left,
