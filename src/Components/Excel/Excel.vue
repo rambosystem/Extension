@@ -1426,6 +1426,33 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   box-sizing: border-box;
   border: $border-width solid $border-color;
   border-radius: $border-radius;
+
+  // ==================== 滚动条美化 ====================
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #dcdfe6;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+
+    &:hover {
+      background: #c0c4cc;
+      background-clip: content-box;
+    }
+  }
+
+  // 兼容 Firefox
+  scrollbar-width: thin;
+  scrollbar-color: #dcdfe6 transparent;
 }
 
 .excel-table {
