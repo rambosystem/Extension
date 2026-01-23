@@ -1439,7 +1439,6 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   position: relative;
   margin: 0;
   padding: 0;
-  padding-bottom: 1px; // 增加 1px 缓冲，防止亚像素计算导致的意外滚动条
 
   // 圆角处理：表头行的第一个和最后一个单元格需要圆角
   // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边框
@@ -1448,17 +1447,32 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-top: none; // 移除上边框，避免与表格上边框重叠
       border-left: none; // 移除左边框，避免与表格左边框重叠
       border-top-left-radius: $border-radius;
+
+      &.selection-top::after,
+      &.active::after {
+        top: 0;
+      }
     }
 
     .excel-cell:last-child {
       border-top: none; // 移除上边框，避免与表格上边框重叠
       border-right: none; // 移除右边框，避免与表格右边框重叠
       border-top-right-radius: $border-radius;
+
+      &.selection-top::after,
+      &.active::after {
+        top: 0;
+      }
     }
 
     // 表头行的其他单元格也移除上边框
     .excel-cell {
       border-top: none;
+
+      &.selection-top::after,
+      &.active::after {
+        top: 0;
+      }
     }
   }
 
@@ -1468,28 +1482,53 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       border-bottom: none; // 移除下边框，避免与表格下边框重叠
       border-left: none; // 移除左边框，避免与表格左边框重叠
       border-bottom-left-radius: $border-radius;
+
+      &.selection-bottom::after,
+      &.active::after {
+        bottom: 0;
+      }
     }
 
     .excel-cell:last-child {
       border-bottom: none; // 移除下边框，避免与表格下边框重叠
       border-right: none; // 移除右边框，避免与表格右边框重叠
       border-bottom-right-radius: $border-radius;
+
+      &.selection-bottom::after,
+      &.active::after {
+        bottom: 0;
+      }
     }
 
     // 最后一行的其他单元格也移除下边框
     .excel-cell {
       border-bottom: none;
+
+      &.selection-bottom::after,
+      &.active::after {
+        bottom: 0;
+      }
     }
   }
 
   // 所有行的第一个单元格移除左边框（由表格容器提供）
   .excel-row .excel-cell:first-child {
     border-left: none;
+
+    &.selection-left::after,
+    &.active::after {
+      left: 0;
+    }
   }
 
   // 所有行的最后一个单元格移除右边框（由表格容器提供）
   .excel-row .excel-cell:last-child {
     border-right: none;
+
+    &.selection-right::after,
+    &.active::after {
+      right: 0;
+    }
   }
 }
 
