@@ -1393,13 +1393,13 @@ $font-weight-bold: 600;
 
 // Z-index 层级
 $z-index-base: 1;
-$z-index-selection: 2;
-$z-index-drag-target: 3;
-$z-index-selection-overlay: 5;
-$z-index-resizer: 10;
+$z-index-header: 5;
 $z-index-active: 10;
-$z-index-fill-handle: 20;
-$z-index-header: 30;
+$z-index-selection: 11;
+$z-index-selection-overlay: 12;
+$z-index-drag-target: 13;
+$z-index-fill-handle: 15;
+$z-index-resizer: 20;
 
 // 过渡动画
 $transition-fast: 0.05s ease;
