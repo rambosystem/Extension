@@ -42,9 +42,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import Settings from "./Views/Settings.vue";
-import Translation from "./Views/Translation.vue";
+import Lokalise from "./Views/Lokalise.vue";
+import Translate from "./Views/Translate.vue";
 
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
@@ -62,16 +63,23 @@ const menuConfig = computed(() => [
     index: "1",
     label: t("menu.translation"),
     title: t("menu.translation"),
-    component: Translation,
+    component: Lokalise,
   },
   {
     index: "2",
+    label: t("menu.translate"),
+    title: t("Translate.title"),
+    component: Translate,
+  },
+  {
+    index: "3",
     label: t("menu.settings"),
     title: t("menu.settings"),
     component: Settings,
   },
+
   {
-    index: "3",
+    index: "4",
     label: t("menu.about"),
     title: t("menu.about"),
     component: {
@@ -96,14 +104,14 @@ const selectedMenu = computed({
 // 计算应该显示的组件
 const currentComponent = computed(() => {
   const item = menuConfig.value.find(
-    (item) => item.index === selectedMenu.value
+    (item) => item.index === selectedMenu.value,
   );
   return item ? item.component : null;
 });
 
 const currentTitle = computed(() => {
   const item = menuConfig.value.find(
-    (item) => item.index === selectedMenu.value
+    (item) => item.index === selectedMenu.value,
   );
   return item ? item.title : "";
 });
@@ -113,11 +121,39 @@ const handleMenuSelect = (index) => {
   appStore.setCurrentMenu(index);
 };
 
+// 监听 storage 变化，当 popup 设置菜单后 options 已打开时同步切换
+let storageListener = null;
+
 onMounted(() => {
   // 初始化应用状态
   appStore.initializeApp();
   // 加载上次翻译结果
   translationCoreStore.loadLastTranslation();
+
+  // 监听 chrome.storage 变化，popup 点击菜单时已打开的 options 页需同步更新
+  if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+    storageListener = (changes, areaName) => {
+      if (areaName !== "local") return;
+      const menuIndex =
+        changes.initialMenu?.newValue ?? changes.currentMenu?.newValue;
+      if (menuIndex != null) {
+        const newMenu = String(menuIndex);
+        if (appStore.currentMenu !== newMenu) {
+          appStore.setCurrentMenu(newMenu);
+        }
+        if (changes.initialMenu) {
+          chrome.storage.local.remove("initialMenu");
+        }
+      }
+    };
+    chrome.storage.onChanged.addListener(storageListener);
+  }
+});
+
+onUnmounted(() => {
+  if (storageListener && typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+    chrome.storage.onChanged.removeListener(storageListener);
+  }
 });
 </script>
 
@@ -177,7 +213,10 @@ onMounted(() => {
   padding: 16px 32px !important;
   line-height: 20px;
   font-size: 16px;
-  transition: var(--t3) box-shadow, var(--t3) background-color, var(--t3) color;
+  transition:
+    var(--t3) box-shadow,
+    var(--t3) background-color,
+    var(--t3) color;
 }
 
 .main-content {

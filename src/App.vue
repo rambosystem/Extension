@@ -7,18 +7,31 @@
             <img src="./assets/icon.svg" class="logo_icon" draggable="false" />
           </div>
           <div class="header_button_group">
-            <el-button :icon="Setting" size="24" @click="handleSettingClick" circle></el-button>
+            <el-button
+              :icon="Setting"
+              size="24"
+              @click="handleSettingClick"
+              circle
+            ></el-button>
           </div>
         </el-header>
         <div class="main-content">
           <el-row :gutter="10">
             <el-col :span="6" @click="handleLokaliseClick">
               <div class="grid-content">
-                <WeightItem :title="t('app.lokalise')" url="/src/assets/lokalise.svg" />
+                <WeightItem
+                  :title="t('app.lokalise')"
+                  url="/src/assets/lokalise.svg"
+                />
               </div>
             </el-col>
-            <el-col :span="6">
-              <div class="grid-content" />
+            <el-col :span="6" @click="handleTranslationClick">
+              <div class="grid-content">
+                <WeightItem
+                  :title="t('app.translation')"
+                  :url="translationSvg"
+                />
+              </div>
             </el-col>
             <el-col :span="6">
               <div class="grid-content" />
@@ -30,7 +43,7 @@
         </div>
       </el-main>
       <el-footer>
-        <div class="footer_text">{{ t('app.copyright') }}</div>
+        <div class="footer_text">{{ t("app.copyright") }}</div>
       </el-footer>
     </el-container>
   </div>
@@ -40,6 +53,7 @@
 import { Setting } from "@element-plus/icons-vue";
 import { useI18n } from "./composables/Core/useI18n.js";
 import WeightItem from "./Components/Terms/Weight-Item.vue";
+import translationSvg from "./assets/translation.svg";
 
 const { t } = useI18n();
 
@@ -61,6 +75,15 @@ const handleLokaliseClick = () => {
 
   // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
   chrome.storage.local.set({ initialMenu: "1", currentMenu: "1" }, () => {
+    chrome.runtime.openOptionsPage(() => {
+      window.close();
+    });
+  });
+};
+
+const handleTranslationClick = () => {
+  // 打开 Translate（划词翻译）页面
+  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
     chrome.runtime.openOptionsPage(() => {
       window.close();
     });

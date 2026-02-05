@@ -922,7 +922,7 @@ const handleCustomAction = ({ id, context }) => {
 
 <style lang="scss" scoped>
 :deep(.excel-wrapper-item) {
-  padding: 0 20px;
+  padding: 0;
   height: calc(round(nearest, 56vh, 36px));
 }
 
