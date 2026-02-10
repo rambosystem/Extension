@@ -1746,6 +1746,14 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     }
   }
 
+  // Element Plus Tooltip 包裹层：保持与 .cell-content 一致的宽度与省略行为
+  :deep(.el-tooltip__trigger) {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
   // 输入框
   .cell-input {
     padding: 0 $cell-padding-h;
@@ -1836,5 +1844,11 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   font-weight: $font-weight-normal;
   color: $text-primary;
   line-height: $line-height;
+}
+
+// 单元格省略时 hover 的 Tooltip 气泡（teleported 到 body，需独立样式）
+.excel-cell-tooltip {
+  max-width: 320px;
+  word-break: break-word;
 }
 </style>
