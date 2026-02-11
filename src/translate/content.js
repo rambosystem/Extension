@@ -1,4 +1,3 @@
-// AI Generated - content script entry: selection log + message listener
 import { showTranslatePopup } from "./popup.js";
 
 // 划词时打印选中文本（选词结束即 mouseup 时）

@@ -1,4 +1,3 @@
-// AI Generated - DOM helpers for translate popup
 export function getSelectionRect() {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;

@@ -1,9 +1,10 @@
-// AI Generated - translate popup: Vue + Element Plus (content script, built as IIFE)
 import { createApp } from "vue";
-import ElementPlus from "element-plus";
-import "element-plus/dist/index.css";
+import ElButton from "element-plus/es/components/button/index.mjs";
+// 仅 Button 组件样式 + 基础变量（el-button 依赖 --el-*）
+import "element-plus/theme-chalk/base.css";
+import "element-plus/theme-chalk/el-button.css";
 import { POPUP_ID } from "./constants.js";
-import { getSelectionRect } from "./domUtils.js";
+import { usePopupPosition } from "./composables/usePopupPosition.js";
 import TranslatePopup from "./TranslatePopup.vue";
 
 let mountedApp = null;
@@ -47,36 +48,24 @@ export function showTranslatePopup(selectionText) {
 
   injectPopupContainerStyles();
 
-  const rect = getSelectionRect();
+  const position = usePopupPosition();
   popupRoot = document.createElement("div");
   popupRoot.id = POPUP_ID;
-
-  if (rect && rect.width > 0 && rect.height > 0) {
-    popupRoot.style.top = `${rect.bottom + 8}px`;
-    popupRoot.style.left = `${rect.left}px`;
-  } else {
-    const vw = Math.max(
-      document.documentElement.clientWidth || 0,
-      window.innerWidth || 0,
-    );
-    const vh = Math.max(
-      document.documentElement.clientHeight || 0,
-      window.innerHeight || 0,
-    );
-    popupRoot.style.top = `${vh / 2 - 60}px`;
-    popupRoot.style.left = `${vw / 2 - 180}px`;
-  }
+  popupRoot.style.top = position.top;
+  popupRoot.style.left = position.left;
 
   document.body.appendChild(popupRoot);
 
+  function onClose() {
+    closeExistingPopup();
+    document.removeEventListener("click", onOutsideClick);
+  }
+
   mountedApp = createApp(TranslatePopup, {
     selectionText,
-    onClose: () => {
-      closeExistingPopup();
-      document.removeEventListener("click", onOutsideClick);
-    },
+    onClose,
   });
-  mountedApp.use(ElementPlus);
+  mountedApp.component("ElButton", ElButton);
   mountedApp.mount(popupRoot);
 
   function onOutsideClick(e) {
