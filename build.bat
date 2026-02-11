@@ -14,7 +14,7 @@ echo.
 mkdir "%TGT%" 2>nul
 
 :: 覆盖复制文件夹
-for %%D in (dist images options popup src) do (
+for %%D in (dist images options popup) do (
   echo [DIR] 复制 %%D ...
   robocopy "%SRC%%%D" "%TGT%\%%D" /E /R:1 /W:1 /NFL /NDL /NP /NJH /NJS >nul
 )
