@@ -1347,8 +1347,7 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   min-height: var(--excel-container-min-height, auto);
   max-height: var(--excel-container-max-height, none);
   box-sizing: border-box;
-  border: $border-width solid $border-color;
-  border-radius: $border-radius;
+
 
   // 防止滚动条撑开容器，预留滚动条空间
   scrollbar-gutter: stable;
@@ -1397,6 +1396,8 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   position: relative;
   margin: 0;
   padding: 0;
+  border: $border-width solid $border-color;
+  border-radius: $border-radius;
 
   // 圆角处理：表头行的第一个和最后一个单元格需要圆角
   // 注意：表头行的单元格不需要上边框，因为表格容器已经提供了上边框

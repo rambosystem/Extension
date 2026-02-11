@@ -3,12 +3,12 @@
     <h2 class="title">{{ t("settings.title") }}</h2>
     <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
-        <SaveableInput v-model="localApiKey" :label="t('settings.apiKeyForDeepSeek')"
+        <SaveableInput type="password" v-model="localApiKey" :label="t('settings.apiKeyForDeepSeek')"
           :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey"
           :loading="apiStore.loadingStates?.apiKey || false" />
       </el-form-item>
       <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken">
-        <SaveableInput v-model="localLokaliseToken" :label="t('settings.lokaliseApiToken')"
+        <SaveableInput type="password" v-model="localLokaliseToken" :label="t('settings.lokaliseApiToken')"
           :placeholder="t('settings.lokaliseApiTokenPlaceholder')" @save="handleSaveLokaliseApiToken"
           :loading="apiStore.loadingStates?.lokaliseApiToken || false" />
       </el-form-item>
@@ -19,7 +19,7 @@
           <div class="auto-deduplication">
             <span class="auto-deduplication-text">{{
               t("settings.autoDeduplicationLabel")
-            }}</span>
+              }}</span>
             <el-switch :model-value="translationSettingsStore.autoDeduplication"
               @update:model-value="handleAutoDeduplicationChange" @click.stop width="45px" />
           </div>

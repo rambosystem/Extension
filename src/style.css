@@ -3,6 +3,11 @@
   padding: 0;
   box-sizing: border-box;
 }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 body {
   font-family: "Roboto Flex", "Open Sans", -apple-system, BlinkMacSystemFont,

@@ -1,6 +1,6 @@
 <template>
   <div class="input_container">
-    <el-input type="text" :model-value="modelValue" :placeholder="placeholder" @input="handleInput" @blur="handleBlur"
+    <el-input :type="type" :model-value="modelValue" :placeholder="placeholder" @input="handleInput" @blur="handleBlur"
       @focus="handleFocus" />
     <el-button v-show="isEditing" type="primary" @click="handleSaveClick" :loading="loading">
       {{ saveButtonText }}
@@ -16,6 +16,10 @@ import { useI18n } from "../../composables/Core/useI18n.js";
 const { t } = useI18n();
 
 const props = defineProps({
+  type: {
+    type: String,
+    default: "text",
+  },
   modelValue: {
     type: String,
     default: "",
