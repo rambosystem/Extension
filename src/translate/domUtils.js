@@ -1,8 +1,4 @@
-// AI Generated - DOM helpers for translate popup (content script)
-
-/**
- * @returns {DOMRect | null} Selection bounding rect or null
- */
+// AI Generated - DOM helpers for translate popup
 export function getSelectionRect() {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
@@ -14,10 +10,6 @@ export function getSelectionRect() {
   }
 }
 
-/**
- * @param {string} str
- * @returns {string} HTML-escaped string
- */
 export function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;

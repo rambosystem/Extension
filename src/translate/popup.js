@@ -11,6 +11,7 @@ export function closeExistingPopup() {
  * @param {string} selectionText
  */
 export function showTranslatePopup(selectionText) {
+  console.log("[Penrose translate] selection:", selectionText);
   closeExistingPopup();
 
   const rect = getSelectionRect();
@@ -54,6 +55,26 @@ export function showTranslatePopup(selectionText) {
     #${POPUP_ID} .penrose-popup-text {
       word-break: break-word;
     }
+    #${POPUP_ID} .penrose-popup-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #${POPUP_ID} .penrose-popup-btn {
+      padding: 6px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #f5f5f5;
+      color: #333;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    #${POPUP_ID} .penrose-popup-btn:hover {
+      background: #eee;
+      border-color: #ccc;
+    }
   `;
   document.head.appendChild(style);
 
@@ -80,10 +101,18 @@ export function showTranslatePopup(selectionText) {
     <button type="button" class="penrose-popup-close" aria-label="Close">&times;</button>
     <div class="penrose-popup-title">Translate</div>
     <div class="penrose-popup-text">${escapeHtml(selectionText)}</div>
+    <div class="penrose-popup-actions">
+      <button type="button" class="penrose-popup-btn" data-action="copy">Copy</button>
+    </div>
   `;
 
   const closeBtn = popup.querySelector(".penrose-popup-close");
   closeBtn.addEventListener("click", () => closeExistingPopup());
+
+  const copyBtn = popup.querySelector('[data-action="copy"]');
+  copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(selectionText).catch(() => {});
+  });
 
   document.body.appendChild(popup);
 
