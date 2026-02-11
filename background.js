@@ -23,13 +23,11 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === TRANSLATE_MENU_ID && info.selectionText) {
-    // 在页面控制台输出，与选中/右键监听保持一致
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (text) => {
-        console.log("[Penrose] 点击翻译:", text);
-      },
-      args: [info.selectionText],
+    chrome.tabs.sendMessage(tab.id, {
+      action: "showTranslatePopup",
+      selectionText: info.selectionText,
+    }).catch((err) => {
+      console.error("[Penrose] sendMessage to content:", err.message);
     });
   }
 });
