@@ -29,12 +29,16 @@
             @keydown.esc="$emit('cell-input-esc')"
             :ref="(el) => $emit('cell-input-ref', el as HTMLInputElement | null)" />
 
-        <span v-else class="cell-content" :class="{
-            'cell-text-wrap': cellDisplayStyle.wrap,
-            'cell-text-ellipsis': cellDisplayStyle.ellipsis,
-        }">
-            {{ cellValue }}
-        </span>
+        <template v-else>
+            <el-tooltip v-if="cellDisplayStyle.ellipsis && cellValue" :content="cellValue" placement="top"
+                :show-after="200" popper-class="excel-cell-tooltip">
+                <span class="cell-content cell-text-wrap cell-text-ellipsis">{{ cellValue }}</span>
+            </el-tooltip>
+            <span v-else class="cell-content" :class="{
+                'cell-text-wrap': cellDisplayStyle.wrap,
+                'cell-text-ellipsis': cellDisplayStyle.ellipsis,
+            }">{{ cellValue }}</span>
+        </template>
 
         <FillHandle v-if="showFillHandle" @mousedown="$emit('fill-drag-start')" />
 

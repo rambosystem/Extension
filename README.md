@@ -51,7 +51,7 @@
 │   │   ├── Translation/          # 翻译相关组件
 │   │   └── Upload/               # 上传相关组件
 │   ├── Views/                    # 页面视图
-│   │   ├── Translation.vue
+│   │   ├── Lokalise.vue
 │   │   ├── Settings.vue
 │   │   └── Library.vue
 │   ├── api/                      # API 适配层

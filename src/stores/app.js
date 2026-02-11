@@ -23,9 +23,10 @@ export const useAppStore = defineStore("app", {
     // 获取菜单的显示名称
     currentMenuName: (state) => {
       const menuNames = {
-        1: "Translation",
-        2: "Settings",
-        3: "About",
+        1: "Lokalise",
+        2: "Translate",
+        3: "Settings",
+        4: "About",
       };
       return menuNames[state.currentMenu] || "Unknown";
     },

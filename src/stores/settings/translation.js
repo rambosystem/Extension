@@ -32,9 +32,27 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       }
     }
 
+    let wordSelectionTranslate = false;
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const storedValue = localStorage.getItem("word_selection_translate_enabled");
+        if (storedValue !== null) {
+          wordSelectionTranslate = storedValue === "true";
+        }
+      } catch (error) {
+        console.error(
+          "Failed to read wordSelectionTranslate from localStorage:",
+          error
+        );
+      }
+    }
+
     return {
       // 翻译相关设置
       autoDeduplication,
+
+      // 划词翻译开关
+      wordSelectionTranslate,
 
       // 术语匹配参数
       similarityThreshold: 0.7,
@@ -130,6 +148,18 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     },
 
     /**
+     * 切换划词翻译开关
+     * @param {boolean} enabled - 是否启用
+     */
+    toggleWordSelectionTranslate(enabled) {
+      this.wordSelectionTranslate = enabled;
+      localStorage.setItem(
+        "word_selection_translate_enabled",
+        enabled ? "true" : "false"
+      );
+    },
+
+    /**
      * 更新相似度阈值
      * @param {number} threshold - 阈值
      */
@@ -207,6 +237,14 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
           this.autoDeduplication = autoDeduplication === "true";
         }
 
+        // 加载划词翻译设置
+        const wordSelectionTranslate = localStorage.getItem(
+          "word_selection_translate_enabled"
+        );
+        if (wordSelectionTranslate !== null) {
+          this.wordSelectionTranslate = wordSelectionTranslate === "true";
+        }
+
         // 加载术语匹配参数
         const similarityThreshold = localStorage.getItem(
           "termMatch_similarity_threshold"
@@ -265,6 +303,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     initializeToDefaults() {
       // 重置到默认值
       this.autoDeduplication = false; // 重置为默认值：关闭
+      this.wordSelectionTranslate = false; // 重置为默认值：关闭
       this.similarityThreshold = 0.7;
       this.topK = 10;
       this.maxNGram = 3;
@@ -278,6 +317,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
 
       // 同步重置的设置到localStorage
       localStorage.setItem("auto_deduplication_enabled", "false");
+      localStorage.setItem("word_selection_translate_enabled", "false");
       localStorage.setItem("deduplicate_project_selection", "Common");
       localStorage.setItem("termMatch_similarity_threshold", "0.7");
       localStorage.setItem("termMatch_top_k", "10");
@@ -296,6 +336,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     getStorageKey(key) {
       const storageKeys = {
         autoDeduplication: "auto_deduplication_enabled",
+        wordSelectionTranslate: "word_selection_translate_enabled",
         similarityThreshold: "termMatch_similarity_threshold",
         topK: "termMatch_top_k",
         maxNGram: "termMatch_max_ngram",

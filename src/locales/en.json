@@ -17,9 +17,10 @@
   },
   "menu": {
     "tools": "Tools",
-    "translation": "Translation",
+    "translation": "Lokalise",
     "library": "Library",
     "settings": "Settings",
+    "translate": "Translate",
     "about": "About"
   },
   "translation": {
@@ -218,11 +219,12 @@
   },
   "app": {
     "lokalise": "Lokalise",
+    "translation": "Translate",
     "copyright": "© Rambo Systems Software"
   },
-  "translationResult": {
-    "autoIncrement": "Auto Increment",
-    "noProjectSelected": "No project selected"
+  "Translate": {
+    "title": "Translate",
+    "selectToTranslate": "Select to translate"
   },
   "messages": {
     "noTranslationDataToUpload": "No translation data to upload",

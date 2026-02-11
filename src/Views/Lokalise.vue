@@ -1,5 +1,5 @@
 <template>
-  <div class="translation_group">
+  <div class="lokalise_group">
     <h2 class="title">{{ title }}</h2>
 
     <!-- 翻译表单 -->
@@ -56,7 +56,7 @@ const handleDeduplicate = async () => {
   const result = await deduplicateStore.handleDeduplicate(
     translationCoreStore.codeContent,
     translationCoreStore.continueTranslation,
-    translationCoreStore.handleClear
+    translationCoreStore.handleClear,
   );
 
   if (result && result.success) {
@@ -66,7 +66,7 @@ const handleDeduplicate = async () => {
 
 // 处理自动去重事件 - 直接执行，不需要对话框
 const handleShowAutoDeduplicateDialog = async (event) => {
-  debugLog("[Translation] Auto deduplicate event received");
+  debugLog("[Lokalise] Auto deduplicate event received");
   // 从事件中获取参数，如果没有则从 store 获取
   const codeContent =
     event?.detail?.codeContent || translationCoreStore.codeContent;
@@ -80,7 +80,7 @@ const handleShowAutoDeduplicateDialog = async (event) => {
   const result = await deduplicateStore.handleShowAutoDeduplicateDialog(
     codeContent,
     continueTranslation,
-    clearCache
+    clearCache,
   );
 
   // 如果去重成功，更新内容（自动去重已经在 store 中更新，但这里确保手动去重也能更新）
@@ -95,52 +95,52 @@ const handleShowAutoDeduplicateDialog = async (event) => {
 
 // 组件挂载时初始化
 onMounted(() => {
-  debugLog("[Translation] Component mounted, initializing stores...");
+  debugLog("[Lokalise] Component mounted, initializing stores...");
 
   // 首先初始化 Translation Settings store（包含 autoDeduplication 状态）
   // 这必须在组件渲染前完成，避免按钮显示闪烁
   translationSettingsStore.initializeTranslationSettings();
   debugLog(
-    "[Translation] Translation Settings Store initialized. autoDeduplication:",
-    translationSettingsStore.autoDeduplication
+    "[Lokalise] Translation Settings Store initialized. autoDeduplication:",
+    translationSettingsStore.autoDeduplication,
   );
 
   // 确保 API store 已初始化
   apiStore.initializeApiSettings();
   debugLog(
-    "[Translation] API Store initialized. hasLokaliseToken:",
-    apiStore.hasLokaliseToken
+    "[Lokalise] API Store initialized. hasLokaliseToken:",
+    apiStore.hasLokaliseToken,
   );
 
   // 确保 Export store 已初始化（包含 Default Project）
   exportStore.initializeTranslationSettings();
   debugLog(
-    "[Translation] Export Store initialized. defaultProjectId:",
-    exportStore.defaultProjectId
+    "[Lokalise] Export Store initialized. defaultProjectId:",
+    exportStore.defaultProjectId,
   );
 
   // 初始化去重设置（使用 Default Project）
   deduplicateStore.initializeDeduplicateSettings();
   debugLog(
-    "[Translation] Deduplicate Store initialized. selectedProject:",
-    deduplicateStore.selectedProject
+    "[Lokalise] Deduplicate Store initialized. selectedProject:",
+    deduplicateStore.selectedProject,
   );
 
   // 添加自动去重事件监听
   window.addEventListener(
     "showAutoDeduplicateDialog",
-    handleShowAutoDeduplicateDialog
+    handleShowAutoDeduplicateDialog,
   );
-  debugLog("[Translation] Auto deduplicate event listener added");
+  debugLog("[Lokalise] Auto deduplicate event listener added");
 });
 
 // 组件卸载时移除事件监听
 onUnmounted(() => {
   window.removeEventListener(
     "showAutoDeduplicateDialog",
-    handleShowAutoDeduplicateDialog
+    handleShowAutoDeduplicateDialog,
   );
-  debugLog("[Translation] Auto deduplicate event listener removed");
+  debugLog("[Lokalise] Auto deduplicate event listener removed");
 });
 
 // 这些方法直接从store中获取，不需要重新定义
@@ -173,7 +173,7 @@ const openLokaliseProject = () => {
   }
 };
 
-const props = defineProps({
+defineProps({
   title: {
     type: String,
     required: true,
@@ -182,7 +182,7 @@ const props = defineProps({
 </script>
 
 <style lang="scss" scoped>
-.translation_group {
+.lokalise_group {
   padding: 16px;
 }
 
