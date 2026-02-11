@@ -23,7 +23,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["dist/content.js"],
-      "type": "module"
+      "css": ["dist/content.css"]
     }
   ],
   "background": {
