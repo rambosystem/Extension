@@ -653,7 +653,7 @@ watch(
   () => props.value,
   (newValue) => {
     // 监听逻辑
-  }
+  },
 );
 
 // 方法定义

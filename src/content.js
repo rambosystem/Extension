@@ -1,4 +1,4 @@
-// Content script - 划词翻译弹窗
+// Content script - 划词翻译弹窗 (built by Vite, output: dist/content.js)
 (function () {
   const POPUP_ID = "penrose-translate-popup";
 

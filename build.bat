@@ -20,7 +20,7 @@ for %%D in (dist images options popup) do (
 )
 
 :: 覆盖复制文件
-for %%F in (background.js content.js manifest.json) do (
+for %%F in (background.js manifest.json) do (
   if exist "%SRC%%%F" (
     echo [FILE] 复制 %%F ...
     copy /Y "%SRC%%%F" "%TGT%\%%F" >nul
