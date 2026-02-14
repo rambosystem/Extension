@@ -52,3 +52,42 @@ export async function parseNonStreamResponse(response) {
 
   return data.choices[0].message.content;
 }
+
+/**
+ * 流式响应：逐块产出 content（OpenAI 兼容 SSE）
+ * @param {Response} response - Fetch Response 对象（stream: true）
+ * @returns {AsyncGenerator<string>}
+ */
+export async function* streamDeepSeekContent(response) {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const s = line.trim();
+      if (!s || s === "data: [DONE]") continue;
+      if (!s.startsWith("data: ")) continue;
+      try {
+        const data = JSON.parse(s.slice(6));
+        const content = data.choices?.[0]?.delta?.content;
+        if (typeof content === "string" && content) yield content;
+      } catch (_) {}
+    }
+  }
+  if (buffer.trim()) {
+    const s = buffer.trim();
+    if (s.startsWith("data: ") && s !== "data: [DONE]") {
+      try {
+        const data = JSON.parse(s.slice(6));
+        const content = data.choices?.[0]?.delta?.content;
+        if (typeof content === "string" && content) yield content;
+      } catch (_) {}
+    }
+  }
+}

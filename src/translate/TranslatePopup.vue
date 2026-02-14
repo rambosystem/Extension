@@ -13,20 +13,20 @@
     <el-main class="popup_main">
       <!-- 单词查词 -->
       <div v-if="isWord" class="word_view">
-        <div v-if="loading" class="word_loading">
+        <div v-if="error" class="word_error">
+          <span>{{ error.message || 'Query failed' }}</span>
+        </div>
+        <div v-else-if="loading && !displayData" class="word_loading">
           <el-icon class="is-loading">
             <Loading />
           </el-icon>
-          <span>查词中…</span>
+          <span>Querying...</span>
         </div>
-        <div v-else-if="error" class="word_error">
-          <span>{{ error.message || '查词失败' }}</span>
-        </div>
-        <template v-else-if="result">
+        <template v-else-if="displayData">
           <div class="word_header">
             <span class="word_title">{{ selectionText }}</span>
-            <span class="word_pronunciation">{{ result.pronunciation }}</span>
-            <button type="button" class="pronunciation_btn" aria-label="发音" @click="playPronunciation">
+            <span v-if="displayData.pronunciation" class="word_pronunciation">{{ displayData.pronunciation }}</span>
+            <button type="button" class="pronunciation_btn" aria-label="Pronunciation" @click="playPronunciation">
               <svg class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
@@ -34,7 +34,7 @@
             </button>
           </div>
           <div class="word_entries">
-            <div v-for="(entry, index) in result.entries" :key="index" class="word_entry">
+            <div v-for="(entry, index) in displayData.entries" :key="index" class="word_entry">
               <div class="entry_row">
                 <span class="entry_pos">{{ entry.part_of_speech }}</span>
                 <span class="entry_meaning">{{ entry.meaning }}</span>
@@ -47,7 +47,7 @@
       </div>
       <!-- 句子/非单词 -->
       <div v-else class="sentence_view">
-        <div class="source_text">{{ selectionText || '选中文本将显示在这里' }}</div>
+        <div class="source_text">{{ selectionText || 'The selected text will be displayed here' }}</div>
       </div>
     </el-main>
   </el-container>
@@ -60,6 +60,7 @@ import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "./composables/useTranslateWord.js";
 import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
+import { STORAGE_KEYS } from "./config/tts.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
@@ -68,7 +69,14 @@ const props = defineProps({
 
 const isWord = computed(() => checkIsWord(props.selectionText));
 
-const { loading, result, error, execute } = useTranslateWord();
+const { loading, partialResult, result, error, execute } = useTranslateWord();
+
+const displayData = computed(() => {
+  if (result.value) return result.value;
+  const p = partialResult.value;
+  if (p && (p.pronunciation || (p.entries && p.entries.length > 0))) return p;
+  return null;
+});
 
 watch(
   () => [props.selectionText, isWord.value],
@@ -117,14 +125,8 @@ function playPronunciation() {
       pronunciationController.value = null;
     }
   };
-  // 豆包 TTS，未配置密钥或失败时回退到 Web Speech
-  playWithDoubao({
-    text: word,
-    rate: 0.9,
-    volume: 1,
-    signal: controller.signal,
-    onFinish,
-    onFallback: () => {
+  const doPlay = (provider) => {
+    if (provider === "browser") {
       speak({
         text: word,
         lang: "en-US",
@@ -133,8 +135,33 @@ function playPronunciation() {
         signal: controller.signal,
         onFinish,
       });
-    },
-  });
+      return;
+    }
+    playWithDoubao({
+      text: word,
+      rate: 0.9,
+      volume: 1,
+      signal: controller.signal,
+      onFinish,
+      onFallback: () => {
+        speak({
+          text: word,
+          lang: "en-US",
+          rate: 0.9,
+          volume: 1,
+          signal: controller.signal,
+          onFinish,
+        });
+      },
+    });
+  };
+  if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
+    chrome.storage.local.get([STORAGE_KEYS.PROVIDER], (out) => {
+      doPlay(out[STORAGE_KEYS.PROVIDER] || "doubao");
+    });
+  } else {
+    doPlay("doubao");
+  }
 }
 
 onBeforeUnmount(() => {

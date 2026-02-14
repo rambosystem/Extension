@@ -224,7 +224,9 @@
   },
   "Translate": {
     "title": "Translate",
-    "selectToTranslate": "Select to translate"
+    "selectToTranslate": "Select to Translate",
+    "selectTTS": "Voice Timbre",
+    "selectTTSPlaceholder": "Select Voice"
   },
   "messages": {
     "noTranslationDataToUpload": "No translation data to upload",

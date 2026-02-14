@@ -1,22 +1,16 @@
 /**
  * 豆包语音 TTS：单向流式 HTTP V3 合成并播放
- * https://www.volcengine.com/docs/6561/1598757
- *
- * 怎么用：
- * 1. 默认已使用控制台提供的 APP ID / Access Token，直接点翻译弹窗里的发音即可。
- * 2. 若想改用其他账号，可在扩展里执行：
- *    chrome.storage.local.set({ doubao_tts_app_id: '你的APP ID', doubao_tts_access_token: '你的Access Token' })
+ * 配置见 config/tts.js
  */
 
-const BYTEDANCE_TTS_V3 = "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
-const X_API_RESOURCE_ID = "seed-tts-1.0";
-
-/** 默认凭证（可与控制台一致）；优先使用 chrome.storage.local 中的 doubao_tts_app_id / doubao_tts_access_token */
-const DEFAULT_APP_ID = "9475898476";
-const DEFAULT_ACCESS_TOKEN = "pvrswIGZenbzLPfDB2jlDD4pAVf2CeNT";
-
-/** 发音人（V3 为 speaker） */
-const DEFAULT_VOICE_TYPE = "zh_male_jingqiangkanye_moon_bigtts";
+import {
+  TTS_API_URL,
+  X_API_RESOURCE_ID,
+  DEFAULT_APP_ID,
+  DEFAULT_ACCESS_TOKEN,
+  DEFAULT_VOICE_TYPE,
+  STORAGE_KEYS,
+} from "./config/tts.js";
 
 function toPlaybackRate(rate = 1) {
   return Math.max(0.5, Math.min(2, Number(rate) || 1));
@@ -36,20 +30,22 @@ function isExtensionPage() {
   }
 }
 
-const STORAGE_KEYS = { APP_ID: "doubao_tts_app_id", ACCESS_TOKEN: "doubao_tts_access_token" };
-
-/** 从 chrome.storage 读取豆包 TTS 凭证（可选），无则用默认值 */
+/** 从 chrome.storage 读取豆包 TTS 凭证与音色（可选），无则用默认值 */
 async function getCredentials() {
   if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
     const out = await new Promise((resolve) =>
-      chrome.storage.local.get([STORAGE_KEYS.APP_ID, STORAGE_KEYS.ACCESS_TOKEN], resolve)
+      chrome.storage.local.get(
+        [STORAGE_KEYS.APP_ID, STORAGE_KEYS.ACCESS_TOKEN, STORAGE_KEYS.VOICE_TYPE],
+        resolve
+      )
     );
     return {
       appId: out[STORAGE_KEYS.APP_ID] ?? DEFAULT_APP_ID,
       accessToken: out[STORAGE_KEYS.ACCESS_TOKEN] ?? DEFAULT_ACCESS_TOKEN,
+      voiceType: out[STORAGE_KEYS.VOICE_TYPE]?.trim() || DEFAULT_VOICE_TYPE,
     };
   }
-  return { appId: DEFAULT_APP_ID, accessToken: DEFAULT_ACCESS_TOKEN };
+  return { appId: DEFAULT_APP_ID, accessToken: DEFAULT_ACCESS_TOKEN, voiceType: DEFAULT_VOICE_TYPE };
 }
 
 /**
@@ -119,7 +115,7 @@ async function fetchTtsAudioUrl({
     },
   };
 
-  const res = await fetch(BYTEDANCE_TTS_V3, {
+  const res = await fetch(TTS_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -355,7 +351,7 @@ export async function playWithDoubao({
   text,
   rate = 1,
   volume = 1,
-  voiceType,
+  voiceType: voiceTypeParam,
   appId,
   accessToken,
   signal,
@@ -365,6 +361,13 @@ export async function playWithDoubao({
 }) {
   if (!text?.trim()) return;
 
+  let voiceType = voiceTypeParam;
+  if (!voiceType && typeof chrome !== "undefined" && chrome.storage?.local?.get) {
+    const cred = await getCredentials();
+    voiceType = cred.voiceType;
+  }
+  voiceType = voiceType || DEFAULT_VOICE_TYPE;
+
   const playbackRate = toPlaybackRate(rate);
   let blobUrl = null;
 
@@ -373,7 +376,7 @@ export async function playWithDoubao({
       text: text.trim(),
       appId,
       accessToken,
-      voiceType: voiceType || DEFAULT_VOICE_TYPE,
+      voiceType,
       speedRatio: playbackRate,
       signal,
     });
