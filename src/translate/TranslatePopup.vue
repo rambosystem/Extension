@@ -2,7 +2,7 @@
   <el-container class="translate_popup_container" direction="vertical">
     <el-header class="popup_header">
       <div class="header_icon">
-        <img src="@/assets/logo_svg.svg" class="logo_icon" draggable="false" alt="logo" />
+        <img src="@/assets/icon.svg" class="logo_icon" draggable="false" alt="logo" />
       </div>
       <div class="header_button_group">
         <el-icon class="close_icon" :size="20" @click="handleCloseClick">
@@ -41,8 +41,18 @@
                 <span class="entry_pos">{{ (viewEntries[index] || {}).part_of_speech }}</span>
                 <span class="entry_meaning">{{ (viewEntries[index] || {}).meaning }}</span>
               </div>
-              <p v-if="entry.example" class="entry_example" v-html="highlightWordInExample((viewEntries[index] || {}).example || '', selectionText)"></p>
-              <p v-if="entry.example_translation" class="entry_example_translation">{{ (viewEntries[index] || {}).example_translation }}</p>
+              <p v-if="entry.example" class="entry_example">
+                <button type="button" class="example_pronunciation_btn" aria-label="Read example"
+                  @click="playExample(entry.example)">
+                  <svg class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                </button>
+                <span v-html="highlightWordInExample((viewEntries[index] || {}).example || '', selectionText)"></span>
+              </p>
+              <p v-if="entry.example_translation" class="entry_example_translation">{{ (viewEntries[index] ||
+                {}).example_translation }}</p>
             </div>
           </div>
         </template>
@@ -148,6 +158,7 @@ function highlightWordInExample(example, word) {
 
 // 发音用 AbortController，再次点击或组件卸载时中断
 const pronunciationController = ref(null);
+const exampleController = ref(null);
 
 function playPronunciation() {
   const word = props.selectionText?.trim();
@@ -201,9 +212,64 @@ function playPronunciation() {
   }
 }
 
+function playExample(exampleText) {
+  const text = (exampleText || "").trim();
+  if (!text) return;
+  if (exampleController.value) {
+    exampleController.value.abort();
+  }
+  const controller = new AbortController();
+  exampleController.value = controller;
+  const onFinish = () => {
+    if (exampleController.value === controller) {
+      exampleController.value = null;
+    }
+  };
+  const doPlay = (provider) => {
+    if (provider === "browser") {
+      speak({
+        text,
+        lang: "en-US",
+        rate: 0.9,
+        volume: 1,
+        signal: controller.signal,
+        onFinish,
+      });
+      return;
+    }
+    playWithDoubao({
+      text,
+      rate: 0.9,
+      volume: 1,
+      signal: controller.signal,
+      onFinish,
+      onFallback: () => {
+        speak({
+          text,
+          lang: "en-US",
+          rate: 0.9,
+          volume: 1,
+          signal: controller.signal,
+          onFinish,
+        });
+      },
+    });
+  };
+  if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
+    chrome.storage.local.get([STORAGE_KEYS.PROVIDER], (out) => {
+      doPlay(out[STORAGE_KEYS.PROVIDER] || "doubao");
+    });
+  } else {
+    doPlay("doubao");
+  }
+}
+
 onBeforeUnmount(() => {
   if (pronunciationController.value) {
     pronunciationController.value.abort();
+  }
+  if (exampleController.value) {
+    exampleController.value.abort();
   }
 });
 </script>
@@ -232,8 +298,7 @@ onBeforeUnmount(() => {
   background-color: #fafafa;
 
   .header_icon {
-    width: 24px;
-    height: 24px;
+    height: 20px;
   }
 
   .logo_icon {
@@ -349,20 +414,51 @@ onBeforeUnmount(() => {
 
     .entry_example {
       margin: 4px 0 2px;
-      padding-left: 12px;
       color: #4b5563;
       font-size: 12px;
       line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
 
       :deep(.example_highlight) {
         color: #c71585;
         font-weight: 600;
       }
+
+      /* 按钮与第一行文本等高、顶对齐，不超出首行 */
+      .example_pronunciation_btn {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5em;
+        height: 1.5em;
+        margin-top: 0;
+        padding: 0;
+        border: none;
+        border-radius: 4px;
+        background: #e5e7eb;
+        color: #6b7280;
+        cursor: pointer;
+        vertical-align: top;
+
+        &:hover {
+          background: #d1d5db;
+          color: #374151;
+        }
+
+        .speaker_icon {
+          width: 0.75em;
+          height: 0.75em;
+        }
+      }
     }
 
     .entry_example_translation {
       margin: 0;
-      padding-left: 12px;
+      /* 与 entry_example 内文字左对齐：按钮宽 + 间距 */
+      padding-left: calc(1.5em + 6px);
       color: #6b7280;
       font-size: 12px;
     }
