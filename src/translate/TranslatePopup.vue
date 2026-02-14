@@ -125,7 +125,6 @@ function playPronunciation() {
     signal: controller.signal,
     onFinish,
     onFallback: () => {
-      console.log("[Penrose TTS] 朗读方式: Web Speech");
       speak({
         text: word,
         lang: "en-US",

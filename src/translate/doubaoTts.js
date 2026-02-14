@@ -1,23 +1,22 @@
 /**
- * 豆包语音 TTS：通过 ByteDance OpenSpeech API 合成并播放
- * https://openspeech.bytedance.com/api/v1/tts
+ * 豆包语音 TTS：单向流式 HTTP V3 合成并播放
+ * https://www.volcengine.com/docs/6561/1598757
  *
  * 怎么用：
  * 1. 默认已使用控制台提供的 APP ID / Access Token，直接点翻译弹窗里的发音即可。
  * 2. 若想改用其他账号，可在扩展里执行：
  *    chrome.storage.local.set({ doubao_tts_app_id: '你的APP ID', doubao_tts_access_token: '你的Access Token' })
- * Secret Key 一般用于服务端鉴权或刷新 Token，当前接口用 Access Token 即可。
  */
 
-const BYTEDANCE_TTS_BASE = "https://openspeech.bytedance.com/api/v1/tts";
+const BYTEDANCE_TTS_V3 = "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
+const X_API_RESOURCE_ID = "seed-tts-1.0";
 
 /** 默认凭证（可与控制台一致）；优先使用 chrome.storage.local 中的 doubao_tts_app_id / doubao_tts_access_token */
 const DEFAULT_APP_ID = "9475898476";
 const DEFAULT_ACCESS_TOKEN = "pvrswIGZenbzLPfDB2jlDD4pAVf2CeNT";
 
-/** 英文发音人，可按需改为其他 voice_type */
-const DEFAULT_VOICE_TYPE = "BV700_V2_streaming";
-const DEFAULT_CLUSTER = "volcano_tts";
+/** 发音人（V3 为 speaker） */
+const DEFAULT_VOICE_TYPE = "zh_male_jingqiangkanye_moon_bigtts";
 
 function toPlaybackRate(rate = 1) {
   return Math.max(0.5, Math.min(2, Number(rate) || 1));
@@ -65,13 +64,7 @@ function fetchTtsViaBackground({ text, voiceType, speedRatio, encoding = "mp3" }
         payload: { text: text.trim(), voiceType, speedRatio, encoding },
       },
       (response) => {
-        if (chrome.runtime.lastError) {
-          console.warn("[Penrose TTS] background 通信失败:", chrome.runtime.lastError.message);
-          resolve(null);
-          return;
-        }
-        if (!response?.ok || !response.audioBase64) {
-          console.warn("[Penrose TTS] 豆包未返回音频, background 响应:", response?.error ?? response);
+        if (chrome.runtime.lastError || !response?.ok || !response.audioBase64) {
           resolve(null);
           return;
         }
@@ -96,7 +89,7 @@ async function fetchTtsAudioUrl({
   encoding = "mp3",
   signal,
 }) {
-  // content script 下直连会 CORS，统一经 background 代理
+  // 走 background 代理，避免 content script 下 CORS
   if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
     const blobUrl = await fetchTtsViaBackground({
       text,
@@ -111,35 +104,28 @@ async function fetchTtsAudioUrl({
     appId != null && accessToken != null
       ? { appId: String(appId).trim(), accessToken: String(accessToken).trim() }
       : await getCredentials();
-  const appid = cred.appId || DEFAULT_APP_ID;
+  const appIdVal = cred.appId || DEFAULT_APP_ID;
   const token = cred.accessToken || DEFAULT_ACCESS_TOKEN;
-  if (!appid || !token) return null;
+  if (!appIdVal || !token) return null;
 
-  const reqid = `penrose-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const speechRate = Math.max(-50, Math.min(100, Math.round((speedRatio - 1) * 100)));
   const body = {
-    app: { appid, token, cluster: DEFAULT_CLUSTER },
     user: { uid: "penrose-tts" },
-    audio: {
-      voice_type: voiceType || DEFAULT_VOICE_TYPE,
-      encoding,
-      rate: 24000,
-      speed_ratio: speedRatio,
-      volume_ratio: 1,
-      pitch_ratio: 1,
-    },
-    request: {
-      reqid,
+    req_params: {
       text: text.trim(),
-      text_type: "plain",
-      operation: "query",
+      speaker: voiceType || DEFAULT_VOICE_TYPE,
+      audio_params: { format: encoding, sample_rate: 24000 },
+      speech_rate: speechRate,
     },
   };
 
-  const res = await fetch(BYTEDANCE_TTS_BASE, {
+  const res = await fetch(BYTEDANCE_TTS_V3, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer;${token}`,
+      "X-Api-App-Id": appIdVal,
+      "X-Api-Access-Key": token,
+      "X-Api-Resource-Id": X_API_RESOURCE_ID,
     },
     body: JSON.stringify(body),
     signal,
@@ -150,19 +136,43 @@ async function fetchTtsAudioUrl({
     throw new Error(`TTS request failed: ${res.status} ${errText}`);
   }
 
-  const contentType = res.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    const json = await res.json();
-    const b64 = json.data ?? json.audio_data ?? json.audio;
-    if (b64) {
-      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      const blob = new Blob([bin], { type: `audio/${encoding}` });
-      return URL.createObjectURL(blob);
+  const chunks = [];
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let streamDone = false;
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        const json = JSON.parse(s);
+        if (json.code === 20000000) {
+          streamDone = true;
+          break;
+        }
+        if (json.data) chunks.push(json.data);
+        if (json.code && json.code !== 0) throw new Error(json.message || `code ${json.code}`);
+      } catch (e) {
+        if (e instanceof Error && e.message.startsWith("code")) throw e;
+      }
     }
-    throw new Error("TTS response has no audio data");
   }
-
-  const blob = await res.blob();
+  if (!streamDone && buffer.trim()) {
+    try {
+      const json = JSON.parse(buffer.trim());
+      if (json.data) chunks.push(json.data);
+    } catch (_) {}
+  }
+  const b64 = chunks.join("");
+  if (!b64) throw new Error("TTS response has no audio data");
+  const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const blob = new Blob([bin], { type: `audio/${encoding}` });
   return URL.createObjectURL(blob);
 }
 
@@ -250,7 +260,6 @@ function playViaExtensionIframe({
       );
       onStart?.();
     } catch (e) {
-      console.warn("Doubao TTS iframe postMessage error:", e);
       if (!finished) {
         finished = true;
         cleanup();
@@ -369,19 +378,15 @@ export async function playWithDoubao({
       signal,
     });
   } catch (e) {
-    console.warn("Doubao TTS fetch error:", e);
-    console.log("[Penrose TTS] 朗读方式: Web Speech（豆包请求失败，将回退）");
     onFallback?.();
     return;
   }
 
   if (!blobUrl) {
-    console.log("[Penrose TTS] 朗读方式: Web Speech（豆包未返回音频，将回退）");
     onFallback?.();
     return;
   }
 
-  console.log("[Penrose TTS] 朗读方式: 豆包语音");
   const payload = {
     url: blobUrl,
     volume,
@@ -398,7 +403,7 @@ export async function playWithDoubao({
     },
   };
 
-  // content script 下 iframe 加载 extension 页面可能失败导致 origin 为 null，改用直接 Audio 播放
+  // 仅在扩展页使用 iframe；content script 下用直接 Audio 播放
   if (hasExtensionContext() && isExtensionPage()) {
     playViaExtensionIframe(payload);
   } else {

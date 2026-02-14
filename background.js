@@ -1,85 +1,99 @@
 // 划词翻译 - 右键菜单
 const TRANSLATE_MENU_ID = "penrose-translate-selection";
 
-// 豆包 TTS：在 background 中请求，避免 content script 的 CORS
-const BYTEDANCE_TTS_BASE = "https://openspeech.bytedance.com/api/v1/tts";
+// 豆包 TTS：单向流式 HTTP V3，在 background 中请求避免 CORS
+// https://www.volcengine.com/docs/6561/1598757
+const BYTEDANCE_TTS_V3 = "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
 const DEFAULT_APP_ID = "9475898476";
 const DEFAULT_ACCESS_TOKEN = "pvrswIGZenbzLPfDB2jlDD4pAVf2CeNT";
 const STORAGE_APP_ID = "doubao_tts_app_id";
 const STORAGE_ACCESS_TOKEN = "doubao_tts_access_token";
-const DEFAULT_CLUSTER = "volcano_tts";
-const DEFAULT_VOICE_TYPE = "BV700_V2_streaming";
+const DEFAULT_VOICE_TYPE = "zh_male_jingqiangkanye_moon_bigtts";
+const X_API_RESOURCE_ID = "seed-tts-1.0";
+
+/** 语速：V3 speech_rate [-50,100]，0=1x；speedRatio 0.5~2 映射过去 */
+function toSpeechRate(speedRatio) {
+  const r = Number(speedRatio) || 1;
+  return Math.max(-50, Math.min(100, Math.round((r - 1) * 100)));
+}
+
+/** 从单条 JSON 中取 base64 音频（兼容 data / audio 等字段） */
+function getB64FromJson(json) {
+  const raw = json.data ?? json.audio ?? json.audio_data;
+  if (typeof raw === "string") return raw;
+  return null;
+}
+
+/** 解析 V3 流式响应：整段读取后按行解析 NDJSON，或单条 JSON */
+async function readV3Stream(res, encoding) {
+  const text = await res.text();
+  const lines = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  const chunks = [];
+  for (const line of lines) {
+    try {
+      const json = JSON.parse(line);
+      if (json.code === 20000000) {
+        const b64 = chunks.join("");
+        return b64 ? { ok: true, audioBase64: b64, encoding } : { ok: false, error: "no audio in stream" };
+      }
+      if (json.code != null && json.code !== 0 && json.code !== 20000000) {
+        return { ok: false, error: json.message || `code ${json.code}` };
+      }
+      const b64 = getB64FromJson(json);
+      if (b64) chunks.push(b64);
+    } catch (_) {}
+  }
+  const b64 = chunks.join("");
+  if (b64) return { ok: true, audioBase64: b64, encoding };
+  try {
+    const single = JSON.parse(text.trim());
+    const one = getB64FromJson(single);
+    if (one) return { ok: true, audioBase64: one, encoding };
+    if (single.code && single.code !== 0) return { ok: false, error: single.message || `code ${single.code}` };
+  } catch (_) {}
+  return { ok: false, error: "no audio in stream" };
+}
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type !== "DOUBAO_TTS_FETCH") return false;
-  // 返回 Promise，避免 MV3 下异步 sendResponse 无法送达
   (async () => {
     try {
       const out = await chrome.storage.local.get([STORAGE_APP_ID, STORAGE_ACCESS_TOKEN]);
-      const appid = out[STORAGE_APP_ID]?.trim() || DEFAULT_APP_ID;
+      const appId = out[STORAGE_APP_ID]?.trim() || DEFAULT_APP_ID;
       const token = out[STORAGE_ACCESS_TOKEN]?.trim() || DEFAULT_ACCESS_TOKEN;
-      if (!appid || !token) {
-        console.warn("[Penrose TTS] background: 缺少凭证");
-        return { ok: false, error: "missing credentials" };
-      }
+      if (!appId || !token) return { ok: false, error: "missing credentials" };
       const { text, voiceType, speedRatio, encoding = "mp3" } = msg.payload || {};
       if (!text?.trim()) {
         return { ok: false, error: "missing text" };
       }
-      const reqid = `penrose-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const body = {
-        app: { appid, token, cluster: DEFAULT_CLUSTER },
         user: { uid: "penrose-tts" },
-        audio: {
-          voice_type: voiceType || DEFAULT_VOICE_TYPE,
-          encoding,
-          rate: 24000,
-          speed_ratio: speedRatio ?? 1,
-          volume_ratio: 1,
-          pitch_ratio: 1,
-        },
-        request: {
-          reqid,
+        req_params: {
           text: text.trim(),
-          text_type: "plain",
-          operation: "query",
+          speaker: voiceType || DEFAULT_VOICE_TYPE,
+          audio_params: {
+            format: encoding,
+            sample_rate: 24000,
+          },
+          speech_rate: toSpeechRate(speedRatio ?? 1),
         },
       };
-      const res = await fetch(BYTEDANCE_TTS_BASE, {
+      const res = await fetch(BYTEDANCE_TTS_V3, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer;${token}`,
+          "X-Api-App-Id": appId,
+          "X-Api-Access-Key": token,
+          "X-Api-Resource-Id": X_API_RESOURCE_ID,
         },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
         const errText = await res.text();
-        console.warn("[Penrose TTS] background: API 错误", res.status, errText);
-        if (res.status === 401) {
-          console.warn("[Penrose TTS] 鉴权失败：请到豆包/火山控制台确认 APP ID 与 Access Token 正确且未过期，必要时重新复制 Token。");
-        }
         return { ok: false, error: `TTS ${res.status}: ${errText}` };
       }
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        const json = await res.json();
-        const b64 = json.data ?? json.audio_data ?? json.audio;
-        if (b64) {
-          console.log("[Penrose TTS] background: 豆包返回音频成功, 长度", b64.length);
-          return { ok: true, audioBase64: b64, encoding };
-        }
-        console.warn("[Penrose TTS] background: 响应 JSON 中无音频字段", Object.keys(json));
-        return { ok: false, error: "no audio in response" };
-      }
-      const buf = await res.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      console.log("[Penrose TTS] background: 豆包返回二进制音频成功");
-      return { ok: true, audioBase64: btoa(binary), encoding };
+      return await readV3Stream(res, encoding);
     } catch (e) {
-      console.warn("[Penrose TTS] background: 异常", e?.message || e);
       return { ok: false, error: e?.message || String(e) };
     }
   })().then(sendResponse);
