@@ -59,6 +59,7 @@ import { watch, computed, ref, onBeforeUnmount } from "vue";
 import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "./composables/useTranslateWord.js";
 import { speak } from "./speechSynthesis.js";
+import { playWithDoubao } from "./doubaoTts.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
@@ -111,16 +112,28 @@ function playPronunciation() {
   }
   const controller = new AbortController();
   pronunciationController.value = controller;
-  speak({
+  const onFinish = () => {
+    if (pronunciationController.value === controller) {
+      pronunciationController.value = null;
+    }
+  };
+  // 豆包 TTS，未配置密钥或失败时回退到 Web Speech
+  playWithDoubao({
     text: word,
-    lang: "en-US",
     rate: 0.9,
     volume: 1,
     signal: controller.signal,
-    onFinish: () => {
-      if (pronunciationController.value === controller) {
-        pronunciationController.value = null;
-      }
+    onFinish,
+    onFallback: () => {
+      console.log("[Penrose TTS] 朗读方式: Web Speech");
+      speak({
+        text: word,
+        lang: "en-US",
+        rate: 0.9,
+        volume: 1,
+        signal: controller.signal,
+        onFinish,
+      });
     },
   });
 }
