@@ -5,9 +5,12 @@
         <img src="@/assets/icon.svg" class="logo_icon" draggable="false" alt="logo" />
       </div>
       <div class="header_button_group">
-        <el-icon class="close_icon" :size="20" @click="handleCloseClick">
-          <Close />
-        </el-icon>
+        <button type="button" class="header_btn setting_icon" title="Translate settings" @click="handleSettingClick">
+          <img src="@/assets/more_field.svg" class="setting_icon_img" alt="" draggable="false" />
+        </button>
+        <button type="button" class="header_btn close_icon" title="Close" @click="handleCloseClick">
+          <el-icon :size="20"><Close /></el-icon>
+        </button>
       </div>
     </el-header>
     <el-main class="popup_main">
@@ -135,6 +138,16 @@ watch(
 
 function handleCloseClick() {
   props.onClose();
+}
+
+function handleSettingClick() {
+  if (typeof chrome !== "undefined" && chrome.storage?.local?.set && chrome.runtime?.openOptionsPage) {
+    chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+      chrome.runtime.openOptionsPage(() => {
+        if (window.close) window.close();
+      });
+    });
+  }
 }
 
 /** 例句中高亮查询词（含变位，如 command -> commanded） */
@@ -310,16 +323,32 @@ onBeforeUnmount(() => {
   .header_button_group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
   }
 
-  .close_icon {
-    cursor: pointer;
+  .header_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
     color: #666;
+    cursor: pointer;
 
     &:hover {
-      color: #333;
+      background: #e5e7eb;
+      color: #374151;
     }
+  }
+
+  .setting_icon_img {
+    width: 20px;
+    height: 20px;
+    display: block;
   }
 }
 
