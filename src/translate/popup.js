@@ -1,8 +1,6 @@
 import { createApp } from "vue";
-import ElButton from "element-plus/es/components/button/index.mjs";
-// 仅 Button 组件样式 + 基础变量（el-button 依赖 --el-*）
-import "element-plus/theme-chalk/base.css";
-import "element-plus/theme-chalk/el-button.css";
+import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
 import { POPUP_ID } from "./constants.js";
 import { usePopupPosition } from "./composables/usePopupPosition.js";
 import TranslatePopup from "./TranslatePopup.vue";
@@ -29,10 +27,9 @@ function injectPopupContainerStyles() {
     #${POPUP_ID} {
       position: fixed;
       z-index: 2147483647;
-      padding: 12px 14px;
       background: #fff;
       border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0);
       font-family: system-ui, -apple-system, sans-serif;
     }
   `;
@@ -65,7 +62,7 @@ export function showTranslatePopup(selectionText) {
     selectionText,
     onClose,
   });
-  mountedApp.component("ElButton", ElButton);
+  mountedApp.use(ElementPlus);
   mountedApp.mount(popupRoot);
 
   function onOutsideClick(e) {

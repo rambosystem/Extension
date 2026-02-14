@@ -14,3 +14,7 @@ export function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+export function checkIsWord(text) {
+  return /^[a-zA-Z]+$/.test(text);
+}

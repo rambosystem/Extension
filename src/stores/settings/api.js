@@ -84,6 +84,9 @@ export const useApiStore = defineStore("api", {
           }
 
           this.apiKey = value.trim();
+          if (typeof chrome !== "undefined" && chrome.storage?.local) {
+            chrome.storage.local.set({ deepseek_api_key: value.trim() });
+          }
         });
 
         onSuccess();
@@ -110,6 +113,10 @@ export const useApiStore = defineStore("api", {
 
         localStorage.setItem("deepseek_api_key", apiKey.trim());
         this.apiKey = apiKey.trim();
+        // 同步到 chrome.storage，供 content script（划词翻译）读取
+        if (typeof chrome !== "undefined" && chrome.storage?.local) {
+          chrome.storage.local.set({ deepseek_api_key: apiKey.trim() });
+        }
       });
 
       ElMessage.success(t("messages.apiKeySavedSuccessfully"));
@@ -256,7 +263,12 @@ export const useApiStore = defineStore("api", {
       try {
         // 加载API Key
         const apiKey = localStorage.getItem("deepseek_api_key");
-        if (apiKey) this.apiKey = apiKey;
+        if (apiKey) {
+          this.apiKey = apiKey;
+          if (typeof chrome !== "undefined" && chrome.storage?.local) {
+            chrome.storage.local.set({ deepseek_api_key: apiKey });
+          }
+        }
 
         // 加载Lokalise Token
         const lokaliseToken = localStorage.getItem("lokalise_api_token");
@@ -285,6 +297,9 @@ export const useApiStore = defineStore("api", {
         localStorage.removeItem("lokalise_projects");
         // 清除Pinia persist存储（必须在重置状态之前）
         localStorage.removeItem("api-store");
+        if (typeof chrome !== "undefined" && chrome.storage?.local) {
+          chrome.storage.local.remove(["deepseek_api_key"]);
+        }
       } catch (error) {
         console.error("Failed to clear API settings from localStorage:", error);
       }
