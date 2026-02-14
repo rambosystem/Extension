@@ -23,9 +23,10 @@
           <span>Querying...</span>
         </div>
         <template v-else-if="displayData">
+          <!-- 第一行：单词 + 音标（打字机逐字） -->
           <div class="word_header">
             <span class="word_title">{{ selectionText }}</span>
-            <span v-if="displayData.pronunciation" class="word_pronunciation">{{ displayData.pronunciation }}</span>
+            <span v-if="displayData.pronunciation" class="word_pronunciation">{{ displayedPronunciation }}</span>
             <button type="button" class="pronunciation_btn" aria-label="Pronunciation" @click="playPronunciation">
               <svg class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
@@ -33,14 +34,15 @@
               </svg>
             </button>
           </div>
+          <!-- 词条：每行打字机逐字展示 -->
           <div class="word_entries">
-            <div v-for="(entry, index) in displayData.entries" :key="index" class="word_entry">
-              <div class="entry_row">
-                <span class="entry_pos">{{ entry.part_of_speech }}</span>
-                <span class="entry_meaning">{{ entry.meaning }}</span>
+            <div v-for="(entry, index) in displayEntries" :key="index" class="word_entry">
+              <div v-if="entry.part_of_speech && entry.meaning" class="entry_row">
+                <span class="entry_pos">{{ (viewEntries[index] || {}).part_of_speech }}</span>
+                <span class="entry_meaning">{{ (viewEntries[index] || {}).meaning }}</span>
               </div>
-              <p class="entry_example" v-html="highlightWordInExample(entry.example, selectionText)"></p>
-              <p class="entry_example_translation">{{ entry.example_translation }}</p>
+              <p v-if="entry.example" class="entry_example" v-html="highlightWordInExample((viewEntries[index] || {}).example || '', selectionText)"></p>
+              <p v-if="entry.example_translation" class="entry_example_translation">{{ (viewEntries[index] || {}).example_translation }}</p>
             </div>
           </div>
         </template>
@@ -58,6 +60,7 @@ import { Close, Loading } from "@element-plus/icons-vue";
 import { watch, computed, ref, onBeforeUnmount } from "vue";
 import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "./composables/useTranslateWord.js";
+import { useTypewriterDisplay } from "./composables/useTypewriterDisplay.js";
 import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
 import { STORAGE_KEYS } from "./config/tts.js";
@@ -74,9 +77,43 @@ const { loading, partialResult, result, error, execute } = useTranslateWord();
 const displayData = computed(() => {
   if (result.value) return result.value;
   const p = partialResult.value;
-  if (p && (p.pronunciation || (p.entries && p.entries.length > 0))) return p;
+  const hasPartialEntry =
+    p?.partialEntry && Object.keys(p.partialEntry).length > 0;
+  if (
+    p &&
+    (p.pronunciation ||
+      (p.entries && p.entries.length > 0) ||
+      hasPartialEntry)
+  ) {
+    return p;
+  }
   return null;
 });
+
+/** 用于逐行展示：完整 entries + 当前未闭合的 partialEntry（若有） */
+const displayEntries = computed(() => {
+  const data = displayData.value;
+  if (!data || !data.entries) return [];
+  const list = [...data.entries];
+  const partial = data.partialEntry;
+  if (partial && Object.keys(partial).length > 0) list.push(partial);
+  return list;
+});
+
+/** 打字机展示：pronunciation 与每条 entry 各字段逐字输出 */
+const { displayedPronunciation, displayedEntries } = useTypewriterDisplay(
+  () => ({
+    pronunciation: displayData.value?.pronunciation ?? "",
+    entries: displayEntries.value,
+  }),
+  () => props.selectionText,
+  { charsPerMs: 15 }
+);
+
+/** 用于渲染：每条 entry 的展示文案为打字机输出（displayedEntries 与 displayEntries 同序） */
+const viewEntries = computed(() =>
+  displayEntries.value.map((_, i) => displayedEntries.value[i] ?? {})
+);
 
 watch(
   () => [props.selectionText, isWord.value],

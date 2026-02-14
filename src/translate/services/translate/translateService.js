@@ -62,13 +62,58 @@ function isValidEntry(e) {
   );
 }
 
+const ENTRY_FIELD_NAMES = ["part_of_speech", "meaning", "example", "example_translation"];
+
+/**
+ * 从一段可能不完整的 JSON 对象字符串中解析已完整的双引号字符串字段值（支持 \" 转义）
+ * @param {string} str - 单个 entry 对象的不完整 JSON 片段
+ * @returns {{ [key: string]: string }}
+ */
+function extractPartialEntryObject(str) {
+  const out = {};
+  for (const name of ENTRY_FIELD_NAMES) {
+    const keyPattern = `"${name}"\\s*:\\s*"`;
+    const keyRe = new RegExp(keyPattern, "g");
+    const keyMatch = keyRe.exec(str);
+    if (!keyMatch) continue;
+    const valueStart = keyMatch.index + keyMatch[0].length;
+    const parsed = parseJsonStringValue(str, valueStart);
+    if (parsed) out[name] = parsed.value;
+  }
+  return out;
+}
+
+/**
+ * 从 str[i] 起解析一个 JSON 双引号字符串（i 为开引号位置），返回 { value, endIndex } 或 null
+ */
+function parseJsonStringValue(str, i) {
+  if (str[i] !== '"') return null;
+  let value = "";
+  let j = i + 1;
+  while (j < str.length) {
+    const c = str[j];
+    if (c === "\\") {
+      j++;
+      if (j < str.length) value += str[j];
+      j++;
+    } else if (c === '"') {
+      return { value, endIndex: j };
+    } else {
+      value += c;
+      j++;
+    }
+  }
+  return null;
+}
+
 /**
  * 从流式 buffer 中增量解析已完整的内容（用于一行一行展示）
+ * 完整 entry 入 entries；当前未闭合的 entry 按字段解析为 partialEntry，便于逐行展示
  * @param {string} buffer - 当前已接收的 JSON 片段
- * @returns {{ pronunciation: string|null, entries: Array }}
+ * @returns {{ pronunciation: string|null, entries: Array, partialEntry: Object|null }}
  */
 export function parsePartialWordResult(buffer) {
-  const out = { pronunciation: null, entries: [] };
+  const out = { pronunciation: null, entries: [], partialEntry: null };
   const s = buffer.trim();
   if (!s.startsWith("{")) return out;
   const pronMatch = s.match(/"pronunciation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
@@ -98,6 +143,11 @@ export function parsePartialWordResult(buffer) {
         start = -1;
       }
     }
+  }
+  if (start !== -1) {
+    const partialStr = s.slice(start);
+    const partial = extractPartialEntryObject(partialStr);
+    if (Object.keys(partial).length > 0) out.partialEntry = partial;
   }
   return out;
 }

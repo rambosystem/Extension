@@ -4,7 +4,7 @@
  *
  * @returns {{ loading: Ref<boolean>, partialResult: Ref<PartialWordResult|null>, result: Ref<WordResult|null>, error: Ref<Error|null>, execute: (word: string) => Promise<void> }}
  *
- * @typedef {{ pronunciation: string|null, entries: Array }} PartialWordResult
+ * @typedef {{ pronunciation: string|null, entries: Array, partialEntry: Object|null }} PartialWordResult
  * @typedef {{ pronunciation: string, entries: Array }} WordResult
  */
 
@@ -40,7 +40,13 @@ export function useTranslateWord() {
       for await (const chunk of translateWordStream(word.trim())) {
         full += chunk;
         const partial = parsePartialWordResult(full);
-        if (partial.pronunciation || partial.entries.length > 0) {
+        const hasPartialEntry =
+          partial.partialEntry && Object.keys(partial.partialEntry).length > 0;
+        if (
+          partial.pronunciation ||
+          partial.entries.length > 0 ||
+          hasPartialEntry
+        ) {
           partialResult.value = partial;
         }
       }
