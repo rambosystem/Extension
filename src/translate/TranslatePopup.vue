@@ -1,27 +1,21 @@
 <template>
   <el-container class="translate_popup_container" direction="vertical">
-    <el-header
-      class="popup_header"
-      @mousedown="onHeaderMouseDown"
-    >
+    <el-header class="popup_header" @mousedown="onHeaderMouseDown">
       <div class="header_icon header_drag_area">
         <img src="@/assets/icon.svg" class="logo_icon" draggable="false" alt="logo" />
       </div>
       <div class="header_button_group">
-        <button
-          type="button"
-          class="header_btn pin_btn"
-          :class="{ is_pinned: isPinned }"
-          :title="isPinned ? 'Unpin' : 'Pin'"
-          @click.stop="togglePin"
-        >
+        <button type="button" class="header_btn pin_btn" :class="{ is_pinned: isPinned }"
+          :title="isPinned ? 'Unpin' : 'Pin'" @click.stop="togglePin">
           <img src="@/assets/fixed.svg" class="pin_icon_img" alt="" draggable="false" />
         </button>
         <button type="button" class="header_btn setting_icon" title="Translate settings" @click="handleSettingClick">
           <img src="@/assets/more_field.svg" class="setting_icon_img" alt="" draggable="false" />
         </button>
         <button type="button" class="header_btn close_icon" title="Close" @click="handleCloseClick">
-          <el-icon :size="20"><Close /></el-icon>
+          <el-icon :size="20">
+            <Close />
+          </el-icon>
         </button>
       </div>
     </el-header>
@@ -49,7 +43,7 @@
               </svg>
             </button>
           </div>
-          <!-- 词条：每行打字机逐字展示 -->
+          <!-- 词条：每行打字机逐字展示；例句播放按钮等例句有内容后再显示 -->
           <div class="word_entries">
             <div v-for="(entry, index) in displayEntries" :key="index" class="word_entry">
               <div v-if="entry.part_of_speech && entry.meaning" class="entry_row">
@@ -57,8 +51,13 @@
                 <span class="entry_meaning">{{ (viewEntries[index] || {}).meaning }}</span>
               </div>
               <p v-if="entry.example" class="entry_example">
-                <button type="button" class="example_pronunciation_btn" aria-label="Read example"
-                  @click="playExample(entry.example)">
+                <button
+                  v-if="(viewEntries[index] || {}).example"
+                  type="button"
+                  class="example_pronunciation_btn"
+                  aria-label="Read example"
+                  @click="playExample(entry.example)"
+                >
                   <svg class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                     <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
@@ -362,7 +361,6 @@ onBeforeUnmount(() => {
 
   &:hover {
     cursor: move;
-    background: rgba(0, 0, 0, 0.04);
   }
 
   .header_icon {
