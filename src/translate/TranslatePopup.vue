@@ -63,7 +63,7 @@
                     <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
                   </svg>
                 </button>
-                <span v-html="highlightWordInExample((viewEntries[index] || {}).example || '', selectionText)"></span>
+                <span v-html="renderExampleWithHighlights((viewEntries[index] || {}).example || '', (viewEntries[index] || {}).example_highlight_ranges || [])"></span>
               </p>
               <p v-if="entry.example_translation" class="entry_example_translation">{{ (viewEntries[index] ||
                 {}).example_translation }}</p>
@@ -189,23 +189,35 @@ function onHeaderMouseDown(e) {
   document.addEventListener("mouseup", onMouseUp);
 }
 
-/** 例句中高亮查询词（含变位，如 command -> commanded） */
-function highlightWordInExample(example, word) {
-  if (!example || !word) return example;
-  const escaped = example.replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[c]);
-  const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const base = word.replace(/(?:ed|ing|s|es)$/i, "").trim() || word;
-  const re = new RegExp(
-    `\\b(${escapeRe(word)}|${escapeRe(base)}(?:ed|ing|s|es)?)\\b`,
-    "gi"
-  );
-  return escaped.replace(re, "<span class=\"example_highlight\">$1</span>");
+/** 例句高亮：按预处理得到的高亮区间渲染（打字机输出已是纯文本，不再含 **） */
+function renderExampleWithHighlights(displayedExample, ranges) {
+  if (!displayedExample || typeof displayedExample !== "string") return "";
+  const escapeHtml = (s) =>
+    String(s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    })[c]);
+  const escaped = escapeHtml(displayedExample);
+  const len = displayedExample.length;
+  if (!Array.isArray(ranges) || ranges.length === 0) return escaped;
+  const sorted = [...ranges].sort((a, b) => a.start - b.start);
+  let out = "";
+  let last = 0;
+  for (const r of sorted) {
+    const rStart = Math.max(0, r.start);
+    const rEnd = Math.min(r.end, len);
+    if (rStart >= rEnd) continue;
+    out += escaped.slice(last, rStart);
+    out += "<span class=\"example_highlight\">";
+    out += escaped.slice(rStart, rEnd);
+    out += "</span>";
+    last = rEnd;
+  }
+  out += escaped.slice(last);
+  return out;
 }
 
 // 发音用 AbortController，再次点击或组件卸载时中断
@@ -265,7 +277,8 @@ function playPronunciation() {
 }
 
 function playExample(exampleText) {
-  const text = (exampleText || "").trim();
+  const raw = (exampleText || "").trim();
+  const text = raw.replace(/\*\*([^*]*)\*\*/g, "$1").trim();
   if (!text) return;
   if (exampleController.value) {
     exampleController.value.abort();
