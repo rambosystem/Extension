@@ -11,7 +11,12 @@
 
 import { ref, onUnmounted } from "vue";
 
-const FIELD_NAMES = ["part_of_speech", "meaning", "example", "example_translation"];
+const FIELD_NAMES = [
+  "part_of_speech",
+  "meaning",
+  "example",
+  "example_translation",
+];
 
 /**
  * 去掉 example 中的 ** 标识符，返回纯文本和高亮区间（用于打字机只打纯文本，展示时再按区间高亮）
@@ -49,21 +54,33 @@ function flattenTargets(data, preprocessedEntries) {
 }
 
 /** 根据 flatTargets 和 flatLengths 还原 displayedPronunciation + displayedEntries；附上每条的 example_highlight_ranges */
-function buildDisplayed(flatTargets, flatLengths, entryCount, highlightRangesPerEntry = []) {
+function buildDisplayed(
+  flatTargets,
+  flatLengths,
+  entryCount,
+  highlightRangesPerEntry = [],
+) {
   const pronunciation =
-    flatTargets.length > 0
-      ? flatTargets[0].slice(0, flatLengths[0] ?? 0)
-      : "";
+    flatTargets.length > 0 ? flatTargets[0].slice(0, flatLengths[0] ?? 0) : "";
   const entries = [];
   for (let i = 0; i < entryCount; i++) {
     const base = 1 + i * FIELD_NAMES.length;
     entries.push({
-      part_of_speech: (flatTargets[base] ?? "").slice(0, flatLengths[base] ?? 0),
-      meaning: (flatTargets[base + 1] ?? "").slice(0, flatLengths[base + 1] ?? 0),
-      example: (flatTargets[base + 2] ?? "").slice(0, flatLengths[base + 2] ?? 0),
+      part_of_speech: (flatTargets[base] ?? "").slice(
+        0,
+        flatLengths[base] ?? 0,
+      ),
+      meaning: (flatTargets[base + 1] ?? "").slice(
+        0,
+        flatLengths[base + 1] ?? 0,
+      ),
+      example: (flatTargets[base + 2] ?? "").slice(
+        0,
+        flatLengths[base + 2] ?? 0,
+      ),
       example_translation: (flatTargets[base + 3] ?? "").slice(
         0,
-        flatLengths[base + 3] ?? 0
+        flatLengths[base + 3] ?? 0,
       ),
       example_highlight_ranges: highlightRangesPerEntry[i] ?? [],
     });
@@ -95,10 +112,16 @@ export function useTypewriterDisplay(getDisplayData, getKey, options = {}) {
       const { plain, ranges } = stripHighlightMarkers((e && e.example) || "");
       return { ...e, example: plain, _example_highlight_ranges: ranges };
     });
-    const highlightRangesPerEntry = preprocessed.map((e) => e._example_highlight_ranges ?? []);
+    const highlightRangesPerEntry = preprocessed.map(
+      (e) => e._example_highlight_ranges ?? [],
+    );
     const flatTargets = flattenTargets(data, preprocessed);
     const entryCount = (flatTargets.length - 1) / FIELD_NAMES.length;
-    if (flatTargets.length === 0 || entryCount < 0 || !Number.isInteger(entryCount)) {
+    if (
+      flatTargets.length === 0 ||
+      entryCount < 0 ||
+      !Number.isInteger(entryCount)
+    ) {
       displayedPronunciation.value = "";
       displayedEntries.value = [];
       return;
@@ -109,7 +132,9 @@ export function useTypewriterDisplay(getDisplayData, getKey, options = {}) {
     }
     flatLengths = flatLengths.slice(0, flatTargets.length);
 
-    const idx = flatLengths.findIndex((len, i) => len < (flatTargets[i] ?? "").length);
+    const idx = flatLengths.findIndex(
+      (len, i) => len < (flatTargets[i] ?? "").length,
+    );
     if (idx !== -1) {
       flatLengths[idx]++;
     }
@@ -118,7 +143,7 @@ export function useTypewriterDisplay(getDisplayData, getKey, options = {}) {
       flatTargets,
       flatLengths,
       entryCount,
-      highlightRangesPerEntry
+      highlightRangesPerEntry,
     );
     displayedPronunciation.value = pronunciation;
     displayedEntries.value = entries;

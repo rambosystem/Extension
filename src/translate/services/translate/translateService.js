@@ -6,7 +6,7 @@
 
 import { callDeepSeekAPI, parseNonStreamResponse, streamDeepSeekContent } from "../../../api/deepseek.js";
 import { buildRequestBody } from "../../../services/translation/requestBuilder.js";
-import { TRANSLATE_WORD_PROMPT } from "../../config/prompts.js";
+import { TRANSLATE_WORD_PROMPT, TRANSLATE_SENTENCE_PROMPT } from "../../config/prompts.js";
 
 /**
  * 从 chrome.storage.local 读取划词翻译所需配置（content script 环境）
@@ -189,6 +189,49 @@ export async function* translateWordStream(word) {
   const requestBody = buildRequestBody(
     TRANSLATE_WORD_PROMPT,
     word,
+    config.temperature ?? 0.1,
+    config.maxTokens ?? 8192,
+    true
+  );
+  const response = await callDeepSeekAPI(config.apiKey, requestBody);
+  yield* streamDeepSeekContent(response);
+}
+
+/**
+ * 句子翻译（非流式）：将句子/段落译为中文，返回整段译文
+ * @param {string} text - 待翻译原文
+ * @returns {Promise<string>} 译文
+ */
+export async function translateSentence(text) {
+  const config = await getTranslateConfig();
+  if (!config?.apiKey?.trim()) {
+    throw new Error("DeepSeek API key not found. Please set it in extension options.");
+  }
+  const requestBody = buildRequestBody(
+    TRANSLATE_SENTENCE_PROMPT,
+    text,
+    config.temperature ?? 0.1,
+    config.maxTokens ?? 8192,
+    false
+  );
+  const response = await callDeepSeekAPI(config.apiKey, requestBody);
+  const content = await parseNonStreamResponse(response);
+  return (content || "").trim();
+}
+
+/**
+ * 句子翻译（流式）：逐块产出译文，用于边收边展示
+ * @param {string} text - 待翻译原文
+ * @returns {AsyncGenerator<string>}
+ */
+export async function* translateSentenceStream(text) {
+  const config = await getTranslateConfig();
+  if (!config?.apiKey?.trim()) {
+    throw new Error("DeepSeek API key not found. Please set it in extension options.");
+  }
+  const requestBody = buildRequestBody(
+    TRANSLATE_SENTENCE_PROMPT,
+    text,
     config.temperature ?? 0.1,
     config.maxTokens ?? 8192,
     true

@@ -51,19 +51,15 @@
                 <span class="entry_meaning">{{ (viewEntries[index] || {}).meaning }}</span>
               </div>
               <p v-if="entry.example" class="entry_example">
-                <button
-                  v-if="(viewEntries[index] || {}).example"
-                  type="button"
-                  class="example_pronunciation_btn"
-                  aria-label="Read example"
-                  @click="playExample(entry.example)"
-                >
+                <button v-if="(viewEntries[index] || {}).example" type="button" class="example_pronunciation_btn"
+                  aria-label="Read example" @click="playExample(entry.example)">
                   <svg class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                     <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
                   </svg>
                 </button>
-                <span v-html="renderExampleWithHighlights((viewEntries[index] || {}).example || '', (viewEntries[index] || {}).example_highlight_ranges || [])"></span>
+                <span
+                  v-html="renderExampleWithHighlights((viewEntries[index] || {}).example || '', (viewEntries[index] || {}).example_highlight_ranges || [])"></span>
               </p>
               <p v-if="entry.example_translation" class="entry_example_translation">{{ (viewEntries[index] ||
                 {}).example_translation }}</p>
@@ -73,7 +69,22 @@
       </div>
       <!-- 句子/非单词 -->
       <div v-else class="sentence_view">
-        <div class="source_text">{{ selectionText || 'The selected text will be displayed here' }}</div>
+        <div v-if="sentenceError" class="sentence_error">
+          <span>{{ sentenceError.message || 'Translation failed' }}</span>
+        </div>
+        <div v-else-if="sentenceLoading && !sentenceResult" class="sentence_loading">
+          <el-icon class="is-loading">
+            <Loading />
+          </el-icon>
+          <span>Translating...</span>
+        </div>
+        <div v-else class="translation_row">
+          <button type="button" class="copy_btn" aria-label="Copy translation" :disabled="!sentenceResult"
+            @click="copyTranslation">
+            <img src="@/assets/copy.svg" class="copy_icon" alt="" draggable="false" />
+          </button>
+          <div class="translation_text">{{ sentenceResult || '' }}</div>
+        </div>
       </div>
     </el-main>
   </el-container>
@@ -84,10 +95,12 @@ import { Close, Loading } from "@element-plus/icons-vue";
 import { watch, computed, ref, isRef, unref, onBeforeUnmount } from "vue";
 import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "./composables/useTranslateWord.js";
+import { useTranslateSentence } from "./composables/useTranslateSentence.js";
 import { useTypewriterDisplay } from "./composables/useTypewriterDisplay.js";
 import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
 import { STORAGE_KEYS } from "./config/tts.js";
+import { useClipboard } from "./composables/useClipboard.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
@@ -102,6 +115,17 @@ const isPinned = computed(() => (props.pinned != null ? unref(props.pinned) : fa
 const isWord = computed(() => checkIsWord(props.selectionText));
 
 const { loading, partialResult, result, error, execute } = useTranslateWord();
+const {
+  loading: sentenceLoading,
+  result: sentenceResult,
+  error: sentenceError,
+  execute: executeSentence,
+} = useTranslateSentence();
+const { copy: copyToClipboard } = useClipboard();
+
+function copyTranslation() {
+  if (sentenceResult.value) copyToClipboard(sentenceResult.value);
+}
 
 const displayData = computed(() => {
   if (result.value) return result.value;
@@ -148,6 +172,7 @@ watch(
   () => [props.selectionText, isWord.value],
   ([text, word]) => {
     if (word && text) execute(text);
+    else if (!word && text) executeSentence(text);
   },
   { immediate: true }
 );
@@ -571,10 +596,68 @@ onBeforeUnmount(() => {
 }
 
 .sentence_view {
-  .source_text {
+
+  .sentence_error,
+  .sentence_loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0;
+    color: #666;
     font-size: 14px;
-    line-height: 1.5;
-    color: #303133;
+  }
+
+  .sentence_error {
+    color: #f56c6c;
+  }
+
+  .translation_row {
+    margin: 4px 0 2px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  /* 与 entry_example / example_pronunciation_btn 同风格 */
+  .copy_btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    margin-top: 2px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: #e5e7eb;
+    color: #6b7280;
+    cursor: pointer;
+    vertical-align: top;
+
+    .copy_icon {
+      width: 0.7em;
+      height: 0.7em;
+      display: block;
+    }
+
+    &:hover:not(:disabled) {
+      background: #d1d5db;
+      color: #374151;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .translation_text {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1a1a1a;
     white-space: pre-wrap;
     word-break: break-word;
   }
