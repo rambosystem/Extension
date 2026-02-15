@@ -203,9 +203,8 @@ function renderExampleWithHighlights(displayedExample, ranges) {
       '"': "&quot;",
       "'": "&#39;",
     })[c]);
-  const escaped = escapeHtml(displayedExample);
   const len = displayedExample.length;
-  if (!Array.isArray(ranges) || ranges.length === 0) return escaped;
+  if (!Array.isArray(ranges) || ranges.length === 0) return escapeHtml(displayedExample);
   const sorted = [...ranges].sort((a, b) => a.start - b.start);
   let out = "";
   let last = 0;
@@ -213,13 +212,13 @@ function renderExampleWithHighlights(displayedExample, ranges) {
     const rStart = Math.max(0, r.start);
     const rEnd = Math.min(r.end, len);
     if (rStart >= rEnd) continue;
-    out += escaped.slice(last, rStart);
+    out += escapeHtml(displayedExample.slice(last, rStart));
     out += "<span class=\"example_highlight\">";
-    out += escaped.slice(rStart, rEnd);
+    out += escapeHtml(displayedExample.slice(rStart, rEnd));
     out += "</span>";
     last = rEnd;
   }
-  out += escaped.slice(last);
+  out += escapeHtml(displayedExample.slice(last));
   return out;
 }
 
