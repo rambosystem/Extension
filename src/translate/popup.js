@@ -1,4 +1,4 @@
-import { createApp } from "vue";
+import { createApp, ref } from "vue";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import { POPUP_ID } from "./constants.js";
@@ -53,9 +53,9 @@ export function showTranslatePopup(selectionText) {
 
   document.body.appendChild(popupRoot);
 
-  let isPinned = false;
+  const isPinnedRef = ref(false);
   function setPinned(pinned) {
-    isPinned = !!pinned;
+    isPinnedRef.value = !!pinned;
   }
 
   function parsePx(value) {
@@ -86,6 +86,7 @@ export function showTranslatePopup(selectionText) {
   mountedApp = createApp(TranslatePopup, {
     selectionText,
     onClose,
+    pinned: isPinnedRef,
     setPinned,
     onMoveBy,
   });
@@ -93,7 +94,8 @@ export function showTranslatePopup(selectionText) {
   mountedApp.mount(popupRoot);
 
   function onOutsideClick(e) {
-    if (isPinned) return;
+    if (isPinnedRef.value) return;
+    if (e.target.closest?.(".pin_btn")) return;
     if (popupRoot && popupRoot.contains(e.target)) return;
     document.removeEventListener("click", onOutsideClick);
     closeExistingPopup();

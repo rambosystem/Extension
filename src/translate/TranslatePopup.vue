@@ -81,7 +81,7 @@
 
 <script setup>
 import { Close, Loading } from "@element-plus/icons-vue";
-import { watch, computed, ref, onBeforeUnmount } from "vue";
+import { watch, computed, ref, isRef, unref, onBeforeUnmount } from "vue";
 import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "./composables/useTranslateWord.js";
 import { useTypewriterDisplay } from "./composables/useTypewriterDisplay.js";
@@ -92,9 +92,12 @@ import { STORAGE_KEYS } from "./config/tts.js";
 const props = defineProps({
   onClose: { type: Function, required: true },
   selectionText: { type: String, required: true },
+  pinned: { type: [Object, Boolean], default: null },
   setPinned: { type: Function, default: null },
   onMoveBy: { type: Function, default: null },
 });
+
+const isPinned = computed(() => (props.pinned != null ? unref(props.pinned) : false));
 
 const isWord = computed(() => checkIsWord(props.selectionText));
 
@@ -161,10 +164,10 @@ function handleSettingClick() {
   }
 }
 
-const isPinned = ref(false);
 function togglePin() {
-  isPinned.value = !isPinned.value;
-  props.setPinned?.(isPinned.value);
+  const next = !unref(props.pinned);
+  if (isRef(props.pinned)) props.pinned.value = next;
+  props.setPinned?.(next);
 }
 
 let dragStartX = 0;
