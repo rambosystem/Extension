@@ -54,6 +54,14 @@ async function readV3Stream(res, encoding) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === "OPEN_TRANSLATE_SETTINGS") {
+    chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+      chrome.runtime.openOptionsPage(() => {
+        sendResponse({ ok: true });
+      });
+    });
+    return true;
+  }
   if (msg.type !== "DOUBAO_TTS_FETCH") return false;
   (async () => {
     try {

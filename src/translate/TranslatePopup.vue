@@ -1,10 +1,22 @@
 <template>
   <el-container class="translate_popup_container" direction="vertical">
-    <el-header class="popup_header">
-      <div class="header_icon">
+    <el-header
+      class="popup_header"
+      @mousedown="onHeaderMouseDown"
+    >
+      <div class="header_icon header_drag_area">
         <img src="@/assets/icon.svg" class="logo_icon" draggable="false" alt="logo" />
       </div>
       <div class="header_button_group">
+        <button
+          type="button"
+          class="header_btn pin_btn"
+          :class="{ is_pinned: isPinned }"
+          :title="isPinned ? 'Unpin' : 'Pin'"
+          @click.stop="togglePin"
+        >
+          <img src="@/assets/fixed.svg" class="pin_icon_img" alt="" draggable="false" />
+        </button>
         <button type="button" class="header_btn setting_icon" title="Translate settings" @click="handleSettingClick">
           <img src="@/assets/more_field.svg" class="setting_icon_img" alt="" draggable="false" />
         </button>
@@ -81,6 +93,8 @@ import { STORAGE_KEYS } from "./config/tts.js";
 const props = defineProps({
   onClose: { type: Function, required: true },
   selectionText: { type: String, required: true },
+  setPinned: { type: Function, default: null },
+  onMoveBy: { type: Function, default: null },
 });
 
 const isWord = computed(() => checkIsWord(props.selectionText));
@@ -141,13 +155,39 @@ function handleCloseClick() {
 }
 
 function handleSettingClick() {
-  if (typeof chrome !== "undefined" && chrome.storage?.local?.set && chrome.runtime?.openOptionsPage) {
-    chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-      chrome.runtime.openOptionsPage(() => {
-        if (window.close) window.close();
-      });
+  if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+    chrome.runtime.sendMessage({ type: "OPEN_TRANSLATE_SETTINGS" }, () => {
+      // 划词弹窗在 content 中，无 window.close；由 background 打开选项页即可
     });
   }
+}
+
+const isPinned = ref(false);
+function togglePin() {
+  isPinned.value = !isPinned.value;
+  props.setPinned?.(isPinned.value);
+}
+
+let dragStartX = 0;
+let dragStartY = 0;
+function onHeaderMouseDown(e) {
+  if (e.target.closest("button")) return;
+  if (!props.onMoveBy) return;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  const onMouseMove = (e2) => {
+    const dx = e2.clientX - dragStartX;
+    const dy = e2.clientY - dragStartY;
+    dragStartX = e2.clientX;
+    dragStartY = e2.clientY;
+    props.onMoveBy?.(dx, dy);
+  };
+  const onMouseUp = () => {
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  };
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 }
 
 /** 例句中高亮查询词（含变位，如 command -> commanded） */
@@ -307,16 +347,33 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   border-bottom: 1px solid #eee;
   background-color: #fafafa;
+  user-select: none;
+
+  .header_drag_area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  &:hover {
+    cursor: move;
+    background: rgba(0, 0, 0, 0.04);
+  }
 
   .header_icon {
+    flex: 0 0 auto;
     height: 20px;
+    width: auto;
   }
 
   .logo_icon {
-    width: 100%;
     height: 100%;
+    width: auto;
     object-fit: contain;
   }
 
@@ -343,12 +400,18 @@ onBeforeUnmount(() => {
       background: #e5e7eb;
       color: #374151;
     }
+
+    .pin_icon_img,
+    .setting_icon_img {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
   }
 
-  .setting_icon_img {
-    width: 20px;
-    height: 20px;
-    display: block;
+  .pin_btn.is_pinned {
+    background: #e5e7eb;
+    color: #374151;
   }
 }
 

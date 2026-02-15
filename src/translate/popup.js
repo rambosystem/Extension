@@ -53,6 +53,31 @@ export function showTranslatePopup(selectionText) {
 
   document.body.appendChild(popupRoot);
 
+  let isPinned = false;
+  function setPinned(pinned) {
+    isPinned = !!pinned;
+  }
+
+  function parsePx(value) {
+    if (value == null || value === "") return 0;
+    const n = parseInt(String(value), 10);
+    return Number.isNaN(n) ? 0 : n;
+  }
+
+  function onMoveBy(dx, dy) {
+    if (!popupRoot) return;
+    const left = parsePx(popupRoot.style.left) || 0;
+    const top = parsePx(popupRoot.style.top) || 0;
+    const vw = document.documentElement.clientWidth || window.innerWidth || 0;
+    const vh = document.documentElement.clientHeight || window.innerHeight || 0;
+    const w = 320;
+    const h = Math.min(popupRoot.offsetHeight || 400, vh * 0.9);
+    const x = Math.max(0, Math.min(left + dx, vw - w));
+    const y = Math.max(0, Math.min(top + dy, vh - h));
+    popupRoot.style.left = `${x}px`;
+    popupRoot.style.top = `${y}px`;
+  }
+
   function onClose() {
     closeExistingPopup();
     document.removeEventListener("click", onOutsideClick);
@@ -61,11 +86,14 @@ export function showTranslatePopup(selectionText) {
   mountedApp = createApp(TranslatePopup, {
     selectionText,
     onClose,
+    setPinned,
+    onMoveBy,
   });
   mountedApp.use(ElementPlus);
   mountedApp.mount(popupRoot);
 
   function onOutsideClick(e) {
+    if (isPinned) return;
     if (popupRoot && popupRoot.contains(e.target)) return;
     document.removeEventListener("click", onOutsideClick);
     closeExistingPopup();
