@@ -30,6 +30,7 @@ export default defineConfig({
       input: {
         popup: resolve(__dirname, "src/main.js"),
         options: resolve(__dirname, "src/options.js"),
+        sidepanel: resolve(__dirname, "src/sidepanel.js"),
       },
       output: {
         entryFileNames: "[name].js",

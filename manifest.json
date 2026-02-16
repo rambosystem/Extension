@@ -3,7 +3,8 @@
   "name": "Penrose",
   "version": "1.3.0",
   "description": "Extension for Penrose",
-  "permissions": ["activeTab", "tabs", "scripting", "storage", "contextMenus"],
+  "permissions": ["activeTab", "tabs", "scripting", "storage", "contextMenus","sidePanel"],
+  "side_panel": {"default_path": "sidepanel/sidepanel.html"},
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

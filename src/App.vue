@@ -82,11 +82,21 @@ const handleLokaliseClick = () => {
 };
 
 const handleTranslationClick = () => {
-  // 打开 Translate（划词翻译）页面
-  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-    chrome.runtime.openOptionsPage(() => {
-      window.close();
-    });
+  // 打开侧边栏视图（Translate 划词翻译）
+  chrome.windows.getCurrent((win) => {
+    if (win?.id != null && chrome.sidePanel?.open) {
+      chrome.sidePanel.open({ windowId: win.id }).then(() => {
+        window.close();
+      }).catch(() => {
+        chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+          chrome.runtime.openOptionsPage(() => window.close());
+        });
+      });
+    } else {
+      chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+        chrome.runtime.openOptionsPage(() => window.close());
+      });
+    }
   });
 };
 </script>
