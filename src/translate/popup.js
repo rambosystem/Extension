@@ -38,10 +38,36 @@ function injectPopupContainerStyles() {
 
 /**
  * @param {string} selectionText
+ * @param {Range|null} [savedRange] 划词时保存的选区，用于“替换”；不传则尝试用当前选区
  */
-export function showTranslatePopup(selectionText) {
+export function showTranslatePopup(selectionText, savedRange = null) {
   console.log("[Penrose translate] selection:", selectionText);
   closeExistingPopup();
+
+  let rangeToReplace = savedRange;
+  if (!rangeToReplace) {
+    try {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        rangeToReplace = sel.getRangeAt(0).cloneRange();
+      }
+    } catch (_) {}
+  }
+
+  function onReplace(translation) {
+    if (!rangeToReplace || !translation) return;
+    try {
+      rangeToReplace.deleteContents();
+      const textNode = document.createTextNode(translation);
+      rangeToReplace.insertNode(textNode);
+      rangeToReplace.setStartAfter(textNode);
+      rangeToReplace.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(rangeToReplace);
+    } catch (_) {}
+    onClose();
+  }
 
   injectPopupContainerStyles();
 
@@ -86,6 +112,7 @@ export function showTranslatePopup(selectionText) {
   mountedApp = createApp(TranslatePopup, {
     selectionText,
     onClose,
+    onReplace,
     pinned: isPinnedRef,
     setPinned,
     onMoveBy,

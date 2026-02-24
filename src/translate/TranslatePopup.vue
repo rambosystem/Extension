@@ -2,17 +2,47 @@
   <el-container class="translate_popup_container" direction="vertical">
     <el-header class="popup_header" @mousedown="onHeaderMouseDown">
       <div class="header_icon header_drag_area">
-        <img src="@/assets/icon.svg" class="logo_icon" draggable="false" alt="logo" />
+        <img
+          src="@/assets/icon.svg"
+          class="logo_icon"
+          draggable="false"
+          alt="logo"
+        />
       </div>
       <div class="header_button_group">
-        <button type="button" class="header_btn pin_btn" :class="{ is_pinned: isPinned }"
-          :title="isPinned ? 'Unpin' : 'Pin'" @click.stop="togglePin">
-          <img src="@/assets/fixed.svg" class="pin_icon_img" alt="" draggable="false" />
+        <button
+          type="button"
+          class="header_btn pin_btn"
+          :class="{ is_pinned: isPinned }"
+          :title="isPinned ? 'Unpin' : 'Pin'"
+          @click.stop="togglePin"
+        >
+          <img
+            src="@/assets/fixed.svg"
+            class="pin_icon_img"
+            alt=""
+            draggable="false"
+          />
         </button>
-        <button type="button" class="header_btn setting_icon" title="Translate settings" @click="handleSettingClick">
-          <img src="@/assets/more_field.svg" class="setting_icon_img" alt="" draggable="false" />
+        <button
+          type="button"
+          class="header_btn setting_icon"
+          title="Translate settings"
+          @click="handleSettingClick"
+        >
+          <img
+            src="@/assets/more_field.svg"
+            class="setting_icon_img"
+            alt=""
+            draggable="false"
+          />
         </button>
-        <button type="button" class="header_btn close_icon" title="Close" @click="handleCloseClick">
+        <button
+          type="button"
+          class="header_btn close_icon"
+          title="Close"
+          @click="handleCloseClick"
+        >
           <el-icon :size="20">
             <Close />
           </el-icon>
@@ -23,7 +53,7 @@
       <!-- 单词查词 -->
       <div v-if="isWord" class="word_view">
         <div v-if="error" class="word_error">
-          <span>{{ error.message || 'Query failed' }}</span>
+          <span>{{ error.message || "Query failed" }}</span>
         </div>
         <div v-else-if="loading && !displayData" class="word_loading">
           <el-icon class="is-loading">
@@ -35,42 +65,97 @@
           <!-- 第一行：单词 + 音标（打字机逐字） -->
           <div class="word_header">
             <span class="word_title">{{ selectionText }}</span>
-            <span v-if="displayData.pronunciation" class="word_pronunciation">{{ displayedPronunciation }}</span>
-            <button type="button" class="pronunciation_btn" aria-label="Pronunciation"
-              @click="playPronunciation">
-              <el-icon v-if="pronunciationLoading" class="is-loading speaker_icon_wrap">
+            <span v-if="displayData.pronunciation" class="word_pronunciation">{{
+              displayedPronunciation
+            }}</span>
+            <button
+              type="button"
+              class="pronunciation_btn"
+              aria-label="Pronunciation"
+              @click="playPronunciation"
+            >
+              <el-icon
+                v-if="pronunciationLoading"
+                class="is-loading speaker_icon_wrap"
+              >
                 <Loading />
               </el-icon>
-              <svg v-else class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg
+                v-else
+                class="speaker_icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
+                <path
+                  d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"
+                />
               </svg>
             </button>
           </div>
           <!-- 词条：每行打字机逐字展示；例句播放按钮等例句有内容后再显示 -->
           <div class="word_entries">
-            <div v-for="(entry, index) in displayEntries" :key="index" class="word_entry">
-              <div v-if="entry.part_of_speech && entry.meaning" class="entry_row">
-                <span class="entry_pos">{{ (viewEntries[index] || {}).part_of_speech }}</span>
-                <span class="entry_meaning">{{ (viewEntries[index] || {}).meaning }}</span>
+            <div
+              v-for="(entry, index) in displayEntries"
+              :key="index"
+              class="word_entry"
+            >
+              <div
+                v-if="entry.part_of_speech && entry.meaning"
+                class="entry_row"
+              >
+                <span class="entry_pos">{{
+                  (viewEntries[index] || {}).part_of_speech
+                }}</span>
+                <span class="entry_meaning">{{
+                  (viewEntries[index] || {}).meaning
+                }}</span>
               </div>
               <p v-if="entry.example" class="entry_example">
-                <button v-if="(viewEntries[index] || {}).example" type="button" class="example_pronunciation_btn"
+                <button
+                  v-if="(viewEntries[index] || {}).example"
+                  type="button"
+                  class="example_pronunciation_btn"
                   aria-label="Read example"
-                  @click="playExample(entry.example, index)">
-                  <el-icon v-if="exampleLoadingIndex === index" class="is-loading example_speaker_icon_wrap">
+                  @click="playExample(entry.example, index)"
+                >
+                  <el-icon
+                    v-if="exampleLoadingIndex === index"
+                    class="is-loading example_speaker_icon_wrap"
+                  >
                     <Loading />
                   </el-icon>
-                  <svg v-else class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg
+                    v-else
+                    class="speaker_icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
+                    <path
+                      d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"
+                    />
                   </svg>
                 </button>
                 <span
-                  v-html="renderExampleWithHighlights((viewEntries[index] || {}).example || '', (viewEntries[index] || {}).example_highlight_ranges || [])"></span>
+                  v-html="
+                    renderExampleWithHighlights(
+                      (viewEntries[index] || {}).example || '',
+                      (viewEntries[index] || {}).example_highlight_ranges || [],
+                    )
+                  "
+                ></span>
               </p>
-              <p v-if="entry.example_translation" class="entry_example_translation">{{ (viewEntries[index] ||
-                {}).example_translation }}</p>
+              <p
+                v-if="entry.example_translation"
+                class="entry_example_translation"
+              >
+                {{ (viewEntries[index] || {}).example_translation }}
+              </p>
             </div>
           </div>
         </template>
@@ -78,20 +163,51 @@
       <!-- 句子/非单词 -->
       <div v-else class="sentence_view">
         <div v-if="sentenceError" class="sentence_error">
-          <span>{{ sentenceError.message || 'Translation failed' }}</span>
+          <span>{{ sentenceError.message || "Translation failed" }}</span>
         </div>
-        <div v-else-if="sentenceLoading && !sentenceResult" class="sentence_loading">
+        <div
+          v-else-if="sentenceLoading && !sentenceResult"
+          class="sentence_loading"
+        >
           <el-icon class="is-loading">
             <Loading />
           </el-icon>
           <span>Translating...</span>
         </div>
         <div v-else class="translation_row">
-          <button type="button" class="copy_btn" aria-label="Copy translation" :disabled="!sentenceResult"
-            @click="copyTranslation">
-            <img src="@/assets/copy.svg" class="copy_icon" alt="" draggable="false" />
-          </button>
-          <div class="translation_text">{{ sentenceResult || '' }}</div>
+          <div class="translation_text">{{ sentenceResult || "" }}</div>
+          <div class="sentence_actions">
+            <div class="sentence_button_group">
+              <button
+                type="button"
+                class="action_btn replace_btn"
+                aria-label="Replace with translation"
+                :disabled="!sentenceResult"
+                @click="replaceTranslation"
+              >
+                <img
+                  src="@/assets/replace.svg"
+                  class="action_icon"
+                  alt=""
+                  draggable="false"
+                />
+              </button>
+              <button
+                type="button"
+                class="action_btn copy_btn"
+                aria-label="Copy translation"
+                :disabled="!sentenceResult"
+                @click="copyTranslation"
+              >
+                <img
+                  src="@/assets/copy.svg"
+                  class="action_icon"
+                  alt=""
+                  draggable="false"
+                />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </el-main>
@@ -116,9 +232,12 @@ const props = defineProps({
   pinned: { type: [Object, Boolean], default: null },
   setPinned: { type: Function, default: null },
   onMoveBy: { type: Function, default: null },
+  onReplace: { type: Function, default: null },
 });
 
-const isPinned = computed(() => (props.pinned != null ? unref(props.pinned) : false));
+const isPinned = computed(() =>
+  props.pinned != null ? unref(props.pinned) : false,
+);
 
 const isWord = computed(() => checkIsWord(props.selectionText));
 
@@ -135,6 +254,11 @@ function copyTranslation() {
   if (sentenceResult.value) copyToClipboard(sentenceResult.value);
 }
 
+function replaceTranslation() {
+  if (!sentenceResult.value) return;
+  props.onReplace?.(sentenceResult.value);
+}
+
 const displayData = computed(() => {
   if (result.value) return result.value;
   const p = partialResult.value;
@@ -142,9 +266,7 @@ const displayData = computed(() => {
     p?.partialEntry && Object.keys(p.partialEntry).length > 0;
   if (
     p &&
-    (p.pronunciation ||
-      (p.entries && p.entries.length > 0) ||
-      hasPartialEntry)
+    (p.pronunciation || (p.entries && p.entries.length > 0) || hasPartialEntry)
   ) {
     return p;
   }
@@ -168,12 +290,12 @@ const { displayedPronunciation, displayedEntries } = useTypewriterDisplay(
     entries: displayEntries.value,
   }),
   () => props.selectionText,
-  { charsPerMs: 15 }
+  { charsPerMs: 15 },
 );
 
 /** 用于渲染：每条 entry 的展示文案为打字机输出（displayedEntries 与 displayEntries 同序） */
 const viewEntries = computed(() =>
-  displayEntries.value.map((_, i) => displayedEntries.value[i] ?? {})
+  displayEntries.value.map((_, i) => displayedEntries.value[i] ?? {}),
 );
 
 watch(
@@ -182,7 +304,7 @@ watch(
     if (word && text) execute(text);
     else if (!word && text) executeSentence(text);
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function handleCloseClick() {
@@ -229,15 +351,20 @@ function onHeaderMouseDown(e) {
 function renderExampleWithHighlights(displayedExample, ranges) {
   if (!displayedExample || typeof displayedExample !== "string") return "";
   const escapeHtml = (s) =>
-    String(s).replace(/[&<>"']/g, (c) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    })[c]);
+    String(s).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
   const len = displayedExample.length;
-  if (!Array.isArray(ranges) || ranges.length === 0) return escapeHtml(displayedExample);
+  if (!Array.isArray(ranges) || ranges.length === 0)
+    return escapeHtml(displayedExample);
   const sorted = [...ranges].sort((a, b) => a.start - b.start);
   let out = "";
   let last = 0;
@@ -246,7 +373,7 @@ function renderExampleWithHighlights(displayedExample, ranges) {
     const rEnd = Math.min(r.end, len);
     if (rStart >= rEnd) continue;
     out += escapeHtml(displayedExample.slice(last, rStart));
-    out += "<span class=\"example_highlight\">";
+    out += '<span class="example_highlight">';
     out += escapeHtml(displayedExample.slice(rStart, rEnd));
     out += "</span>";
     last = rEnd;
@@ -485,7 +612,6 @@ onBeforeUnmount(() => {
 }
 
 .word_view {
-
   .word_loading,
   .word_error {
     display: flex;
@@ -634,7 +760,6 @@ onBeforeUnmount(() => {
 }
 
 .sentence_view {
-
   .sentence_error,
   .sentence_loading {
     display: flex;
@@ -652,30 +777,48 @@ onBeforeUnmount(() => {
   .translation_row {
     margin: 4px 0 2px;
     display: flex;
-    align-items: flex-start;
-    gap: 6px;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  /* 与 entry_example / example_pronunciation_btn 同风格 */
-  .copy_btn {
-    flex-shrink: 0;
+  .translation_text {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .sentence_actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .sentence_button_group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* 与 pronunciation_btn 播放样式一致 */
+  .sentence_actions .action_btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1em;
-    height: 1em;
-    margin-top: 2px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     background: #e5e7eb;
     color: #6b7280;
     cursor: pointer;
-    vertical-align: top;
 
-    .copy_icon {
-      width: 0.7em;
-      height: 0.7em;
+    .action_icon {
+      width: 14px;
+      height: 14px;
       display: block;
     }
 
@@ -688,16 +831,6 @@ onBeforeUnmount(() => {
       opacity: 0.5;
       cursor: not-allowed;
     }
-  }
-
-  .translation_text {
-    flex: 1;
-    min-width: 0;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #1a1a1a;
-    white-space: pre-wrap;
-    word-break: break-word;
   }
 }
 </style>
