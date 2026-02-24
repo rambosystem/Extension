@@ -4,7 +4,7 @@
     show-pin
     show-settings
     setting-title="Settings"
-    setting-route="3"
+    :setting-route="ROUTE_INDEX.CLIPBOARD"
     :pinned="pinned"
     :set-pinned="setPinned"
     :on-move-by="onMoveBy"
@@ -18,6 +18,7 @@
 
 <script setup>
 import PopupFrame from "@/Components/PopupFrame.vue";
+import { ROUTE_INDEX } from "@/routes/constants.js";
 
 defineProps({
   onClose: { type: Function, required: true },

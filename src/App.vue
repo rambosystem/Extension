@@ -57,6 +57,7 @@
 <script setup>
 import { Setting } from "@element-plus/icons-vue";
 import { useI18n } from "./composables/Core/useI18n.js";
+import { ROUTE_INDEX } from "./routes/constants.js";
 import WeightItem from "./Components/Terms/Weight-Item.vue";
 import translationSvg from "./assets/translation.svg";
 import clipboardSvg from "./assets/clipboard.svg";
@@ -64,12 +65,14 @@ import clipboardSvg from "./assets/clipboard.svg";
 const { t } = useI18n();
 
 const handleSettingClick = () => {
-  // 直接设置菜单并打开 options 页面（Settings 为第 4 项）
-  chrome.storage.local.set({ initialMenu: "4", currentMenu: "4" }, () => {
-    chrome.runtime.openOptionsPage(() => {
-      window.close();
-    });
-  });
+  chrome.storage.local.set(
+    { initialMenu: ROUTE_INDEX.SETTINGS, currentMenu: ROUTE_INDEX.SETTINGS },
+    () => {
+      chrome.runtime.openOptionsPage(() => {
+        window.close();
+      });
+    }
+  );
 };
 
 const handleLokaliseClick = () => {
@@ -79,12 +82,14 @@ const handleLokaliseClick = () => {
     });
   });
 
-  // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
-  chrome.storage.local.set({ initialMenu: "1", currentMenu: "1" }, () => {
-    chrome.runtime.openOptionsPage(() => {
-      window.close();
-    });
-  });
+  chrome.storage.local.set(
+    { initialMenu: ROUTE_INDEX.LOKALISE, currentMenu: ROUTE_INDEX.LOKALISE },
+    () => {
+      chrome.runtime.openOptionsPage(() => {
+        window.close();
+      });
+    }
+  );
 };
 
 const handleTranslationClick = () => {
@@ -104,9 +109,12 @@ const handleTranslationClick = () => {
   //     });
   //   }
   // });
-  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-    chrome.runtime.openOptionsPage(() => window.close());
-  });
+  chrome.storage.local.set(
+    { initialMenu: ROUTE_INDEX.TRANSLATE, currentMenu: ROUTE_INDEX.TRANSLATE },
+    () => {
+      chrome.runtime.openOptionsPage(() => window.close());
+    }
+  );
 };
 
 const handleClipboardClick = () => {
@@ -121,9 +129,15 @@ const handleClipboardClick = () => {
         window.close();
       })
       .catch(() => {
-        chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
-          chrome.runtime.openOptionsPage(() => window.close());
-        });
+        chrome.storage.local.set(
+          {
+            initialMenu: ROUTE_INDEX.CLIPBOARD,
+            currentMenu: ROUTE_INDEX.CLIPBOARD,
+          },
+          () => {
+            chrome.runtime.openOptionsPage(() => window.close());
+          }
+        );
       });
   });
 };

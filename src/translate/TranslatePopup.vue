@@ -4,7 +4,7 @@
     show-pin
     show-settings
     setting-title="Translate settings"
-    setting-route="2"
+    :setting-route="ROUTE_INDEX.TRANSLATE"
     :pinned="pinned"
     :set-pinned="setPinned"
     :on-move-by="onMoveBy"
@@ -176,6 +176,7 @@
 import { Loading } from "@element-plus/icons-vue";
 import { watch, computed, ref, onBeforeUnmount } from "vue";
 import PopupFrame from "@/Components/PopupFrame.vue";
+import { ROUTE_INDEX } from "@/routes/constants.js";
 import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "./composables/useTranslateWord.js";
 import { useTranslateSentence } from "./composables/useTranslateSentence.js";

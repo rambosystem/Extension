@@ -42,64 +42,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
-import Settings from "./Views/Settings.vue";
-import Lokalise from "./Views/Lokalise.vue";
-import Translate from "./Views/Translate.vue";
-import Clipboard from "./Views/Clipboard.vue";
-
+import { onMounted, onUnmounted, computed } from "vue";
+import { menuRoutes } from "./routes/index.js";
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
 import { useTranslationCoreStore } from "./stores/translation/core.js";
 
 const { t } = useI18n();
-
-// 使用应用store
 const appStore = useAppStore();
 const translationCoreStore = useTranslationCoreStore();
 
-// 菜单项配置 - 使用计算属性确保响应式
-const menuConfig = computed(() => [
-  {
-    index: "1",
-    label: t("menu.translation"),
-    title: t("menu.translation"),
-    component: Lokalise,
-  },
-  {
-    index: "2",
-    label: t("menu.translate"),
-    title: t("Translate.title"),
-    component: Translate,
-  },
-  {
-    index: "3",
-    label: t("menu.clipboard"),
-    title: t("clipboard.title"),
-    component: Clipboard,
-  },
-  {
-    index: "4",
-    label: t("menu.settings"),
-    title: t("menu.settings"),
-    component: Settings,
-  },
-  {
-    index: "5",
-    label: t("menu.about"),
-    title: t("menu.about"),
-    component: {
-      template: `
-        <div class="setting_group">
-          <h2 class="title">${t("about.title")}</h2>
-          <div class="about-content">
-            <p>${t("about.content")}</p>
-          </div>
-        </div>
-      `,
-    },
-  },
-]);
+// 由路由配置生成菜单项（注入 i18n）
+const menuConfig = computed(() =>
+  menuRoutes.map((r) => ({
+    index: r.index,
+    label: t(r.labelKey),
+    title: t(r.titleKey),
+    component: r.componentFactory ? r.componentFactory(t) : r.component,
+  }))
+);
 
 // 选中的菜单项 - 使用store中的状态
 const selectedMenu = computed({
