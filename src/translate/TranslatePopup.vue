@@ -1,56 +1,15 @@
 <template>
-  <el-container class="translate_popup_container" direction="vertical">
-    <el-header class="popup_header" @mousedown="onHeaderMouseDown">
-      <div class="header_icon header_drag_area">
-        <img
-          src="@/assets/icon.svg"
-          class="logo_icon"
-          draggable="false"
-          alt="logo"
-        />
-      </div>
-      <div class="header_button_group">
-        <button
-          type="button"
-          class="header_btn pin_btn"
-          :class="{ is_pinned: isPinned }"
-          :title="isPinned ? 'Unpin' : 'Pin'"
-          @click.stop="togglePin"
-        >
-          <img
-            src="@/assets/fixed.svg"
-            class="pin_icon_img"
-            alt=""
-            draggable="false"
-          />
-        </button>
-        <button
-          type="button"
-          class="header_btn setting_icon"
-          title="Translate settings"
-          @click="handleSettingClick"
-        >
-          <img
-            src="@/assets/more_field.svg"
-            class="setting_icon_img"
-            alt=""
-            draggable="false"
-          />
-        </button>
-        <button
-          type="button"
-          class="header_btn close_icon"
-          title="Close"
-          @click="handleCloseClick"
-        >
-          <el-icon :size="20">
-            <Close />
-          </el-icon>
-        </button>
-      </div>
-    </el-header>
-    <el-main class="popup_main">
-      <!-- 单词查词 -->
+  <PopupFrame
+    :on-close="onClose"
+    show-pin
+    show-settings
+    setting-title="Translate settings"
+    setting-route="2"
+    :pinned="pinned"
+    :set-pinned="setPinned"
+    :on-move-by="onMoveBy"
+  >
+    <!-- 单词查词 -->
       <div v-if="isWord" class="word_view">
         <div v-if="error" class="word_error">
           <span>{{ error.message || "Query failed" }}</span>
@@ -210,13 +169,13 @@
           </div>
         </div>
       </div>
-    </el-main>
-  </el-container>
+  </PopupFrame>
 </template>
 
 <script setup>
-import { Close, Loading } from "@element-plus/icons-vue";
-import { watch, computed, ref, isRef, unref, onBeforeUnmount } from "vue";
+import { Loading } from "@element-plus/icons-vue";
+import { watch, computed, ref, onBeforeUnmount } from "vue";
+import PopupFrame from "@/Components/PopupFrame.vue";
 import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "./composables/useTranslateWord.js";
 import { useTranslateSentence } from "./composables/useTranslateSentence.js";
@@ -234,10 +193,6 @@ const props = defineProps({
   onMoveBy: { type: Function, default: null },
   onReplace: { type: Function, default: null },
 });
-
-const isPinned = computed(() =>
-  props.pinned != null ? unref(props.pinned) : false,
-);
 
 const isWord = computed(() => checkIsWord(props.selectionText));
 
@@ -306,46 +261,6 @@ watch(
   },
   { immediate: true },
 );
-
-function handleCloseClick() {
-  props.onClose();
-}
-
-function handleSettingClick() {
-  if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
-    chrome.runtime.sendMessage({ type: "OPEN_TRANSLATE_SETTINGS" }, () => {
-      // 划词弹窗在 content 中，无 window.close；由 background 打开选项页即可
-    });
-  }
-}
-
-function togglePin() {
-  const next = !unref(props.pinned);
-  if (isRef(props.pinned)) props.pinned.value = next;
-  props.setPinned?.(next);
-}
-
-let dragStartX = 0;
-let dragStartY = 0;
-function onHeaderMouseDown(e) {
-  if (e.target.closest("button")) return;
-  if (!props.onMoveBy) return;
-  dragStartX = e.clientX;
-  dragStartY = e.clientY;
-  const onMouseMove = (e2) => {
-    const dx = e2.clientX - dragStartX;
-    const dy = e2.clientY - dragStartY;
-    dragStartX = e2.clientX;
-    dragStartY = e2.clientY;
-    props.onMoveBy?.(dx, dy);
-  };
-  const onMouseUp = () => {
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-  };
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("mouseup", onMouseUp);
-}
 
 /** 例句高亮：按预处理得到的高亮区间渲染（打字机输出已是纯文本，不再含 **） */
 function renderExampleWithHighlights(displayedExample, ranges) {
@@ -520,97 +435,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-.translate_popup_container {
-  width: 320px;
-  min-height: auto;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.popup_header {
-  flex-shrink: 0;
-  height: 44px;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  border-bottom: 1px solid #eee;
-  background-color: #fafafa;
-  user-select: none;
-
-  .header_drag_area {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-  }
-
-  &:hover {
-    cursor: move;
-  }
-
-  .header_icon {
-    flex: 0 0 auto;
-    height: 20px;
-    width: auto;
-  }
-
-  .logo_icon {
-    height: 100%;
-    width: auto;
-    object-fit: contain;
-  }
-
-  .header_button_group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .header_btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: #666;
-    cursor: pointer;
-
-    &:hover {
-      background: #e5e7eb;
-      color: #374151;
-    }
-
-    .pin_icon_img,
-    .setting_icon_img {
-      width: 20px;
-      height: 20px;
-      display: block;
-    }
-  }
-
-  .pin_btn.is_pinned {
-    background: #e5e7eb;
-    color: #374151;
-  }
-}
-
-.popup_main {
-  padding: 12px;
-  overflow-y: auto;
-}
-
 .word_view {
   .word_loading,
   .word_error {

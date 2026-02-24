@@ -21,6 +21,7 @@
     "library": "Library",
     "settings": "Settings",
     "translate": "Translate",
+    "clipboard": "Clipboard",
     "about": "About"
   },
   "translation": {
@@ -122,6 +123,10 @@
     "termsStoreNeverInitialized": "terms-store not found, but no terms data exists - likely never initialized",
     "termsStoreMissingWithData": "Quick validation failed: terms-store is missing but terms data exists"
   },
+  "clipboard": {
+    "title": "Clipboard Settings",
+    "description": "Configure clipboard behavior and history."
+  },
   "about": {
     "title": "About",
     "content": "About page content"
@@ -220,6 +225,7 @@
   "app": {
     "lokalise": "Lokalise",
     "translation": "Translate",
+    "clipboard": "Clipboard",
     "copyright": "© Rambo Systems Software"
   },
   "Translate": {

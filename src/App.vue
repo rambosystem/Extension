@@ -33,8 +33,13 @@
                 />
               </div>
             </el-col>
-            <el-col :span="6">
-              <div class="grid-content" />
+            <el-col :span="6" @click="handleClipboardClick">
+              <div class="grid-content">
+                <WeightItem
+                  :title="t('app.clipboard')"
+                  :url="clipboardSvg"
+                />
+              </div>
             </el-col>
             <el-col :span="6">
               <div class="grid-content" />
@@ -54,12 +59,13 @@ import { Setting } from "@element-plus/icons-vue";
 import { useI18n } from "./composables/Core/useI18n.js";
 import WeightItem from "./Components/Terms/Weight-Item.vue";
 import translationSvg from "./assets/translation.svg";
+import clipboardSvg from "./assets/clipboard.svg";
 
 const { t } = useI18n();
 
 const handleSettingClick = () => {
-  // 直接设置菜单并打开options页面，Chrome会自动处理重复打开
-  chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
+  // 直接设置菜单并打开 options 页面（Settings 为第 4 项）
+  chrome.storage.local.set({ initialMenu: "4", currentMenu: "4" }, () => {
     chrome.runtime.openOptionsPage(() => {
       window.close();
     });
@@ -82,21 +88,43 @@ const handleLokaliseClick = () => {
 };
 
 const handleTranslationClick = () => {
-  // 打开侧边栏视图（Translate 划词翻译）
-  chrome.windows.getCurrent((win) => {
-    if (win?.id != null && chrome.sidePanel?.open) {
-      chrome.sidePanel.open({ windowId: win.id }).then(() => {
+  // 注掉侧边栏，直接跳转到 Translate Setting
+  // chrome.windows.getCurrent((win) => {
+  //   if (win?.id != null && chrome.sidePanel?.open) {
+  //     chrome.sidePanel.open({ windowId: win.id }).then(() => {
+  //       window.close();
+  //     }).catch(() => {
+  //       chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+  //         chrome.runtime.openOptionsPage(() => window.close());
+  //       });
+  //     });
+  //   } else {
+  //     chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+  //       chrome.runtime.openOptionsPage(() => window.close());
+  //     });
+  //   }
+  // });
+  chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+    chrome.runtime.openOptionsPage(() => window.close());
+  });
+};
+
+const handleClipboardClick = () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]?.id) {
+      window.close();
+      return;
+    }
+    chrome.tabs
+      .sendMessage(tabs[0].id, { action: "showClipboardPopup" })
+      .then(() => {
         window.close();
-      }).catch(() => {
-        chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
+      })
+      .catch(() => {
+        chrome.storage.local.set({ initialMenu: "3", currentMenu: "3" }, () => {
           chrome.runtime.openOptionsPage(() => window.close());
         });
       });
-    } else {
-      chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-        chrome.runtime.openOptionsPage(() => window.close());
-      });
-    }
   });
 };
 </script>

@@ -46,6 +46,7 @@ import { ref, onMounted, onUnmounted, computed } from "vue";
 import Settings from "./Views/Settings.vue";
 import Lokalise from "./Views/Lokalise.vue";
 import Translate from "./Views/Translate.vue";
+import Clipboard from "./Views/Clipboard.vue";
 
 import { useI18n } from "./composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
@@ -73,13 +74,18 @@ const menuConfig = computed(() => [
   },
   {
     index: "3",
+    label: t("menu.clipboard"),
+    title: t("clipboard.title"),
+    component: Clipboard,
+  },
+  {
+    index: "4",
     label: t("menu.settings"),
     title: t("menu.settings"),
     component: Settings,
   },
-
   {
-    index: "4",
+    index: "5",
     label: t("menu.about"),
     title: t("menu.about"),
     component: {

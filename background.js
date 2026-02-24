@@ -62,6 +62,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
     return true;
   }
+  // Setting 路由单独配置：打开选项页并定位到指定菜单（menu 为 Options 侧边栏 index，如 "2"=Translate "3"=Settings）
+  if (msg.type === "OPEN_OPTIONS" && msg.menu) {
+    const menu = String(msg.menu);
+    chrome.storage.local.set({ initialMenu: menu, currentMenu: menu }, () => {
+      chrome.runtime.openOptionsPage(() => {
+        sendResponse({ ok: true });
+      });
+    });
+    return true;
+  }
   if (msg.type !== "DOUBAO_TTS_FETCH") return false;
   (async () => {
     try {
