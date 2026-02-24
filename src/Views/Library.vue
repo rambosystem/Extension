@@ -47,7 +47,7 @@ import { useI18n } from "../lokalise/composables/Core/useI18n.js";
 import LibraryFilter from "../components/Library/LibraryFilter.vue";
 import LibraryTable from "../components/Library/LibraryTable.vue";
 import LibraryTableConfig from "../components/Library/LibraryTableConfig.vue";
-import { useLibraryStore } from "../stores/library.js";
+import { useLibraryStore } from "../lokalise/stores/library.js";
 
 const { t } = useI18n();
 const libraryStore = useLibraryStore();

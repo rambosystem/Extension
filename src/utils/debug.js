@@ -3,7 +3,7 @@
  * 根据设置中的调试日志开关控制 console.log 是否输出
  */
 
-import { useTranslationSettingsStore } from "../stores/settings/translation.js";
+import { useTranslationSettingsStore } from "../lokalise/stores/settings/translation.js";
 
 let settingsStore = null;
 

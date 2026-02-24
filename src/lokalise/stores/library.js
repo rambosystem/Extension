@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { nextTick } from "vue";
 import { ElMessage } from "element-plus";
-import { t } from "../utils/i18n.js";
-import { getUserProjects } from "../lokalise/services/translation/index.js";
+import { t } from "../../utils/i18n.js";
+import { getUserProjects } from "../services/translation/index.js";
 
 /**
  * Library 页面状态管理
@@ -325,18 +325,6 @@ export const useLibraryStore = defineStore("library", {
       this.clearSelectedRows();
       try {
         // 待后端API就绪后实现真实搜索
-        // const params = {
-        //   keyNames: this.filterKeyName
-        //     .split(/[\n,]/)
-        //     .map((key) => key.trim())
-        //     .filter((key) => key.length > 0),
-        //   condition: this.filterCondition,
-        //   projects: this.selectedProjects.length > 0 ? this.selectedProjects : null,
-        // };
-        // const data = await fetchTranslationKeys(params);
-        // this.tableData = data;
-
-        // 临时：保持现有模拟数据，后续替换为真实API调用
         await this.loadTableData();
       } catch (error) {
         console.error("Failed to search translation keys:", error);

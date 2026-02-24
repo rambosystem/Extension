@@ -82,7 +82,7 @@
     "atLeastOneLanguageRequired": "At least one target language must be selected"
   },
   "settings": {
-    "title": "Lokalise Settings",
+    "title": "General Settings",
     "apiKey": "API Key",
     "apiKeyForDeepSeek": "API Key for DeepSeek",
     "lokaliseApiToken": "Lokalise API Token",

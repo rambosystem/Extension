@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { t } from "../utils/i18n.js";
+import { t } from "../../utils/i18n.js";
 import {
   fetchCurrentUserTerms,
   addUserTerms,
@@ -10,7 +10,7 @@ import {
   rebuildUserEmbedding,
   fetchUserEmbeddingStatus,
   updateIndex,
-} from "../lokalise/services/terms/index.js";
+} from "../services/terms/index.js";
 
 /**
  * 术语管理状态

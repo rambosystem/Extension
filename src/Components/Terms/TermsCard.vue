@@ -139,7 +139,7 @@ import { useI18n } from "../../lokalise/composables/Core/useI18n.js";
 import { Setting, Loading } from "@element-plus/icons-vue";
 import { ref, computed, watch } from "vue";
 import EditableCell from "../Common/EditableCell.vue";
-import { useTermsStore } from "../../stores/terms.js";
+import { useTermsStore } from "../../lokalise/stores/terms.js";
 import { Search } from "@element-plus/icons-vue";
 
 const { t } = useI18n();

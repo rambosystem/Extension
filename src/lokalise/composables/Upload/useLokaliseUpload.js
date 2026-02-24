@@ -1,8 +1,8 @@
 import { ElMessage } from "element-plus";
 import { t } from "@/utils/i18n.js";
-import { useApiStore } from "@/stores/settings/api.js";
+import { useApiStore } from "@/lokalise/stores/settings/api.js";
 import { useUploadStore } from "@/lokalise/stores/upload.js";
-import { useExportStore } from "@/stores/translation/export.js";
+import { useExportStore } from "@/lokalise/stores/translation/export.js";
 import {
   getAvailableLanguages,
   getLanguageIso,

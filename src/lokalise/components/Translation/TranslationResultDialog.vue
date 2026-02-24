@@ -92,8 +92,8 @@
 <script setup>
 import Excel from "@/components/Excel/Excel.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
-import { useTranslationCoreStore } from "@/stores/translation/core.js";
-import { useExportStore } from "@/stores/translation/export.js";
+import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
+import { useExportStore } from "@/lokalise/stores/translation/export.js";
 import { useUploadStore } from "@/lokalise/stores/upload.js";
 import { Loading } from "@element-plus/icons-vue";
 import { computed, ref, watch, onMounted, onUnmounted, nextTick } from "vue";

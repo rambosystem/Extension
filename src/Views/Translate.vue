@@ -26,7 +26,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { useI18n } from "../lokalise/composables/Core/useI18n.js";
-import { useTranslationSettingsStore } from "../stores/settings/translation.js";
+import { useTranslationSettingsStore } from "../lokalise/stores/settings/translation.js";
 import {
   TTS_VOICE_TYPES,
   STORAGE_KEYS,

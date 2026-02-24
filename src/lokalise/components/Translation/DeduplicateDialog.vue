@@ -53,9 +53,9 @@
 <script setup>
 import { computed, onMounted, watch } from "vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
-import { useDeduplicateStore } from "@/stores/translation/deduplicate.js";
-import { useExportStore } from "@/stores/translation/export.js";
-import { useApiStore } from "@/stores/settings/api.js";
+import { useDeduplicateStore } from "@/lokalise/stores/translation/deduplicate.js";
+import { useExportStore } from "@/lokalise/stores/translation/export.js";
+import { useApiStore } from "@/lokalise/stores/settings/api.js";
 import { debugLog } from "@/utils/debug.js";
 
 const { t } = useI18n();
@@ -63,17 +63,17 @@ const deduplicateStore = useDeduplicateStore();
 const exportStore = useExportStore();
 const apiStore = useApiStore();
 
-// 使用 store 中的状态，不再需�?props
+// 使用 store 中的状思，丝冝需�?props
 const deduplicateDialogVisible = computed(
   () => deduplicateStore.deduplicateDialogVisible
 );
 const selectedProject = computed(() => deduplicateStore.selectedProject);
 const isDeduplicating = computed(() => deduplicateStore.isDeduplicating);
 
-// 定义 emits，只保留必要的事�?
+// 定义 emits，坪保留必覝的事�?
 const emit = defineEmits(["close", "execute"]);
 
-// 处理对话框可见性变�?
+// 处睆对话框坯觝性坘�?
 const handleDialogVisibleChange = (visible) => {
   if (!visible) {
     deduplicateStore.setDeduplicateDialogVisible(false);
@@ -122,12 +122,12 @@ onMounted(() => {
   initializeDefaultProject();
 });
 
-// 监听对话框打开，初始化默认项目
+// 监坬对话框打开，初始化默认项目
 watch(
   () => deduplicateDialogVisible.value,
   (visible) => {
     if (visible) {
-      // 初始化去重设置（会使�?Default Project�?
+      // 初始化去針设置（会使�?Default Project�?
       deduplicateStore.initializeDeduplicateSettings();
       // 初始化默认项目选择
       initializeDefaultProject();
@@ -141,7 +141,7 @@ const closeDeduplicateDialog = () => {
   emit("close");
 };
 
-// 执行去重
+// 执行去針
 const executeDeduplicate = () => {
   emit("execute");
 };

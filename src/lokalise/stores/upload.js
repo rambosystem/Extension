@@ -6,8 +6,8 @@ import {
 } from "@/lokalise/config/languages.js";
 import { uploadTranslationKeys } from "@/lokalise/services/translation/index.js";
 import { searchKeysByNames } from "@/lokalise/services/deduplicate/deduplicateService.js";
-import { useExportStore } from "@/stores/translation/export.js";
-import { useTranslationCoreStore } from "@/stores/translation/core.js";
+import { useExportStore } from "./translation/export.js";
+import { useTranslationCoreStore } from "./translation/core.js";
 import { t } from "@/utils/i18n.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 

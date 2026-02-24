@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { t } from "../../utils/i18n.js";
-import { validateDeepSeekApiKey } from "../../utils/apiValidation.js";
+import { t } from "../../../utils/i18n.js";
+import { validateDeepSeekApiKey } from "../../../utils/apiValidation.js";
 
 /**
  * API 设置管理状态

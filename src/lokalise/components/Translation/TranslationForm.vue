@@ -54,11 +54,11 @@
 <script setup>
 import CodeEditor from "@/components/Common/CodeEditor.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
-import { useTranslationCoreStore } from "@/stores/translation/core.js";
-import { useTranslationSettingsStore } from "@/stores/settings/translation.js";
-import { useDeduplicateStore } from "@/stores/translation/deduplicate.js";
-import { useApiStore } from "@/stores/settings/api.js";
-import { useExportStore } from "@/stores/translation/export.js";
+import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
+import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";
+import { useDeduplicateStore } from "@/lokalise/stores/translation/deduplicate.js";
+import { useApiStore } from "@/lokalise/stores/settings/api.js";
+import { useExportStore } from "@/lokalise/stores/translation/export.js";
 import { debugLog } from "@/utils/debug.js";
 import { computed, onMounted } from "vue";
 

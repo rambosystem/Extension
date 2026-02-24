@@ -45,8 +45,8 @@
 import { onMounted, onUnmounted, computed } from "vue";
 import { menuRoutes } from "./routes/index.js";
 import { useI18n } from "./lokalise/composables/Core/useI18n.js";
-import { useAppStore } from "./stores/app.js";
-import { useTranslationCoreStore } from "./stores/translation/core.js";
+import { useAppStore } from "./lokalise/stores/app.js";
+import { useTranslationCoreStore } from "./lokalise/stores/translation/core.js";
 
 const { t } = useI18n();
 const appStore = useAppStore();

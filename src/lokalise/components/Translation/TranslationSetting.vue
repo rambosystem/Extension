@@ -69,6 +69,73 @@
         </div>
       </div>
     </el-form-item>
+    <el-form-item
+      v-if="hasLokaliseToken"
+      :label="t('settings.autoDeduplication')"
+      label-position="left"
+    >
+      <div class="auto-increment-key-setting">
+        <el-switch
+          :model-value="translationSettingsStore.autoDeduplication"
+          @update:model-value="handleAutoDeduplicationChange"
+          width="45px"
+        />
+      </div>
+    </el-form-item>
+    <el-form-item
+      :label="t('settings.lokaliseApiToken')"
+      prop="lokaliseApiToken"
+      label-position="top"
+    >
+      <SaveableInput
+        type="password"
+        v-model="localLokaliseToken"
+        :label="t('settings.lokaliseApiToken')"
+        :placeholder="t('settings.lokaliseApiTokenPlaceholder')"
+        @save="handleSaveLokaliseApiToken"
+        :loading="apiStore.loadingStates?.lokaliseApiToken || false"
+      />
+    </el-form-item>
+    <div v-if="hasLokaliseToken" class="embedding-control">
+      <el-form-item
+        :label="t('settings.AdTerms')"
+        label-position="left"
+        class="addTermsDict-container"
+      >
+      </el-form-item>
+      <div class="control-text">
+        <LoadingButton
+          :loading="refreshLoading"
+          :text="t('terms.Refresh')"
+          @click="handleRefreshTerms"
+        />
+        <LoadingButton
+          :loading="rebuildLoading"
+          :text="t('terms.BuildTermsEmbedding')"
+          @click="handleBuildTermsEmbedding"
+        />
+      </div>
+    </div>
+    <div v-if="hasLokaliseToken" class="terms-single">
+      <TermsCard
+        :title="termsStore.termsTitle"
+        :status="termsStore.termsStatus"
+        :total-terms="termsStore.totalTerms"
+        :loading="termsStore.termsLoading"
+        :error="termsStore.termsError"
+        :terms-data="editableTermsData"
+        :embedding-status="termsStore.embeddingStatus"
+        :last-embedding-time="termsStore.lastEmbeddingTime"
+        :refresh-loading="refreshLoading"
+        :library-loading="libraryLoading"
+        @update:status="termsStore.updateTermStatus"
+        @refresh="handleRefreshTerms"
+        @fetchTermsData="termsStore.fetchTermsData"
+        @addTerm="handleAddTerm"
+        @deleteTerm="handleDeleteTerm"
+        @updateTerm="handleUpdateTerm"
+      />
+    </div>
     <!-- <el-form-item
       :label="t('translationSetting.overwrite')"
       label-position="left"
@@ -81,17 +148,31 @@
         />
       </div>
     </el-form-item> -->
+    <ConfirmDialog
+      v-model="rebuildConfirmVisible"
+      :title="t('terms.rebuildEmbedding')"
+      :message="t('terms.rebuildEmbeddingCheck')"
+      @confirm="handleRebuildConfirm"
+      @cancel="handleRebuildCancel"
+    />
   </div>
 </template>
 
 <script setup>
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
-import { useExportStore } from "@/stores/translation/export.js";
+import { useExportStore } from "@/lokalise/stores/translation/export.js";
 import { useUploadStore } from "@/lokalise/stores/upload.js";
-import { useApiStore } from "@/stores/settings/api.js";
-import { ref, watch, computed, onMounted, onBeforeUnmount } from "vue";
+import { useApiStore } from "@/lokalise/stores/settings/api.js";
+import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";
+import { useTermsStore } from "@/lokalise/stores/terms.js";
+import { ref, watch, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import AutocompleteInput from "@/components/Common/AutocompleteInput.vue";
+import SaveableInput from "@/components/Common/SaveableInput.vue";
+import LoadingButton from "@/components/Common/LoadingButton.vue";
+import TermsCard from "@/components/Terms/TermsCard.vue";
+import ConfirmDialog from "@/components/Common/ConfirmDialog.vue";
+import { useTranslationStorage } from "@/lokalise/composables/Translation/useTranslationStorage.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 import { getAvailableLanguages } from "@/lokalise/config/languages.js";
 import { autocompleteKeys } from "@/lokalise/services/autocomplete/autocompleteService.js";
@@ -102,6 +183,95 @@ const { t } = useI18n();
 const exportStore = useExportStore();
 const uploadStore = useUploadStore();
 const apiStore = useApiStore();
+const translationSettingsStore = useTranslationSettingsStore();
+const termsStore = useTermsStore();
+
+// Lokalise API Token 本地变量
+const localLokaliseToken = ref(apiStore.lokaliseApiToken || "");
+
+watch(
+  () => apiStore.lokaliseApiToken,
+  (newValue) => {
+    if (newValue !== localLokaliseToken.value) {
+      localLokaliseToken.value = newValue || "";
+    }
+  },
+);
+
+// 术语相关状态
+const rebuildConfirmVisible = ref(false);
+const refreshLoading = ref(false);
+const rebuildLoading = ref(false);
+const libraryLoading = ref(false);
+const editableTermsData = ref([]);
+
+watch(
+  () => termsStore.termsData,
+  (newData) => {
+    const { addEditingStates } = useTranslationStorage();
+    editableTermsData.value = addEditingStates(
+      JSON.parse(JSON.stringify(newData || [])),
+    );
+  },
+  { deep: true },
+);
+
+const handleSaveLokaliseApiToken = async (saveData) => {
+  await apiStore.saveLokaliseApiToken(saveData);
+  localLokaliseToken.value = apiStore.lokaliseApiToken || "";
+};
+
+const handleAutoDeduplicationChange = (value) => {
+  translationSettingsStore.toggleAutoDeduplication(value);
+};
+
+const handleRefreshTerms = async (showSuccessMessage = true) => {
+  try {
+    libraryLoading.value = true;
+    await termsStore.refreshTerms(showSuccessMessage);
+  } catch (error) {
+    console.error("Refresh terms failed:", error);
+  } finally {
+    libraryLoading.value = false;
+  }
+};
+
+const handleBuildTermsEmbedding = () => {
+  rebuildConfirmVisible.value = true;
+};
+
+const handleRebuildConfirm = async () => {
+  try {
+    await termsStore.rebuildEmbedding();
+  } catch (error) {
+    console.error("Rebuild embedding failed:", error);
+  }
+};
+
+const handleRebuildCancel = () => {};
+
+const handleAddTerm = (newTerm) => {
+  editableTermsData.value.unshift(newTerm);
+  setTimeout(() => {
+    if (editableTermsData.value.length > 0) {
+      editableTermsData.value[0].editing_en = true;
+    }
+  }, 100);
+};
+
+const handleDeleteTerm = (term) => {
+  const index = editableTermsData.value.findIndex(
+    (item) => item === term || item.term_id === term.term_id,
+  );
+  if (index !== -1) editableTermsData.value.splice(index, 1);
+};
+
+const handleUpdateTerm = (term, field, value) => {
+  const index = editableTermsData.value.findIndex(
+    (item) => item === term || item.term_id === term.term_id,
+  );
+  if (index !== -1) editableTermsData.value[index][field] = value;
+};
 
 const projectList = ref([]);
 
@@ -369,10 +539,11 @@ const loadProjectList = async () => {
 };
 
 // 组件挂载时初始化 store
-onMounted(() => {
+onMounted(async () => {
   debugLog("[TranslationSetting] Component mounted, initializing stores...");
-  // 确保 API store 已初始化
   apiStore.initializeApiSettings();
+  translationSettingsStore.initializeTranslationSettings();
+  localLokaliseToken.value = apiStore.lokaliseApiToken || "";
   debugLog(
     "[TranslationSetting] API Store initialized. hasLokaliseToken:",
     apiStore.hasLokaliseToken,
@@ -384,10 +555,16 @@ onMounted(() => {
     exportStore.defaultProjectId,
   );
 
-  // 确保上传store已初始化，以便获取projectId
   uploadStore.initializeUploadSettings();
 
-  // 如果配置�?Lokalise Token，加载项目列�?
+  termsStore.initializeTermsStatus();
+  try {
+    libraryLoading.value = true;
+    await termsStore.refreshTerms(false);
+  } finally {
+    libraryLoading.value = false;
+  }
+
   if (apiStore.hasLokaliseToken) {
     debugLog("[TranslationSetting] Lokalise Token found, loading project list");
     loadProjectList();
@@ -415,6 +592,39 @@ watch(
 .title {
   font-size: 24px;
   margin-bottom: 20px;
+}
+
+.settings-form {
+  width: 100%;
+}
+
+.embedding-control {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+}
+
+.control-text {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  color: #409eff;
+  font-size: 14px;
+  margin-right: 5px;
+  gap: 20px;
+}
+
+.terms-single {
+  width: 100%;
+  margin-bottom: 20px;
+  margin-top: 10px;
+}
+
+.addTermsDict-container {
+  margin-bottom: 5px;
+  flex: 1;
 }
 
 .auto-increment-key-setting {

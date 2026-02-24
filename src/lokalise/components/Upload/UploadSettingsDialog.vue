@@ -88,7 +88,7 @@
 <script setup>
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useUploadStore } from "@/lokalise/stores/upload.js";
-import { useTranslationCoreStore } from "@/stores/translation/core.js";
+import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
 import AutocompleteInput from "@/components/Common/AutocompleteInput.vue";
 import { autocompleteTags } from "@/lokalise/services/autocomplete/autocompleteService.js";
 import { debugLog, debugError } from "@/utils/debug.js";
