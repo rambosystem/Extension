@@ -23,7 +23,7 @@
           @click.stop="togglePin"
         >
           <img
-            src="@/assets/fixed.svg"
+            :src="isPinned ? pinIconFixed : pinIconUnfixed"
             class="pin_icon_img"
             alt=""
             draggable="false"
@@ -63,7 +63,9 @@
 
 <script setup>
 import { Close } from "@element-plus/icons-vue";
-import { computed, isRef, unref } from "vue";
+import { ref, watch, isRef, unref } from "vue";
+import pinIconUnfixed from "@/assets/unfixed.svg";
+import pinIconFixed from "@/assets/fixed.svg";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
@@ -82,12 +84,19 @@ const props = defineProps({
   settingTitle: { type: String, default: "Settings" },
 });
 
-const isPinned = computed(() =>
-  props.pinned != null ? unref(props.pinned) : false,
+// 使用本地 ref 同步 pin 状态，避免 createApp 传入的 ref 在子组件中不触发视图更新的问题
+const isPinned = ref(props.pinned != null ? unref(props.pinned) : false);
+watch(
+  () => (props.pinned != null ? unref(props.pinned) : false),
+  (v) => {
+    isPinned.value = !!v;
+  },
+  { immediate: true },
 );
 
 function togglePin() {
-  const next = !unref(props.pinned);
+  const next = !isPinned.value;
+  isPinned.value = next;
   if (isRef(props.pinned)) props.pinned.value = next;
   props.setPinned?.(next);
 }
