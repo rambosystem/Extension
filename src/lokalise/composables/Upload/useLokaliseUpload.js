@@ -1,15 +1,15 @@
 import { ElMessage } from "element-plus";
-import { t } from "../../utils/i18n.js";
-import { useApiStore } from "../../stores/settings/api.js";
-import { useUploadStore } from "../../stores/translation/upload.js";
-import { useExportStore } from "../../stores/translation/export.js";
+import { t } from "@/utils/i18n.js";
+import { useApiStore } from "@/stores/settings/api.js";
+import { useUploadStore } from "@/lokalise/stores/upload.js";
+import { useExportStore } from "@/stores/translation/export.js";
 import {
   getAvailableLanguages,
   getLanguageIso,
-} from "../../config/languages.js";
+} from "@/config/languages.js";
 import { ref, reactive } from "vue";
-import { uploadTranslationKeys } from "../../services/translation/index.js";
-import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
+import { uploadTranslationKeys } from "@/services/translation/index.js";
+import { searchKeysByNames } from "@/services/deduplicate/deduplicateService.js";
 
 /**
  * Lokalise上传功能Hook

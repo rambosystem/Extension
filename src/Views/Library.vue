@@ -23,7 +23,7 @@
 <script setup>
 import { onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useI18n } from "../composables/Core/useI18n.js";
+import { useI18n } from "../lokalise/composables/Core/useI18n.js";
 import LibraryFilter from "../Components/Library/LibraryFilter.vue";
 import LibraryTable from "../Components/Library/LibraryTable.vue";
 import LibraryTableConfig from "../Components/Library/LibraryTableConfig.vue";
@@ -33,7 +33,7 @@ const { t } = useI18n();
 const libraryStore = useLibraryStore();
 const tableRef = ref(null);
 
-// 使用 storeToRefs 保持响应式
+// 使用 storeToRefs 保持响应�?
 const { filterKeyName, filterProject, filterCondition, filterConditions, projectList, tableData, loading, rowHeight, visibleColumns, selectedRows, selectionScope } =
   storeToRefs(libraryStore);
 
@@ -41,7 +41,7 @@ const { filterKeyName, filterProject, filterCondition, filterConditions, project
 
 
 /**
- * 清除筛选条件
+ * 清除筛选条�?
  */
 const handleClear = () => {
   libraryStore.clearFilters();
@@ -58,7 +58,7 @@ const handleSearch = async () => {
  * 处理操作按钮点击
  */
 const handleOperation = (row) => {
-  // 操作功能待实现
+  // 操作功能待实�?
   console.log("Operation clicked for row:", row);
 };
 
@@ -89,7 +89,7 @@ const handleSelectionChange = (selection) => {
  */
 const handleSelectionScopeChange = (scope) => {
   libraryStore.setSelectionScope(scope);
-  // 根据选择范围执行全选
+  // 根据选择范围执行全�?
   if (tableRef.value) {
     tableRef.value.handleSelectAll(scope);
   }
@@ -122,3 +122,4 @@ onMounted(() => {
   margin-top: 24px;
 }
 </style>
+

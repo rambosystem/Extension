@@ -1,6 +1,6 @@
 import { ElMessage } from "element-plus";
-import { translateByHuman } from "../../services/translation/index.js";
-import { t } from "../../utils/i18n.js";
+import { translateByHuman } from "@/services/translation/index.js";
+import { t } from "@/utils/i18n.js";
 import { ref } from "vue";
 
 /**

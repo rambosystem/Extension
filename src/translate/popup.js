@@ -2,7 +2,7 @@ import { createApp, ref } from "vue";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import { POPUP_ID } from "./constants.js";
-import { usePopupPosition } from "./composables/usePopupPosition.js";
+import { usePopupPosition } from "@/lokalise/composables/translate/usePopupPosition.js";
 import TranslatePopup from "./TranslatePopup.vue";
 
 let mountedApp = null;

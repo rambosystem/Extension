@@ -3,19 +3,19 @@
  * 主服务函数：负责翻译、项目管理、上传等业务逻辑
  */
 
-import { translateWithDeepSeek } from "./deepseekService.js";
+import { translateWithDeepSeek } from "@/services/translation/deepseekService.js";
 import {
   fetchUserProjects,
   validateApiToken,
   uploadKeys,
-} from "../../api/lokalise.js";
-import { performTermMatching } from "./termMatcher.js";
+} from "@/lokalise/api/lokalise.js";
+import { performTermMatching } from "@/services/translation/termMatcher.js";
 import {
   buildUploadRequestBody,
   validateUploadParams,
   handleUploadErrors,
   createTranslationKey,
-} from "./uploadHelper.js";
+} from "@/services/translation/uploadHelper.js";
 
 /**
  * 翻译内容（包含术语匹配逻辑）
@@ -159,4 +159,4 @@ export async function uploadTranslationKeys(
 }
 
 // 导出辅助函数
-export { createTranslationKey } from "./uploadHelper.js";
+export { createTranslationKey } from "@/services/translation/uploadHelper.js";

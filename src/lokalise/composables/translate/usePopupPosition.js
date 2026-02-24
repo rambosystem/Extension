@@ -1,4 +1,4 @@
-import { getSelectionRect } from "../domUtils.js";
+import { getSelectionRect } from "@/translate/domUtils.js";
 
 const FALLBACK_OFFSET_Y = 60;
 const FALLBACK_OFFSET_X = 180;

@@ -12,4 +12,4 @@ export {
   getUserProjects,
   uploadTranslationKeys,
   createTranslationKey,
-} from "./lokaliseService.js";
+} from "@/lokalise/services/lokaliseService.js";

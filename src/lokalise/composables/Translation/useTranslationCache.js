@@ -1,6 +1,6 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
-import { t } from "../../utils/i18n.js";
+import { t } from "@/utils/i18n.js";
 
 /**
  * 待翻译文本缓存管理Hook

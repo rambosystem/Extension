@@ -6,7 +6,7 @@
  */
 
 import { ref } from "vue";
-import { translateSentenceStream } from "../services/translate/translateService.js";
+import { translateSentenceStream } from "@/translate/services/translate/translateService.js";
 
 export function useTranslateSentence() {
   const loading = ref(false);

@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { ElMessage } from "element-plus";
-import { t } from "../../utils/i18n.js";
-import { useTranslationCoreStore } from "../../stores/translation/core.js";
+import { t } from "@/utils/i18n.js";
+import { useTranslationCoreStore } from "@/stores/translation/core.js";
 
 /**
  * 翻译结果存储管理Hook

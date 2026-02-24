@@ -4,8 +4,8 @@
  */
 
 import { ref } from "vue";
-import { debugLog } from "../../utils/debug.js";
-import { t } from "../../utils/i18n.js";
+import { debugLog } from "@/utils/debug.js";
+import { t } from "@/utils/i18n.js";
 
 /**
  * 缓存校验 Composable

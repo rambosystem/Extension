@@ -56,7 +56,7 @@
 
 <script setup>
 import { Setting } from "@element-plus/icons-vue";
-import { useI18n } from "./composables/Core/useI18n.js";
+import { useI18n } from "./lokalise/composables/Core/useI18n.js";
 import { ROUTE_INDEX } from "./routes/constants.js";
 import WeightItem from "./Components/Terms/Weight-Item.vue";
 import translationSvg from "./assets/translation.svg";
@@ -93,7 +93,7 @@ const handleLokaliseClick = () => {
 };
 
 const handleTranslationClick = () => {
-  // 注掉侧边栏，直接跳转到 Translate Setting
+  // 注掉侧边栏，直接跳转�?Translate Setting
   // chrome.windows.getCurrent((win) => {
   //   if (win?.id != null && chrome.sidePanel?.open) {
   //     chrome.sidePanel.open({ windowId: win.id }).then(() => {
@@ -216,3 +216,4 @@ const handleClipboardClick = () => {
   background-color: #eaeced;
 }
 </style>
+

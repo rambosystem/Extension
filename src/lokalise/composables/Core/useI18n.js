@@ -1,5 +1,5 @@
 import { ref, computed, watch } from "vue";
-import en from "../../locales/en.json";
+import en from "@/locales/en.json";
 
 // 支持的语言
 const SUPPORTED_LANGUAGES = {

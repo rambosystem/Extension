@@ -13,7 +13,7 @@ import {
   translateWordStream,
   parseWordResultContent,
   parsePartialWordResult,
-} from "../services/translate/translateService.js";
+} from "@/translate/services/translate/translateService.js";
 
 export function useTranslateWord() {
   const loading = ref(false);

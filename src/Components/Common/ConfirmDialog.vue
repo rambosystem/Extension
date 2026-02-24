@@ -12,7 +12,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-import { useI18n } from '../../composables/Core/useI18n.js';
+import { useI18n } from '../../lokalise/composables/Core/useI18n.js';
 
 const { t } = useI18n();
 
@@ -57,5 +57,5 @@ const handleCancel = () => {
 </script>
 
 <style scoped>
-/* 可以添加自定义样式 */
+/* 可以添加自定义样�?*/
 </style>

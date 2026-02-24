@@ -3,13 +3,13 @@
     <h2 class="title">{{ t("clipboard.title") }}</h2>
     <p class="clipboard-description">{{ t("clipboard.description") }}</p>
     <el-form label-position="top" class="settings-form">
-      <!-- 可在此扩展剪贴板相关配置项 -->
+      <!-- 可在此扩展剪贴板相关配置�?-->
     </el-form>
   </div>
 </template>
 
 <script setup>
-import { useI18n } from "../composables/Core/useI18n.js";
+import { useI18n } from "../lokalise/composables/Core/useI18n.js";
 
 const { t } = useI18n();
 </script>
@@ -22,3 +22,4 @@ const { t } = useI18n();
   line-height: 1.5;
 }
 </style>
+

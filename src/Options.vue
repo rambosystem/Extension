@@ -44,7 +44,7 @@
 <script setup>
 import { onMounted, onUnmounted, computed } from "vue";
 import { menuRoutes } from "./routes/index.js";
-import { useI18n } from "./composables/Core/useI18n.js";
+import { useI18n } from "./lokalise/composables/Core/useI18n.js";
 import { useAppStore } from "./stores/app.js";
 import { useTranslationCoreStore } from "./stores/translation/core.js";
 
@@ -52,7 +52,7 @@ const { t } = useI18n();
 const appStore = useAppStore();
 const translationCoreStore = useTranslationCoreStore();
 
-// 由路由配置生成菜单项（注入 i18n）
+// 由路由配置生成菜单项（注�?i18n�?
 const menuConfig = computed(() =>
   menuRoutes.map((r) => ({
     index: r.index,
@@ -62,13 +62,13 @@ const menuConfig = computed(() =>
   }))
 );
 
-// 选中的菜单项 - 使用store中的状态
+// 选中的菜单项 - 使用store中的状�?
 const selectedMenu = computed({
   get: () => appStore.currentMenu,
   set: (value) => appStore.setCurrentMenu(value),
 });
 
-// 计算应该显示的组件
+// 计算应该显示的组�?
 const currentComponent = computed(() => {
   const item = menuConfig.value.find(
     (item) => item.index === selectedMenu.value,
@@ -88,16 +88,16 @@ const handleMenuSelect = (index) => {
   appStore.setCurrentMenu(index);
 };
 
-// 监听 storage 变化，当 popup 设置菜单后 options 已打开时同步切换
+// 监听 storage 变化，当 popup 设置菜单�?options 已打开时同步切�?
 let storageListener = null;
 
 onMounted(() => {
-  // 初始化应用状态
+  // 初始化应用状�?
   appStore.initializeApp();
   // 加载上次翻译结果
   translationCoreStore.loadLastTranslation();
 
-  // 监听 chrome.storage 变化，popup 点击菜单时已打开的 options 页需同步更新
+  // 监听 chrome.storage 变化，popup 点击菜单时已打开�?options 页需同步更新
   if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
     storageListener = (changes, areaName) => {
       if (areaName !== "local") return;
@@ -215,3 +215,4 @@ onUnmounted(() => {
   line-height: 1.6;
 }
 </style>
+

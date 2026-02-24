@@ -19,7 +19,7 @@
 
 <script setup>
 import { ref, watch, nextTick } from "vue";
-import { useI18n } from "../../composables/Core/useI18n.js";
+import { useI18n } from "../../lokalise/composables/Core/useI18n.js";
 
 const { t } = useI18n();
 
@@ -51,8 +51,8 @@ const emit = defineEmits(["enterEdit", "exitEdit", "update:value", "save", "tabN
 const localValue = ref(props.value);
 const inputRef = ref();
 const isSaving = ref(false);
-const isComposing = ref(false); // 跟踪输入法组合状态
-const isCancelling = ref(false); // 跟踪取消状态
+const isComposing = ref(false); // 跟踪输入法组合状�?
+const isCancelling = ref(false); // 跟踪取消状�?
 
 // 监听props.value变化，同步到localValue
 watch(
@@ -62,7 +62,7 @@ watch(
   }
 );
 
-// 监听编辑状态变化，自动聚焦输入框
+// 监听编辑状态变化，自动聚焦输入�?
 watch(
   () => props.isEditing,
   async (newValue) => {
@@ -120,26 +120,26 @@ const handleEscape = (event) => {
 
 const handleCancel = () => {
   isCancelling.value = true;
-  localValue.value = props.value; // 恢复原值
+  localValue.value = props.value; // 恢复原�?
   emit("exitEdit");
 
-  // 重置取消状态
+  // 重置取消状�?
   setTimeout(() => {
     isCancelling.value = false;
   }, 200);
 };
 
-// 处理输入法组合开始
+// 处理输入法组合开�?
 const handleCompositionStart = () => {
   isComposing.value = true;
 };
 
-// 处理输入法组合结束
+// 处理输入法组合结�?
 const handleCompositionEnd = () => {
   isComposing.value = false;
 };
 
-// 处理Tab键
+// 处理Tab�?
 const handleTab = (event) => {
   event.preventDefault(); // 阻止默认的Tab行为
 
@@ -148,10 +148,10 @@ const handleTab = (event) => {
     return;
   }
 
-  // 先保存内容
+  // 先保存内�?
   handleSave();
 
-  // 发出tabNext事件，让父组件处理下一个单元格的聚焦
+  // 发出tabNext事件，让父组件处理下一个单元格的聚�?
   emit("tabNext", {
     currentRow: props.rowIndex,
     currentColumn: props.columnIndex,
@@ -216,3 +216,4 @@ const handleTab = (event) => {
   box-sizing: border-box;
 }
 </style>
+

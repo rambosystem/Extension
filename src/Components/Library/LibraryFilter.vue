@@ -25,7 +25,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { useI18n } from "../../composables/Core/useI18n.js";
+import { useI18n } from "../../lokalise/composables/Core/useI18n.js";
 import PopupTextInput from "../Common/PopupTextInput.vue";
 import MultiSelectWithAll from "../Common/MultiSelectWithAll.vue";
 import en from "../../locales/en.json";
@@ -73,8 +73,8 @@ const emptyWarningMessage = computed(() => t("library.pleaseAuthorizeLokaliseTok
 const clearLabel = computed(() => t("library.clear"));
 const searchLabel = computed(() => t("library.search"));
 
-// 多个 key name 的显示格式
-// 直接从语言包获取原始字符串（包含 {count} 占位符）
+// 多个 key name 的显示格�?
+// 直接从语言包获取原始字符串（包�?{count} 占位符）
 const multipleKeyNamesFormat = computed(() => {
   const keys = "library.multipleKeyNames".split(".");
   const currentMessages = messages[globalLanguage.value] || messages["en"];
@@ -132,3 +132,4 @@ const handleSearch = () => {
   }
 }
 </style>
+

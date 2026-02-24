@@ -178,13 +178,13 @@ import { watch, computed, ref, onBeforeUnmount } from "vue";
 import PopupFrame from "@/Components/PopupFrame.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { checkIsWord } from "./domUtils.js";
-import { useTranslateWord } from "./composables/useTranslateWord.js";
-import { useTranslateSentence } from "./composables/useTranslateSentence.js";
-import { useTypewriterDisplay } from "./composables/useTypewriterDisplay.js";
+import { useTranslateWord } from "@/lokalise/composables/translate/useTranslateWord.js";
+import { useTranslateSentence } from "@/lokalise/composables/translate/useTranslateSentence.js";
+import { useTypewriterDisplay } from "@/lokalise/composables/translate/useTypewriterDisplay.js";
 import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
 import { STORAGE_KEYS } from "./config/tts.js";
-import { useClipboard } from "./composables/useClipboard.js";
+import { useClipboard } from "@/lokalise/composables/translate/useClipboard.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },

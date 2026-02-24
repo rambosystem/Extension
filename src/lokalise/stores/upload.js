@@ -3,13 +3,13 @@ import { ElMessage } from "element-plus";
 import {
   getAvailableLanguages,
   getLanguageIso,
-} from "../../config/languages.js";
-import { uploadTranslationKeys } from "../../services/translation/index.js";
-import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
-import { useExportStore } from "./export.js";
-import { useTranslationCoreStore } from "./core.js";
-import { t } from "../../utils/i18n.js";
-import { debugLog, debugError } from "../../utils/debug.js";
+} from "@/config/languages.js";
+import { uploadTranslationKeys } from "@/services/translation/index.js";
+import { searchKeysByNames } from "@/services/deduplicate/deduplicateService.js";
+import { useExportStore } from "@/stores/translation/export.js";
+import { useTranslationCoreStore } from "@/stores/translation/core.js";
+import { t } from "@/utils/i18n.js";
+import { debugLog, debugError } from "@/utils/debug.js";
 
 /**
  * 上传功能状态管理
