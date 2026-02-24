@@ -12,7 +12,7 @@ import {
   updateIndex as updateIndexAPI,
   deleteTermIndex as deleteTermIndexAPI,
   deleteUserTerm as deleteUserTermAPI,
-} from "../../api/terms.js";
+} from "../../../api/terms.js";
 import {
   validateTermsStatusResponse,
   validateTermsResponse,

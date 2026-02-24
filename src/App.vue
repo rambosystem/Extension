@@ -35,10 +35,7 @@
             </el-col>
             <el-col :span="6" @click="handleClipboardClick">
               <div class="grid-content">
-                <WeightItem
-                  :title="t('app.clipboard')"
-                  :url="clipboardSvg"
-                />
+                <WeightItem :title="t('app.clipboard')" :url="clipboardSvg" />
               </div>
             </el-col>
             <el-col :span="6">
@@ -58,7 +55,7 @@
 import { Setting } from "@element-plus/icons-vue";
 import { useI18n } from "./lokalise/composables/Core/useI18n.js";
 import { ROUTE_INDEX } from "./routes/constants.js";
-import WeightItem from "./Components/Terms/Weight-Item.vue";
+import WeightItem from "./components/Terms/Weight-Item.vue";
 import translationSvg from "./assets/translation.svg";
 import clipboardSvg from "./assets/clipboard.svg";
 
@@ -71,7 +68,7 @@ const handleSettingClick = () => {
       chrome.runtime.openOptionsPage(() => {
         window.close();
       });
-    }
+    },
   );
 };
 
@@ -88,12 +85,12 @@ const handleLokaliseClick = () => {
       chrome.runtime.openOptionsPage(() => {
         window.close();
       });
-    }
+    },
   );
 };
 
 const handleTranslationClick = () => {
-  // 注掉侧边栏，直接跳转�?Translate Setting
+  // 注掉侧边栏，直接跳转�?Translate Setting
   // chrome.windows.getCurrent((win) => {
   //   if (win?.id != null && chrome.sidePanel?.open) {
   //     chrome.sidePanel.open({ windowId: win.id }).then(() => {
@@ -113,7 +110,7 @@ const handleTranslationClick = () => {
     { initialMenu: ROUTE_INDEX.TRANSLATE, currentMenu: ROUTE_INDEX.TRANSLATE },
     () => {
       chrome.runtime.openOptionsPage(() => window.close());
-    }
+    },
   );
 };
 
@@ -136,7 +133,7 @@ const handleClipboardClick = () => {
           },
           () => {
             chrome.runtime.openOptionsPage(() => window.close());
-          }
+          },
         );
       });
   });
@@ -216,4 +213,3 @@ const handleClipboardClick = () => {
   background-color: #eaeced;
 }
 </style>
-

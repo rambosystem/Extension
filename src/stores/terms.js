@@ -10,7 +10,7 @@ import {
   rebuildUserEmbedding,
   fetchUserEmbeddingStatus,
   updateIndex,
-} from "../services/terms/index.js";
+} from "../lokalise/services/terms/index.js";
 
 /**
  * 术语管理状态

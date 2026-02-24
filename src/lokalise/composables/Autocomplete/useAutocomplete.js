@@ -1,5 +1,5 @@
 import { ref, nextTick } from "vue";
-import { autocompleteKeys } from "@/services/autocomplete/autocompleteService.js";
+import { autocompleteKeys } from "@/lokalise/services/autocomplete/autocompleteService.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 
 /**

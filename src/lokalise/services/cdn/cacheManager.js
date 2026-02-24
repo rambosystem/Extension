@@ -3,8 +3,8 @@
  * 负责缓存管理相关的功能：加载、保存、清除缓存等
  */
 
-import { debugError } from "../../utils/debug.js";
-import { CDN_URLS } from "../../api/cdn.js";
+import { debugError } from "../../../utils/debug.js";
+import { CDN_URLS } from "../../../api/cdn.js";
 
 // 缓存配置
 export const CACHE_CONFIG = {

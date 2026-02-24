@@ -4,7 +4,7 @@
  */
 
 import { generateTranslationPrompt } from "../../config/prompts.js";
-import { callDeepSeekAPI, parseNonStreamResponse } from "../../api/deepseek.js";
+import { callDeepSeekAPI, parseNonStreamResponse } from "../../../api/deepseek.js";
 import { getTranslationConfig } from "./configManager.js";
 import { buildUserContent } from "./xmlBuilder.js";
 import { buildRequestBody } from "./requestBuilder.js";

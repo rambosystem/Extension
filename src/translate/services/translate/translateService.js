@@ -5,7 +5,7 @@
  */
 
 import { callDeepSeekAPI, parseNonStreamResponse, streamDeepSeekContent } from "../../../api/deepseek.js";
-import { buildRequestBody } from "../../../services/translation/requestBuilder.js";
+import { buildRequestBody } from "../../../lokalise/services/translation/requestBuilder.js";
 import { TRANSLATE_WORD_PROMPT, TRANSLATE_SENTENCE_PROMPT } from "../../config/prompts.js";
 
 /**

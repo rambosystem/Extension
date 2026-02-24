@@ -76,7 +76,7 @@
               colIndex,
               rows.length,
               internalColumns.length,
-              event
+              event,
             )
         "
         @cell-dblclick="startEdit"
@@ -235,7 +235,7 @@ const handleRowWheel = (event: WheelEvent): void => {
   const direction = wheelAccumulator.value > 0 ? 1 : -1;
   const steps = Math.max(
     1,
-    Math.floor(Math.abs(wheelAccumulator.value) / currentRowHeight)
+    Math.floor(Math.abs(wheelAccumulator.value) / currentRowHeight),
   );
   wheelAccumulator.value = 0;
 
@@ -475,7 +475,7 @@ const updateHistoryState = () => {
 
 const saveHistoryWithState = (
   state: any,
-  options: Parameters<typeof saveHistory>[1]
+  options: Parameters<typeof saveHistory>[1],
 ) => {
   saveHistory(state, options);
   eventBus.emit("history", {
@@ -600,7 +600,7 @@ const virtualScroll = useVirtualScroll(
     threshold: 100, // 超过 100 行启用虚拟滚�?
     bufferSize: 5, // 缓冲�?5 �?
     defaultRowHeight: props.defaultRowHeight || 36,
-  }
+  },
 );
 
 // 计算可见行范�?
@@ -631,7 +631,7 @@ const applyFill = (): void => {
   fillHandleComposable.applyFill(
     tableData.value,
     rows.value.length,
-    internalColumns.value.length
+    internalColumns.value.length,
   );
 };
 
@@ -668,7 +668,7 @@ const { emitSync, initDataSync, setDataWithSync, runExternalUpdate } =
             if (import.meta.env.DEV) {
               console.warn(
                 "[Excel] Invalid data type for update:modelValue",
-                data
+                data,
               );
             }
           }
@@ -696,14 +696,14 @@ const { emitSync, initDataSync, setDataWithSync, runExternalUpdate } =
           ) {
             emit(
               "custom-action",
-              payload as { id: string; context: MenuContext }
+              payload as { id: string; context: MenuContext },
             );
           } else {
             // 使用 debug 工具统一错误处理
             if (import.meta.env.DEV) {
               console.warn(
                 "[Excel] Invalid payload type for custom-action",
-                payload
+                payload,
               );
             }
           }
@@ -855,7 +855,7 @@ const handleCellMouseDown = (
   colIndex: number,
   maxRows: number,
   maxCols: number,
-  event: MouseEvent | null = null
+  event: MouseEvent | null = null,
 ): void => {
   // 普通单元格选择，不需要特殊处�?
 
@@ -878,7 +878,7 @@ handleMouseUpRef = wrappedHandleMouseUp;
 function startFillDrag(row: number, col: number): void {
   if (!props.enableFillHandle || !fillHandleComposable) return;
   fillHandleComposable.startFillDrag(row, col, normalizedSelection.value, () =>
-    handleMouseUp(new MouseEvent("mouseup"))
+    handleMouseUp(new MouseEvent("mouseup")),
   );
 }
 
@@ -1042,7 +1042,7 @@ const handleContainerClick = (event: MouseEvent): void => {
  */
 const handleRowNumberMouseDown = (
   rowIndex: number,
-  event: MouseEvent
+  event: MouseEvent,
 ): void => {
   // 如果正在调整行高，不处理选择
   if (props.enableRowResize && rowHeightComposable?.isResizingRow.value) {
@@ -1074,7 +1074,7 @@ const handleRowNumberMouseDown = (
  */
 const handleColumnHeaderMouseDown = (
   colIndex: number,
-  event: MouseEvent
+  event: MouseEvent,
 ): void => {
   // 如果正在调整列宽，不处理选择
   if (
@@ -1234,7 +1234,7 @@ const setColumnWidth = (colIndex: number, width: number): void => {
  * - setColumnWidth(colIndex, width): 设置指定列的宽度
  * - tableData: 表格数据的响应式引用（只读）
  *
- * 使用示例请参考组件文档：src/Components/Excel/README.md
+ * 使用示例请参考组件文档：src/components/Excel/README.md
  */
 defineExpose({
   /**
@@ -1321,7 +1321,7 @@ onMounted(() => {
       () => {
         virtualScroll.updateVisibleRange();
       },
-      { deep: true }
+      { deep: true },
     );
   }
 });
@@ -1407,9 +1407,10 @@ $transition-normal: 0.15s ease;
 $transition-slow: 0.2s;
 
 // 字体�?
-$font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-  "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
-  "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+$font-family:
+  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+  Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+  "Segoe UI Symbol", "Noto Color Emoji";
 
 // ==================== 容器样式 ====================
 .excel-container {
@@ -1424,7 +1425,6 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   min-height: 0; // 强制 min-height 为 0，防止 flex 布局下被内容撑开
   max-height: var(--excel-container-max-height, none);
   box-sizing: border-box;
-
 
   // ==================== 滚动条美化 ====================
   &::-webkit-scrollbar {
@@ -1776,7 +1776,9 @@ $font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
   color: $text-secondary;
   align-items: center;
   cursor: default;
-  transition: background-color $transition-normal, color $transition-normal;
+  transition:
+    background-color $transition-normal,
+    color $transition-normal;
 
   &.active-header {
     background: $header-active-bg;

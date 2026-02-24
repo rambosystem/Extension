@@ -91,10 +91,10 @@ import { useUploadStore } from "@/lokalise/stores/upload.js";
 import { useApiStore } from "@/stores/settings/api.js";
 import { ref, watch, computed, onMounted, onBeforeUnmount } from "vue";
 import { ElMessage } from "element-plus";
-import AutocompleteInput from "@/Components/Common/AutocompleteInput.vue";
+import AutocompleteInput from "@/components/Common/AutocompleteInput.vue";
 import { debugLog, debugError } from "@/utils/debug.js";
-import { getAvailableLanguages } from "@/config/languages.js";
-import { autocompleteKeys } from "@/services/autocomplete/autocompleteService.js";
+import { getAvailableLanguages } from "@/lokalise/config/languages.js";
+import { autocompleteKeys } from "@/lokalise/services/autocomplete/autocompleteService.js";
 
 const { t } = useI18n();
 
@@ -105,7 +105,7 @@ const apiStore = useApiStore();
 
 const projectList = ref([]);
 
-// 使用 computed 来获�?store 中的状�?
+// 使用 computed 来获�?store 中的状�?
 const excelBaselineKey = computed({
   get: () => exportStore.excelBaselineKey,
   set: (value) => {
@@ -113,7 +113,7 @@ const excelBaselineKey = computed({
   },
 });
 
-// 使用 computed 来获�?Overwrite 状�?
+// 使用 computed 来获�?Overwrite 状�?
 const Overwrite = computed({
   get: () => exportStore.excelOverwrite,
   set: (value) => {
@@ -121,7 +121,7 @@ const Overwrite = computed({
   },
 });
 
-// 使用 computed 来获�?Auto Increment Key 开关状�?
+// 使用 computed 来获�?Auto Increment Key 开关状�?
 const autoIncrementKeyEnabled = computed({
   get: () => exportStore.autoIncrementKeyEnabled,
   set: (value) => {
@@ -129,7 +129,7 @@ const autoIncrementKeyEnabled = computed({
   },
 });
 
-// 使用 computed 来获取目标语言状�?
+// 使用 computed 来获取目标语言状�?
 const targetLanguages = computed({
   get: () => exportStore.targetLanguages,
   set: (value) => {
@@ -144,7 +144,7 @@ const availableLanguages = computed(() => getAvailableLanguages());
 const hasLokaliseToken = computed(() => apiStore.hasLokaliseToken);
 
 // 使用 computed 来获取默认项目ID
-// 注意：v-model 会触�?setter，不需要额外的 @change 事件
+// 注意：v-model 会触�?setter，不需要额外的 @change 事件
 const defaultProjectId = computed({
   get: () => exportStore.defaultProjectId,
   set: async (value) => {
@@ -174,31 +174,31 @@ const handleExcelBaselineKeyBlur = async () => {
 };
 
 /**
- * 获取项目ID的函�?
- * 全局统一使用 Default Project 的�?
+ * 获取项目ID的函�?
+ * 全局统一使用 Default Project 的�?
  */
 const getProjectId = () => {
   // 只使用默认项目ID（从 Translation Setting 中选择的）
   if (exportStore.defaultProjectId) {
     debugLog(
       "[TranslationSetting] Using default project ID for autocomplete:",
-      exportStore.defaultProjectId
+      exportStore.defaultProjectId,
     );
     return exportStore.defaultProjectId;
   }
 
-  // 如果没有默认项目ID，返�?null，让自动补全逻辑处理
+  // 如果没有默认项目ID，返�?null，让自动补全逻辑处理
   debugLog(
-    "[TranslationSetting] No default project ID set, autocomplete will use fallback"
+    "[TranslationSetting] No default project ID set, autocomplete will use fallback",
   );
   return null;
 };
 
 /**
- * 获取Baseline Key单个建议（用于内联建议文本，�?1�?
- * @param {string} queryString - 搜索关键�?
+ * 获取Baseline Key单个建议（用于内联建议文本，�?1�?
+ * @param {string} queryString - 搜索关键�?
  * @param {string} projectId - 项目ID
- * @returns {Promise<string|null>} 建议的key名称�?1后）
+ * @returns {Promise<string|null>} 建议的key名称�?1后）
  */
 const fetchBaselineKeySuggestion = async (queryString, projectId) => {
   try {
@@ -216,7 +216,7 @@ const fetchBaselineKeySuggestion = async (queryString, projectId) => {
     const firstResult = response?.results?.[0];
     if (firstResult && firstResult.key_name) {
       const originalKey = firstResult.key_name;
-      // 将key +1（如 key1 -> key2�?
+      // 将key +1（如 key1 -> key2�?
       const match = originalKey.match(/^([a-zA-Z]+)(\d+)$/);
       if (match) {
         const [, prefix, numberStr] = match;
@@ -227,11 +227,11 @@ const fetchBaselineKeySuggestion = async (queryString, projectId) => {
           "[Baseline Key Autocomplete] Incremented key:",
           originalKey,
           "->",
-          incrementedKey
+          incrementedKey,
         );
         return incrementedKey;
       }
-      // 如果格式不正确，返回原�?
+      // 如果格式不正确，返回原�?
       return originalKey;
     }
     return null;
@@ -243,7 +243,7 @@ const fetchBaselineKeySuggestion = async (queryString, projectId) => {
 
 /**
  * 获取Baseline Key建议列表（用于下拉菜单）
- * @param {string} queryString - 搜索关键�?
+ * @param {string} queryString - 搜索关键�?
  * @param {string} projectId - 项目ID
  * @param {number} limit - 返回结果数量限制
  * @returns {Promise<Array<string>>} 建议的key名称列表
@@ -251,7 +251,7 @@ const fetchBaselineKeySuggestion = async (queryString, projectId) => {
 const fetchBaselineKeySuggestions = async (
   queryString,
   projectId,
-  limit = 10
+  limit = 10,
 ) => {
   try {
     debugLog("[Baseline Key Dropdown] Calling API with:", {
@@ -263,7 +263,7 @@ const fetchBaselineKeySuggestions = async (
     const response = await autocompleteKeys(
       projectId,
       queryString.trim(),
-      limit
+      limit,
     );
 
     debugLog("[Baseline Key Dropdown] API response:", response);
@@ -272,7 +272,7 @@ const fetchBaselineKeySuggestions = async (
     if (response?.results && Array.isArray(response.results)) {
       const suggestions = response.results
         .map((result) => result.key_name)
-        .filter((key) => key); // 过滤掉空�?
+        .filter((key) => key); // 过滤掉空�?
       debugLog("[Baseline Key Dropdown] Suggestions:", suggestions);
       return suggestions;
     }
@@ -284,13 +284,13 @@ const fetchBaselineKeySuggestions = async (
 };
 
 const handleOverwriteChange = (value) => {
-  // 使用 translation store 的方法更新状�?
+  // 使用 translation store 的方法更新状�?
   exportStore.updateExcelOverwrite(value);
 };
 
 /**
- * 处理Auto Increment Key开关变�?
- * @param {boolean} value - 开关状�?
+ * 处理Auto Increment Key开关变�?
+ * @param {boolean} value - 开关状�?
  */
 const handleAutoIncrementKeyChange = (value) => {
   debugLog("[TranslationSetting] Auto Increment Key changed:", value);
@@ -313,7 +313,7 @@ const handleTargetLanguagesChange = (languages) => {
   const success = exportStore.updateTargetLanguages(languages);
   if (!success) {
     ElMessage.warning(t("translationSetting.atLeastOneLanguageRequired"));
-    // 恢复之前的选择，强制更�?UI
+    // 恢复之前的选择，强制更�?UI
     targetLanguages.value = exportStore.targetLanguages;
   }
 };
@@ -335,7 +335,7 @@ const loadProjectList = async () => {
         debugLog("[TranslationSetting] Current project ID:", currentProjectId);
         // 检查当前选择的项目是否还在列表中
         const currentProjectExists = parsedProjects.some(
-          (p) => p.project_id === currentProjectId
+          (p) => p.project_id === currentProjectId,
         );
 
         // 如果当前项目不在列表中，或者没有保存的默认项目，设置第一个为默认
@@ -343,15 +343,15 @@ const loadProjectList = async () => {
           if (parsedProjects[0]?.project_id) {
             debugLog(
               "[TranslationSetting] Setting default project to:",
-              parsedProjects[0].project_id
+              parsedProjects[0].project_id,
             );
             await exportStore.updateDefaultProjectId(
-              parsedProjects[0].project_id
+              parsedProjects[0].project_id,
             );
           }
         } else {
           debugLog(
-            "[TranslationSetting] Current project exists in list, keeping selection"
+            "[TranslationSetting] Current project exists in list, keeping selection",
           );
         }
       } else {
@@ -375,19 +375,19 @@ onMounted(() => {
   apiStore.initializeApiSettings();
   debugLog(
     "[TranslationSetting] API Store initialized. hasLokaliseToken:",
-    apiStore.hasLokaliseToken
+    apiStore.hasLokaliseToken,
   );
 
   exportStore.initializeTranslationSettings();
   debugLog(
     "[TranslationSetting] Export Store initialized. defaultProjectId:",
-    exportStore.defaultProjectId
+    exportStore.defaultProjectId,
   );
 
   // 确保上传store已初始化，以便获取projectId
   uploadStore.initializeUploadSettings();
 
-  // 如果配置�?Lokalise Token，加载项目列�?
+  // 如果配置�?Lokalise Token，加载项目列�?
   if (apiStore.hasLokaliseToken) {
     debugLog("[TranslationSetting] Lokalise Token found, loading project list");
     loadProjectList();
@@ -396,7 +396,7 @@ onMounted(() => {
   }
 });
 
-// 监听 Lokalise Token 变化，如果配置了则加载项目列�?
+// 监听 Lokalise Token 变化，如果配置了则加载项目列�?
 watch(
   () => apiStore.hasLokaliseToken,
   (hasToken) => {
@@ -407,7 +407,7 @@ watch(
       projectList.value = [];
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 
@@ -485,4 +485,3 @@ watch(
   white-space: nowrap;
 }
 </style>
-

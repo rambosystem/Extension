@@ -22,12 +22,12 @@ export interface UseSelectionReturn {
   applySelectionRange: (range?: SelectionRange | null) => void;
   startMultipleSelection: (
     row: number,
-    col: number
+    col: number,
   ) => { containingSelectionIndex: number } | null;
   updateMultipleSelectionEnd: (row: number, col: number) => void;
   endMultipleSelectionClick: (row: number, col: number) => void;
   endMultipleSelectionDrag: (
-    options?: EndMultipleSelectionDragOptions
+    options?: EndMultipleSelectionDragOptions,
   ) => boolean;
   updateSelectionEnd: (row: number, col: number) => void;
   isActive: (row: number, col: number) => boolean;
@@ -40,19 +40,19 @@ export interface UseSelectionReturn {
     cOffset: number,
     maxRows: number,
     maxCols: number,
-    extendSelection?: boolean
+    extendSelection?: boolean,
   ) => void;
   clearMultiSelections: () => void;
   clearSelection: () => void;
   selectRow: (
     rowIndex: number,
     maxCols: number,
-    addToMultiSelect?: boolean
+    addToMultiSelect?: boolean,
   ) => void;
   selectColumn: (
     colIndex: number,
     maxRows: number,
-    addToMultiSelect?: boolean
+    addToMultiSelect?: boolean,
   ) => void;
   selectRows: (startRow: number, endRow: number, maxCols: number) => void;
   selectColumns: (startCol: number, endCol: number, maxRows: number) => void;
@@ -76,7 +76,7 @@ export interface UseSelectionOptions {
  * 用于通用组件 Excel 的内部状态管理
  *
  * 设计原则：
- * - 通用组件（Components/Common/）应该自包含，不依赖 Store
+ * - 通用组件（components/Common/）应该自包含，不依赖 Store
  * - 每个组件实例拥有独立的选择状态，保证组件的可复用性
  * - 这是通用组件的标准做法，符合组件化设计原则
  *
@@ -143,7 +143,7 @@ export function useSelection({
   const isCellInRange = (
     row: number,
     col: number,
-    range: SelectionRange
+    range: SelectionRange,
   ): boolean => {
     return (
       row >= range.minRow &&
@@ -181,12 +181,12 @@ export function useSelection({
    */
   const startMultipleSelection = (
     row: number,
-    col: number
+    col: number,
   ): { containingSelectionIndex: number } | null => {
     isMultipleMode.value = true;
 
     const containingSelectionIndex = multiSelections.value.findIndex((sel) =>
-      isCellInRange(row, col, sel)
+      isCellInRange(row, col, sel),
     );
 
     if (containingSelectionIndex >= 0) {
@@ -204,7 +204,7 @@ export function useSelection({
           sel.minRow === currentSelection.minRow &&
           sel.maxRow === currentSelection.maxRow &&
           sel.minCol === currentSelection.minCol &&
-          sel.maxCol === currentSelection.maxCol
+          sel.maxCol === currentSelection.maxCol,
       );
       if (currentIndex < 0) {
         multiSelections.value.push({ ...currentSelection });
@@ -231,7 +231,7 @@ export function useSelection({
   const splitSelectionIntoCells = (
     selection: SelectionRange,
     excludeRow: number | null = null,
-    excludeCol: number | null = null
+    excludeCol: number | null = null,
   ): SelectionRange[] => {
     const { minRow, maxRow, minCol, maxCol } = selection;
     const cells: SelectionRange[] = [];
@@ -262,7 +262,7 @@ export function useSelection({
    * 矩阵切割算法：将多个选区（特别是单格选区）合并成尽可能大的矩形选区
    */
   const optimizeSelections = (
-    selections: SelectionRange[]
+    selections: SelectionRange[],
   ): SelectionRange[] => {
     if (!selections || selections.length === 0) {
       return [];
@@ -366,7 +366,7 @@ export function useSelection({
    */
   const endMultipleSelectionClick = (row: number, col: number): void => {
     const containingSelectionIndex = multiSelections.value.findIndex((sel) =>
-      isCellInRange(row, col, sel)
+      isCellInRange(row, col, sel),
     );
 
     if (containingSelectionIndex >= 0) {
@@ -398,7 +398,7 @@ export function useSelection({
 
         for (const cell of adjacentCells) {
           const found = multiSelections.value.find((sel) =>
-            isCellInRange(cell.row, cell.col, sel)
+            isCellInRange(cell.row, cell.col, sel),
           );
           if (found) {
             targetSelection = found;
@@ -441,7 +441,7 @@ export function useSelection({
    */
   const removeDragRangeFromSelection = (
     selection: SelectionRange,
-    dragRange: SelectionRange
+    dragRange: SelectionRange,
   ): SelectionRange[] => {
     const { minRow, maxRow, minCol, maxCol } = selection;
     const {
@@ -477,7 +477,7 @@ export function useSelection({
    * MULTIPLE 模式：结束选择（Ctrl+拖选）
    */
   const endMultipleSelectionDrag = (
-    options: EndMultipleSelectionDragOptions = {}
+    options: EndMultipleSelectionDragOptions = {},
   ): boolean => {
     const selection = normalizedSelection.value;
     if (!selection) return false;
@@ -492,7 +492,7 @@ export function useSelection({
       const originalSelection = multiSelections.value[removeSelectionIndex];
       const remainingCells = removeDragRangeFromSelection(
         originalSelection,
-        selection
+        selection,
       );
       multiSelections.value.splice(removeSelectionIndex, 1);
       remainingCells.forEach((cell) => {
@@ -508,7 +508,7 @@ export function useSelection({
         if (startRow !== undefined && startCol !== undefined) {
           targetSelection =
             multiSelections.value.find((sel) =>
-              isCellInRange(startRow, startCol, sel)
+              isCellInRange(startRow, startCol, sel),
             ) ?? null;
 
           if (targetSelection) {
@@ -528,7 +528,7 @@ export function useSelection({
 
             for (const cell of adjacentCells) {
               const found = multiSelections.value.find((sel) =>
-                isCellInRange(cell.row, cell.col, sel)
+                isCellInRange(cell.row, cell.col, sel),
               );
               if (found) {
                 targetSelection = found;
@@ -564,7 +564,7 @@ export function useSelection({
           sel.minRow === row &&
           sel.maxRow === row &&
           sel.minCol === col &&
-          sel.maxCol === col
+          sel.maxCol === col,
       );
       if (singleCellIndex >= 0) {
         multiSelections.value.splice(singleCellIndex, 1);
@@ -579,7 +579,7 @@ export function useSelection({
     const targetSelection =
       startRow !== undefined && startCol !== undefined
         ? multiSelections.value.find((sel) =>
-            isCellInRange(startRow, startCol, sel)
+            isCellInRange(startRow, startCol, sel),
           )
         : null;
 
@@ -636,7 +636,7 @@ export function useSelection({
           row >= sel.minRow &&
           row <= sel.maxRow &&
           col >= sel.minCol &&
-          col <= sel.maxCol
+          col <= sel.maxCol,
       );
       if (inMultiSelection) {
         return true;
@@ -679,7 +679,7 @@ export function useSelection({
         row >= sel.minRow &&
         row <= sel.maxRow &&
         col >= sel.minCol &&
-        col <= sel.maxCol
+        col <= sel.maxCol,
     );
   };
 
@@ -725,7 +725,7 @@ export function useSelection({
     cOffset: number,
     maxRows: number,
     maxCols: number,
-    extendSelection = false
+    extendSelection = false,
   ): void => {
     if (!activeCell.value) return;
 
@@ -773,7 +773,7 @@ export function useSelection({
   const selectRow = (
     rowIndex: number,
     maxCols: number,
-    addToMultiSelect = false
+    addToMultiSelect = false,
   ): void => {
     if (addToMultiSelect) {
       isMultipleMode.value = true;
@@ -789,7 +789,7 @@ export function useSelection({
           sel.minRow === newSelection.minRow &&
           sel.maxRow === newSelection.maxRow &&
           sel.minCol === newSelection.minCol &&
-          sel.maxCol === newSelection.maxCol
+          sel.maxCol === newSelection.maxCol,
       );
 
       if (existingIndex >= 0) {
@@ -827,7 +827,7 @@ export function useSelection({
   const selectColumn = (
     colIndex: number,
     maxRows: number,
-    addToMultiSelect = false
+    addToMultiSelect = false,
   ): void => {
     if (addToMultiSelect) {
       isMultipleMode.value = true;
@@ -843,7 +843,7 @@ export function useSelection({
           sel.minRow === newSelection.minRow &&
           sel.maxRow === newSelection.maxRow &&
           sel.minCol === newSelection.minCol &&
-          sel.maxCol === newSelection.maxCol
+          sel.maxCol === newSelection.maxCol,
       );
 
       if (existingIndex >= 0) {
@@ -881,7 +881,7 @@ export function useSelection({
   const selectRows = (
     startRow: number,
     endRow: number,
-    maxCols: number
+    maxCols: number,
   ): void => {
     const minRow = Math.min(startRow, endRow);
     const maxRow = Math.max(startRow, endRow);
@@ -899,7 +899,7 @@ export function useSelection({
   const selectColumns = (
     startCol: number,
     endCol: number,
-    maxRows: number
+    maxRows: number,
   ): void => {
     const minCol = Math.min(startCol, endCol);
     const maxCol = Math.max(startCol, endCol);

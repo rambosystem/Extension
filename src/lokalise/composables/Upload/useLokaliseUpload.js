@@ -6,10 +6,10 @@ import { useExportStore } from "@/stores/translation/export.js";
 import {
   getAvailableLanguages,
   getLanguageIso,
-} from "@/config/languages.js";
+} from "@/lokalise/config/languages.js";
 import { ref, reactive } from "vue";
-import { uploadTranslationKeys } from "@/services/translation/index.js";
-import { searchKeysByNames } from "@/services/deduplicate/deduplicateService.js";
+import { uploadTranslationKeys } from "@/lokalise/services/translation/index.js";
+import { searchKeysByNames } from "@/lokalise/services/deduplicate/deduplicateService.js";
 
 /**
  * Lokalise上传功能Hook

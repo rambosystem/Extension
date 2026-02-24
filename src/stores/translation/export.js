@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { useExcelExport } from "../../Components/Excel/composables/useExcelExport";
+import { useExcelExport } from "../../components/Excel/composables/useExcelExport";
 import { t } from "../../utils/i18n.js";
 import { debugLog, debugError } from "../../utils/debug.js";
-import { getAvailableLanguages } from "../../config/languages.js";
-import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
+import { getAvailableLanguages } from "../../lokalise/config/languages.js";
+import { searchKeysByNames } from "../../lokalise/services/deduplicate/deduplicateService.js";
 
 /**
  * 导出功能状态管理
@@ -63,7 +63,7 @@ export const useExportStore = defineStore("export", {
         if (!row || typeof row !== "object") return false;
         // 检查是否有任何非空字段
         return Object.values(row).some(
-          (value) => value && String(value).trim() !== ""
+          (value) => value && String(value).trim() !== "",
         );
       });
 
@@ -88,7 +88,7 @@ export const useExportStore = defineStore("export", {
           const parsedProjects = JSON.parse(projects);
           if (Array.isArray(parsedProjects)) {
             const project = parsedProjects.find(
-              (p) => p.project_id === projectId
+              (p) => p.project_id === projectId,
             );
             if (project && project.name) {
               return project.name;
@@ -128,7 +128,7 @@ export const useExportStore = defineStore("export", {
         debugLog("[ExportStore] Baseline key format validation failed:", key);
         if (!silent) {
           ElMessage.warning(
-            t("translationSetting.exportBaselineKeySaveWarning")
+            t("translationSetting.exportBaselineKeySaveWarning"),
           );
         }
         return false;
@@ -147,7 +147,7 @@ export const useExportStore = defineStore("export", {
           projectId,
           displayProjectName,
           silent,
-        }
+        },
       );
 
       if (projectId) {
@@ -156,7 +156,7 @@ export const useExportStore = defineStore("export", {
             "[ExportStore] Checking key uniqueness for:",
             trimmedKey,
             "in project:",
-            projectId
+            projectId,
           );
 
           const searchResult = await searchKeysByNames(projectId, [trimmedKey]);
@@ -179,11 +179,11 @@ export const useExportStore = defineStore("export", {
                 trimmedKey,
                 projectId,
                 silent,
-              }
+              },
             );
             if (!silent) {
               ElMessage.warning(
-                `The key "${trimmedKey}" already exists in "${displayProjectName}". Please use a different key.`
+                `The key "${trimmedKey}" already exists in "${displayProjectName}". Please use a different key.`,
               );
             }
             return false;
@@ -195,22 +195,22 @@ export const useExportStore = defineStore("export", {
           console.warn("Failed to check key uniqueness:", error);
           debugError(
             "[ExportStore] Failed to check key uniqueness, proceeding with save:",
-            error
+            error,
           );
           if (!silent) {
             ElMessage.warning(
-              `Could not verify key uniqueness in "${displayProjectName}". The key will be saved, but please ensure it is unique.`
+              `Could not verify key uniqueness in "${displayProjectName}". The key will be saved, but please ensure it is unique.`,
             );
           }
         }
       } else {
         // 如果没有项目ID，提示用户配置项目
         debugLog(
-          "[ExportStore] No default project ID configured, skipping key uniqueness check"
+          "[ExportStore] No default project ID configured, skipping key uniqueness check",
         );
         if (!silent) {
           ElMessage.warning(
-            "Please configure Default Project first to verify key uniqueness."
+            "Please configure Default Project first to verify key uniqueness.",
           );
         }
       }
@@ -245,7 +245,7 @@ export const useExportStore = defineStore("export", {
       this.autoIncrementKeyEnabled = enabled;
       localStorage.setItem(
         "auto_increment_key_enabled",
-        enabled ? "true" : "false"
+        enabled ? "true" : "false",
       );
       debugLog("[ExportStore] Auto Increment Key enabled set to:", enabled);
     },
@@ -276,14 +276,14 @@ export const useExportStore = defineStore("export", {
               searchResult.success &&
               Array.isArray(searchResult.results) &&
               searchResult.results.some(
-                (r) => r.key_name === baselineKey.trim()
+                (r) => r.key_name === baselineKey.trim(),
               );
 
             if (exists) {
               localStorage.setItem("excel_baseline_key", "");
               this.excelBaselineKey = "";
               ElMessage.warning(
-                `Baseline key "${baselineKey.trim()}" already exists in project "${projectName}". It has been cleared. Please configure a new baseline key.`
+                `Baseline key "${baselineKey.trim()}" already exists in project "${projectName}". It has been cleared. Please configure a new baseline key.`,
               );
             }
           } catch (error) {
@@ -291,7 +291,7 @@ export const useExportStore = defineStore("export", {
             localStorage.setItem("excel_baseline_key", "");
             this.excelBaselineKey = "";
             ElMessage.warning(
-              `Failed to validate baseline key uniqueness in project "${projectName}". The baseline key has been cleared for safety.`
+              `Failed to validate baseline key uniqueness in project "${projectName}". The baseline key has been cleared for safety.`,
             );
           }
         }
@@ -322,14 +322,14 @@ export const useExportStore = defineStore("export", {
       const availableLanguages = getAvailableLanguages();
       const validLanguages = Array.isArray(languages)
         ? languages.filter((lang) =>
-            availableLanguages.some((availLang) => availLang.code === lang)
+            availableLanguages.some((availLang) => availLang.code === lang),
           )
         : [];
 
       // 确保至少选择一个语言
       if (validLanguages.length === 0) {
         debugLog(
-          "[ExportStore] Cannot clear all languages, keeping at least one"
+          "[ExportStore] Cannot clear all languages, keeping at least one",
         );
         return false; // 返回 false 表示更新失败，需要至少选择一个
       }
@@ -337,11 +337,11 @@ export const useExportStore = defineStore("export", {
       this.targetLanguages = validLanguages;
       localStorage.setItem(
         "target_languages",
-        JSON.stringify(this.targetLanguages)
+        JSON.stringify(this.targetLanguages),
       );
       debugLog(
         "[ExportStore] Target languages saved to localStorage:",
-        this.targetLanguages
+        this.targetLanguages,
       );
       return true;
     },
@@ -367,7 +367,7 @@ export const useExportStore = defineStore("export", {
           this.excelBaselineKey = excelBaselineKey;
           debugLog(
             "[ExportStore] Excel baseline key loaded:",
-            excelBaselineKey
+            excelBaselineKey,
           );
         }
 
@@ -377,19 +377,19 @@ export const useExportStore = defineStore("export", {
           this.excelOverwrite = excelOverwrite === "true";
           debugLog(
             "[ExportStore] Excel overwrite setting loaded:",
-            this.excelOverwrite
+            this.excelOverwrite,
           );
         }
 
         // 加载Auto Increment Key开关状态
         const autoIncrementKeyEnabled = localStorage.getItem(
-          "auto_increment_key_enabled"
+          "auto_increment_key_enabled",
         );
         if (autoIncrementKeyEnabled !== null) {
           this.autoIncrementKeyEnabled = autoIncrementKeyEnabled === "true";
           debugLog(
             "[ExportStore] Auto Increment Key enabled setting loaded:",
-            this.autoIncrementKeyEnabled
+            this.autoIncrementKeyEnabled,
           );
         }
 
@@ -399,11 +399,11 @@ export const useExportStore = defineStore("export", {
           this.defaultProjectId = defaultProjectId;
           debugLog(
             "[ExportStore] Default project ID loaded from localStorage:",
-            defaultProjectId
+            defaultProjectId,
           );
         } else {
           debugLog(
-            "[ExportStore] No default project ID in localStorage, trying to initialize from list"
+            "[ExportStore] No default project ID in localStorage, trying to initialize from list",
           );
           // 如果没有保存的默认项目，尝试从项目列表中获取第一个项目
           this.initializeDefaultProjectFromList();
@@ -417,51 +417,51 @@ export const useExportStore = defineStore("export", {
             // 验证语言代码是否有效（从配置文件验证）
             const availableLanguages = getAvailableLanguages();
             const validLanguages = parsedLanguages.filter((lang) =>
-              availableLanguages.some((availLang) => availLang.code === lang)
+              availableLanguages.some((availLang) => availLang.code === lang),
             );
             // 确保至少选择一个语言，如果没有则使用默认值
             if (validLanguages.length === 0) {
               this.targetLanguages = ["Chinese", "Japanese"];
               localStorage.setItem(
                 "target_languages",
-                JSON.stringify(this.targetLanguages)
+                JSON.stringify(this.targetLanguages),
               );
               debugLog(
                 "[ExportStore] No valid languages found, using default:",
-                this.targetLanguages
+                this.targetLanguages,
               );
             } else {
               this.targetLanguages = validLanguages;
               debugLog(
                 "[ExportStore] Target languages loaded from localStorage:",
-                this.targetLanguages
+                this.targetLanguages,
               );
             }
           } catch (error) {
             debugError(
               "[ExportStore] Failed to parse target languages:",
-              error
+              error,
             );
             this.targetLanguages = ["Chinese", "Japanese"];
             localStorage.setItem(
               "target_languages",
-              JSON.stringify(this.targetLanguages)
+              JSON.stringify(this.targetLanguages),
             );
           }
         } else {
           debugLog(
-            "[ExportStore] No target languages in localStorage, using default: Chinese, Japanese"
+            "[ExportStore] No target languages in localStorage, using default: Chinese, Japanese",
           );
           this.targetLanguages = ["Chinese", "Japanese"];
           localStorage.setItem(
             "target_languages",
-            JSON.stringify(this.targetLanguages)
+            JSON.stringify(this.targetLanguages),
           );
         }
       } catch (error) {
         debugError(
           "[ExportStore] Failed to initialize translation settings:",
-          error
+          error,
         );
       }
     },
@@ -477,7 +477,7 @@ export const useExportStore = defineStore("export", {
           const parsedProjects = JSON.parse(projects);
           debugLog(
             "[ExportStore] Found projects in localStorage:",
-            parsedProjects
+            parsedProjects,
           );
           if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
             // 默认选中第一个项目
@@ -486,12 +486,12 @@ export const useExportStore = defineStore("export", {
               this.defaultProjectId = firstProject.project_id;
               localStorage.setItem(
                 "default_project_id",
-                firstProject.project_id
+                firstProject.project_id,
               );
               debugLog(
                 "[ExportStore] Default project initialized to:",
                 firstProject.project_id,
-                firstProject.name
+                firstProject.name,
               );
             }
           } else {
@@ -503,7 +503,7 @@ export const useExportStore = defineStore("export", {
       } catch (error) {
         debugError(
           "[ExportStore] Failed to initialize default project from list:",
-          error
+          error,
         );
       }
     },
@@ -553,7 +553,7 @@ export const useExportStore = defineStore("export", {
       } catch (error) {
         debugError(
           "[ExportStore] Failed to clear export settings from localStorage:",
-          error
+          error,
         );
       }
 

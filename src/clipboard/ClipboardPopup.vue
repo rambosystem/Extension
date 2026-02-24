@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import PopupFrame from "@/Components/PopupFrame.vue";
+import PopupFrame from "@/components/PopupFrame.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 
 defineProps({

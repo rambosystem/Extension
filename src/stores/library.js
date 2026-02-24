@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { nextTick } from "vue";
 import { ElMessage } from "element-plus";
 import { t } from "../utils/i18n.js";
-import { getUserProjects } from "../services/translation/index.js";
+import { getUserProjects } from "../lokalise/services/translation/index.js";
 
 /**
  * Library 页面状态管理

@@ -3,19 +3,39 @@
     <h2 class="title">{{ t("library.title") }}</h2>
 
     <div class="filter-section">
-      <LibraryFilter v-model:filter-key-name="filterKeyName" v-model:filter-project="filterProject"
-        v-model:filter-condition="filterCondition" :filter-conditions="filterConditions" :project-list="projectList"
-        @clear="handleClear" @search="handleSearch" />
+      <LibraryFilter
+        v-model:filter-key-name="filterKeyName"
+        v-model:filter-project="filterProject"
+        v-model:filter-condition="filterCondition"
+        :filter-conditions="filterConditions"
+        :project-list="projectList"
+        @clear="handleClear"
+        @search="handleSearch"
+      />
     </div>
 
     <div class="table-section">
-      <LibraryTableConfig :initial-row-height="rowHeight" :initial-visible-columns="visibleColumns"
-        :selected-rows="selectedRows" :selection-scope="selectionScope" @lineHeight="handleLineHeight"
-        @columnConfig="handleColumnConfig" @bulkOperation="handleBulkOperation"
-        @selection-scope-change="handleSelectionScopeChange" />
-      <LibraryTable ref="tableRef" :data="tableData" :loading="loading" :loading-text="t('common.loading')"
-        :row-height="rowHeight" :visible-columns="visibleColumns" :selection-scope="selectionScope"
-        @operation="handleOperation" @selection-change="handleSelectionChange" />
+      <LibraryTableConfig
+        :initial-row-height="rowHeight"
+        :initial-visible-columns="visibleColumns"
+        :selected-rows="selectedRows"
+        :selection-scope="selectionScope"
+        @lineHeight="handleLineHeight"
+        @columnConfig="handleColumnConfig"
+        @bulkOperation="handleBulkOperation"
+        @selection-scope-change="handleSelectionScopeChange"
+      />
+      <LibraryTable
+        ref="tableRef"
+        :data="tableData"
+        :loading="loading"
+        :loading-text="t('common.loading')"
+        :row-height="rowHeight"
+        :visible-columns="visibleColumns"
+        :selection-scope="selectionScope"
+        @operation="handleOperation"
+        @selection-change="handleSelectionChange"
+      />
     </div>
   </div>
 </template>
@@ -24,24 +44,32 @@
 import { onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "../lokalise/composables/Core/useI18n.js";
-import LibraryFilter from "../Components/Library/LibraryFilter.vue";
-import LibraryTable from "../Components/Library/LibraryTable.vue";
-import LibraryTableConfig from "../Components/Library/LibraryTableConfig.vue";
+import LibraryFilter from "../components/Library/LibraryFilter.vue";
+import LibraryTable from "../components/Library/LibraryTable.vue";
+import LibraryTableConfig from "../components/Library/LibraryTableConfig.vue";
 import { useLibraryStore } from "../stores/library.js";
 
 const { t } = useI18n();
 const libraryStore = useLibraryStore();
 const tableRef = ref(null);
 
-// 使用 storeToRefs 保持响应�?
-const { filterKeyName, filterProject, filterCondition, filterConditions, projectList, tableData, loading, rowHeight, visibleColumns, selectedRows, selectionScope } =
-  storeToRefs(libraryStore);
-
-
-
+// 使用 storeToRefs 保持响应�?
+const {
+  filterKeyName,
+  filterProject,
+  filterCondition,
+  filterConditions,
+  projectList,
+  tableData,
+  loading,
+  rowHeight,
+  visibleColumns,
+  selectedRows,
+  selectionScope,
+} = storeToRefs(libraryStore);
 
 /**
- * 清除筛选条�?
+ * 清除筛选条�?
  */
 const handleClear = () => {
   libraryStore.clearFilters();
@@ -58,7 +86,7 @@ const handleSearch = async () => {
  * 处理操作按钮点击
  */
 const handleOperation = (row) => {
-  // 操作功能待实�?
+  // 操作功能待实�?
   console.log("Operation clicked for row:", row);
 };
 
@@ -89,7 +117,7 @@ const handleSelectionChange = (selection) => {
  */
 const handleSelectionScopeChange = (scope) => {
   libraryStore.setSelectionScope(scope);
-  // 根据选择范围执行全�?
+  // 根据选择范围执行全�?
   if (tableRef.value) {
     tableRef.value.handleSelectAll(scope);
   }
@@ -122,4 +150,3 @@ onMounted(() => {
   margin-top: 24px;
 }
 </style>
-

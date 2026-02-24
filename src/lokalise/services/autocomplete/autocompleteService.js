@@ -6,7 +6,7 @@
 import {
   fetchAutocompleteKeys,
   fetchAutocompleteTags,
-} from "../../api/autocomplete.js";
+} from "../../../api/autocomplete.js";
 
 /**
  * 自动补全查询接口

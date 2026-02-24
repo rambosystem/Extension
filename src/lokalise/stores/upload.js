@@ -3,9 +3,9 @@ import { ElMessage } from "element-plus";
 import {
   getAvailableLanguages,
   getLanguageIso,
-} from "@/config/languages.js";
-import { uploadTranslationKeys } from "@/services/translation/index.js";
-import { searchKeysByNames } from "@/services/deduplicate/deduplicateService.js";
+} from "@/lokalise/config/languages.js";
+import { uploadTranslationKeys } from "@/lokalise/services/translation/index.js";
+import { searchKeysByNames } from "@/lokalise/services/deduplicate/deduplicateService.js";
 import { useExportStore } from "@/stores/translation/export.js";
 import { useTranslationCoreStore } from "@/stores/translation/core.js";
 import { t } from "@/utils/i18n.js";
