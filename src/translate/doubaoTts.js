@@ -12,6 +12,28 @@ import {
   STORAGE_KEYS,
 } from "./config/tts.js";
 
+const MAX_TTS_CACHE_SIZE = 50;
+/** @type {Map<string, string>} key -> blobUrl */
+const ttsCache = new Map();
+
+function getTtsCacheKey(text, voiceType, speedRatio) {
+  return `${text}|${voiceType}|${speedRatio}`;
+}
+
+function getCachedBlobUrl(key) {
+  return ttsCache.get(key) ?? null;
+}
+
+function setTtsCache(key, blobUrl) {
+  if (ttsCache.size >= MAX_TTS_CACHE_SIZE) {
+    const firstKey = ttsCache.keys().next().value;
+    const old = ttsCache.get(firstKey);
+    ttsCache.delete(firstKey);
+    if (old) URL.revokeObjectURL(old);
+  }
+  ttsCache.set(key, blobUrl);
+}
+
 function toPlaybackRate(rate = 1) {
   return Math.max(0.5, Math.min(2, Number(rate) || 1));
 }
@@ -35,9 +57,13 @@ async function getCredentials() {
   if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
     const out = await new Promise((resolve) =>
       chrome.storage.local.get(
-        [STORAGE_KEYS.APP_ID, STORAGE_KEYS.ACCESS_TOKEN, STORAGE_KEYS.VOICE_TYPE],
-        resolve
-      )
+        [
+          STORAGE_KEYS.APP_ID,
+          STORAGE_KEYS.ACCESS_TOKEN,
+          STORAGE_KEYS.VOICE_TYPE,
+        ],
+        resolve,
+      ),
     );
     return {
       appId: out[STORAGE_KEYS.APP_ID] ?? DEFAULT_APP_ID,
@@ -45,14 +71,24 @@ async function getCredentials() {
       voiceType: out[STORAGE_KEYS.VOICE_TYPE]?.trim() || DEFAULT_VOICE_TYPE,
     };
   }
-  return { appId: DEFAULT_APP_ID, accessToken: DEFAULT_ACCESS_TOKEN, voiceType: DEFAULT_VOICE_TYPE };
+  return {
+    appId: DEFAULT_APP_ID,
+    accessToken: DEFAULT_ACCESS_TOKEN,
+    voiceType: DEFAULT_VOICE_TYPE,
+  };
 }
 
 /**
  * 通过 background 请求 TTS（避免 content script 下 CORS），返回 blob URL 或 null
  */
-function fetchTtsViaBackground({ text, voiceType, speedRatio, encoding = "mp3" }) {
-  if (typeof chrome === "undefined" || !chrome.runtime?.sendMessage) return null;
+function fetchTtsViaBackground({
+  text,
+  voiceType,
+  speedRatio,
+  encoding = "mp3",
+}) {
+  if (typeof chrome === "undefined" || !chrome.runtime?.sendMessage)
+    return null;
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(
       {
@@ -60,14 +96,22 @@ function fetchTtsViaBackground({ text, voiceType, speedRatio, encoding = "mp3" }
         payload: { text: text.trim(), voiceType, speedRatio, encoding },
       },
       (response) => {
-        if (chrome.runtime.lastError || !response?.ok || !response.audioBase64) {
+        if (
+          chrome.runtime.lastError ||
+          !response?.ok ||
+          !response.audioBase64
+        ) {
           resolve(null);
           return;
         }
-        const bin = Uint8Array.from(atob(response.audioBase64), (c) => c.charCodeAt(0));
-        const blob = new Blob([bin], { type: `audio/${response.encoding || encoding}` });
+        const bin = Uint8Array.from(atob(response.audioBase64), (c) =>
+          c.charCodeAt(0),
+        );
+        const blob = new Blob([bin], {
+          type: `audio/${response.encoding || encoding}`,
+        });
         resolve(URL.createObjectURL(blob));
-      }
+      },
     );
   });
 }
@@ -104,7 +148,10 @@ async function fetchTtsAudioUrl({
   const token = cred.accessToken || DEFAULT_ACCESS_TOKEN;
   if (!appIdVal || !token) return null;
 
-  const speechRate = Math.max(-50, Math.min(100, Math.round((speedRatio - 1) * 100)));
+  const speechRate = Math.max(
+    -50,
+    Math.min(100, Math.round((speedRatio - 1) * 100)),
+  );
   const body = {
     user: { uid: "penrose-tts" },
     req_params: {
@@ -153,7 +200,8 @@ async function fetchTtsAudioUrl({
           break;
         }
         if (json.data) chunks.push(json.data);
-        if (json.code && json.code !== 0) throw new Error(json.message || `code ${json.code}`);
+        if (json.code && json.code !== 0)
+          throw new Error(json.message || `code ${json.code}`);
       } catch (e) {
         if (e instanceof Error && e.message.startsWith("code")) throw e;
       }
@@ -362,27 +410,35 @@ export async function playWithDoubao({
   if (!text?.trim()) return;
 
   let voiceType = voiceTypeParam;
-  if (!voiceType && typeof chrome !== "undefined" && chrome.storage?.local?.get) {
+  if (
+    !voiceType &&
+    typeof chrome !== "undefined" &&
+    chrome.storage?.local?.get
+  ) {
     const cred = await getCredentials();
     voiceType = cred.voiceType;
   }
   voiceType = voiceType || DEFAULT_VOICE_TYPE;
 
   const playbackRate = toPlaybackRate(rate);
-  let blobUrl = null;
+  const cacheKey = getTtsCacheKey(text.trim(), voiceType, playbackRate);
+  let blobUrl = getCachedBlobUrl(cacheKey);
 
-  try {
-    blobUrl = await fetchTtsAudioUrl({
-      text: text.trim(),
-      appId,
-      accessToken,
-      voiceType,
-      speedRatio: playbackRate,
-      signal,
-    });
-  } catch (e) {
-    onFallback?.();
-    return;
+  if (!blobUrl) {
+    try {
+      blobUrl = await fetchTtsAudioUrl({
+        text: text.trim(),
+        appId,
+        accessToken,
+        voiceType,
+        speedRatio: playbackRate,
+        signal,
+      });
+      if (blobUrl) setTtsCache(cacheKey, blobUrl);
+    } catch (e) {
+      onFallback?.();
+      return;
+    }
   }
 
   if (!blobUrl) {
@@ -397,11 +453,9 @@ export async function playWithDoubao({
     signal,
     onStart,
     onFinish: () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
       onFinish?.();
     },
     onFallback: () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
       onFallback?.();
     },
   };

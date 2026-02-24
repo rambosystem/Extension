@@ -36,8 +36,12 @@
           <div class="word_header">
             <span class="word_title">{{ selectionText }}</span>
             <span v-if="displayData.pronunciation" class="word_pronunciation">{{ displayedPronunciation }}</span>
-            <button type="button" class="pronunciation_btn" aria-label="Pronunciation" @click="playPronunciation">
-              <svg class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button type="button" class="pronunciation_btn" aria-label="Pronunciation"
+              @click="playPronunciation">
+              <el-icon v-if="pronunciationLoading" class="is-loading speaker_icon_wrap">
+                <Loading />
+              </el-icon>
+              <svg v-else class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
               </svg>
@@ -52,8 +56,12 @@
               </div>
               <p v-if="entry.example" class="entry_example">
                 <button v-if="(viewEntries[index] || {}).example" type="button" class="example_pronunciation_btn"
-                  aria-label="Read example" @click="playExample(entry.example)">
-                  <svg class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  aria-label="Read example"
+                  @click="playExample(entry.example, index)">
+                  <el-icon v-if="exampleLoadingIndex === index" class="is-loading example_speaker_icon_wrap">
+                    <Loading />
+                  </el-icon>
+                  <svg v-else class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                     <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
                   </svg>
@@ -250,6 +258,8 @@ function renderExampleWithHighlights(displayedExample, ranges) {
 // 发音用 AbortController，再次点击或组件卸载时中断
 const pronunciationController = ref(null);
 const exampleController = ref(null);
+const pronunciationLoading = ref(false);
+const exampleLoadingIndex = ref(null); // 当前正在请求的例句下标，null 表示无
 
 function playPronunciation() {
   const word = props.selectionText?.trim();
@@ -257,12 +267,17 @@ function playPronunciation() {
   if (pronunciationController.value) {
     pronunciationController.value.abort();
   }
+  pronunciationLoading.value = true;
   const controller = new AbortController();
   pronunciationController.value = controller;
   const onFinish = () => {
     if (pronunciationController.value === controller) {
       pronunciationController.value = null;
     }
+    pronunciationLoading.value = false;
+  };
+  const onStart = () => {
+    pronunciationLoading.value = false;
   };
   const doPlay = (provider) => {
     if (provider === "browser") {
@@ -272,6 +287,7 @@ function playPronunciation() {
         rate: 0.9,
         volume: 1,
         signal: controller.signal,
+        onStart,
         onFinish,
       });
       return;
@@ -281,6 +297,7 @@ function playPronunciation() {
       rate: 0.9,
       volume: 1,
       signal: controller.signal,
+      onStart,
       onFinish,
       onFallback: () => {
         speak({
@@ -289,6 +306,7 @@ function playPronunciation() {
           rate: 0.9,
           volume: 1,
           signal: controller.signal,
+          onStart,
           onFinish,
         });
       },
@@ -303,19 +321,24 @@ function playPronunciation() {
   }
 }
 
-function playExample(exampleText) {
+function playExample(exampleText, index) {
   const raw = (exampleText || "").trim();
   const text = raw.replace(/\*\*([^*]*)\*\*/g, "$1").trim();
   if (!text) return;
   if (exampleController.value) {
     exampleController.value.abort();
   }
+  exampleLoadingIndex.value = index;
   const controller = new AbortController();
   exampleController.value = controller;
   const onFinish = () => {
     if (exampleController.value === controller) {
       exampleController.value = null;
     }
+    exampleLoadingIndex.value = null;
+  };
+  const onStart = () => {
+    exampleLoadingIndex.value = null;
   };
   const doPlay = (provider) => {
     if (provider === "browser") {
@@ -325,6 +348,7 @@ function playExample(exampleText) {
         rate: 0.9,
         volume: 1,
         signal: controller.signal,
+        onStart,
         onFinish,
       });
       return;
@@ -334,6 +358,7 @@ function playExample(exampleText) {
       rate: 0.9,
       volume: 1,
       signal: controller.signal,
+      onStart,
       onFinish,
       onFallback: () => {
         speak({
@@ -342,6 +367,7 @@ function playExample(exampleText) {
           rate: 0.9,
           volume: 1,
           signal: controller.signal,
+          onStart,
           onFinish,
         });
       },
@@ -515,6 +541,12 @@ onBeforeUnmount(() => {
       width: 14px;
       height: 14px;
     }
+
+    .speaker_icon_wrap {
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+    }
   }
 
   .word_entries {
@@ -581,6 +613,12 @@ onBeforeUnmount(() => {
         .speaker_icon {
           width: 0.75em;
           height: 0.75em;
+        }
+
+        .example_speaker_icon_wrap {
+          width: 0.75em;
+          height: 0.75em;
+          font-size: 0.75em;
         }
       }
     }
