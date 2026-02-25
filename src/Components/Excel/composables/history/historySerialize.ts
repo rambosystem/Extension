@@ -1,4 +1,4 @@
-import { debugError, debugLog } from "../../../../utils/debug.js";
+import { debugError, debugLog } from "@/utils/debug.js";
 
 /**
  * 优化的深拷贝实现

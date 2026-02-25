@@ -3,7 +3,7 @@
  * 负责处理流式响应，解析 SSE 数据
  */
 
-import { debugLog } from "../../../utils/debug.js";
+import { debugLog } from "@/utils/debug.js";
 
 /**
  * 处理流式响应，解析 SSE 数据

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { t } from "../../utils/i18n.js";
+import { t } from "@/utils/i18n.js";
 import {
   fetchCurrentUserTerms,
   addUserTerms,

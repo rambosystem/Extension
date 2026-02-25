@@ -5,7 +5,7 @@ import {
   debugInfo,
   debugWarn,
   debugError,
-} from "../../../../utils/debug.js";
+} from "@/utils/debug.js";
 import { optimizedDeepCopy } from "./historySerialize";
 import { buildSelectionRangeFromChanges } from "./historySelectionRange";
 import { createHistoryState } from "./historyState";

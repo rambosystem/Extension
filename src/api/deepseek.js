@@ -3,7 +3,7 @@
  * 纯 HTTP 通信层，只负责网络请求，不包含业务逻辑
  */
 
-import { debugLog } from "../utils/debug.js";
+import { debugLog } from "@/utils/debug.js";
 
 const DEEPSEEK_API_BASE_URL = "https://api.deepseek.com/v1/chat/completions";
 

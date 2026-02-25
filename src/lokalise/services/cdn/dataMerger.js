@@ -3,7 +3,7 @@
  * 负责增量合并新旧翻译数据
  */
 
-import { debugLog } from "../../../utils/debug.js";
+import { debugLog } from "@/utils/debug.js";
 
 /**
  * 增量合并新旧翻译数据

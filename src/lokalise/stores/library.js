@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { nextTick } from "vue";
 import { ElMessage } from "element-plus";
-import { t } from "../../utils/i18n.js";
+import { t } from "@/utils/i18n.js";
 import { getUserProjects } from "../services/translation/index.js";
 import { STORAGE_KEYS } from "../config/storageKeys.js";
 import {

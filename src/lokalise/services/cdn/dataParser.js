@@ -3,7 +3,7 @@
  * 负责解析和标准化CDN数据
  */
 
-import { debugError } from "../../../utils/debug.js";
+import { debugError } from "@/utils/debug.js";
 
 /**
  * 解析JavaScript格式的翻译数据

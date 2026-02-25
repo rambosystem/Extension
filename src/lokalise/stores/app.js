@@ -5,7 +5,7 @@
  */
 
 import { defineStore } from "pinia";
-import { MENU_ORDER, ROUTE_INDEX } from "../../routes/constants.js";
+import { MENU_ORDER, ROUTE_INDEX } from "@/routes/constants.js";
 import { STORAGE_KEYS } from "../config/storageKeys.js";
 import {
   getDefaultProjectId,

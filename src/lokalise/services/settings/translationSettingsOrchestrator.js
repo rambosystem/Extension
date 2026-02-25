@@ -1,6 +1,6 @@
 import { ElMessage } from "element-plus";
-import { t } from "../../../utils/i18n.js";
-import { debugLog } from "../../../utils/debug.js";
+import { t } from "@/utils/i18n.js";
+import { debugLog } from "@/utils/debug.js";
 import { useApiStore } from "../../stores/settings/api.js";
 import { useTranslationSettingsStore } from "../../stores/settings/translation.js";
 import { useTranslationCoreStore } from "../../stores/translation/core.js";

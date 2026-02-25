@@ -1,11 +1,11 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { t } from "../../../utils/i18n.js";
+import { t } from "@/utils/i18n.js";
 import { useTranslation } from "../../composables/Translation/useTranslation.js";
 import { useTranslationStorage } from "../../composables/Translation/useTranslationStorage.js";
 import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
-import { debugLog } from "../../../utils/debug.js";
-import { generateKeysForTranslationResult } from "../../../utils/keyGenerator.js";
+import { debugLog } from "@/utils/debug.js";
+import { generateKeysForTranslationResult } from "@/utils/keyGenerator.js";
 import { useExportStore } from "./export.js";
 import { piniaLocalStorage } from "../../infrastructure/storage.js";
 import {

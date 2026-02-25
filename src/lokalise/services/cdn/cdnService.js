@@ -3,7 +3,7 @@
  * 主服务函数：负责从CDN获取翻译数据
  */
 
-import { debugLog, debugWarn, debugError } from "../../../utils/debug.js";
+import { debugLog, debugWarn, debugError } from "@/utils/debug.js";
 import { CDN_URLS, checkCdnFileUpdate, fetchCdnFile } from "../../api/cdn.js";
 import {
   CACHE_CONFIG,

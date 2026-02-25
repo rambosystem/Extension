@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { debugLog } from "../../../utils/debug.js";
+import { debugLog } from "@/utils/debug.js";
 import { TRANSLATION_CONFIG } from "../../config/translation.js";
 import { useCacheValidation } from "../../composables/Core/useCacheValidation.js";
 import { STORAGE_KEYS } from "../../config/storageKeys.js";

@@ -4,9 +4,9 @@
  * 支持流式返回，运行在 content script 中，需从 chrome.storage.local 读取 API key
  */
 
-import { callDeepSeekAPI, parseNonStreamResponse, streamDeepSeekContent } from "../../../api/deepseek.js";
-import { buildRequestBody } from "../../../lokalise/services/translation/requestBuilder.js";
-import { TRANSLATE_WORD_PROMPT, TRANSLATE_SENTENCE_PROMPT } from "../../config/prompts.js";
+import { callDeepSeekAPI, parseNonStreamResponse, streamDeepSeekContent } from "@/api/deepseek.js";
+import { buildRequestBody } from "@/lokalise/services/translation/requestBuilder.js";
+import { TRANSLATE_WORD_PROMPT, TRANSLATE_SENTENCE_PROMPT } from "@/translate/config/prompts.js";
 
 /**
  * 从 chrome.storage.local 读取划词翻译所需配置（content script 环境）
