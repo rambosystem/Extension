@@ -8,10 +8,16 @@
 
       <el-scrollbar v-if="history.length" height="320px" class="history_scrollbar">
         <div class="history_list">
-          <div v-for="item in history" :key="item.id" class="history_item_row">
+          <div
+            v-for="(item, index) in history"
+            :key="item.id"
+            class="history_item_row"
+          >
             <HistoryCard
               :item="item"
+              :is-top="index === 0"
               @copy="copyHistoryItem"
+              @pin="pinHistoryItem"
               @delete="deleteHistoryItem"
             />
           </div>
@@ -153,6 +159,15 @@ async function deleteHistoryItem(id) {
   const next = history.value.filter((item) => item.id !== id);
   await saveHistoryToStorage(next);
   history.value = next;
+}
+
+async function pinHistoryItem(id) {
+  const target = history.value.find((item) => item.id === id);
+  if (!target) return;
+  const next = [target, ...history.value.filter((item) => item.id !== id)];
+  await saveHistoryToStorage(next);
+  history.value = next;
+  ElMessage.success(t("clipboard.statusPinned"));
 }
 
 onMounted(async () => {
