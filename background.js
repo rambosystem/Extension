@@ -1,7 +1,6 @@
 // 划词翻译 - 右键菜单
 const TRANSLATE_MENU_ID = "penrose-translate-selection";
 const CLIPBOARD_MENU_INDEX = "3";
-const CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY = "clipboard_shortcut_disabled";
 
 // 豆包 TTS 配置（主配置见 src/translate/config/tts.js，此处为 background 用副本，修改配置请同步两处）
 const TTS_API_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
@@ -179,9 +178,6 @@ function openClipboardPopupFromActiveTab() {
 
 chrome.commands?.onCommand.addListener((command) => {
   if (command === "open-clipboard-popup") {
-    chrome.storage.local.get([CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY], (result) => {
-      if (result?.[CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY]) return;
-      openClipboardPopupFromActiveTab();
-    });
+    openClipboardPopupFromActiveTab();
   }
 });

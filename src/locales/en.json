@@ -130,6 +130,8 @@
     "openClipboardPopup": "Open Clipboard Popup",
     "clearShortcutButton": "Clear Shortcut",
     "shortcutEmpty": "Not Set",
+    "shortcutCleared": "Shortcut cleared.",
+    "shortcutClearManual": "Please clear the shortcut from the shortcut settings page.",
     "shortcutDescription": "Use a system shortcut to open Clipboard popup quickly.",
     "openShortcutButton": "Open Shortcut Settings",
     "historyLimitHelp": "Store up to {min}-{max} recent clipboard records.",

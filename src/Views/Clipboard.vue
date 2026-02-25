@@ -10,20 +10,8 @@
       </el-form-item>
 
       <el-form-item :label="t('clipboard.openClipboardPopup')" label-position="left">
-        <div class="shortcut-setting-row" role="button" tabindex="0" @click="openShortcutSettings"
-          @keydown.enter.prevent="openShortcutSettings" @keydown.space.prevent="openShortcutSettings">
-          <div class="shortcut-action-group">
-            <el-button
-              text
-              circle
-              class="shortcut-setting-btn"
-              :title="t('clipboard.clearShortcutButton')"
-              @click.stop="clearShortcut"
-            >
-              <img :src="shortcutActionIcon" class="shortcut-action-icon" alt="" draggable="false" />
-            </el-button>
-            <span class="shortcut-key-chip">{{ shortcutDisplay }}</span>
-          </div>
+        <div class="shortcut-setting-row" @click="openShortcutSettings">
+          <span class="shortcut-key-chip">{{ shortcutDisplay }}</span>
         </div>
       </el-form-item>
     </el-form>
@@ -33,10 +21,8 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
-import shortcutActionIcon from "@/assets/delete.svg";
 import {
   CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY,
-  CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY,
   CLIPBOARD_HISTORY_DEFAULT_LIMIT,
   CLIPBOARD_HISTORY_MIN_LIMIT,
   CLIPBOARD_HISTORY_MAX_LIMIT,
@@ -52,11 +38,10 @@ defineProps({
 });
 const historyLimit = ref(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
 const loaded = ref(false);
-const shortcutDisabled = ref(false);
+const shortcutValue = ref("");
 const shortcutDisplay = computed(() => {
-  if (shortcutDisabled.value) return t("clipboard.shortcutEmpty");
-  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.platform);
-  return isMac ? "⇧⌘V" : "Ctrl+Shift+V";
+  if (!shortcutValue.value) return t("clipboard.shortcutEmpty");
+  return shortcutValue.value;
 });
 
 function loadHistoryLimit() {
@@ -89,12 +74,15 @@ function saveHistoryLimitToStorage(value) {
 
 function loadShortcutState() {
   return new Promise((resolve) => {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) {
+    if (typeof chrome === "undefined" || !chrome.commands?.getAll) {
       resolve();
       return;
     }
-    chrome.storage.local.get([CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY], (result) => {
-      shortcutDisabled.value = !!result?.[CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY];
+    chrome.commands.getAll((commands) => {
+      const cmd = Array.isArray(commands)
+        ? commands.find((item) => item?.name === "open-clipboard-popup")
+        : null;
+      shortcutValue.value = cmd?.shortcut || "";
       resolve();
     });
   });
@@ -119,12 +107,6 @@ watch(historyLimit, async () => {
 function openShortcutSettings() {
   if (typeof chrome === "undefined" || !chrome.tabs?.create) return;
   chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
-}
-
-function clearShortcut() {
-  if (typeof chrome === "undefined" || !chrome.storage?.local) return;
-  shortcutDisabled.value = true;
-  chrome.storage.local.set({ [CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY]: true });
 }
 </script>
 
@@ -166,21 +148,8 @@ function clearShortcut() {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 0;
   cursor: pointer;
   user-select: none;
-}
-
-.shortcut-setting-row:focus-visible {
-  outline: 2px solid #93c5fd;
-  outline-offset: 2px;
-}
-
-.shortcut-action-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .shortcut-key-chip {
@@ -205,19 +174,6 @@ function clearShortcut() {
 .shortcut-key-chip:hover {
   border-color: #c0c4cc;
   background: #f5f7fa;
-}
-
-.shortcut-setting-btn {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: #374151;
-}
-
-.shortcut-action-icon {
-  width: 16px;
-  height: 16px;
-  display: block;
 }
 
 :deep(.el-form-item__label) {

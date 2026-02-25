@@ -1,6 +1,5 @@
 export const CLIPBOARD_HISTORY_STORAGE_KEY = "clipboard_history";
 export const CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY = "clipboard_history_limit";
-export const CLIPBOARD_SHORTCUT_DISABLED_STORAGE_KEY = "clipboard_shortcut_disabled";
 
 export const CLIPBOARD_HISTORY_DEFAULT_LIMIT = 20;
 export const CLIPBOARD_HISTORY_MIN_LIMIT = 1;
