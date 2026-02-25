@@ -68,12 +68,12 @@
 <script setup>
 import { ref, watch, onMounted } from "vue";
 import { ElDialog } from "element-plus";
-import SaveableInput from "../components/common/SaveableInput.vue";
-import { useI18n } from "../lokalise/composables/Core/useI18n.js";
-import { useApiStore } from "../lokalise/stores/settings/api.js";
-import { useTranslationSettingsStore } from "../lokalise/stores/settings/translation.js";
-import { clearAllSettings } from "../lokalise/services/settings/translationSettingsOrchestrator.js";
-import { debugLog } from "../utils/debug.js";
+import SaveableInput from "@/components/common/SaveableInput.vue";
+import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
+import { useApiStore } from "@/lokalise/stores/settings/api.js";
+import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";
+import { clearAllSettings } from "@/lokalise/services/settings/translationSettingsOrchestrator.js";
+import { debugLog } from "@/utils/debug.js";
 
 const { t } = useI18n();
 

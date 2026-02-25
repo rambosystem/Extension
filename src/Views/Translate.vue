@@ -25,13 +25,13 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
-import { useI18n } from "../lokalise/composables/Core/useI18n.js";
-import { useTranslationSettingsStore } from "../lokalise/stores/settings/translation.js";
+import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
+import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";
 import {
   TTS_VOICE_TYPES,
   STORAGE_KEYS,
   DEFAULT_VOICE_TYPE,
-} from "../translate/config/tts.js";
+} from "@/translate/config/tts.js";
 
 const { t } = useI18n();
 const translationSettingsStore = useTranslationSettingsStore();

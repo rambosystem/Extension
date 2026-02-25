@@ -22,7 +22,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { useI18n } from "../../lokalise/composables/Core/useI18n.js";
+import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 
 const { t } = useI18n();
 
