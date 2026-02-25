@@ -53,7 +53,7 @@ const { t } = useI18n();
 const libraryStore = useLibraryStore();
 const tableRef = ref(null);
 
-// 使用 storeToRefs 保持响应�?
+// 使用 storeToRefs 保持响应式
 const {
   filterKeyName,
   filterProject,
@@ -69,7 +69,7 @@ const {
 } = storeToRefs(libraryStore);
 
 /**
- * 清除筛选条�?
+ * 清除筛选条件
  */
 const handleClear = () => {
   libraryStore.clearFilters();
@@ -86,7 +86,7 @@ const handleSearch = async () => {
  * 处理操作按钮点击
  */
 const handleOperation = (row) => {
-  // 操作功能待实�?
+  // 操作功能待实现
   console.log("Operation clicked for row:", row);
 };
 
@@ -117,7 +117,7 @@ const handleSelectionChange = (selection) => {
  */
 const handleSelectionScopeChange = (scope) => {
   libraryStore.setSelectionScope(scope);
-  // 根据选择范围执行全�?
+  // 根据选择范围执行全选
   if (tableRef.value) {
     tableRef.value.handleSelectAll(scope);
   }

@@ -17,11 +17,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
-import TranslationForm from "./components/Translation/TranslationForm.vue";
-import TranslationResultDialog from "./components/Translation/TranslationResultDialog.vue";
-import UploadSettingsDialog from "./components/Upload/UploadSettingsDialog.vue";
-import TranslationSetting from "./components/Translation/TranslationSetting.vue";
+import { onMounted, onUnmounted } from "vue";
+import TranslationForm from "@/lokalise/components/Translation/TranslationForm.vue";
+import TranslationResultDialog from "@/lokalise/components/Translation/TranslationResultDialog.vue";
+import UploadSettingsDialog from "@/lokalise/components/Upload/UploadSettingsDialog.vue";
+import TranslationSetting from "@/lokalise/components/Translation/TranslationSetting.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";

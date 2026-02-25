@@ -6,7 +6,7 @@ import { MENU_ORDER } from "./constants.js";
 export { ROUTE_INDEX } from "./constants.js";
 
 import Settings from "@/views/Settings.vue";
-import Lokalise from "@/lokalise/Lokalise.vue";
+import Lokalise from "@/views/Lokalise.vue";
 import Translate from "@/views/Translate.vue";
 import Clipboard from "@/views/Clipboard.vue";
 
