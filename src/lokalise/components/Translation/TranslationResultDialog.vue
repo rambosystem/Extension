@@ -90,7 +90,7 @@
 </template>
 
 <script setup>
-import Excel from "@/components/Excel/Excel.vue";
+import Excel from "@/components/excel/excel.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
 import { useExportStore } from "@/lokalise/stores/translation/export.js";

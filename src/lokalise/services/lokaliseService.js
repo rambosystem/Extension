@@ -8,7 +8,7 @@ import {
   fetchUserProjects,
   validateApiToken,
   uploadKeys,
-} from "@/lokalise/api/lokalise.js";
+} from "../api/lokalise.js";
 import { performTermMatching } from "./translation/termMatcher.js";
 import {
   buildUploadRequestBody,

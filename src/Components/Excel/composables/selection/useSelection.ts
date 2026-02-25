@@ -76,7 +76,7 @@ export interface UseSelectionOptions {
  * 用于通用组件 Excel 的内部状态管理
  *
  * 设计原则：
- * - 通用组件（components/Common/）应该自包含，不依赖 Store
+ * - 通用组件（components/common/）应该自包含，不依赖 Store
  * - 每个组件实例拥有独立的选择状态，保证组件的可复用性
  * - 这是通用组件的标准做法，符合组件化设计原则
  *

@@ -52,7 +52,7 @@
 </template>
 
 <script setup>
-import CodeEditor from "@/components/Common/CodeEditor.vue";
+import CodeEditor from "@/components/common/CodeEditor.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
 import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";

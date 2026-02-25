@@ -167,11 +167,11 @@ import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translat
 import { useTermsStore } from "@/lokalise/stores/terms.js";
 import { ref, watch, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import AutocompleteInput from "@/components/Common/AutocompleteInput.vue";
-import SaveableInput from "@/components/Common/SaveableInput.vue";
-import LoadingButton from "@/components/Common/LoadingButton.vue";
-import TermsCard from "@/components/Terms/TermsCard.vue";
-import ConfirmDialog from "@/components/Common/ConfirmDialog.vue";
+import AutocompleteInput from "@/components/common/AutocompleteInput.vue";
+import SaveableInput from "@/components/common/SaveableInput.vue";
+import LoadingButton from "@/components/common/LoadingButton.vue";
+import TermsCard from "@/components/terms/termsCard.vue";
+import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import { useTranslationStorage } from "@/lokalise/composables/Translation/useTranslationStorage.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 import { getAvailableLanguages } from "@/lokalise/config/languages.js";

@@ -8,7 +8,7 @@ export const CDN_URLS = {
   AmazonSearch:
     "https://pacvue-public-doc.s3.us-west-2.amazonaws.com/lokalise/AmazonSearch/en.js",
   Common:
-    "https://pacvue-public-doc.s3.us-west-2.amazonaws.com/lokalise/Common/en.js",
+    "https://pacvue-public-doc.s3.us-west-2.amazonaws.com/lokalise/common/en.js",
   Commerce:
     "https://pacvue-public-doc.s3.us-west-2.amazonaws.com/lokalise/Commerce/en.js",
 };

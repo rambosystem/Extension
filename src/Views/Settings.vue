@@ -68,7 +68,7 @@
 <script setup>
 import { ref, watch, onMounted } from "vue";
 import { ElDialog } from "element-plus";
-import SaveableInput from "../components/Common/SaveableInput.vue";
+import SaveableInput from "../components/common/SaveableInput.vue";
 import { useI18n } from "../lokalise/composables/Core/useI18n.js";
 import { useApiStore } from "../lokalise/stores/settings/api.js";
 import { useTranslationSettingsStore } from "../lokalise/stores/settings/translation.js";
@@ -180,5 +180,4 @@ onMounted(async () => {
     color: #606266;
   }
 }
-
 </style>

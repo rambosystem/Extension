@@ -55,7 +55,7 @@
 import { Setting } from "@element-plus/icons-vue";
 import { useI18n } from "./lokalise/composables/Core/useI18n.js";
 import { ROUTE_INDEX } from "./routes/constants.js";
-import WeightItem from "./components/Terms/Weight-Item.vue";
+import WeightItem from "./components/terms/Weight-Item.vue";
 import translationSvg from "./assets/translation.svg";
 import clipboardSvg from "./assets/clipboard.svg";
 

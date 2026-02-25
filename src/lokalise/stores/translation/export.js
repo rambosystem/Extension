@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { useExcelExport } from "../../../components/Excel/composables/useExcelExport";
+import { useExcelExport } from "../../../components/excel/composables/useExcelExport";
 import { t } from "../../../utils/i18n.js";
 import { debugLog, debugError } from "../../../utils/debug.js";
 import {
@@ -256,7 +256,8 @@ export const useExportStore = defineStore("export", {
 
       if (projectId && oldProjectId && projectId !== oldProjectId) {
         const baselineKey =
-          this.excelBaselineKey || getLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
+          this.excelBaselineKey ||
+          getLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
         if (baselineKey?.trim()) {
           const projectName = this.getProjectNameById(projectId) || projectId;
           try {
@@ -364,7 +365,7 @@ export const useExportStore = defineStore("export", {
 
         // 加载 Auto Increment Key 开关状态
         const autoIncrementKeyEnabled = getLocalItem(
-          STORAGE_KEYS.AUTO_INCREMENT_KEY_ENABLED
+          STORAGE_KEYS.AUTO_INCREMENT_KEY_ENABLED,
         );
         if (autoIncrementKeyEnabled !== null) {
           this.autoIncrementKeyEnabled = autoIncrementKeyEnabled === "true";

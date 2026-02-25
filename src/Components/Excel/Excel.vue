@@ -1234,7 +1234,7 @@ const setColumnWidth = (colIndex: number, width: number): void => {
  * - setColumnWidth(colIndex, width): 设置指定列的宽度
  * - tableData: 表格数据的响应式引用（只读）
  *
- * 使用示例请参考组件文档：src/components/Excel/README.md
+ * 使用示例请参考组件文档：src/components/excel/README.md
  */
 defineExpose({
   /**
