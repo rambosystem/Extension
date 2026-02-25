@@ -3,7 +3,7 @@ import { createApp } from "vue";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import Options from "./Options.vue";
-import pinia from "./lokalise/stores";
+import pinia from "@/lokalise/stores";
 
 const app = createApp(Options);
 app.use(ElementPlus);

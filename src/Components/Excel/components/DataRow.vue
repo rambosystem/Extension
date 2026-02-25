@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import ExcelCell from "./excelCell.vue";
+import ExcelCell from "./ExcelCell.vue";
 import RowResizer from "./RowResizer.vue";
 import type { MenuContext } from "../composables/types";
 import type { CellDisplayStyle } from "../composables/useCellDisplay";
