@@ -126,6 +126,12 @@
   "clipboard": {
     "title": "Clipboard Setting",
     "historyLimitLabel": "History Limit",
+    "shortcutLabel": "Shortcut",
+    "openClipboardPopup": "Open Clipboard Popup",
+    "clearShortcutButton": "Clear Shortcut",
+    "shortcutEmpty": "Not Set",
+    "shortcutDescription": "Use a system shortcut to open Clipboard popup quickly.",
+    "openShortcutButton": "Open Shortcut Settings",
     "historyLimitHelp": "Store up to {min}-{max} recent clipboard records.",
     "saveSuccess": "Clipboard settings saved successfully",
     "saveFailed": "Failed to save clipboard settings",
