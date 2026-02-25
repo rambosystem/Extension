@@ -170,7 +170,7 @@ import { ElMessage } from "element-plus";
 import AutocompleteInput from "@/components/common/AutocompleteInput.vue";
 import SaveableInput from "@/components/common/SaveableInput.vue";
 import LoadingButton from "@/components/common/LoadingButton.vue";
-import TermsCard from "@/components/terms/termsCard.vue";
+import TermsCard from "@/components/terms/TermsCard.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import { useTranslationStorage } from "@/lokalise/composables/Translation/useTranslationStorage.js";
 import { debugLog, debugError } from "@/utils/debug.js";

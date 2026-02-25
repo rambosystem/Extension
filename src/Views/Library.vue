@@ -44,9 +44,9 @@
 import { onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useI18n } from "../lokalise/composables/Core/useI18n.js";
-import LibraryFilter from "../components/library/libraryFilter.vue";
-import LibraryTable from "../components/library/libraryTable.vue";
-import LibraryTableConfig from "../components/library/libraryTableConfig.vue";
+import LibraryFilter from "../components/library/LibraryFilter.vue";
+import LibraryTable from "../components/library/LibraryTable.vue";
+import LibraryTableConfig from "../components/library/LibraryTableConfig.vue";
 import { useLibraryStore } from "../lokalise/stores/library.js";
 
 const { t } = useI18n();
