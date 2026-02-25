@@ -18,10 +18,10 @@
 
 <script setup>
 import { onMounted, onUnmounted } from "vue";
-import TranslationForm from "@/lokalise/components/Translation/TranslationForm.vue";
-import TranslationResultDialog from "@/lokalise/components/Translation/TranslationResultDialog.vue";
-import UploadSettingsDialog from "@/lokalise/components/Upload/UploadSettingsDialog.vue";
-import TranslationSetting from "@/lokalise/components/Translation/TranslationSetting.vue";
+import TranslationForm from "@/lokalise/Components/Translation/TranslationForm.vue";
+import TranslationResultDialog from "@/lokalise/Components/Translation/TranslationResultDialog.vue";
+import UploadSettingsDialog from "@/lokalise/Components/Upload/UploadSettingsDialog.vue";
+import TranslationSetting from "@/lokalise/Components/Translation/TranslationSetting.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { ElMessage } from "element-plus";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";

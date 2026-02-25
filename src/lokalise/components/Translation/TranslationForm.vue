@@ -2,48 +2,31 @@
   <el-form label-position="top" class="translation-form">
     <el-form-item :label="t('translation.enCopywriting')" prop="content">
       <div class="CodeEditor">
-        <CodeEditor
-          :modelValue="translationCoreStore.codeContent"
-          @update:modelValue="translationCoreStore.setCodeContent"
-        >
+        <CodeEditor :modelValue="translationCoreStore.codeContent"
+          @update:modelValue="translationCoreStore.setCodeContent">
         </CodeEditor>
       </div>
     </el-form-item>
     <el-form-item>
       <div class="button-container">
         <!-- 提供一个文本链接，点击后展示上一次翻译的结果，如果值为空则隐藏按钮-->
-        <el-button
-          type="text"
-          @click="translationCoreStore.showLastTranslation"
-          v-if="translationCoreStore.hasLastTranslation"
-        >
+        <el-button type="text" @click="translationCoreStore.showLastTranslation"
+          v-if="translationCoreStore.hasLastTranslation">
           {{ t("translation.lastTranslation") }}
         </el-button>
         <!-- Clear按钮，固定显�?-->
-        <el-button
-          style="min-width: 90px"
-          @click="translationCoreStore.handleClear"
-        >
+        <el-button style="min-width: 90px" @click="translationCoreStore.handleClear">
           {{ t("common.clear") }}
         </el-button>
-        <el-button
-          v-if="shouldShowDeduplicateButton"
-          style="min-width: 90px"
-          @click="handleDeduplicate"
-          :loading="deduplicateStore.isDeduplicating"
-          :disabled="deduplicateStore.isDeduplicating"
-        >
+        <el-button v-if="shouldShowDeduplicateButton" style="min-width: 90px" @click="handleDeduplicate"
+          :loading="deduplicateStore.isDeduplicating" :disabled="deduplicateStore.isDeduplicating">
           {{
             deduplicateStore.isDeduplicating
               ? t("translation.processing")
               : t("translation.deduplicate")
           }}
         </el-button>
-        <el-button
-          type="primary"
-          @click="handleTranslate"
-          style="min-width: 90px"
-        >
+        <el-button type="primary" @click="handleTranslate" style="min-width: 90px">
           {{ t("translation.translate") }}
         </el-button>
       </div>
@@ -52,7 +35,7 @@
 </template>
 
 <script setup>
-import CodeEditor from "@/components/common/CodeEditor.vue";
+import CodeEditor from "@/Components/common/CodeEditor.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
 import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";

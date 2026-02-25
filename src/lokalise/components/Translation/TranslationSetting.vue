@@ -1,140 +1,67 @@
 <template>
   <div>
     <h2 class="title">{{ t("translationSetting.translationSetting") }}</h2>
-    <el-form-item
-      v-if="hasLokaliseToken"
-      :label="t('translationSetting.defaultProject')"
-      label-position="left"
-    >
+    <el-form-item v-if="hasLokaliseToken" :label="t('translationSetting.defaultProject')" label-position="left">
       <div class="default-project-setting">
         <el-radio-group v-model="defaultProjectId">
-          <el-radio
-            v-for="project in projectList"
-            :key="project.project_id"
-            :label="project.project_id"
-          >
+          <el-radio v-for="project in projectList" :key="project.project_id" :label="project.project_id">
             {{ project.name }}
           </el-radio>
         </el-radio-group>
       </div>
     </el-form-item>
-    <el-form-item
-      :label="t('translationSetting.targetLanguage')"
-      label-position="left"
-    >
+    <el-form-item :label="t('translationSetting.targetLanguage')" label-position="left">
       <div class="target-language-setting">
-        <el-checkbox-group
-          v-model="targetLanguages"
-          @change="handleTargetLanguagesChange"
-        >
-          <el-checkbox
-            v-for="lang in availableLanguages"
-            :key="lang.code"
-            :label="lang.code"
-          >
+        <el-checkbox-group v-model="targetLanguages" @change="handleTargetLanguagesChange">
+          <el-checkbox v-for="lang in availableLanguages" :key="lang.code" :label="lang.code">
             {{ lang.name }}
           </el-checkbox>
         </el-checkbox-group>
       </div>
     </el-form-item>
-    <el-form-item
-      :label="t('translationSetting.autoIncrementKey')"
-      label-position="left"
-    >
+    <el-form-item :label="t('translationSetting.autoIncrementKey')" label-position="left">
       <div class="auto-increment-key-setting">
-        <el-switch
-          v-model="autoIncrementKeyEnabled"
-          @change="handleAutoIncrementKeyChange"
-          width="45px"
-        />
+        <el-switch v-model="autoIncrementKeyEnabled" @change="handleAutoIncrementKeyChange" width="45px" />
       </div>
     </el-form-item>
-    <el-form-item
-      v-if="autoIncrementKeyEnabled"
-      :label="t('translationSetting.exportKeySetting')"
-      label-position="left"
-    >
+    <el-form-item v-if="autoIncrementKeyEnabled" :label="t('translationSetting.exportKeySetting')"
+      label-position="left">
       <div class="excel-key-setting">
         <div class="input-container">
-          <AutocompleteInput
-            v-model="excelBaselineKey"
-            :placeholder="t('translationSetting.exportKeySettingPlaceholder')"
-            :get-project-id="getProjectId"
-            :show-dropdown="true"
-            :dropdown-limit="10"
-            :fetch-suggestions="fetchBaselineKeySuggestion"
-            :fetch-suggestions-list="fetchBaselineKeySuggestions"
-            @blur="handleExcelBaselineKeyBlur"
-          />
+          <AutocompleteInput v-model="excelBaselineKey"
+            :placeholder="t('translationSetting.exportKeySettingPlaceholder')" :get-project-id="getProjectId"
+            :show-dropdown="true" :dropdown-limit="10" :fetch-suggestions="fetchBaselineKeySuggestion"
+            :fetch-suggestions-list="fetchBaselineKeySuggestions" @blur="handleExcelBaselineKeyBlur" />
         </div>
       </div>
     </el-form-item>
-    <el-form-item
-      v-if="hasLokaliseToken"
-      :label="t('settings.autoDeduplication')"
-      label-position="left"
-    >
+    <el-form-item v-if="hasLokaliseToken" :label="t('settings.autoDeduplication')" label-position="left">
       <div class="auto-increment-key-setting">
-        <el-switch
-          :model-value="translationSettingsStore.autoDeduplication"
-          @update:model-value="handleAutoDeduplicationChange"
-          width="45px"
-        />
+        <el-switch :model-value="translationSettingsStore.autoDeduplication"
+          @update:model-value="handleAutoDeduplicationChange" width="45px" />
       </div>
     </el-form-item>
-    <el-form-item
-      :label="t('settings.lokaliseApiToken')"
-      prop="lokaliseApiToken"
-      label-position="top"
-    >
-      <SaveableInput
-        type="password"
-        v-model="localLokaliseToken"
-        :label="t('settings.lokaliseApiToken')"
-        :placeholder="t('settings.lokaliseApiTokenPlaceholder')"
-        @save="handleSaveLokaliseApiToken"
-        :loading="apiStore.loadingStates?.lokaliseApiToken || false"
-      />
+    <el-form-item :label="t('settings.lokaliseApiToken')" prop="lokaliseApiToken" label-position="top">
+      <SaveableInput type="password" v-model="localLokaliseToken" :label="t('settings.lokaliseApiToken')"
+        :placeholder="t('settings.lokaliseApiTokenPlaceholder')" @save="handleSaveLokaliseApiToken"
+        :loading="apiStore.loadingStates?.lokaliseApiToken || false" />
     </el-form-item>
     <div v-if="hasLokaliseToken" class="embedding-control">
-      <el-form-item
-        :label="t('settings.AdTerms')"
-        label-position="left"
-        class="addTermsDict-container"
-      >
+      <el-form-item :label="t('settings.AdTerms')" label-position="left" class="addTermsDict-container">
       </el-form-item>
       <div class="control-text">
-        <LoadingButton
-          :loading="refreshLoading"
-          :text="t('terms.Refresh')"
-          @click="handleRefreshTerms"
-        />
-        <LoadingButton
-          :loading="rebuildLoading"
-          :text="t('terms.BuildTermsEmbedding')"
-          @click="handleBuildTermsEmbedding"
-        />
+        <LoadingButton :loading="refreshLoading" :text="t('terms.Refresh')" @click="handleRefreshTerms" />
+        <LoadingButton :loading="rebuildLoading" :text="t('terms.BuildTermsEmbedding')"
+          @click="handleBuildTermsEmbedding" />
       </div>
     </div>
     <div v-if="hasLokaliseToken" class="terms-single">
-      <TermsCard
-        :title="termsStore.termsTitle"
-        :status="termsStore.termsStatus"
-        :total-terms="termsStore.totalTerms"
-        :loading="termsStore.termsLoading"
-        :error="termsStore.termsError"
-        :terms-data="editableTermsData"
-        :embedding-status="termsStore.embeddingStatus"
-        :last-embedding-time="termsStore.lastEmbeddingTime"
-        :refresh-loading="refreshLoading"
-        :library-loading="libraryLoading"
-        @update:status="termsStore.updateTermStatus"
-        @refresh="handleRefreshTerms"
-        @fetchTermsData="termsStore.fetchTermsData"
-        @addTerm="handleAddTerm"
-        @deleteTerm="handleDeleteTerm"
-        @updateTerm="handleUpdateTerm"
-      />
+      <TermsCard :title="termsStore.termsTitle" :status="termsStore.termsStatus" :total-terms="termsStore.totalTerms"
+        :loading="termsStore.termsLoading" :error="termsStore.termsError" :terms-data="editableTermsData"
+        :embedding-status="termsStore.embeddingStatus" :last-embedding-time="termsStore.lastEmbeddingTime"
+        :refresh-loading="refreshLoading" :library-loading="libraryLoading" @update:status="termsStore.updateTermStatus"
+        @refresh="handleRefreshTerms" @fetchTermsData="termsStore.fetchTermsData" @addTerm="handleAddTerm"
+        @deleteTerm="handleDeleteTerm" @updateTerm="handleUpdateTerm" />
     </div>
     <!-- <el-form-item
       :label="t('translationSetting.overwrite')"
@@ -148,13 +75,8 @@
         />
       </div>
     </el-form-item> -->
-    <ConfirmDialog
-      v-model="rebuildConfirmVisible"
-      :title="t('terms.rebuildEmbedding')"
-      :message="t('terms.rebuildEmbeddingCheck')"
-      @confirm="handleRebuildConfirm"
-      @cancel="handleRebuildCancel"
-    />
+    <ConfirmDialog v-model="rebuildConfirmVisible" :title="t('terms.rebuildEmbedding')"
+      :message="t('terms.rebuildEmbeddingCheck')" @confirm="handleRebuildConfirm" @cancel="handleRebuildCancel" />
   </div>
 </template>
 
@@ -167,11 +89,11 @@ import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translat
 import { useTermsStore } from "@/lokalise/stores/terms.js";
 import { ref, watch, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import AutocompleteInput from "@/components/common/AutocompleteInput.vue";
-import SaveableInput from "@/components/common/SaveableInput.vue";
-import LoadingButton from "@/components/common/LoadingButton.vue";
-import TermsCard from "@/components/terms/TermsCard.vue";
-import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
+import AutocompleteInput from "@/Components/common/AutocompleteInput.vue";
+import SaveableInput from "@/Components/common/SaveableInput.vue";
+import LoadingButton from "@/Components/common/LoadingButton.vue";
+import TermsCard from "@/Components/terms/TermsCard.vue";
+import ConfirmDialog from "@/Components/common/ConfirmDialog.vue";
 import { useTranslationStorage } from "@/lokalise/composables/Translation/useTranslationStorage.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 import { getAvailableLanguages } from "@/lokalise/config/languages.js";
@@ -248,7 +170,7 @@ const handleRebuildConfirm = async () => {
   }
 };
 
-const handleRebuildCancel = () => {};
+const handleRebuildCancel = () => { };
 
 const handleAddTerm = (newTerm) => {
   editableTermsData.value.unshift(newTerm);

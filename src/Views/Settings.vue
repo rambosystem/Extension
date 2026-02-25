@@ -1,60 +1,31 @@
 <template>
   <div class="setting_group">
     <h2 class="title">{{ t("settings.title") }}</h2>
-    <el-form
-      :model="translationSettingsStore"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
+    <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('settings.apiKey')" prop="apiKey">
-        <SaveableInput
-          type="password"
-          v-model="localApiKey"
-          :label="t('settings.apiKeyForDeepSeek')"
-          :placeholder="t('settings.apiKeyForDeepSeek')"
-          @save="handleSaveAPIKey"
-          :loading="apiStore.loadingStates?.apiKey || false"
-        />
+        <SaveableInput type="password" v-model="localApiKey" :label="t('settings.apiKeyForDeepSeek')"
+          :placeholder="t('settings.apiKeyForDeepSeek')" @save="handleSaveAPIKey"
+          :loading="apiStore.loadingStates?.apiKey || false" />
       </el-form-item>
     </el-form>
     <h2 class="title">{{ t("settings.advancedSettings") }}</h2>
-    <el-form
-      :model="translationSettingsStore"
-      ref="formRef"
-      label-position="top"
-      class="settings-form"
-    >
+    <el-form :model="translationSettingsStore" ref="formRef" label-position="top" class="settings-form">
       <el-form-item :label="t('settings.debugLogging')" label-position="left">
         <div class="debug-logging-setting">
-          <el-switch
-            v-model="translationSettingsStore.debugLogging"
-            @change="handleDebugLoggingChange"
-            width="45px"
-          />
+          <el-switch v-model="translationSettingsStore.debugLogging" @change="handleDebugLoggingChange" width="45px" />
         </div>
       </el-form-item>
-      <el-form-item
-        :label="t('settings.clearLocalStorage')"
-        label-position="left"
-      >
+      <el-form-item :label="t('settings.clearLocalStorage')" label-position="left">
         <div class="localStorageClear">
           <el-button type="primary" @click="handleClearLocalStorage">
             {{ t("common.clear") }}
           </el-button>
         </div>
-        <el-dialog
-          v-model="translationSettingsStore.dialogVisible"
-          :title="t('settings.clearLocalStorage')"
-          width="30%"
-          align-center
-        >
+        <el-dialog v-model="translationSettingsStore.dialogVisible" :title="t('settings.clearLocalStorage')" width="30%"
+          align-center>
           <span>{{ t("settings.clearLocalStorageConfirm") }}</span>
           <template #footer>
-            <el-button
-              @click="translationSettingsStore.dialogVisible = false"
-              >{{ t("common.cancel") }}</el-button
-            >
+            <el-button @click="translationSettingsStore.dialogVisible = false">{{ t("common.cancel") }}</el-button>
             <el-button type="primary" @click="handleClearLocalStorageConfirm">
               {{ t("common.confirm") }}
             </el-button>
@@ -68,7 +39,7 @@
 <script setup>
 import { ref, watch, onMounted } from "vue";
 import { ElDialog } from "element-plus";
-import SaveableInput from "@/components/common/SaveableInput.vue";
+import SaveableInput from "@/Components/common/SaveableInput.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useApiStore } from "@/lokalise/stores/settings/api.js";
 import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";

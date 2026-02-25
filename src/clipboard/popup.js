@@ -6,6 +6,8 @@ import ClipboardPopup from "./ClipboardPopup.vue";
 
 let mountedApp = null;
 let popupRoot = null;
+let outsideClickHandler = null;
+const POPUP_Z_INDEX = 2147483000;
 
 function parsePx(value) {
   if (value == null || value === "") return 0;
@@ -14,6 +16,10 @@ function parsePx(value) {
 }
 
 export function closeExistingClipboardPopup() {
+  if (outsideClickHandler) {
+    document.removeEventListener("click", outsideClickHandler, true);
+    outsideClickHandler = null;
+  }
   if (mountedApp && popupRoot) {
     mountedApp.unmount();
     mountedApp = null;
@@ -31,7 +37,7 @@ function injectPopupContainerStyles() {
   style.textContent = `
     #${POPUP_ID} {
       position: fixed;
-      z-index: 2147483647;
+      z-index: ${POPUP_Z_INDEX};
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -46,7 +52,7 @@ function getCenterPosition() {
   const vw = document.documentElement.clientWidth || window.innerWidth || 0;
   const vh = document.documentElement.clientHeight || window.innerHeight || 0;
   const w = 320;
-  const h = 200;
+  const h = 420;
   return {
     top: `${Math.max(0, (vh - h) / 2)}px`,
     left: `${Math.max(0, (vw - w) / 2)}px`,
@@ -76,7 +82,7 @@ export function showClipboardPopup() {
     const vw = document.documentElement.clientWidth || window.innerWidth || 0;
     const vh = document.documentElement.clientHeight || window.innerHeight || 0;
     const w = 320;
-    const h = Math.min(popupRoot.offsetHeight || 200, vh * 0.9);
+    const h = Math.min(popupRoot.offsetHeight || 420, vh * 0.9);
     const x = Math.max(0, Math.min(left + dx, vw - w));
     const y = Math.max(0, Math.min(top + dy, vh - h));
     popupRoot.style.left = `${x}px`;
@@ -85,7 +91,6 @@ export function showClipboardPopup() {
 
   function onClose() {
     closeExistingClipboardPopup();
-    document.removeEventListener("click", onOutsideClick);
   }
 
   mountedApp = createApp(ClipboardPopup, {
@@ -97,12 +102,11 @@ export function showClipboardPopup() {
   mountedApp.use(ElementPlus);
   mountedApp.mount(popupRoot);
 
-  function onOutsideClick(e) {
+  outsideClickHandler = (e) => {
     if (isPinnedRef.value) return;
     if (e.target.closest?.(".pin_btn")) return;
     if (popupRoot && popupRoot.contains(e.target)) return;
-    document.removeEventListener("click", onOutsideClick);
     closeExistingClipboardPopup();
-  }
-  document.addEventListener("click", onOutsideClick, true);
+  };
+  document.addEventListener("click", outsideClickHandler, true);
 }

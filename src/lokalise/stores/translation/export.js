@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
-import { useExcelExport } from "@/components/excel/composables/useExcelExport";
+import { useExcelExport } from "@/Components/excel/composables/useExcelExport";
 import { t } from "@/utils/i18n.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 import {

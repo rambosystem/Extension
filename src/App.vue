@@ -7,30 +7,19 @@
             <img src="./assets/icon.svg" class="logo_icon" draggable="false" />
           </div>
           <div class="header_button_group">
-            <el-button
-              :icon="Setting"
-              size="24"
-              @click="handleSettingClick"
-              circle
-            ></el-button>
+            <el-button :icon="Setting" size="24" @click="handleSettingClick" circle></el-button>
           </div>
         </el-header>
         <div class="main-content">
           <el-row :gutter="10">
             <el-col :span="6" @click="handleLokaliseClick">
               <div class="grid-content">
-                <WeightItem
-                  :title="t('app.lokalise')"
-                  url="/src/assets/lokalise.svg"
-                />
+                <WeightItem :title="t('app.lokalise')" url="/src/assets/lokalise.svg" />
               </div>
             </el-col>
             <el-col :span="6" @click="handleTranslationClick">
               <div class="grid-content">
-                <WeightItem
-                  :title="t('app.translation')"
-                  :url="translationSvg"
-                />
+                <WeightItem :title="t('app.translation')" :url="translationSvg" />
               </div>
             </el-col>
             <el-col :span="6" @click="handleClipboardClick">
@@ -55,7 +44,7 @@
 import { Setting } from "@element-plus/icons-vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { ROUTE_INDEX } from "@/routes/constants.js";
-import WeightItem from "@/components/terms/Weight-Item.vue";
+import WeightItem from "@/Components/terms/Weight-Item.vue";
 import translationSvg from "@/assets/translation.svg";
 import clipboardSvg from "@/assets/clipboard.svg";
 

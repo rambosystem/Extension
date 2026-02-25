@@ -1,14 +1,6 @@
 <template>
-  <PopupFrame
-    :on-close="onClose"
-    show-pin
-    show-settings
-    setting-title="Translate settings"
-    :setting-route="ROUTE_INDEX.TRANSLATE"
-    :pinned="pinned"
-    :set-pinned="setPinned"
-    :on-move-by="onMoveBy"
-  >
+  <PopupFrame :on-close="onClose" show-pin show-settings setting-title="Translate settings"
+    :setting-route="ROUTE_INDEX.TRANSLATE" :pinned="pinned" :set-pinned="setPinned" :on-move-by="onMoveBy">
     <!-- 单词查词 -->
     <div v-if="isWord" class="word_view">
       <div v-if="error" class="word_error">
@@ -26,90 +18,46 @@
           <span class="word_title">{{ selectionText }}</span>
           <span v-if="displayData.pronunciation" class="word_pronunciation">{{
             displayedPronunciation
-          }}</span>
-          <button
-            type="button"
-            class="pronunciation_btn"
-            aria-label="Pronunciation"
-            @click="playPronunciation"
-          >
-            <el-icon
-              v-if="pronunciationLoading"
-              class="is-loading speaker_icon_wrap"
-            >
+            }}</span>
+          <button type="button" class="pronunciation_btn" aria-label="Pronunciation" @click="playPronunciation">
+            <el-icon v-if="pronunciationLoading" class="is-loading speaker_icon_wrap">
               <Loading />
             </el-icon>
-            <svg
-              v-else
-              class="speaker_icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
+            <svg v-else class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path
-                d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"
-              />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
             </svg>
           </button>
         </div>
         <!-- 词条：每行打字机逐字展示；例句播放按钮等例句有内容后再显示 -->
         <div class="word_entries">
-          <div
-            v-for="(entry, index) in displayEntries"
-            :key="index"
-            class="word_entry"
-          >
+          <div v-for="(entry, index) in displayEntries" :key="index" class="word_entry">
             <div v-if="entry.part_of_speech && entry.meaning" class="entry_row">
               <span class="entry_pos">{{
                 (viewEntries[index] || {}).part_of_speech
-              }}</span>
+                }}</span>
               <span class="entry_meaning">{{
                 (viewEntries[index] || {}).meaning
-              }}</span>
+                }}</span>
             </div>
             <p v-if="entry.example" class="entry_example">
-              <button
-                v-if="(viewEntries[index] || {}).example"
-                type="button"
-                class="example_pronunciation_btn"
-                aria-label="Read example"
-                @click="playExample(entry.example, index)"
-              >
-                <el-icon
-                  v-if="exampleLoadingIndex === index"
-                  class="is-loading example_speaker_icon_wrap"
-                >
+              <button v-if="(viewEntries[index] || {}).example" type="button" class="example_pronunciation_btn"
+                aria-label="Read example" @click="playExample(entry.example, index)">
+                <el-icon v-if="exampleLoadingIndex === index" class="is-loading example_speaker_icon_wrap">
                   <Loading />
                 </el-icon>
-                <svg
-                  v-else
-                  class="speaker_icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
+                <svg v-else class="speaker_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                  <path
-                    d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"
-                  />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
                 </svg>
               </button>
-              <span
-                v-html="
-                  renderExampleWithHighlights(
-                    (viewEntries[index] || {}).example || '',
-                    (viewEntries[index] || {}).example_highlight_ranges || [],
-                  )
-                "
-              ></span>
+              <span v-html="renderExampleWithHighlights(
+                (viewEntries[index] || {}).example || '',
+                (viewEntries[index] || {}).example_highlight_ranges || [],
+              )
+                "></span>
             </p>
-            <p
-              v-if="entry.example_translation"
-              class="entry_example_translation"
-            >
+            <p v-if="entry.example_translation" class="entry_example_translation">
               {{ (viewEntries[index] || {}).example_translation }}
             </p>
           </div>
@@ -121,10 +69,7 @@
       <div v-if="sentenceError" class="sentence_error">
         <span>{{ sentenceError.message || "Translation failed" }}</span>
       </div>
-      <div
-        v-else-if="sentenceLoading && !sentenceResult"
-        class="sentence_loading"
-      >
+      <div v-else-if="sentenceLoading && !sentenceResult" class="sentence_loading">
         <el-icon class="is-loading">
           <Loading />
         </el-icon>
@@ -134,33 +79,13 @@
         <div class="translation_text">{{ sentenceResult || "" }}</div>
         <div class="sentence_actions">
           <div class="sentence_button_group">
-            <button
-              type="button"
-              class="action_btn replace_btn"
-              aria-label="Replace with translation"
-              :disabled="!sentenceResult"
-              @click="replaceTranslation"
-            >
-              <img
-                src="@/assets/replace.svg"
-                class="action_icon"
-                alt=""
-                draggable="false"
-              />
+            <button type="button" class="action_btn replace_btn" aria-label="Replace with translation"
+              :disabled="!sentenceResult" @click="replaceTranslation">
+              <img src="@/assets/replace.svg" class="action_icon" alt="" draggable="false" />
             </button>
-            <button
-              type="button"
-              class="action_btn copy_btn"
-              aria-label="Copy translation"
-              :disabled="!sentenceResult"
-              @click="copyTranslation"
-            >
-              <img
-                src="@/assets/copy.svg"
-                class="action_icon"
-                alt=""
-                draggable="false"
-              />
+            <button type="button" class="action_btn copy_btn" aria-label="Copy translation" :disabled="!sentenceResult"
+              @click="copyTranslation">
+              <img src="@/assets/copy.svg" class="action_icon" alt="" draggable="false" />
             </button>
           </div>
         </div>
@@ -172,7 +97,7 @@
 <script setup>
 import { Loading } from "@element-plus/icons-vue";
 import { watch, computed, ref, onBeforeUnmount } from "vue";
-import PopupFrame from "@/components/PopupFrame.vue";
+import PopupFrame from "@/Components/PopupFrame.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { checkIsWord } from "./domUtils.js";
 import { useTranslateWord } from "@/lokalise/composables/translate/useTranslateWord.js";
@@ -434,6 +359,7 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .word_view {
+
   .word_loading,
   .word_error {
     display: flex;
@@ -582,6 +508,7 @@ onBeforeUnmount(() => {
 }
 
 .sentence_view {
+
   .sentence_error,
   .sentence_loading {
     display: flex;
