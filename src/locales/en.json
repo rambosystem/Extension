@@ -82,7 +82,7 @@
     "atLeastOneLanguageRequired": "At least one target language must be selected"
   },
   "settings": {
-    "title": "General Settings",
+    "title": "General Setting",
     "apiKey": "API Key",
     "apiKeyForDeepSeek": "API Key for DeepSeek",
     "lokaliseApiToken": "Lokalise API Token",
@@ -124,8 +124,7 @@
     "termsStoreMissingWithData": "Quick validation failed: terms-store is missing but terms data exists"
   },
   "clipboard": {
-    "title": "Clipboard Settings",
-    "description": "Configure clipboard behavior and history.",
+    "title": "Clipboard Setting",
     "historyLimitLabel": "History Limit",
     "historyLimitHelp": "Store up to {min}-{max} recent clipboard records.",
     "saveSuccess": "Clipboard settings saved successfully",
@@ -134,7 +133,7 @@
     "readButton": "Read",
     "copyButton": "Copy",
     "inputPlaceholder": "Clipboard text",
-    "historyTitle": "History",
+    "historyTitle": " Clipboard History",
     "moreButton": "More",
     "pinButton": "Pin",
     "clearHistory": "Clear",
@@ -253,7 +252,7 @@
     "copyright": "© Rambo Systems Software"
   },
   "Translate": {
-    "title": "Translate",
+    "title": "Translate Setting",
     "selectToTranslate": "Select to Translate",
     "selectTTS": "Voice Timbre",
     "selectTTSPlaceholder": "Select Voice"

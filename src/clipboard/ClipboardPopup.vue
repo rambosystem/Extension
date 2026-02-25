@@ -8,18 +8,9 @@
 
       <el-scrollbar v-if="history.length" height="320px" class="history_scrollbar">
         <div class="history_list">
-          <div
-            v-for="(item, index) in history"
-            :key="item.id"
-            class="history_item_row"
-          >
-            <HistoryCard
-              :item="item"
-              :is-top="index === 0"
-              @copy="copyHistoryItem"
-              @pin="pinHistoryItem"
-              @delete="deleteHistoryItem"
-            />
+          <div v-for="(item, index) in history" :key="item.id" class="history_item_row">
+            <HistoryCard :item="item" :is-top="index === 0" @copy="copyHistoryItem" @pin="pinHistoryItem"
+              @delete="deleteHistoryItem" />
           </div>
         </div>
       </el-scrollbar>
@@ -210,6 +201,7 @@ function handleWindowFocus() {
   line-height: 1;
   font-weight: 600;
   color: #1d1d1f;
+  margin-left: 10px;
 }
 
 .history_list {
@@ -222,6 +214,11 @@ function handleWindowFocus() {
 
 .history_scrollbar {
   max-height: 320px;
+  overscroll-behavior: contain;
+
+  :deep(.el-scrollbar__wrap) {
+    overscroll-behavior: contain;
+  }
 }
 
 .clipboard_placeholder {

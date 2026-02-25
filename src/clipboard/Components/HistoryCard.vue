@@ -1,56 +1,26 @@
 <template>
   <el-card shadow="hover" class="history_card">
     <div class="history_row">
-      <el-tooltip
-        :content="item.text"
-        placement="top-start"
-        :show-after="200"
-        :z-index="2147483600"
-        :disabled="!item.text || !isOverflow"
-        :popper-style="tooltipPopperStyle"
-      >
+      <el-tooltip :content="item.text" placement="top-start" :show-after="500" :z-index="2147483600"
+        :disabled="!item.text || !isOverflow" :popper-style="tooltipPopperStyle">
         <p ref="textRef" class="history_text">
           {{ item.text }}
         </p>
       </el-tooltip>
       <div class="history_actions" :class="{ is_open: showMoreActions }">
         <div class="more_actions">
-          <button
-            type="button"
-            class="action_btn"
-            :title="t('clipboard.pinButton')"
-            @click="handlePinClick"
-          >
-            <img
-              :src="isTop ? pinIconFixed : pinIconUnfixed"
-              class="action_icon_img"
-              alt=""
-              draggable="false"
-            />
+          <button type="button" class="action_btn" :title="t('clipboard.pinButton')" @click="handlePinClick">
+            <img :src="isTop ? pinIconFixed : pinIconUnfixed" class="action_icon_img" alt="" draggable="false" />
           </button>
-          <button
-            type="button"
-            class="action_btn"
-            :title="t('common.delete')"
-            @click="handleDeleteClick"
-          >
+          <button type="button" class="action_btn" :title="t('common.delete')" @click="handleDeleteClick">
             <img :src="deleteIcon" class="action_icon_img" alt="" draggable="false" />
           </button>
         </div>
-        <button
-          type="button"
-          class="action_btn"
-          :title="t('clipboard.copyButton')"
-          @click="emit('copy', item)"
-        >
+        <button type="button" class="action_btn" :title="t('clipboard.copyButton')" @click="emit('copy', item)">
           <img :src="copyIcon" class="action_icon_img" alt="" draggable="false" />
         </button>
-        <button
-          type="button"
-          class="action_btn"
-          :title="t('clipboard.moreButton')"
-          @click="showMoreActions = !showMoreActions"
-        >
+        <button type="button" class="action_btn" :title="t('clipboard.moreButton')"
+          @click="showMoreActions = !showMoreActions">
           <img :src="moreIcon" class="action_icon_img" alt="" draggable="false" />
         </button>
       </div>

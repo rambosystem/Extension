@@ -43,12 +43,12 @@ const ROUTE_CONFIG = {
   },
   SETTINGS: {
     labelKey: "menu.settings",
-    titleKey: "menu.settings",
+    titleKey: "settings.title",
     component: Settings,
   },
   ABOUT: {
     labelKey: "menu.about",
-    titleKey: "menu.about",
+    titleKey: "about.title",
     componentFactory: getAboutComponent,
   },
 };

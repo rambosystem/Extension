@@ -1,40 +1,19 @@
 <template>
   <div class="setting_group">
-    <h2 class="title">{{ t("clipboard.title") }}</h2>
-    <p class="clipboard-description">{{ t("clipboard.description") }}</p>
+    <h2 class="title">{{ title }}</h2>
     <el-form label-position="top" class="settings-form">
-      <el-form-item :label="t('clipboard.historyLimitLabel')">
-        <div class="limit_row">
-          <el-input-number
-            v-model="historyLimit"
-            :min="CLIPBOARD_HISTORY_MIN_LIMIT"
-            :max="CLIPBOARD_HISTORY_MAX_LIMIT"
-            :step="1"
-            :step-strictly="true"
-            controls-position="right"
-          />
-          <el-button type="primary" :loading="saving" @click="saveHistoryLimit">
-            {{ t("common.save") }}
-          </el-button>
+      <el-form-item :label="t('clipboard.historyLimitLabel')" label-position="left">
+        <div class="history-limit-setting">
+          <el-input-number v-model="historyLimit" :min="CLIPBOARD_HISTORY_MIN_LIMIT" :max="CLIPBOARD_HISTORY_MAX_LIMIT"
+            :step="1" :step-strictly="true" controls-position="right" />
         </div>
-        <p class="field_hint">
-          {{
-            t("clipboard.historyLimitHelp", {
-              min: CLIPBOARD_HISTORY_MIN_LIMIT,
-              max: CLIPBOARD_HISTORY_MAX_LIMIT,
-            })
-          }}
-        </p>
-        <p v-if="statusText" class="field_status" :class="{ is_error: isError }">
-          {{ statusText }}
-        </p>
       </el-form-item>
     </el-form>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import {
   CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY,
@@ -45,15 +24,14 @@ import {
 } from "@/clipboard/storage.js";
 
 const { t } = useI18n();
+defineProps({
+  title: {
+    type: String,
+    required: true,
+  },
+});
 const historyLimit = ref(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
-const saving = ref(false);
-const statusText = ref("");
-const isError = ref(false);
-
-function setStatus(text, error = false) {
-  statusText.value = text;
-  isError.value = error;
-}
+const loaded = ref(false);
 
 function loadHistoryLimit() {
   return new Promise((resolve) => {
@@ -84,24 +62,35 @@ function saveHistoryLimitToStorage(value) {
 }
 
 async function saveHistoryLimit() {
-  try {
-    saving.value = true;
-    historyLimit.value = normalizeHistoryLimit(historyLimit.value);
-    await saveHistoryLimitToStorage(historyLimit.value);
-    setStatus(t("clipboard.saveSuccess"));
-  } catch (error) {
-    setStatus(t("clipboard.saveFailed"), true);
-  } finally {
-    saving.value = false;
-  }
+  historyLimit.value = normalizeHistoryLimit(historyLimit.value);
+  await saveHistoryLimitToStorage(historyLimit.value);
 }
 
 onMounted(async () => {
   await loadHistoryLimit();
+  loaded.value = true;
+});
+
+watch(historyLimit, async () => {
+  if (!loaded.value) return;
+  await saveHistoryLimit();
 });
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
+.setting_group {
+  padding: 16px;
+}
+
+.title {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.settings-form {
+  width: 100%;
+}
+
 .clipboard-description {
   margin: 0 0 20px;
   font-size: 14px;
@@ -109,26 +98,20 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
-.limit_row {
+.history-limit-setting {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  width: 100%;
+
+  .el-input-number {
+    width: 200px;
+    color: #606266;
+  }
 }
 
-.field_hint {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.field_status {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: #16a34a;
-}
-
-.field_status.is_error {
-  color: #dc2626;
+:deep(.el-form-item__label) {
+  font-size: 16px;
+  font-weight: 500;
 }
 </style>
