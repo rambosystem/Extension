@@ -1,3 +1,8 @@
+/**
+ * stores/index.js - Pinia 实例与持久化插件
+ * 创建 Pinia 并接入 pinia-plugin-persistedstate，各 store 通过 persist 配置统一使用 storage 适配层
+ */
+
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 

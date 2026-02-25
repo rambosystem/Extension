@@ -1,6 +1,9 @@
-// storageKeys.js - 本地存储键名常量（localStorage / chrome.storage）
+/**
+ * storageKeys.js - 统一存储键常量
+ * 应用内 localStorage / chrome.storage 使用的键名集中定义，避免魔法字符串
+ */
 
-/** 应用内使用的存储键名 */
+/** 应用内使用的存储键名（与 storage 适配层、各 store 一致） */
 export const STORAGE_KEYS = {
   APP_LANGUAGE: "app_language",
   CURRENT_MENU: "currentMenu",

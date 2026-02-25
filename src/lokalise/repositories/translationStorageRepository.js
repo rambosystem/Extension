@@ -1,4 +1,7 @@
-// translationStorageRepository.js - 翻译相关配置与上次翻译结果的持久化
+/**
+ * translationStorageRepository.js - 翻译存储仓储层
+ * 翻译相关配置与上次翻译结果的读写收口，统一通过 storage 适配层访问
+ */
 
 import { STORAGE_KEYS } from "../config/storageKeys.js";
 import { getLocalItem, setLocalItem } from "../infrastructure/storage.js";

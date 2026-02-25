@@ -1,4 +1,7 @@
-// storage.js - 本地存储与 Chrome 扩展存储封装
+/**
+ * storage.js - 存储适配层（localStorage / chrome.storage / Pinia）
+ * 统一封装本地存储与 Chrome 扩展 storage.local，并提供 Pinia 持久化插件所需的 storage 接口
+ */
 
 /**
  * 获取当前环境的 window.localStorage（仅浏览器环境可用）

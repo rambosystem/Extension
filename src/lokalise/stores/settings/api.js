@@ -1,4 +1,9 @@
-﻿import { defineStore } from "pinia";
+/**
+ * api.js - API 设置 Store（API Key / Token 存储收口）
+ * DeepSeek API Key、Lokalise API Token 及项目列表的读写统一通过 storage 适配层与 STORAGE_KEYS
+ */
+
+import { defineStore } from "pinia";
 import { ElMessage } from "element-plus";
 import { t } from "../../../utils/i18n.js";
 import { validateDeepSeekApiKey } from "../../../utils/apiValidation.js";
@@ -30,12 +35,14 @@ export const useApiStore = defineStore("api", {
   },
 
   actions: {
+    /** 设置指定 key 的加载状态 */
     setLoading(key, loading) {
       if (Object.prototype.hasOwnProperty.call(this.loadingStates, key)) {
         this.loadingStates[key] = loading;
       }
     },
 
+    /** 在加载状态下执行异步函数 */
     async withLoading(key, asyncFn) {
       try {
         this.setLoading(key, true);
@@ -45,6 +52,10 @@ export const useApiStore = defineStore("api", {
       }
     },
 
+    /**
+     * 保存 API Key（校验后写入 localStorage + chrome.storage）
+     * @param {{ value: string, onSuccess: Function, onError: Function }} saveData
+     */
     async saveApiKey(saveData) {
       const { value, onSuccess, onError } = saveData;
       if (!value?.trim()) {
@@ -73,6 +84,10 @@ export const useApiStore = defineStore("api", {
       }
     },
 
+    /**
+     * 直接保存 API Key（无回调，用于内部流程）
+     * @param {string} apiKey
+     */
     async saveApiKeyDirect(apiKey) {
       if (!apiKey?.trim()) {
         throw new Error("Please enter API Key");
@@ -91,6 +106,11 @@ export const useApiStore = defineStore("api", {
       ElMessage.success(t("messages.apiKeySavedSuccessfully"));
     },
 
+    /**
+     * 校验 Lokalise Token 并返回项目列表
+     * @param {string} token
+     * @returns {Promise<Array<{ project_id: string, name: string }>>}
+     */
     async validateLokaliseToken(token) {
       if (!token?.trim()) {
         throw new Error("Lokalise API token cannot be empty");
@@ -126,6 +146,10 @@ export const useApiStore = defineStore("api", {
         }));
     },
 
+    /**
+     * 保存 Lokalise API Token（校验后写入 storage 与项目列表）
+     * @param {{ value: string, onSuccess: Function, onError: Function }} saveData
+     */
     async saveLokaliseApiToken(saveData) {
       const { value, onSuccess, onError } = saveData;
       if (!value?.trim()) {
@@ -162,6 +186,10 @@ export const useApiStore = defineStore("api", {
       }
     },
 
+    /**
+     * 直接保存 Lokalise Token（无回调）
+     * @param {string} token
+     */
     async saveLokaliseTokenDirect(token) {
       if (!token?.trim()) {
         throw new Error("Please enter Lokalise API Token");
@@ -192,6 +220,7 @@ export const useApiStore = defineStore("api", {
       }
     },
 
+    /** 从 storage 加载 API Key、Token 到 state（含同步到 chrome.storage） */
     initializeApiSettings() {
       try {
         const apiKey = getLocalItem(STORAGE_KEYS.DEEPSEEK_API_KEY, "");
@@ -207,6 +236,7 @@ export const useApiStore = defineStore("api", {
       }
     },
 
+    /** 清空 API 相关 storage 并重置 state（用于缓存清除） */
     initializeToDefaults() {
       try {
         removeLocalItem(STORAGE_KEYS.DEEPSEEK_API_KEY);
@@ -225,11 +255,13 @@ export const useApiStore = defineStore("api", {
       });
     },
 
+    /** 通用写入 storage（收口到 setLocalItem） */
     saveToStorage(key, value) {
       return setLocalItem(key, value);
     },
   },
 
+  /** 持久化：使用 storage 适配层 */
   persist: {
     key: "api-store",
     storage: piniaLocalStorage,

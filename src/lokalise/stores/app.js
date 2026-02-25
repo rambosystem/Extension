@@ -1,4 +1,9 @@
-﻿import { defineStore } from "pinia";
+/**
+ * app.js - 应用全局状态（菜单索引校验 + 存储收口）
+ * 当前菜单、语言等；菜单索引写入前校验合法性，持久化通过 chrome.storage + piniaLocalStorage 收口
+ */
+
+import { defineStore } from "pinia";
 import { MENU_ORDER, ROUTE_INDEX } from "../../routes/constants.js";
 import { STORAGE_KEYS } from "../config/storageKeys.js";
 import {
@@ -17,8 +22,14 @@ const MENU_NAME_BY_INDEX = {
   [ROUTE_INDEX.ABOUT]: "About",
 };
 
+/** 合法菜单索引集合（用于校验） */
 const VALID_MENU_INDEX = new Set(MENU_ORDER.map((_, i) => String(i + 1)));
 
+/**
+ * 将菜单索引规范为合法值，非法则回退到 Lokalise
+ * @param {string|number} menuIndex
+ * @returns {string}
+ */
 function normalizeMenuIndex(menuIndex) {
   const normalized = String(menuIndex ?? "");
   return VALID_MENU_INDEX.has(normalized) ? normalized : ROUTE_INDEX.LOKALISE;
@@ -38,16 +49,22 @@ export const useAppStore = defineStore("app", {
   },
 
   actions: {
+    /**
+     * 设置当前菜单（写入前校验索引，并同步到 chrome.storage）
+     * @param {string|number} menuIndex
+     */
     setCurrentMenu(menuIndex) {
       const normalizedMenu = normalizeMenuIndex(menuIndex);
       this.currentMenu = normalizedMenu;
       setChromeLocal({ [STORAGE_KEYS.CURRENT_MENU]: normalizedMenu });
     },
 
+    /** 设置全局加载状态 */
     setLoading(loading) {
       this.isLoading = loading;
     },
 
+    /** 重置为默认值（语言、菜单等），用于缓存清除 */
     initializeToDefaults() {
       this.language = "en";
       setLocalItem(STORAGE_KEYS.APP_LANGUAGE, "en");
@@ -64,6 +81,10 @@ export const useAppStore = defineStore("app", {
       this.isInitialized = false;
     },
 
+    /**
+     * 从 chrome.storage 恢复菜单等状态，并做索引校验
+     * 首次打开时若有 initialMenu 则用其并清除 initialMenu 键
+     */
     async initializeApp() {
       if (this.isInitialized) return;
 
@@ -95,6 +116,7 @@ export const useAppStore = defineStore("app", {
     },
   },
 
+  /** 持久化：使用 storage 适配层，与其它 store 一致 */
   persist: {
     key: "app-store",
     storage: piniaLocalStorage,
