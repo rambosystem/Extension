@@ -6,6 +6,8 @@ import { useTranslationSettingsStore } from "../settings/translation.js";
 import { useExportStore } from "./export.js";
 import { useTranslationCoreStore } from "./core.js";
 import { debugLog, debugError } from "../../../utils/debug.js";
+import { STORAGE_KEYS } from "../../config/storageKeys.js";
+import { getLocalItem, piniaLocalStorage } from "../../infrastructure/storage.js";
 
 /**
  * 去重功能状态管理
@@ -238,7 +240,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
       // 如果提供了项目ID，尝试从项目列表中找到项目并获取名称
       if (projectId) {
         try {
-          const projects = localStorage.getItem("lokalise_projects");
+          const projects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
           if (projects) {
             const parsedProjects = JSON.parse(projects);
             if (Array.isArray(parsedProjects)) {
@@ -340,7 +342,7 @@ export const useDeduplicateStore = defineStore("deduplicate", {
      */
     getProjectNameById(projectId) {
       try {
-        const projects = localStorage.getItem("lokalise_projects");
+        const projects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
         if (projects) {
           const parsedProjects = JSON.parse(projects);
           if (Array.isArray(parsedProjects)) {
@@ -375,23 +377,6 @@ export const useDeduplicateStore = defineStore("deduplicate", {
   // 启用持久化存储
   persist: {
     key: "deduplicate-store",
-    storage: {
-      getItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          return localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key, value) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.removeItem(key);
-        }
-      },
-    },
+    storage: piniaLocalStorage,
   },
 });

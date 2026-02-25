@@ -11,6 +11,12 @@ import {
   fetchUserEmbeddingStatus,
   updateIndex,
 } from "../services/terms/index.js";
+import { STORAGE_KEYS } from "../config/storageKeys.js";
+import {
+  getLocalItem,
+  piniaLocalStorage,
+  setLocalItem,
+} from "../infrastructure/storage.js";
 
 /**
  * 术语管理状态
@@ -393,24 +399,15 @@ export const useTermsStore = defineStore("terms", {
      */
     updateTermStatus(status) {
       this.termsStatus = status;
-      // 保存到存储
-      if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("ad_terms_status", status.toString());
-      }
+      setLocalItem(STORAGE_KEYS.AD_TERMS_STATUS, status);
     },
 
     /**
      * 初始化术语状态
      */
     initializeTermsStatus() {
-      if (typeof window !== "undefined" && window.localStorage) {
-        const savedStatus = localStorage.getItem("ad_terms_status");
-        this.termsStatus =
-          savedStatus !== null ? savedStatus === "true" : false;
-      } else {
-        // 如果没有localStorage，使用默认值false（关闭）
-        this.termsStatus = false;
-      }
+      const savedStatus = getLocalItem(STORAGE_KEYS.AD_TERMS_STATUS);
+      this.termsStatus = savedStatus !== null ? savedStatus === "true" : false;
     },
 
     /**
@@ -520,34 +517,14 @@ export const useTermsStore = defineStore("terms", {
       this.editableTermsData = [];
       this.hasChanges = false;
 
-      // 保存Ad Terms状态到localStorage（重置为默认值）
-      if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("ad_terms_status", "false");
-      }
+      setLocalItem(STORAGE_KEYS.AD_TERMS_STATUS, false);
     },
   },
 
   // 启用持久化存储
   persist: {
     key: "terms-store",
-    storage: {
-      getItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          return localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key, value) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.removeItem(key);
-        }
-      },
-    },
+    storage: piniaLocalStorage,
     // 只持久化部分状态
     paths: [
       "termsData",

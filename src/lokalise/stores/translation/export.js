@@ -5,6 +5,13 @@ import { t } from "../../../utils/i18n.js";
 import { debugLog, debugError } from "../../../utils/debug.js";
 import { getAvailableLanguages } from "../../config/languages.js";
 import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
+import { STORAGE_KEYS } from "../../config/storageKeys.js";
+import {
+  getLocalItem,
+  piniaLocalStorage,
+  removeLocalItem,
+  setLocalItem,
+} from "../../infrastructure/storage.js";
 
 /**
  * 导出功能状态管理
@@ -17,7 +24,7 @@ export const useExportStore = defineStore("export", {
     excelBaselineKey: "",
     excelOverwrite: false,
 
-    // Auto Increment Key开关状态
+    // Auto Increment Key 开关状态
     autoIncrementKeyEnabled: false,
 
     // 默认项目设置
@@ -38,7 +45,8 @@ export const useExportStore = defineStore("export", {
       Object.values(state.loadingStates).some((loading) => loading),
 
     // 检查是否可以导出
-    canExport: (state) => !state.isLoading,
+    canExport: (state) =>
+      !Object.values(state.loadingStates).some((loading) => loading),
   },
 
   actions: {
@@ -83,7 +91,7 @@ export const useExportStore = defineStore("export", {
      */
     getProjectNameById(projectId) {
       try {
-        const projects = localStorage.getItem("lokalise_projects");
+        const projects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
         if (projects) {
           const parsedProjects = JSON.parse(projects);
           if (Array.isArray(parsedProjects)) {
@@ -118,7 +126,7 @@ export const useExportStore = defineStore("export", {
       if (!key?.trim()) {
         // 清空操作
         debugLog("[ExportStore] Clearing baseline key (empty value)");
-        localStorage.setItem("excel_baseline_key", "");
+        setLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY, "");
         this.excelBaselineKey = "";
         return true;
       }
@@ -134,7 +142,7 @@ export const useExportStore = defineStore("export", {
         return false;
       }
 
-      // 校验key唯一性
+      // 校验 key 唯一性
       const trimmedKey = key.trim();
       const projectId = this.defaultProjectId;
       const projectName = projectId ? this.getProjectNameById(projectId) : null;
@@ -171,7 +179,7 @@ export const useExportStore = defineStore("export", {
             });
           }
 
-          // 检查key是否已存在
+          // 检查 key 是否已存在
           if (existingKeyNames.has(trimmedKey)) {
             debugLog(
               "[ExportStore] saveExcelBaselineKey - key already exists, returning false",
@@ -191,7 +199,7 @@ export const useExportStore = defineStore("export", {
 
           debugLog("[ExportStore] Key uniqueness check passed:", trimmedKey);
         } catch (error) {
-          // 如果API调用失败，记录警告但允许保存（避免网络问题阻止保存）
+          // 如果API调用失败，记录错误但允许保存（避免网络问题阻止保存）
           console.warn("Failed to check key uniqueness:", error);
           debugError(
             "[ExportStore] Failed to check key uniqueness, proceeding with save:",
@@ -215,7 +223,7 @@ export const useExportStore = defineStore("export", {
         }
       }
 
-      localStorage.setItem("excel_baseline_key", trimmedKey);
+      setLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY, trimmedKey);
       this.excelBaselineKey = trimmedKey;
       debugLog("[ExportStore] saveExcelBaselineKey - saved successfully", {
         trimmedKey,
@@ -234,19 +242,16 @@ export const useExportStore = defineStore("export", {
      */
     updateExcelOverwrite(overwrite) {
       this.excelOverwrite = overwrite;
-      localStorage.setItem("excel_overwrite", overwrite ? "true" : "false");
+      setLocalItem(STORAGE_KEYS.EXCEL_OVERWRITE, overwrite);
     },
 
     /**
-     * 设置Auto Increment Key开关状态
+     * 设置 Auto Increment Key 开关状态
      * @param {boolean} enabled - 是否启用
      */
     setAutoIncrementKeyEnabled(enabled) {
       this.autoIncrementKeyEnabled = enabled;
-      localStorage.setItem(
-        "auto_increment_key_enabled",
-        enabled ? "true" : "false",
-      );
+      setLocalItem(STORAGE_KEYS.AUTO_INCREMENT_KEY_ENABLED, enabled);
       debugLog("[ExportStore] Auto Increment Key enabled set to:", enabled);
     },
 
@@ -265,7 +270,7 @@ export const useExportStore = defineStore("export", {
       // 切换项目时，校验 baseline key 在新项目中是否存在
       if (projectId && oldProjectId && projectId !== oldProjectId) {
         const baselineKey =
-          this.excelBaselineKey || localStorage.getItem("excel_baseline_key");
+          this.excelBaselineKey || getLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
         if (baselineKey?.trim()) {
           const projectName = this.getProjectNameById(projectId) || projectId;
           try {
@@ -280,7 +285,7 @@ export const useExportStore = defineStore("export", {
               );
 
             if (exists) {
-              localStorage.setItem("excel_baseline_key", "");
+              setLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY, "");
               this.excelBaselineKey = "";
               ElMessage.warning(
                 `Baseline key "${baselineKey.trim()}" already exists in project "${projectName}". It has been cleared. Please configure a new baseline key.`,
@@ -288,7 +293,7 @@ export const useExportStore = defineStore("export", {
             }
           } catch (error) {
             debugError("[ExportStore] Failed to validate baseline key:", error);
-            localStorage.setItem("excel_baseline_key", "");
+            setLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY, "");
             this.excelBaselineKey = "";
             ElMessage.warning(
               `Failed to validate baseline key uniqueness in project "${projectName}". The baseline key has been cleared for safety.`,
@@ -300,9 +305,9 @@ export const useExportStore = defineStore("export", {
       // 更新项目ID
       this.defaultProjectId = projectId || "";
       if (projectId) {
-        localStorage.setItem("default_project_id", projectId);
+        setLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID, projectId);
       } else {
-        localStorage.removeItem("default_project_id");
+        removeLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
         // 如果没有项目ID，清空 baseline key
         if (this.excelBaselineKey) {
           await this.saveExcelBaselineKey("");
@@ -335,10 +340,7 @@ export const useExportStore = defineStore("export", {
       }
 
       this.targetLanguages = validLanguages;
-      localStorage.setItem(
-        "target_languages",
-        JSON.stringify(this.targetLanguages),
-      );
+      setLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, this.targetLanguages);
       debugLog(
         "[ExportStore] Target languages saved to localStorage:",
         this.targetLanguages,
@@ -356,13 +358,13 @@ export const useExportStore = defineStore("export", {
 
     /**
      * 初始化翻译设置
-     * 从localStorage加载设置
+     * 从 localStorage 加载设置
      */
     initializeTranslationSettings() {
       try {
         debugLog("[ExportStore] Initializing translation settings...");
-        // 加载Excel基线键
-        const excelBaselineKey = localStorage.getItem("excel_baseline_key");
+        // 加载 Excel 基线键
+        const excelBaselineKey = getLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
         if (excelBaselineKey) {
           this.excelBaselineKey = excelBaselineKey;
           debugLog(
@@ -371,8 +373,8 @@ export const useExportStore = defineStore("export", {
           );
         }
 
-        // 加载Excel覆盖设置
-        const excelOverwrite = localStorage.getItem("excel_overwrite");
+        // 加载 Excel 覆盖设置
+        const excelOverwrite = getLocalItem(STORAGE_KEYS.EXCEL_OVERWRITE);
         if (excelOverwrite !== null) {
           this.excelOverwrite = excelOverwrite === "true";
           debugLog(
@@ -381,9 +383,9 @@ export const useExportStore = defineStore("export", {
           );
         }
 
-        // 加载Auto Increment Key开关状态
-        const autoIncrementKeyEnabled = localStorage.getItem(
-          "auto_increment_key_enabled",
+        // 加载 Auto Increment Key 开关状态
+        const autoIncrementKeyEnabled = getLocalItem(
+          STORAGE_KEYS.AUTO_INCREMENT_KEY_ENABLED
         );
         if (autoIncrementKeyEnabled !== null) {
           this.autoIncrementKeyEnabled = autoIncrementKeyEnabled === "true";
@@ -394,7 +396,7 @@ export const useExportStore = defineStore("export", {
         }
 
         // 加载默认项目ID
-        const defaultProjectId = localStorage.getItem("default_project_id");
+        const defaultProjectId = getLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
         if (defaultProjectId) {
           this.defaultProjectId = defaultProjectId;
           debugLog(
@@ -410,7 +412,7 @@ export const useExportStore = defineStore("export", {
         }
 
         // 加载目标语言设置
-        const targetLanguages = localStorage.getItem("target_languages");
+        const targetLanguages = getLocalItem(STORAGE_KEYS.TARGET_LANGUAGES);
         if (targetLanguages) {
           try {
             const parsedLanguages = JSON.parse(targetLanguages);
@@ -422,10 +424,7 @@ export const useExportStore = defineStore("export", {
             // 确保至少选择一个语言，如果没有则使用默认值
             if (validLanguages.length === 0) {
               this.targetLanguages = ["Chinese", "Japanese"];
-              localStorage.setItem(
-                "target_languages",
-                JSON.stringify(this.targetLanguages),
-              );
+              setLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, this.targetLanguages);
               debugLog(
                 "[ExportStore] No valid languages found, using default:",
                 this.targetLanguages,
@@ -443,20 +442,14 @@ export const useExportStore = defineStore("export", {
               error,
             );
             this.targetLanguages = ["Chinese", "Japanese"];
-            localStorage.setItem(
-              "target_languages",
-              JSON.stringify(this.targetLanguages),
-            );
+            setLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, this.targetLanguages);
           }
         } else {
           debugLog(
             "[ExportStore] No target languages in localStorage, using default: Chinese, Japanese",
           );
           this.targetLanguages = ["Chinese", "Japanese"];
-          localStorage.setItem(
-            "target_languages",
-            JSON.stringify(this.targetLanguages),
-          );
+          setLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, this.targetLanguages);
         }
       } catch (error) {
         debugError(
@@ -472,7 +465,7 @@ export const useExportStore = defineStore("export", {
     initializeDefaultProjectFromList() {
       try {
         debugLog("[ExportStore] Initializing default project from list...");
-        const projects = localStorage.getItem("lokalise_projects");
+        const projects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
         if (projects) {
           const parsedProjects = JSON.parse(projects);
           debugLog(
@@ -484,10 +477,7 @@ export const useExportStore = defineStore("export", {
             const firstProject = parsedProjects[0];
             if (firstProject && firstProject.project_id) {
               this.defaultProjectId = firstProject.project_id;
-              localStorage.setItem(
-                "default_project_id",
-                firstProject.project_id,
-              );
+              setLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID, firstProject.project_id);
               debugLog(
                 "[ExportStore] Default project initialized to:",
                 firstProject.project_id,
@@ -522,33 +512,33 @@ export const useExportStore = defineStore("export", {
         this.loadingStates[key] = false;
       });
 
-      // 清空localStorage中的翻译设置
-      localStorage.removeItem("excel_baseline_key");
-      localStorage.removeItem("excel_overwrite");
-      localStorage.removeItem("default_project_id");
-      localStorage.removeItem("target_languages");
+      // 清空 localStorage 中的翻译设置
+      removeLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
+      removeLocalItem(STORAGE_KEYS.EXCEL_OVERWRITE);
+      removeLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
+      removeLocalItem(STORAGE_KEYS.TARGET_LANGUAGES);
     },
 
     /**
      * 初始化导出设置到默认值
      * 用于缓存清除时重置设置
-     * 清除所有导出相关的localStorage数据
+     * 清除所有导出相关的 localStorage 数据
      *
      * 注意：清除顺序很重要
      * 1. 先清除 localStorage（包括 Pinia persist 存储）
      * 2. 再重置状态，避免 Pinia persist 插件恢复旧数据
      */
     initializeToDefaults() {
-      // 先清除localStorage中的导出相关数据（包括 Pinia persist 存储）
+      // 先清除 localStorage 中的导出相关数据（包括 Pinia persist 存储）
       // 必须在重置状态之前清除，避免 Pinia persist 插件恢复数据
       try {
         // 清除直接存储的导出数据
-        localStorage.removeItem("excel_baseline_key");
-        localStorage.removeItem("excel_overwrite");
-        localStorage.removeItem("default_project_id");
-        localStorage.removeItem("target_languages");
-        // 清除Pinia persist存储（必须在重置状态之前）
-        localStorage.removeItem("export-store");
+        removeLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
+        removeLocalItem(STORAGE_KEYS.EXCEL_OVERWRITE);
+        removeLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
+        removeLocalItem(STORAGE_KEYS.TARGET_LANGUAGES);
+        // 清除 Pinia persist 存储（必须在重置状态之前）
+        removeLocalItem("export-store");
         debugLog("[ExportStore] Cleared export settings from localStorage");
       } catch (error) {
         debugError(
@@ -576,23 +566,6 @@ export const useExportStore = defineStore("export", {
   // 启用持久化存储
   persist: {
     key: "export-store",
-    storage: {
-      getItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          return localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key, value) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.removeItem(key);
-        }
-      },
-    },
+    storage: piniaLocalStorage,
   },
 });
