@@ -10,6 +10,11 @@ import {
 import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "@/lokalise/services/translation/index.js";
 import { searchKeysByNames } from "@/lokalise/services/deduplicate/deduplicateService.js";
+import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
+import {
+  getLocalItem,
+  setLocalItem,
+} from "@/lokalise/infrastructure/storage.js";
 
 /**
  * Lokalise上传功能Hook
@@ -47,14 +52,14 @@ export function useLokaliseUpload() {
    */
   const loadProjectList = () => {
     try {
-      const projects = localStorage.getItem("lokalise_projects");
+      const projects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
       if (projects) {
         const parsedProjects = JSON.parse(projects);
         if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
           projectList.value = parsedProjects;
           // 如果有保存的项目ID，尝试恢复
-          const savedProjectId = localStorage.getItem(
-            "lokalise_upload_project_id"
+          const savedProjectId = getLocalItem(
+            STORAGE_KEYS.LOKALISE_UPLOAD_PROJECT_ID
           );
           if (savedProjectId) {
             uploadStore.setUploadProjectId(savedProjectId);
@@ -72,13 +77,13 @@ export function useLokaliseUpload() {
    */
   const saveUploadSettings = () => {
     if (uploadStore.uploadForm.projectId) {
-      localStorage.setItem(
-        "lokalise_upload_project_id",
+      setLocalItem(
+        STORAGE_KEYS.LOKALISE_UPLOAD_PROJECT_ID,
         uploadStore.uploadForm.projectId
       );
     }
     if (uploadStore.uploadForm.tag) {
-      localStorage.setItem("lokalise_upload_tag", uploadStore.uploadForm.tag);
+      setLocalItem(STORAGE_KEYS.LOKALISE_UPLOAD_TAG, uploadStore.uploadForm.tag);
     }
   };
 
@@ -86,8 +91,8 @@ export function useLokaliseUpload() {
    * 加载上传设置
    */
   const loadUploadSettings = () => {
-    const savedProjectId = localStorage.getItem("lokalise_upload_project_id");
-    const savedTag = localStorage.getItem("lokalise_upload_tag");
+    const savedProjectId = getLocalItem(STORAGE_KEYS.LOKALISE_UPLOAD_PROJECT_ID);
+    const savedTag = getLocalItem(STORAGE_KEYS.LOKALISE_UPLOAD_TAG);
 
     if (savedProjectId) {
       uploadForm.projectId = savedProjectId;
@@ -155,7 +160,7 @@ export function useLokaliseUpload() {
     const exportStore = useExportStore();
     const currentBaselineKey =
       exportStore.excelBaselineKey ||
-      localStorage.getItem("excel_baseline_key") ||
+      getLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY) ||
       "";
 
     // 如果没有当前的 baseline key，无法计算下一个
@@ -268,7 +273,7 @@ export function useLokaliseUpload() {
         nextBaselineKey,
         currentBaselineKey:
           exportStore.excelBaselineKey ||
-          localStorage.getItem("excel_baseline_key"),
+          getLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY),
       });
 
       if (nextBaselineKey) {
@@ -398,7 +403,7 @@ export function useLokaliseUpload() {
 
       // 检查API token是否配置
       const apiToken =
-        localStorage.getItem("lokalise_api_token") || apiStore.lokaliseApiToken;
+        getLocalItem(STORAGE_KEYS.LOKALISE_API_TOKEN) || apiStore.lokaliseApiToken;
 
       if (!apiToken || !apiToken.trim()) {
         throw new Error(
@@ -410,7 +415,7 @@ export function useLokaliseUpload() {
       let targetLanguages = [];
       try {
         targetLanguages = JSON.parse(
-          localStorage.getItem("target_languages") || "[]"
+          getLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, "[]")
         );
       } catch (error) {
         console.error("Failed to parse target languages:", error);

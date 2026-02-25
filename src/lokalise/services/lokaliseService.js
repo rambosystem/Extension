@@ -16,6 +16,8 @@ import {
   handleUploadErrors,
   createTranslationKey,
 } from "./translation/uploadHelper.js";
+import { STORAGE_KEYS } from "../config/storageKeys.js";
+import { getLocalItem } from "../infrastructure/storage.js";
 
 /**
  * 翻译内容（包含术语匹配逻辑）
@@ -29,7 +31,7 @@ export async function translate(
   onStatusUpdate = null,
   onChunk = null
 ) {
-  const adTermsEnabled = localStorage.getItem("ad_terms_status");
+  const adTermsEnabled = getLocalItem(STORAGE_KEYS.AD_TERMS_STATUS);
 
   // 如果 ad_terms_status 不存在，默认关闭术语匹配
   const isAdTermsEnabled =
@@ -72,7 +74,7 @@ export async function translate(
  */
 export async function getUserProjects() {
   try {
-    const apiToken = localStorage.getItem("lokalise_api_token");
+    const apiToken = getLocalItem(STORAGE_KEYS.LOKALISE_API_TOKEN);
 
     if (!apiToken) {
       throw new Error(
@@ -119,7 +121,7 @@ export async function uploadTranslationKeys(
 ) {
   try {
     // 检查API token是否配置
-    const token = apiToken || localStorage.getItem("lokalise_api_token");
+    const token = apiToken || getLocalItem(STORAGE_KEYS.LOKALISE_API_TOKEN);
     if (!token) {
       throw new Error(
         "Lokalise API token not found. Please configure your API token first."

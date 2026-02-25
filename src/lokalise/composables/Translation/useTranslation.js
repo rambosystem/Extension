@@ -2,6 +2,8 @@ import { ElMessage } from "element-plus";
 import { translateByHuman } from "@/lokalise/services/translation/index.js";
 import { t } from "@/utils/i18n.js";
 import { ref } from "vue";
+import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
+import { getLocalItem } from "@/lokalise/infrastructure/storage.js";
 
 /**
  * 翻译功能Hook
@@ -166,7 +168,7 @@ export function useTranslation() {
 
       // 获取目标语言设置
       const targetLanguages = JSON.parse(
-        localStorage.getItem("target_languages") || "[]"
+        getLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, "[]")
       );
 
       // 构建列名数组：第一列是英文，后面是目标语言
@@ -306,7 +308,7 @@ export function useTranslation() {
       if (isTruncated) {
         // 检查是否启用了自动继续功能
         const shouldAutoContinue =
-          localStorage.getItem("auto_continue_on_truncate") !== "false";
+          getLocalItem(STORAGE_KEYS.AUTO_CONTINUE_ON_TRUNCATE) !== "false";
         
         // 只有在未启用自动继续时才显示警告
         // 如果启用了自动继续，警告会在 store 层根据实际结果决定是否显示
@@ -339,7 +341,7 @@ export function useTranslation() {
   const extractTranslationData = (translationResult) => {
     // 获取目标语言设置
     const targetLanguages = JSON.parse(
-      localStorage.getItem("target_languages") || "[]"
+      getLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, "[]")
     );
 
     // 构建列名数组：包含key、en和目标语言

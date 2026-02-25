@@ -2,6 +2,11 @@ import { computed } from "vue";
 import { ElMessage } from "element-plus";
 import { t } from "@/utils/i18n.js";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
+import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
+import {
+  getLocalItem,
+  removeLocalItem,
+} from "@/lokalise/infrastructure/storage.js";
 
 /**
  * 翻译结果存储管理Hook
@@ -43,7 +48,7 @@ export function useTranslationStorage() {
         } else {
           // 回退到当前配置
           targetLanguages = JSON.parse(
-            localStorage.getItem("target_languages") || "[]"
+            getLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, "[]")
           );
         }
 
@@ -87,7 +92,7 @@ export function useTranslationStorage() {
    */
   const clearLastTranslation = () => {
     translationCoreStore.clearLastTranslation();
-    localStorage.removeItem("last_translation");
+    removeLocalItem(STORAGE_KEYS.LAST_TRANSLATION);
   };
 
   return {

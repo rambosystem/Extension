@@ -1,5 +1,7 @@
 import { ref, computed, watch } from "vue";
 import en from "@/locales/en.json";
+import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
+import { setLocalItem } from "@/lokalise/infrastructure/storage.js";
 
 // 支持的语言
 const SUPPORTED_LANGUAGES = {
@@ -22,7 +24,7 @@ const getStoredLanguage = () => {
   try {
     if (typeof window !== "undefined" && window.localStorage) {
       // 强制设置为英文，忽略存储的语言设置
-      localStorage.setItem("app_language", DEFAULT_LANGUAGE);
+      setLocalItem(STORAGE_KEYS.APP_LANGUAGE, DEFAULT_LANGUAGE);
       return DEFAULT_LANGUAGE;
     }
   } catch (error) {
@@ -50,7 +52,7 @@ export function useI18n() {
     globalLanguage.value = DEFAULT_LANGUAGE;
     try {
       if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("app_language", DEFAULT_LANGUAGE);
+        setLocalItem(STORAGE_KEYS.APP_LANGUAGE, DEFAULT_LANGUAGE);
       }
     } catch (error) {
       console.warn("Failed to save language to localStorage:", error);
@@ -116,7 +118,7 @@ export function useI18n() {
       // 强制设置为英文
       globalLanguage.value = DEFAULT_LANGUAGE;
       if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("app_language", DEFAULT_LANGUAGE);
+        setLocalItem(STORAGE_KEYS.APP_LANGUAGE, DEFAULT_LANGUAGE);
       }
     }
   };
@@ -127,7 +129,7 @@ export function useI18n() {
       // 强制设置为英文
       globalLanguage.value = DEFAULT_LANGUAGE;
       if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("app_language", DEFAULT_LANGUAGE);
+        setLocalItem(STORAGE_KEYS.APP_LANGUAGE, DEFAULT_LANGUAGE);
       }
     }
   };

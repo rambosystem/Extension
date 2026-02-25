@@ -6,6 +6,8 @@
 import { ref } from "vue";
 import { debugLog } from "@/utils/debug.js";
 import { t } from "@/utils/i18n.js";
+import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
+import { getLocalItem } from "@/lokalise/infrastructure/storage.js";
 
 /**
  * 缓存校验 Composable
@@ -56,7 +58,7 @@ export function useCacheValidation() {
       };
 
       for (const [key, expectedValue] of Object.entries(preservedSettings)) {
-        const actualValue = localStorage.getItem(key);
+        const actualValue = getLocalItem(key);
         validationResults.preserved[key] = {
           expected: expectedValue,
           actual: actualValue,
@@ -85,7 +87,7 @@ export function useCacheValidation() {
       ];
 
       for (const key of clearedSettings) {
-        const value = localStorage.getItem(key);
+        const value = getLocalItem(key);
         validationResults.cleared[key] = {
           cleared: value === null,
           value: value,
@@ -102,7 +104,7 @@ export function useCacheValidation() {
       }
 
       // 校验 terms-store 是否存在
-      const termsStoreExists = localStorage.getItem("terms-store") !== null;
+      const termsStoreExists = getLocalItem(STORAGE_KEYS.TERMS_STORE) !== null;
       validationResults.preserved["terms-store"] = {
         expected: "exists",
         actual: termsStoreExists ? "exists" : "not found",
@@ -113,9 +115,9 @@ export function useCacheValidation() {
       if (!termsStoreExists) {
         // 检查是否有其他 terms 相关的数据
         const hasTermsData =
-          localStorage.getItem("termsData") !== null ||
-          localStorage.getItem("termsStatus") !== null ||
-          localStorage.getItem("embeddingStatus") !== null;
+          getLocalItem(STORAGE_KEYS.TERMS_DATA) !== null ||
+          getLocalItem(STORAGE_KEYS.TERMS_STATUS) !== null ||
+          getLocalItem(STORAGE_KEYS.EMBEDDING_STATUS) !== null;
 
         if (!hasTermsData) {
           // 如果没有任何 terms 相关数据，说明从未使用过 terms 功能
@@ -179,25 +181,25 @@ export function useCacheValidation() {
    */
   const quickValidateImportantSettings = () => {
     const importantSettings = [
-      "auto_deduplication_enabled",
-      "deduplicate_project_selection",
-      "ad_terms_status",
+      STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED,
+      STORAGE_KEYS.DEDUPLICATE_PROJECT_SELECTION,
+      STORAGE_KEYS.AD_TERMS_STATUS,
     ];
 
     for (const key of importantSettings) {
-      if (localStorage.getItem(key) === null) {
+      if (getLocalItem(key) === null) {
         debugLog(t("cacheValidation.quickValidationFailed", { key }));
         return false;
       }
     }
 
     // 检查 terms-store，如果不存在但从未初始化过则不视为错误
-    const termsStoreExists = localStorage.getItem("terms-store") !== null;
+    const termsStoreExists = getLocalItem(STORAGE_KEYS.TERMS_STORE) !== null;
     if (!termsStoreExists) {
       const hasTermsData =
-        localStorage.getItem("termsData") !== null ||
-        localStorage.getItem("termsStatus") !== null ||
-        localStorage.getItem("embeddingStatus") !== null;
+        getLocalItem(STORAGE_KEYS.TERMS_DATA) !== null ||
+        getLocalItem(STORAGE_KEYS.TERMS_STATUS) !== null ||
+        getLocalItem(STORAGE_KEYS.EMBEDDING_STATUS) !== null;
 
       if (hasTermsData) {
         debugLog(t("cacheValidation.termsStoreMissingWithData"));

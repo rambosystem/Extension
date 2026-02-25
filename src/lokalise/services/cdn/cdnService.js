@@ -15,6 +15,7 @@ import {
 import { parseTranslationData } from "./dataParser.js";
 import { mergeTranslationData } from "./dataMerger.js";
 import { normalizeText } from "./dataParser.js";
+import { piniaLocalStorage } from "../../infrastructure/storage.js";
 
 /**
  * 从CDN获取翻译数据（支持增量更新和缓存）
@@ -127,8 +128,8 @@ export async function fetchCdnTranslations(project, forceRefresh = false) {
 export async function refreshCdnTranslations(project) {
   const cacheKey = getCacheKey(project);
   const etagKey = getEtagKey(project);
-  localStorage.removeItem(cacheKey);
-  localStorage.removeItem(etagKey);
+  piniaLocalStorage.removeItem(cacheKey);
+  piniaLocalStorage.removeItem(etagKey);
 
   return fetchCdnTranslations(project, true);
 }

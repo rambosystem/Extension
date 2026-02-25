@@ -5,6 +5,7 @@
 
 import { debugError } from "../../../utils/debug.js";
 import { CDN_URLS } from "../../../api/cdn.js";
+import { piniaLocalStorage } from "../../infrastructure/storage.js";
 
 // 缓存配置
 export const CACHE_CONFIG = {
@@ -48,7 +49,7 @@ export function loadFromCache(project) {
 
   try {
     const cacheKey = getCacheKey(project);
-    const cached = localStorage.getItem(cacheKey);
+    const cached = piniaLocalStorage.getItem(cacheKey);
     if (!cached) return null;
 
     const cacheData = JSON.parse(cached);
@@ -56,8 +57,8 @@ export function loadFromCache(project) {
 
     // 检查是否过期
     if (now - cacheData.timestamp > CACHE_CONFIG.EXPIRY_TIME) {
-      localStorage.removeItem(cacheKey);
-      localStorage.removeItem(getEtagKey(project));
+      piniaLocalStorage.removeItem(cacheKey);
+      piniaLocalStorage.removeItem(getEtagKey(project));
       return null;
     }
 
@@ -89,11 +90,11 @@ export function saveToCache(project, data, etag) {
       timestamp: Date.now(),
       url: CDN_URLS[project],
     };
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    piniaLocalStorage.setItem(cacheKey, JSON.stringify(cacheData));
 
     // 单独保存ETag用于快速检查
     if (etag) {
-      localStorage.setItem(getEtagKey(project), etag);
+      piniaLocalStorage.setItem(getEtagKey(project), etag);
     }
   } catch (error) {
     debugError("[CDN Cache] Failed to save cache:", error);
@@ -101,7 +102,7 @@ export function saveToCache(project, data, etag) {
     clearExpiredCaches();
     // 重试一次
     try {
-      localStorage.setItem(
+      piniaLocalStorage.setItem(
         getCacheKey(project),
         JSON.stringify({
           data,
@@ -124,17 +125,17 @@ export function clearExpiredCaches() {
   Object.keys(CDN_URLS).forEach((project) => {
     const cacheKey = getCacheKey(project);
     try {
-      const cached = localStorage.getItem(cacheKey);
+      const cached = piniaLocalStorage.getItem(cacheKey);
       if (cached) {
         const cacheData = JSON.parse(cached);
         if (now - cacheData.timestamp > CACHE_CONFIG.EXPIRY_TIME) {
-          localStorage.removeItem(cacheKey);
-          localStorage.removeItem(getEtagKey(project));
+          piniaLocalStorage.removeItem(cacheKey);
+          piniaLocalStorage.removeItem(getEtagKey(project));
         }
       }
     } catch (error) {
-      localStorage.removeItem(cacheKey);
-      localStorage.removeItem(getEtagKey(project));
+      piniaLocalStorage.removeItem(cacheKey);
+      piniaLocalStorage.removeItem(getEtagKey(project));
     }
   });
 }
@@ -146,8 +147,8 @@ export function clearExpiredCaches() {
 export function clearCache(project) {
   const cacheKey = getCacheKey(project);
   const etagKey = getEtagKey(project);
-  localStorage.removeItem(cacheKey);
-  localStorage.removeItem(etagKey);
+  piniaLocalStorage.removeItem(cacheKey);
+  piniaLocalStorage.removeItem(etagKey);
 }
 
 /**
