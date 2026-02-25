@@ -1,80 +1,62 @@
-import { defineStore } from "pinia";
+﻿import { defineStore } from "pinia";
+import { MENU_ORDER, ROUTE_INDEX } from "../../routes/constants.js";
+import { STORAGE_KEYS } from "../config/storageKeys.js";
+import {
+  getChromeLocal,
+  piniaLocalStorage,
+  removeChromeLocal,
+  setChromeLocal,
+  setLocalItem,
+} from "../infrastructure/storage.js";
 
-/**
- * 应用全局状态管理
- * 管理菜单选择、语言设置等全局状态
- */
+const MENU_NAME_BY_INDEX = {
+  [ROUTE_INDEX.LOKALISE]: "Lokalise",
+  [ROUTE_INDEX.TRANSLATE]: "Translate",
+  [ROUTE_INDEX.CLIPBOARD]: "Clipboard",
+  [ROUTE_INDEX.SETTINGS]: "Settings",
+  [ROUTE_INDEX.ABOUT]: "About",
+};
+
+const VALID_MENU_INDEX = new Set(MENU_ORDER.map((_, i) => String(i + 1)));
+
+function normalizeMenuIndex(menuIndex) {
+  const normalized = String(menuIndex ?? "");
+  return VALID_MENU_INDEX.has(normalized) ? normalized : ROUTE_INDEX.LOKALISE;
+}
+
 export const useAppStore = defineStore("app", {
   state: () => ({
-    // 选中的菜单项
-    currentMenu: "1", // 默认选中Translation菜单
-
-    // 应用语言设置
-    language: "en", // 默认英语
-
-    // 全局加载状态
+    currentMenu: ROUTE_INDEX.LOKALISE,
+    language: "en",
     isLoading: false,
-
-    // 应用初始化状态
     isInitialized: false,
   }),
 
   getters: {
-    // 获取菜单的显示名称
-    currentMenuName: (state) => {
-      const menuNames = {
-        1: "Lokalise",
-        2: "Translate",
-        3: "Settings",
-        4: "About",
-      };
-      return menuNames[state.currentMenu] || "Unknown";
-    },
-
-    // 检查是否为指定菜单
-    isCurrentMenu: (state) => (menuIndex) => {
-      return state.currentMenu === menuIndex;
-    },
+    currentMenuName: (state) => MENU_NAME_BY_INDEX[state.currentMenu] || "Unknown",
+    isCurrentMenu: (state) => (menuIndex) => state.currentMenu === menuIndex,
   },
 
   actions: {
-    /**
-     * 设置当前菜单
-     * @param {string} menuIndex - 菜单索引
-     */
     setCurrentMenu(menuIndex) {
-      this.currentMenu = menuIndex;
-
-      // 保存到Chrome存储
-      if (typeof chrome !== "undefined" && chrome.storage) {
-        chrome.storage.local.set({ currentMenu: menuIndex });
-      }
+      const normalizedMenu = normalizeMenuIndex(menuIndex);
+      this.currentMenu = normalizedMenu;
+      setChromeLocal({ [STORAGE_KEYS.CURRENT_MENU]: normalizedMenu });
     },
 
-    /**
-     * 设置全局加载状态
-     * @param {boolean} loading - 加载状态
-     */
     setLoading(loading) {
       this.isLoading = loading;
     },
 
-    /**
-     * 初始化应用状态到默认值
-     * 用于缓存清除时重置状态
-     */
     initializeToDefaults() {
-      // 注意：不重置 currentMenu，保持当前菜单选择
-      // 确保语言为英文（应用仅支持英文）
       this.language = "en";
-      if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem("app_language", "en");
-      }
+      setLocalItem(STORAGE_KEYS.APP_LANGUAGE, "en");
+
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("languageChanged", {
             detail: { language: "en" },
-          })
+          }),
         );
       }
 
@@ -82,72 +64,39 @@ export const useAppStore = defineStore("app", {
       this.isInitialized = false;
     },
 
-    /**
-     * 初始化应用状态
-     * 从存储中恢复状态
-     */
     async initializeApp() {
       if (this.isInitialized) return;
 
       try {
-        // 从Chrome存储恢复菜单状态
-        if (typeof chrome !== "undefined" && chrome.storage) {
-          const result = await new Promise((resolve) => {
-            chrome.storage.local.get(["initialMenu", "currentMenu"], resolve);
-          });
+        const result = await getChromeLocal([
+          STORAGE_KEYS.INITIAL_MENU,
+          STORAGE_KEYS.CURRENT_MENU,
+        ]);
 
-          if (result.initialMenu) {
-            // 优先使用从popup传递的菜单
-            const menuIndex =
-              result.initialMenu === "1" ? "1" : result.initialMenu;
-            this.currentMenu = menuIndex;
-            // 读取后删除，避免刷新时重复选中
-            chrome.storage.local.remove("initialMenu");
-            chrome.storage.local.set({ currentMenu: menuIndex });
-          } else if (result.currentMenu) {
-            // 使用上次保存的菜单
-            const menuIndex =
-              result.currentMenu === "1" ? "1" : result.currentMenu;
-            this.currentMenu = menuIndex;
-          }
+        const initialMenu = result[STORAGE_KEYS.INITIAL_MENU];
+        const currentMenu = result[STORAGE_KEYS.CURRENT_MENU];
+
+        if (initialMenu != null && VALID_MENU_INDEX.has(String(initialMenu))) {
+          this.currentMenu = String(initialMenu);
+          await removeChromeLocal(STORAGE_KEYS.INITIAL_MENU);
+          await setChromeLocal({ [STORAGE_KEYS.CURRENT_MENU]: this.currentMenu });
+        } else if (currentMenu != null && VALID_MENU_INDEX.has(String(currentMenu))) {
+          this.currentMenu = String(currentMenu);
         }
 
-        // 从localStorage恢复语言设置（强制为英文）
-        if (typeof window !== "undefined" && window.localStorage) {
-          const storedLanguage = localStorage.getItem("app_language");
-          // 强制设置为英文，忽略存储的语言设置
-          this.language = "en";
-          localStorage.setItem("app_language", "en");
-        }
+        this.language = "en";
+        setLocalItem(STORAGE_KEYS.APP_LANGUAGE, "en");
 
         this.isInitialized = true;
       } catch (error) {
         console.error("Failed to initialize app state:", error);
-        this.isInitialized = true; // 即使失败也标记为已初始化
+        this.isInitialized = true;
       }
     },
   },
 
-  // 启用持久化存储
   persist: {
     key: "app-store",
-    storage: {
-      getItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          return localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key, value) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.removeItem(key);
-        }
-      },
-    },
+    storage: piniaLocalStorage,
   },
 });

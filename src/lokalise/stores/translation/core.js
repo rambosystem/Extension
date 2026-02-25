@@ -7,6 +7,16 @@ import { useTranslationCache } from "../../composables/Translation/useTranslatio
 import { debugLog } from "../../../utils/debug.js";
 import { generateKeysForTranslationResult } from "../../../utils/keyGenerator.js";
 import { useExportStore } from "./export.js";
+import { piniaLocalStorage } from "../../infrastructure/storage.js";
+import {
+  getAutoDeduplicationRawValue,
+  getDeepSeekApiKey,
+  getTargetLanguages,
+  isAutoDeduplicationEnabled,
+  loadLastTranslation,
+  saveLastTranslation,
+  shouldAutoContinueOnTruncate,
+} from "../../repositories/translationStorageRepository.js";
 
 /**
  * ???????????
@@ -327,7 +337,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
           targetLanguages: this.translationTargetLanguages || [],
         };
 
-        localStorage.setItem("last_translation", JSON.stringify(dataToSave));
+        saveLastTranslation(dataToSave);
         this.setLastTranslation(translationData);
       } catch (error) {
         console.error("Failed to save translation to local storage:", error);
@@ -339,9 +349,8 @@ export const useTranslationCoreStore = defineStore("translationCore", {
      */
     loadLastTranslation() {
       try {
-        const stored = localStorage.getItem("last_translation");
-        if (stored) {
-          const parsed = JSON.parse(stored);
+        const parsed = loadLastTranslation();
+        if (parsed) {
           this.setLastTranslation(parsed.translationData || []);
           this.translationTargetLanguages = parsed.targetLanguages || [];
         }
@@ -360,7 +369,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       }
 
       // ???API Key ????
-      const apiKey = localStorage.getItem("deepseek_api_key");
+      const apiKey = getDeepSeekApiKey();
       if (!apiKey) {
         ElMessage.warning(t("messages.pleaseConfigureAPIKeyFirst"));
         return;
@@ -373,14 +382,13 @@ export const useTranslationCoreStore = defineStore("translationCore", {
       }
 
       // ???????????
-      const autoDeduplicationEnabled =
-        localStorage.getItem("auto_deduplication_enabled") === "true";
+      const autoDeduplicationEnabled = isAutoDeduplicationEnabled();
 
       // ??????????????
       debugLog("Translation deduplication check:");
       debugLog(
         "- auto_deduplication_enabled value:",
-        localStorage.getItem("auto_deduplication_enabled")
+        getAutoDeduplicationRawValue()
       );
       debugLog("- autoDeduplicationEnabled:", autoDeduplicationEnabled);
 
@@ -460,9 +468,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
 
         // ?????? targetLanguages
         try {
-          const targetLanguages = JSON.parse(
-            localStorage.getItem("target_languages") || "[]"
-          );
+          const targetLanguages = getTargetLanguages();
           this.translationTargetLanguages = targetLanguages;
         } catch (error) {
           console.warn("Failed to save target languages:", error);
@@ -596,8 +602,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
         // ?????????????????
         if (isTruncated && !isResume) {
           // ???????????????????
-          const shouldAutoContinue =
-            localStorage.getItem("auto_continue_on_truncate") !== "false"; // ????
+          const shouldAutoContinue = shouldAutoContinueOnTruncate(); // ????
 
           if (shouldAutoContinue) {
             // ????????
@@ -773,24 +778,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
   // ????????
   persist: {
     key: "translation-core-store",
-    storage: {
-      getItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          return localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key, value) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.removeItem(key);
-        }
-      },
-    },
+    storage: piniaLocalStorage,
   },
 });
 
