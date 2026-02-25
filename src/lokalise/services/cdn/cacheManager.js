@@ -4,7 +4,7 @@
  */
 
 import { debugError } from "../../../utils/debug.js";
-import { CDN_URLS } from "../../../api/cdn.js";
+import { CDN_URLS } from "../../api/cdn.js";
 import { piniaLocalStorage } from "../../infrastructure/storage.js";
 
 // 缓存配置

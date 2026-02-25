@@ -4,7 +4,7 @@
  */
 
 import { debugLog, debugWarn, debugError } from "../../../utils/debug.js";
-import { CDN_URLS, checkCdnFileUpdate, fetchCdnFile } from "../../../api/cdn.js";
+import { CDN_URLS, checkCdnFileUpdate, fetchCdnFile } from "../../api/cdn.js";
 import {
   CACHE_CONFIG,
   loadFromCache,

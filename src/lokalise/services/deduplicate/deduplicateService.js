@@ -3,7 +3,7 @@
  * 业务逻辑层：负责去重相关的业务逻辑
  */
 
-import { searchKeysByNames as fetchSearchKeysByNames } from "../../../api/deduplicate.js";
+import { searchKeysByNames as fetchSearchKeysByNames } from "../../api/deduplicate.js";
 
 /**
  * 根据 key_name 列表搜索 keys（大小写敏感）

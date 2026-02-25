@@ -6,7 +6,7 @@
 import {
   fetchTermMatch,
   fetchRebuildAllUserEmbeddings,
-} from "../../../api/termMatch.js";
+} from "../../api/termMatch.js";
 
 const API_BASE_URL = "http://43.142.250.179:8000";
 
