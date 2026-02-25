@@ -10,6 +10,9 @@ export const AVAILABLE_TARGET_LANGUAGES = [
   { code: "Spanish", name: "Spanish", iso: "es" },
 ];
 
+/** 导出/翻译设置默认选中的语言代码 */
+export const DEFAULT_TARGET_LANGUAGE_CODES = ["Chinese", "Japanese"];
+
 /**
  * 获取所有可用语言
  * @returns {Array<Object>} 语言列表

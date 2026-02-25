@@ -5,10 +5,10 @@
 import { MENU_ORDER } from "./constants.js";
 export { ROUTE_INDEX } from "./constants.js";
 
-import Settings from "@/Views/Settings.vue";
+import Settings from "@/views/Settings.vue";
 import Lokalise from "@/lokalise/Lokalise.vue";
-import Translate from "@/Views/Translate.vue";
-import Clipboard from "@/Views/Clipboard.vue";
+import Translate from "@/views/Translate.vue";
+import Clipboard from "@/views/Clipboard.vue";
 
 /** About 页为内联模板，依赖 t，通过 factory 在 Options 中注入 */
 export function getAboutComponent(t) {

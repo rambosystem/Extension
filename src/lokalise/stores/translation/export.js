@@ -3,13 +3,15 @@ import { ElMessage } from "element-plus";
 import { useExcelExport } from "../../../components/Excel/composables/useExcelExport";
 import { t } from "../../../utils/i18n.js";
 import { debugLog, debugError } from "../../../utils/debug.js";
-import { getAvailableLanguages } from "../../config/languages.js";
+import {
+  getAvailableLanguages,
+  DEFAULT_TARGET_LANGUAGE_CODES,
+} from "../../config/languages.js";
 import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
 import { STORAGE_KEYS } from "../../config/storageKeys.js";
 import {
   getDefaultProjectId,
   getProjectNameById as getStoredProjectNameById,
-  getProjects,
   initializeDefaultProjectIdFromProjects,
   setDefaultProjectId,
 } from "../../repositories/projectRepository.js";
@@ -38,7 +40,7 @@ export const useExportStore = defineStore("export", {
     defaultProjectId: "",
 
     // 目标语言设置（默认选中 Chinese 和 Japanese）
-    targetLanguages: ["Chinese", "Japanese"],
+    targetLanguages: [...DEFAULT_TARGET_LANGUAGE_CODES],
 
     // 加载状态
     loadingStates: {
@@ -52,8 +54,7 @@ export const useExportStore = defineStore("export", {
       Object.values(state.loadingStates).some((loading) => loading),
 
     // 检查是否可以导出
-    canExport: (state) =>
-      !Object.values(state.loadingStates).some((loading) => loading),
+    canExport: (state, getters) => !getters.isLoading,
   },
 
   actions: {
@@ -63,7 +64,7 @@ export const useExportStore = defineStore("export", {
      * @param {boolean} loading - 加载状态
      */
     setLoading(key, loading) {
-      if (this.loadingStates.hasOwnProperty(key)) {
+      if (key in this.loadingStates) {
         this.loadingStates[key] = loading;
       }
     },
@@ -413,7 +414,7 @@ export const useExportStore = defineStore("export", {
             );
             // 确保至少选择一个语言，如果没有则使用默认值
             if (validLanguages.length === 0) {
-              this.targetLanguages = ["Chinese", "Japanese"];
+              this.targetLanguages = [...DEFAULT_TARGET_LANGUAGE_CODES];
               setLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, this.targetLanguages);
               debugLog(
                 "[ExportStore] No valid languages found, using default:",
@@ -431,14 +432,14 @@ export const useExportStore = defineStore("export", {
               "[ExportStore] Failed to parse target languages:",
               error,
             );
-            this.targetLanguages = ["Chinese", "Japanese"];
+            this.targetLanguages = [...DEFAULT_TARGET_LANGUAGE_CODES];
             setLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, this.targetLanguages);
           }
         } else {
           debugLog(
             "[ExportStore] No target languages in localStorage, using default: Chinese, Japanese",
           );
-          this.targetLanguages = ["Chinese", "Japanese"];
+          this.targetLanguages = [...DEFAULT_TARGET_LANGUAGE_CODES];
           setLocalItem(STORAGE_KEYS.TARGET_LANGUAGES, this.targetLanguages);
         }
       } catch (error) {
@@ -455,30 +456,15 @@ export const useExportStore = defineStore("export", {
     initializeDefaultProjectFromList() {
       try {
         debugLog("[ExportStore] Initializing default project from list...");
-        const projects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
-        if (projects) {
-          const parsedProjects = JSON.parse(projects);
+        const firstProjectId = initializeDefaultProjectIdFromProjects();
+        if (firstProjectId) {
+          this.defaultProjectId = firstProjectId;
           debugLog(
-            "[ExportStore] Found projects in localStorage:",
-            parsedProjects,
+            "[ExportStore] Default project initialized to:",
+            firstProjectId,
           );
-          if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
-            // 默认选中第一个项目
-            const firstProject = parsedProjects[0];
-            if (firstProject && firstProject.project_id) {
-              this.defaultProjectId = firstProject.project_id;
-              setLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID, firstProject.project_id);
-              debugLog(
-                "[ExportStore] Default project initialized to:",
-                firstProject.project_id,
-                firstProject.name,
-              );
-            }
-          } else {
-            debugLog("[ExportStore] No valid projects found in parsed data");
-          }
         } else {
-          debugLog("[ExportStore] No projects found in localStorage");
+          debugLog("[ExportStore] No projects found to set as default");
         }
       } catch (error) {
         debugError(
@@ -495,7 +481,7 @@ export const useExportStore = defineStore("export", {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
       this.defaultProjectId = "";
-      this.targetLanguages = ["Chinese", "Japanese"]; // 重置为默认值
+      this.targetLanguages = [...DEFAULT_TARGET_LANGUAGE_CODES];
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {
@@ -542,7 +528,7 @@ export const useExportStore = defineStore("export", {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
       this.defaultProjectId = "";
-      this.targetLanguages = ["Chinese", "Japanese"]; // 重置为默认值
+      this.targetLanguages = [...DEFAULT_TARGET_LANGUAGE_CODES];
 
       // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {
