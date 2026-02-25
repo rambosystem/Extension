@@ -7,6 +7,13 @@ import { getAvailableLanguages } from "../../config/languages.js";
 import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
 import { STORAGE_KEYS } from "../../config/storageKeys.js";
 import {
+  getDefaultProjectId,
+  getProjectNameById as getStoredProjectNameById,
+  getProjects,
+  initializeDefaultProjectIdFromProjects,
+  setDefaultProjectId,
+} from "../../repositories/projectRepository.js";
+import {
   getLocalItem,
   piniaLocalStorage,
   removeLocalItem,
@@ -90,24 +97,7 @@ export const useExportStore = defineStore("export", {
      * @returns {string|null} 项目名称
      */
     getProjectNameById(projectId) {
-      try {
-        const projects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
-        if (projects) {
-          const parsedProjects = JSON.parse(projects);
-          if (Array.isArray(parsedProjects)) {
-            const project = parsedProjects.find(
-              (p) => p.project_id === projectId,
-            );
-            if (project && project.name) {
-              return project.name;
-            }
-          }
-        }
-        return null;
-      } catch (error) {
-        debugError("[ExportStore] Failed to get project name by ID:", error);
-        return null;
-      }
+      return getStoredProjectNameById(projectId);
     },
 
     /**
@@ -305,9 +295,9 @@ export const useExportStore = defineStore("export", {
       // 更新项目ID
       this.defaultProjectId = projectId || "";
       if (projectId) {
-        setLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID, projectId);
+        setDefaultProjectId(projectId);
       } else {
-        removeLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
+        setDefaultProjectId("");
         // 如果没有项目ID，清空 baseline key
         if (this.excelBaselineKey) {
           await this.saveExcelBaselineKey("");
@@ -396,7 +386,7 @@ export const useExportStore = defineStore("export", {
         }
 
         // 加载默认项目ID
-        const defaultProjectId = getLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
+        const defaultProjectId = getDefaultProjectId();
         if (defaultProjectId) {
           this.defaultProjectId = defaultProjectId;
           debugLog(

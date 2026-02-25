@@ -1,0 +1,84 @@
+import { useApiStore } from "../../stores/settings/api.js";
+import { useTranslationCoreStore } from "../../stores/translation/core.js";
+import { useTermsStore } from "../../stores/terms.js";
+import { useAppStore } from "../../stores/app.js";
+import { useExportStore } from "../../stores/translation/export.js";
+import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
+import { STORAGE_KEYS } from "../../config/storageKeys.js";
+import { getLocalItem } from "../../infrastructure/storage.js";
+
+export function clearTranslationSettingsWorkflow({
+  initializeSettingsDefaults,
+  saveImportantSettings,
+  closeDialog,
+  onAutoValidate,
+  onDebugLog,
+}) {
+  const apiStore = useApiStore();
+  const translationCoreStore = useTranslationCoreStore();
+  const termsStore = useTermsStore();
+  const appStore = useAppStore();
+  const exportStore = useExportStore();
+  const cache = useTranslationCache();
+
+  initializeSettingsDefaults();
+  apiStore.initializeToDefaults();
+  translationCoreStore.initializeToDefaults();
+  termsStore.initializeToDefaults();
+  appStore.initializeToDefaults();
+  exportStore.initializeToDefaults();
+  cache.clearCache();
+  saveImportantSettings();
+
+  termsStore.refreshTerms(false).catch((error) => {
+    console.error("Terms refresh failed after cache clear:", error);
+  });
+
+  closeDialog();
+
+  if (onDebugLog) {
+    onDebugLog("Cache initialization completed. Settings reset to defaults:");
+    onDebugLog(
+      "- auto_deduplication_enabled:",
+      getLocalItem(STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED)
+    );
+    onDebugLog(
+      "- deduplicate_project_selection:",
+      getLocalItem(STORAGE_KEYS.DEDUPLICATE_PROJECT_SELECTION)
+    );
+    onDebugLog("- ad_terms_status:", getLocalItem(STORAGE_KEYS.AD_TERMS_STATUS));
+    onDebugLog(
+      "- terms-store:",
+      getLocalItem(STORAGE_KEYS.TERMS_STORE) ? "exists" : "not found"
+    );
+    onDebugLog(
+      "- deepseek_api_key:",
+      getLocalItem(STORAGE_KEYS.DEEPSEEK_API_KEY) ? "exists" : "cleared"
+    );
+    onDebugLog(
+      "- lokalise_api_token:",
+      getLocalItem(STORAGE_KEYS.LOKALISE_API_TOKEN) ? "exists" : "cleared"
+    );
+    onDebugLog(
+      "- lokalise_projects:",
+      getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS) ? "exists" : "cleared"
+    );
+    onDebugLog(
+      "- default_project_id:",
+      getLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID) ? "exists" : "cleared"
+    );
+    onDebugLog("- API Store apiKey:", apiStore.apiKey || "empty");
+    onDebugLog(
+      "- API Store lokaliseApiToken:",
+      apiStore.lokaliseApiToken || "empty"
+    );
+    onDebugLog(
+      "- Export Store defaultProjectId:",
+      exportStore.defaultProjectId || "empty"
+    );
+  }
+
+  if (onAutoValidate) {
+    onAutoValidate();
+  }
+}
