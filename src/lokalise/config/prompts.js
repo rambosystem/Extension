@@ -42,7 +42,7 @@ export function generateTranslationPrompt(targetLanguages = []) {
   }
 
   // 1. 构建 JSON 字段名（规范化 Key：小写 + 下划线）
-  // Ex: ["Japanese", "Spanish (Latam)"] -> ["japanese", "spanish_(latam)"]
+  // 例：["Japanese", "Spanish (Latam)"] -> ["japanese", "spanish_(latam)"]
   const jsonFields = targetLanguages.map((lang) => {
     return lang
       .toLowerCase()

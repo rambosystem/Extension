@@ -1,3 +1,6 @@
+// storageKeys.js - 本地存储键名常量（localStorage / chrome.storage）
+
+/** 应用内使用的存储键名 */
 export const STORAGE_KEYS = {
   APP_LANGUAGE: "app_language",
   CURRENT_MENU: "currentMenu",

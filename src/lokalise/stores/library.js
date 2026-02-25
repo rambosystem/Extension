@@ -3,6 +3,12 @@ import { nextTick } from "vue";
 import { ElMessage } from "element-plus";
 import { t } from "../../utils/i18n.js";
 import { getUserProjects } from "../services/translation/index.js";
+import { STORAGE_KEYS } from "../config/storageKeys.js";
+import {
+  getLocalItem,
+  piniaLocalStorage,
+  setLocalItem,
+} from "../infrastructure/storage.js";
 
 /**
  * Library 页面状态管理
@@ -112,7 +118,7 @@ export const useLibraryStore = defineStore("library", {
      */
     async loadProjectList() {
       try {
-        const savedProjects = localStorage.getItem("lokalise_projects");
+        const savedProjects = getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
         if (savedProjects) {
           try {
             const parsedProjects = JSON.parse(savedProjects);
@@ -128,7 +134,7 @@ export const useLibraryStore = defineStore("library", {
         try {
           const projects = await getUserProjects();
           this.projectList = projects;
-          localStorage.setItem("lokalise_projects", JSON.stringify(projects));
+          setLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS, projects);
         } catch (error) {
           console.warn("Failed to fetch projects from API:", error);
           this.projectList = [];
@@ -387,24 +393,7 @@ export const useLibraryStore = defineStore("library", {
   // 启用持久化存储
   persist: {
     key: "library-store",
-    storage: {
-      getItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          return localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key, value) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key) => {
-        if (typeof window !== "undefined" && window.localStorage) {
-          localStorage.removeItem(key);
-        }
-      },
-    },
+    storage: piniaLocalStorage,
     // 只持久化表格配置，不持久化筛选条件和数据
     paths: ["rowHeight", "visibleColumns"],
   },
