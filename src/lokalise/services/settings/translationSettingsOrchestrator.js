@@ -151,8 +151,8 @@ export function clearTranslationSettingsWorkflow({
       apiStore.lokaliseApiToken || "empty"
     );
     onDebugLog(
-      "- Export Store defaultProjectId:",
-      exportStore.defaultProjectId || "empty"
+      "- App Store defaultProjectId:",
+      appStore.defaultProjectId || "empty"
     );
   }
 

@@ -1,11 +1,17 @@
 /**
  * app.js - 应用全局状态（菜单索引校验 + 存储收口）
- * 当前菜单、语言等；菜单索引写入前校验合法性，持久化通过 chrome.storage + piniaLocalStorage 收口
+ * 当前菜单、语言、默认项目 ID 等；菜单索引写入前校验合法性，持久化通过 chrome.storage + piniaLocalStorage 收口。
+ * 默认项目（defaultProjectId）由此 store 持有，持久化由 projectRepository 统一读写。
  */
 
 import { defineStore } from "pinia";
 import { MENU_ORDER, ROUTE_INDEX } from "../../routes/constants.js";
 import { STORAGE_KEYS } from "../config/storageKeys.js";
+import {
+  getDefaultProjectId,
+  initializeDefaultProjectIdFromProjects,
+  setDefaultProjectId as setDefaultProjectIdInStorage,
+} from "../repositories/projectRepository.js";
 import {
   getChromeLocal,
   piniaLocalStorage,
@@ -41,6 +47,8 @@ export const useAppStore = defineStore("app", {
     language: "en",
     isLoading: false,
     isInitialized: false,
+    /** 全局默认项目 ID，持久化由 projectRepository 读写 */
+    defaultProjectId: "",
   }),
 
   getters: {
@@ -64,7 +72,7 @@ export const useAppStore = defineStore("app", {
       this.isLoading = loading;
     },
 
-    /** 重置为默认值（语言、菜单等），用于缓存清除 */
+    /** 重置为默认值（语言、菜单、默认项目等），用于缓存清除 */
     initializeToDefaults() {
       this.language = "en";
       setLocalItem(STORAGE_KEYS.APP_LANGUAGE, "en");
@@ -79,6 +87,18 @@ export const useAppStore = defineStore("app", {
 
       this.isLoading = false;
       this.isInitialized = false;
+      setDefaultProjectIdInStorage("");
+      this.defaultProjectId = "";
+    },
+
+    /**
+     * 设置全局默认项目 ID（同步到 projectRepository）
+     * @param {string} projectId
+     */
+    setDefaultProjectId(projectId) {
+      const value = projectId?.trim() ? projectId.trim() : "";
+      this.defaultProjectId = value;
+      setDefaultProjectIdInStorage(value || null);
     },
 
     /**
@@ -107,6 +127,14 @@ export const useAppStore = defineStore("app", {
 
         this.language = "en";
         setLocalItem(STORAGE_KEYS.APP_LANGUAGE, "en");
+
+        const storedDefaultProjectId = getDefaultProjectId() || "";
+        if (storedDefaultProjectId) {
+          this.defaultProjectId = storedDefaultProjectId;
+        } else {
+          const firstProjectId = initializeDefaultProjectIdFromProjects();
+          this.defaultProjectId = firstProjectId || "";
+        }
 
         this.isInitialized = true;
       } catch (error) {

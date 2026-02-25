@@ -9,12 +9,8 @@ import {
 } from "../../config/languages.js";
 import { searchKeysByNames } from "../../services/deduplicate/deduplicateService.js";
 import { STORAGE_KEYS } from "../../config/storageKeys.js";
-import {
-  getDefaultProjectId,
-  getProjectNameById as getStoredProjectNameById,
-  initializeDefaultProjectIdFromProjects,
-  setDefaultProjectId,
-} from "../../repositories/projectRepository.js";
+import { getProjectNameById as getStoredProjectNameById } from "../../repositories/projectRepository.js";
+import { useAppStore } from "../app.js";
 import {
   getLocalItem,
   piniaLocalStorage,
@@ -24,8 +20,8 @@ import {
 
 /**
  * 导出功能状态管理
- * 管理Excel导出设置和相关功能
- * 注意：设置相关方法已重命名为 Translation Settings
+ * 职责：仅管理「导出相关」状态（Excel 基线键、覆盖选项、目标语言等）。
+ * 默认项目（defaultProjectId）由 app store 持有；本 store 的 updateDefaultProjectId 仅做基线键校验后委托 app 写入。
  */
 export const useExportStore = defineStore("export", {
   state: () => ({
@@ -35,9 +31,6 @@ export const useExportStore = defineStore("export", {
 
     // Auto Increment Key 开关状态
     autoIncrementKeyEnabled: false,
-
-    // 默认项目设置
-    defaultProjectId: "",
 
     // 目标语言设置（默认选中 Chinese 和 Japanese）
     targetLanguages: [...DEFAULT_TARGET_LANGUAGE_CODES],
@@ -49,6 +42,9 @@ export const useExportStore = defineStore("export", {
   }),
 
   getters: {
+    /** 全局默认项目 ID，来自 app store（只读） */
+    defaultProjectId: () => useAppStore().defaultProjectId,
+
     // 检查是否正在加载
     isLoading: (state) =>
       Object.values(state.loadingStates).some((loading) => loading),
@@ -247,18 +243,17 @@ export const useExportStore = defineStore("export", {
     },
 
     /**
-     * 更新默认项目ID
+     * 更新默认项目 ID：先做基线键唯一性校验，再委托 app store 写入。
      * @param {string} projectId - 项目ID
      */
     async updateDefaultProjectId(projectId) {
-      const oldProjectId = this.defaultProjectId;
+      const appStore = useAppStore();
+      const oldProjectId = appStore.defaultProjectId;
 
-      // 如果 projectId 没有变化，直接返回
       if (projectId === oldProjectId) {
         return;
       }
 
-      // 切换项目时，校验 baseline key 在新项目中是否存在
       if (projectId && oldProjectId && projectId !== oldProjectId) {
         const baselineKey =
           this.excelBaselineKey || getLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
@@ -293,16 +288,9 @@ export const useExportStore = defineStore("export", {
         }
       }
 
-      // 更新项目ID
-      this.defaultProjectId = projectId || "";
-      if (projectId) {
-        setDefaultProjectId(projectId);
-      } else {
-        setDefaultProjectId("");
-        // 如果没有项目ID，清空 baseline key
-        if (this.excelBaselineKey) {
-          await this.saveExcelBaselineKey("");
-        }
+      appStore.setDefaultProjectId(projectId || "");
+      if (!projectId && this.excelBaselineKey) {
+        await this.saveExcelBaselineKey("");
       }
     },
 
@@ -386,21 +374,7 @@ export const useExportStore = defineStore("export", {
           );
         }
 
-        // 加载默认项目ID
-        const defaultProjectId = getDefaultProjectId();
-        if (defaultProjectId) {
-          this.defaultProjectId = defaultProjectId;
-          debugLog(
-            "[ExportStore] Default project ID loaded from localStorage:",
-            defaultProjectId,
-          );
-        } else {
-          debugLog(
-            "[ExportStore] No default project ID in localStorage, trying to initialize from list",
-          );
-          // 如果没有保存的默认项目，尝试从项目列表中获取第一个项目
-          this.initializeDefaultProjectFromList();
-        }
+        // 默认项目 ID 由 app store 在 initializeApp 时从 projectRepository 加载，此处不再处理
 
         // 加载目标语言设置
         const targetLanguages = getLocalItem(STORAGE_KEYS.TARGET_LANGUAGES);
@@ -451,47 +425,19 @@ export const useExportStore = defineStore("export", {
     },
 
     /**
-     * 从项目列表中初始化默认项目（如果没有保存的选择）
-     */
-    initializeDefaultProjectFromList() {
-      try {
-        debugLog("[ExportStore] Initializing default project from list...");
-        const firstProjectId = initializeDefaultProjectIdFromProjects();
-        if (firstProjectId) {
-          this.defaultProjectId = firstProjectId;
-          debugLog(
-            "[ExportStore] Default project initialized to:",
-            firstProjectId,
-          );
-        } else {
-          debugLog("[ExportStore] No projects found to set as default");
-        }
-      } catch (error) {
-        debugError(
-          "[ExportStore] Failed to initialize default project from list:",
-          error,
-        );
-      }
-    },
-
-    /**
-     * 重置翻译设置
+     * 重置翻译设置（仅导出相关；默认项目由 app store 管理）
      */
     resetTranslationSettings() {
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
-      this.defaultProjectId = "";
       this.targetLanguages = [...DEFAULT_TARGET_LANGUAGE_CODES];
 
-      // 重置加载状态
       Object.keys(this.loadingStates).forEach((key) => {
         this.loadingStates[key] = false;
       });
 
-      // 清空 localStorage 中的翻译设置
       removeLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
       removeLocalItem(STORAGE_KEYS.EXCEL_OVERWRITE);
-      removeLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
       removeLocalItem(STORAGE_KEYS.TARGET_LANGUAGES);
     },
 
@@ -508,12 +454,9 @@ export const useExportStore = defineStore("export", {
       // 先清除 localStorage 中的导出相关数据（包括 Pinia persist 存储）
       // 必须在重置状态之前清除，避免 Pinia persist 插件恢复数据
       try {
-        // 清除直接存储的导出数据
         removeLocalItem(STORAGE_KEYS.EXCEL_BASELINE_KEY);
         removeLocalItem(STORAGE_KEYS.EXCEL_OVERWRITE);
-        removeLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID);
         removeLocalItem(STORAGE_KEYS.TARGET_LANGUAGES);
-        // 清除 Pinia persist 存储（必须在重置状态之前）
         removeLocalItem("export-store");
         debugLog("[ExportStore] Cleared export settings from localStorage");
       } catch (error) {
@@ -523,11 +466,8 @@ export const useExportStore = defineStore("export", {
         );
       }
 
-      // 重置状态（在清除 localStorage 之后）
-      // 这样 Pinia persist 插件保存的将是空值
       this.excelBaselineKey = "";
       this.excelOverwrite = false;
-      this.defaultProjectId = "";
       this.targetLanguages = [...DEFAULT_TARGET_LANGUAGE_CODES];
 
       // 重置加载状态

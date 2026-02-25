@@ -1,14 +1,6 @@
 import { defineStore } from "pinia";
-import { ElMessage } from "element-plus";
-import { t } from "../../../utils/i18n.js";
 import { debugLog } from "../../../utils/debug.js";
 import { TRANSLATION_CONFIG } from "../../config/translation.js";
-import { useApiStore } from "./api.js";
-import { useTranslationCoreStore } from "../translation/core.js";
-import { useTermsStore } from "../terms.js";
-import { useAppStore } from "../app.js";
-import { useExportStore } from "../translation/export.js";
-import { useTranslationCache } from "../../composables/Translation/useTranslationCache.js";
 import { useCacheValidation } from "../../composables/Core/useCacheValidation.js";
 import { STORAGE_KEYS } from "../../config/storageKeys.js";
 import {
@@ -265,109 +257,6 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     toggleDebugLogging(enabled) {
       this.debugLogging = enabled;
       setLocalItem(STORAGE_KEYS.DEBUG_LOGGING_ENABLED, enabled);
-    },
-
-    /**
-     * 初始化所有设置（清除缓存但保留重要设置）
-     * 重构后的版本：只调用各Store的初始化函数，禁止直接操作localStorage
-     */
-    clearAllSettings() {
-      try {
-        // 调用各Store的初始化函数重置到默认值
-        // 1. 初始化翻译设置（保留去重和ad terms设置）
-        this.initializeToDefaults();
-
-        // 2. 初始化API设置
-        const apiStore = useApiStore();
-        apiStore.initializeToDefaults();
-
-        // 3. 初始化翻译核心状态
-        const translationCoreStore = useTranslationCoreStore();
-        translationCoreStore.initializeToDefaults();
-
-        // 4. 初始化术语状态（只重置开关，不重置数据）
-        const termsStore = useTermsStore();
-        termsStore.initializeToDefaults();
-
-        // 5. 初始化应用状态
-        const appStore = useAppStore();
-        appStore.initializeToDefaults();
-
-        // 6. 初始化导出设置（包含 default_project_id）
-        const exportStore = useExportStore();
-        exportStore.initializeToDefaults();
-
-        // 7. 清空翻译缓存
-        const cache = useTranslationCache();
-        cache.clearCache();
-
-        // 8. 确保重要设置被正确保存到 localStorage
-        this.saveImportantSettings();
-
-        // 9. 异步刷新 Terms Card 数据（不等待完成）
-        termsStore.refreshTerms(false).catch((error) => {
-          console.error("Terms refresh failed after cache clear:", error);
-        });
-
-        // 关闭对话框
-        this.dialogVisible = false;
-
-        // 调试信息：显示重置后的设置
-        debugLog("Cache initialization completed. Settings reset to defaults:");
-        debugLog(
-          "- auto_deduplication_enabled:",
-          getLocalItem(STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED)
-        );
-        debugLog(
-          "- deduplicate_project_selection:",
-          getLocalItem(STORAGE_KEYS.DEDUPLICATE_PROJECT_SELECTION)
-        );
-        debugLog(
-          "- ad_terms_status:",
-          getLocalItem(STORAGE_KEYS.AD_TERMS_STATUS)
-        );
-        debugLog(
-          "- terms-store:",
-          getLocalItem("terms-store") ? "exists" : "not found"
-        );
-        debugLog("- Memory autoDeduplication:", this.autoDeduplication);
-        debugLog("- Memory deduplicateProject:", this.deduplicateProject);
-        debugLog("- Memory adTerms:", this.adTerms);
-        // 验证API Key和Token是否被清除
-        debugLog(
-          "- deepseek_api_key:",
-          getLocalItem(STORAGE_KEYS.DEEPSEEK_API_KEY) ? "exists" : "cleared"
-        );
-        debugLog(
-          "- lokalise_api_token:",
-          getLocalItem(STORAGE_KEYS.LOKALISE_API_TOKEN) ? "exists" : "cleared"
-        );
-        debugLog(
-          "- lokalise_projects:",
-          getLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS) ? "exists" : "cleared"
-        );
-        debugLog(
-          "- default_project_id:",
-          getLocalItem(STORAGE_KEYS.DEFAULT_PROJECT_ID) ? "exists" : "cleared"
-        );
-        debugLog("- API Store apiKey:", apiStore.apiKey || "empty");
-        debugLog(
-          "- API Store lokaliseApiToken:",
-          apiStore.lokaliseApiToken || "empty"
-        );
-        debugLog(
-          "- Export Store defaultProjectId:",
-          exportStore.defaultProjectId || "empty"
-        );
-
-        ElMessage.success(t("messages.cacheInitializedSuccessfully"));
-
-        // 自动校验缓存初始化结果
-        this.autoValidateCache();
-      } catch (error) {
-        console.error("Failed to initialize cache:", error);
-        ElMessage.error(t("messages.failedToInitializeCache"));
-      }
     },
 
     /**
