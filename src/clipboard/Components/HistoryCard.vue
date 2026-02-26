@@ -113,24 +113,11 @@ const tooltipPopperStyle = {
 };
 
 function handleCardMouseDown(event) {
-  const activeEl = document.activeElement;
-  console.log("[HistoryCard] mousedown", {
-    target: event.target,
-    itemId: props.item?.id,
-    focus: activeEl,
-    focusTag: activeEl?.tagName,
-    focusId: activeEl?.id,
-    focusName: activeEl?.name,
-  });
   event.preventDefault();
 }
 
 function handleCardClick(event) {
-  console.log("[HistoryCard] click", { target: event.target });
-  if (event.target.closest(".history_actions")) {
-    console.log("[HistoryCard] click ignored (history_actions)");
-    return;
-  }
+  if (event.target.closest(".history_actions")) return;
   emit("copyAndPaste", props.item);
 }
 
