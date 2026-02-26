@@ -1,5 +1,9 @@
 <template>
-  <el-container class="popup_frame_container" direction="vertical">
+  <el-container
+    class="popup_frame_container"
+    direction="vertical"
+    @mousedown.prevent
+  >
     <el-header
       class="popup_header"
       :class="{ popup_header_draggable: onMoveBy }"
@@ -106,8 +110,15 @@ function handleSettingClick() {
     props.onSettingClick();
     return;
   }
-  if (props.settingRoute && typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
-    chrome.runtime.sendMessage({ type: "OPEN_OPTIONS", menu: props.settingRoute });
+  if (
+    props.settingRoute &&
+    typeof chrome !== "undefined" &&
+    chrome.runtime?.sendMessage
+  ) {
+    chrome.runtime.sendMessage({
+      type: "OPEN_OPTIONS",
+      menu: props.settingRoute,
+    });
   }
 }
 

@@ -1,12 +1,21 @@
 <template>
-  <el-dialog :modelValue="uploadStore.uploadDialogVisible" @update:modelValue="uploadStore.setUploadDialogVisible"
-    :title="uploadStore.isUploadSuccess
+  <el-dialog
+    :modelValue="uploadStore.uploadDialogVisible"
+    @update:modelValue="uploadStore.setUploadDialogVisible"
+    :title="
+      uploadStore.isUploadSuccess
         ? t('upload.uploadSuccess')
         : t('upload.uploadSetting')
-      " width="500px" top="30vh" :close-on-click-modal="!uploadStore.isUploading"
-    :close-on-press-escape="!uploadStore.isUploading" v-loading="uploadStore.isUploading"
-    :element-loading-text="t('upload.uploadingToLokalise')" element-loading-spinner="el-icon-loading"
-    @close="uploadStore.closeUploadDialog">
+    "
+    width="500px"
+    top="30vh"
+    :close-on-click-modal="!uploadStore.isUploading"
+    :close-on-press-escape="!uploadStore.isUploading"
+    v-loading="uploadStore.isUploading"
+    :element-loading-text="t('upload.uploadingToLokalise')"
+    element-loading-spinner="el-icon-loading"
+    @close="uploadStore.closeUploadDialog"
+  >
     <!-- 成功页面 -->
     <div v-if="uploadStore.isUploadSuccess" class="upload-success">
       <div class="success-icon">
@@ -17,31 +26,58 @@
     </div>
 
     <!-- 上传设置表单 -->
-    <el-form v-else :model="uploadStore.uploadForm" label-position="top" @submit.prevent="handleUpload">
+    <el-form
+      v-else
+      :model="uploadStore.uploadForm"
+      label-position="top"
+      @submit.prevent="handleUpload"
+    >
       <el-form-item :label="t('upload.tag')">
-        <AutocompleteInput :modelValue="uploadStore.uploadForm.tag" @update:modelValue="uploadStore.handleTagChange"
-          :placeholder="t('upload.tagPlaceholder')" :fetch-suggestions="fetchTagSuggestions"
-          :get-project-id="getProjectId" :show-dropdown="true" :dropdown-limit="10"
-          :fetch-suggestions-list="fetchTagSuggestionsList" />
+        <AutocompleteInput
+          :modelValue="uploadStore.uploadForm.tag"
+          @update:modelValue="uploadStore.handleTagChange"
+          :placeholder="t('upload.tagPlaceholder')"
+          :fetch-suggestions="fetchTagSuggestions"
+          :get-project-id="getProjectId"
+          :show-dropdown="true"
+          :dropdown-limit="10"
+          :fetch-suggestions-list="fetchTagSuggestionsList"
+        />
       </el-form-item>
     </el-form>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button v-if="!uploadStore.isUploadSuccess" @click="uploadStore.closeUploadDialog">{{ t("common.cancel")
-          }}</el-button>
-        <el-button v-if="!uploadStore.isUploadSuccess" type="primary" @click="handleUpload"
-          :disabled="uploadStore.isUploading" :loading="uploadStore.isUploading">
+        <el-button
+          v-if="!uploadStore.isUploadSuccess"
+          @click="uploadStore.closeUploadDialog"
+          >{{ t("common.cancel") }}</el-button
+        >
+        <el-button
+          v-if="!uploadStore.isUploadSuccess"
+          type="primary"
+          @click="handleUpload"
+          :disabled="uploadStore.isUploading"
+          :loading="uploadStore.isUploading"
+        >
           {{
             uploadStore.isUploading ? t("upload.uploading") : t("upload.upload")
           }}
         </el-button>
-        <el-button v-if="uploadStore.isUploadSuccess && uploadStore.currentProject" type="primary"
-          @click="uploadStore.openLokaliseProject" style="min-width: 120px">
+        <el-button
+          v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
+          type="primary"
+          @click="uploadStore.openLokaliseProject"
+          style="min-width: 120px"
+        >
           {{ t("upload.viewInLokalise") }}
         </el-button>
-        <el-button v-if="uploadStore.isUploadSuccess && uploadStore.currentProject" type="primary"
-          @click="uploadStore.openLokaliseDownload" style="min-width: 80px">
+        <el-button
+          v-if="uploadStore.isUploadSuccess && uploadStore.currentProject"
+          type="primary"
+          @click="uploadStore.openLokaliseDownload"
+          style="min-width: 80px"
+        >
           {{ t("upload.buildNow") }}
         </el-button>
       </div>
@@ -53,7 +89,7 @@
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useUploadStore } from "@/lokalise/stores/upload.js";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
-import AutocompleteInput from "@/Components/common/AutocompleteInput.vue";
+import AutocompleteInput from "@/components/common/AutocompleteInput.vue";
 import { autocompleteTags } from "@/lokalise/services/autocomplete/autocompleteService.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 

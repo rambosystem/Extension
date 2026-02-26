@@ -1,16 +1,38 @@
 <template>
-  <PopupFrame :on-close="onClose" show-pin show-settings :setting-title="t('settings.title')"
-    :setting-route="ROUTE_INDEX.CLIPBOARD" :pinned="pinned" :set-pinned="setPinned" :on-move-by="onMoveBy">
+  <PopupFrame
+    :on-close="onClose"
+    show-pin
+    show-settings
+    :setting-title="t('settings.title')"
+    :setting-route="ROUTE_INDEX.CLIPBOARD"
+    :pinned="pinned"
+    :set-pinned="setPinned"
+    :on-move-by="onMoveBy"
+  >
     <div class="clipboard_view">
       <div class="clipboard_header">
         <div class="clipboard_title">{{ t("clipboard.historyTitle") }}</div>
       </div>
 
-      <el-scrollbar v-if="history.length" height="320px" class="history_scrollbar">
+      <el-scrollbar
+        v-if="history.length"
+        height="320px"
+        class="history_scrollbar"
+      >
         <div class="history_list">
-          <div v-for="(item, index) in history" :key="item.id" class="history_item_row">
-            <HistoryCard :item="item" :is-top="index === 0" @copy="copyHistoryItem" @pin="pinHistoryItem"
-              @delete="deleteHistoryItem" />
+          <div
+            v-for="(item, index) in history"
+            :key="item.id"
+            class="history_item_row"
+          >
+            <HistoryCard
+              :item="item"
+              :is-top="index === 0"
+              @copy="copyHistoryItem"
+              @copy-and-paste="copyHistoryItemAndPaste"
+              @pin="pinHistoryItem"
+              @delete="deleteHistoryItem"
+            />
           </div>
         </div>
       </el-scrollbar>
@@ -22,7 +44,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
-import PopupFrame from "@/Components/PopupFrame.vue";
+import PopupFrame from "@/components/PopupFrame.vue";
 import HistoryCard from "./Components/HistoryCard.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
@@ -33,7 +55,7 @@ import {
   normalizeHistoryLimit,
 } from "./storage.js";
 
-defineProps({
+const { onClose, pinned } = defineProps({
   onClose: { type: Function, required: true },
   pinned: { type: [Object, Boolean], default: null },
   setPinned: { type: Function, default: null },
@@ -91,9 +113,14 @@ function readHistoryLimitFromStorage() {
       resolve(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
       return;
     }
-    chrome.storage.local.get([CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY], (result) => {
-      resolve(normalizeHistoryLimit(result?.[CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY]));
-    });
+    chrome.storage.local.get(
+      [CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY],
+      (result) => {
+        resolve(
+          normalizeHistoryLimit(result?.[CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY]),
+        );
+      },
+    );
   });
 }
 
@@ -141,6 +168,59 @@ async function copyHistoryItem(item) {
     await appendHistory(value);
     lastSeenClipboard.value = value;
     ElMessage.success(t("clipboard.statusCopied"));
+  } catch (_) {
+    ElMessage.error(t("clipboard.statusCopyFailed"));
+  }
+}
+
+async function copyHistoryItemAndPaste(item) {
+  const value = normalizeText(item?.text);
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    await appendHistory(value);
+    lastSeenClipboard.value = value;
+    const hasChromeTabs = typeof chrome !== "undefined" && chrome?.tabs;
+    if (hasChromeTabs) {
+      try {
+        let [tab] = await chrome.tabs.query({
+          active: true,
+          lastFocusedWindow: true,
+        });
+        if (!tab?.id && chrome.windows) {
+          const windows = await chrome.windows.getAll({ windowTypes: ["normal"] });
+          for (const win of windows) {
+            const [t] = await chrome.tabs.query({
+              active: true,
+              windowId: win.id,
+            });
+            if (t?.id && t.url) {
+              tab = t;
+              break;
+            }
+          }
+        }
+        if (
+          tab?.id &&
+          tab.url &&
+          !tab.url.startsWith("chrome://") &&
+          !tab.url.startsWith("edge://")
+        ) {
+          await chrome.tabs.sendMessage(tab.id, {
+            action: "pasteToLastFocused",
+            text: value,
+          });
+        }
+      } catch (_) {
+        // sendMessage failed (e.g. extension popup context)
+      }
+    } else {
+      document.dispatchEvent(
+        new CustomEvent("clipboard-paste-to-focused", { detail: { text: value } }),
+      );
+    }
+
+    if (!pinned) onClose?.();
   } catch (_) {
     ElMessage.error(t("clipboard.statusCopyFailed"));
   }

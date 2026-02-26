@@ -1,20 +1,31 @@
 <template>
-  <el-dialog ref="dialogRef" :modelValue="translationCoreStore.dialogVisible"
-    @update:modelValue="translationCoreStore.setDialogVisible" width="70%" @opened="updateDialogWidth">
+  <el-dialog
+    ref="dialogRef"
+    :modelValue="translationCoreStore.dialogVisible"
+    @update:modelValue="translationCoreStore.setDialogVisible"
+    width="70%"
+    @opened="updateDialogWidth"
+  >
     <template #header>
       <div class="dialog-header">
         <div class="dialog-title-wrapper">
           <span class="dialog-title">{{
             t("translation.translationResult")
-            }}</span>
-          <div v-if="translationCoreStore.loadingStates.translation" class="loading-indicator">
+          }}</span>
+          <div
+            v-if="translationCoreStore.loadingStates.translation"
+            class="loading-indicator"
+          >
             <el-icon class="is-loading">
               <Loading />
             </el-icon>
             <span class="loading-text">{{
               translationCoreStore.getStatusText()
-              }}</span>
-            <span v-if="translationCoreStore.translationProgress.total > 0" class="progress-counter">
+            }}</span>
+            <span
+              v-if="translationCoreStore.translationProgress.total > 0"
+              class="progress-counter"
+            >
               {{ translationCoreStore.translationProgress.finished }} /
               {{ translationCoreStore.translationProgress.total }}
             </span>
@@ -22,8 +33,14 @@
         </div>
       </div>
     </template>
-    <el-alert v-if="translationCoreStore.isTranslationTruncated" :title="t('translation.translationTruncated')"
-      type="warning" :closable="false" show-icon style="margin-bottom: 16px">
+    <el-alert
+      v-if="translationCoreStore.isTranslationTruncated"
+      :title="t('translation.translationTruncated')"
+      type="warning"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 16px"
+    >
       <template #default>
         {{ t("translation.translationTruncatedMessage") }}
       </template>
@@ -31,29 +48,49 @@
     <el-form label-position="top">
       <el-form-item class="excel-wrapper-item">
         <div ref="excelWrapperRef" class="excel-wrapper">
-          <Excel ref="excelRef" v-model="excelData" @change="handleExcelDataChange" :enableColumnResize="true"
-            :enableRowResize="false" :enableFillHandle="true" :defaultColumnWidth="calculatedColumnWidth"
-            :columnNames="getColumnConfig.columnNames" :custom-menu-items="customMenuItems"
-            :enable-row-scroll-step="true" @custom-action="handleCustomAction" :enable-header-sticky="true" />
+          <Excel
+            ref="excelRef"
+            v-model="excelData"
+            @change="handleExcelDataChange"
+            :enableColumnResize="true"
+            :enableRowResize="false"
+            :enableFillHandle="true"
+            :defaultColumnWidth="calculatedColumnWidth"
+            :columnNames="getColumnConfig.columnNames"
+            :custom-menu-items="customMenuItems"
+            :enable-row-scroll-step="true"
+            @custom-action="handleCustomAction"
+            :enable-header-sticky="true"
+          />
         </div>
       </el-form-item>
       <div class="dialog-button-container">
         <el-button @click="translationCoreStore.closeDialog()">{{
           t("common.cancel")
-          }}</el-button>
-        <el-button type="primary" @click="
-          exportStore.exportExcel(translationCoreStore.translationResult)
-          " :disabled="translationCoreStore.isTranslating">{{ t("translation.exportExcel") }}</el-button>
-        <el-button type="primary" @click="
-          uploadStore.uploadToLokalise(translationCoreStore.translationResult)
-          " :disabled="translationCoreStore.isTranslating">{{ t("translation.uploadToLokalise") }}</el-button>
+        }}</el-button>
+        <el-button
+          type="primary"
+          @click="
+            exportStore.exportExcel(translationCoreStore.translationResult)
+          "
+          :disabled="translationCoreStore.isTranslating"
+          >{{ t("translation.exportExcel") }}</el-button
+        >
+        <el-button
+          type="primary"
+          @click="
+            uploadStore.uploadToLokalise(translationCoreStore.translationResult)
+          "
+          :disabled="translationCoreStore.isTranslating"
+          >{{ t("translation.uploadToLokalise") }}</el-button
+        >
       </div>
     </el-form>
   </el-dialog>
 </template>
 
 <script setup>
-import Excel from "@/Components/excel/Excel.vue";
+import Excel from "@/components/excel/Excel.vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useTranslationCoreStore } from "@/lokalise/stores/translation/core.js";
 import { useExportStore } from "@/lokalise/stores/translation/export.js";
@@ -792,7 +829,7 @@ const handleCustomAction = ({ id, context }) => {
     if (!parsed) {
       ElMessage.warning(
         t("translation.autoIncrementBaselineKeyInvalid") ||
-        "Baseline key format is invalid. Please use format like 'key1', 'item5', etc.",
+          "Baseline key format is invalid. Please use format like 'key1', 'item5', etc.",
       );
       return;
     }
