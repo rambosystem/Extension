@@ -103,20 +103,17 @@ export const useAppStore = defineStore("app", {
 
     /**
      * 从 chrome.storage 恢复菜单等状态，并做索引校验
-     * 首次打开时若有 initialMenu 则用其并清除 initialMenu 键
+     * 每次进入选项页都先应用 initialMenu/currentMenu（popup 点 Setting 跳转依赖此），再按需做其余初始化
      */
     async initializeApp() {
-      if (this.isInitialized) return;
-
       try {
+        // 始终先读取并应用菜单定位（解决 persist 导致 isInitialized 为 true 时跳过、始终进 Lokalise 的问题）
         const result = await getChromeLocal([
           STORAGE_KEYS.INITIAL_MENU,
           STORAGE_KEYS.CURRENT_MENU,
         ]);
-
         const initialMenu = result[STORAGE_KEYS.INITIAL_MENU];
         const currentMenu = result[STORAGE_KEYS.CURRENT_MENU];
-
         if (initialMenu != null && VALID_MENU_INDEX.has(String(initialMenu))) {
           this.currentMenu = String(initialMenu);
           await removeChromeLocal(STORAGE_KEYS.INITIAL_MENU);
@@ -124,6 +121,8 @@ export const useAppStore = defineStore("app", {
         } else if (currentMenu != null && VALID_MENU_INDEX.has(String(currentMenu))) {
           this.currentMenu = String(currentMenu);
         }
+
+        if (this.isInitialized) return;
 
         this.language = "en";
         setLocalItem(STORAGE_KEYS.APP_LANGUAGE, "en");
