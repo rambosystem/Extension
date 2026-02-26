@@ -158,11 +158,16 @@ export const useClipboardStore = defineStore("clipboard", () => {
 
     let next = [];
     if (samePinned) {
-      next = list.map((item) =>
-        item.id === samePinned.id
-          ? { ...item, text: value, createdAt: now, pinned: true }
-          : item,
-      );
+      const rest = list.filter((item) => normalizeText(item?.text) !== value);
+      next = [
+        {
+          ...samePinned,
+          text: value,
+          createdAt: now,
+          pinned: true,
+        },
+        ...rest,
+      ];
     } else if (sameItem) {
       const withoutSameText = list.filter(
         (item) => normalizeText(item?.text) !== value,
@@ -173,7 +178,7 @@ export const useClipboardStore = defineStore("clipboard", () => {
         ...sameItem,
         text: value,
         createdAt: now,
-        pinned: false,
+        pinned: sameItem.pinned === true,
         favorite: sameItem.favorite === true,
         favoritePinned: sameItem.favoritePinned === true,
       };
