@@ -159,7 +159,8 @@
     "statusCopied": "Copied to clipboard.",
     "statusPinned": "Pinned to top.",
     "statusCopyFailed": "Copy failed. Please try again.",
-    "statusHistoryCleared": "History cleared."
+    "statusHistoryCleared": "History cleared.",
+    "statusFavoritesCleared": "Favorites cleared."
   },
   "about": {
     "title": "About",

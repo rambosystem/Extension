@@ -17,6 +17,7 @@
           @copy-and-paste="emit('copyAndPaste', $event)"
           @pin="emit('pin', $event)"
           @unpin="emit('unpin', $event)"
+          @favorite="emit('favorite', $event)"
           @delete="emit('delete', $event)"
         />
       </div>
@@ -44,6 +45,7 @@ const emit = defineEmits({
   copyAndPaste: (item) => item != null,
   pin: (id) => typeof id === "string",
   unpin: (id) => typeof id === "string",
+  favorite: (id) => typeof id === "string",
   delete: (id) => typeof id === "string",
 });
 </script>

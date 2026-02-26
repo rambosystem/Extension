@@ -1,4 +1,5 @@
 import { createApp, ref } from "vue";
+import { createPinia } from "pinia";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import { POPUP_ID } from "./constants.js";
@@ -99,6 +100,7 @@ export function showClipboardPopup() {
     setPinned,
     onMoveBy,
   });
+  mountedApp.use(createPinia());
   mountedApp.use(ElementPlus);
   mountedApp.mount(popupRoot);
 

@@ -31,7 +31,7 @@
             v-if="!isClearConfirming"
             type="button"
             class="header_action_btn"
-            :disabled="!history.length"
+            :disabled="!currentItems.length"
             @click="isClearConfirming = true"
           >
             <img
@@ -64,8 +64,9 @@
         :empty-text="currentEmptyText"
         @copy="copyHistoryItem"
         @copy-and-paste="copyHistoryItemAndPaste"
-        @pin="pinHistoryItem"
+        @pin="handlePin"
         @unpin="unpinHistoryItem"
+        @favorite="favoriteHistoryItem"
         @delete="deleteHistoryItem"
       />
     </div>
@@ -73,7 +74,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
+import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import { Check, Close, Star, StarFilled } from "@element-plus/icons-vue";
 import PopupFrame from "@/components/PopupFrame.vue";
@@ -81,12 +83,7 @@ import HistoryPanel from "./Components/HistoryPanel.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import cleanIcon from "@/assets/clean.svg";
-import {
-  CLIPBOARD_HISTORY_STORAGE_KEY,
-  CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY,
-  CLIPBOARD_HISTORY_DEFAULT_LIMIT,
-  normalizeHistoryLimit,
-} from "./storage.js";
+import { useClipboardStore } from "./stores/clipboard.js";
 
 const { onClose, pinned } = defineProps({
   onClose: { type: Function, required: true },
@@ -96,175 +93,33 @@ const { onClose, pinned } = defineProps({
 });
 
 const { t } = useI18n();
+const clipboardStore = useClipboardStore();
+const {
+  history,
+  lastSeenClipboard,
+  isClearConfirming,
+  showFavorites,
+  currentItems,
+} = storeToRefs(clipboardStore);
+const {
+  normalizeText,
+  loadHistoryLimit,
+  loadHistory,
+  appendHistory,
+  deleteHistoryItem,
+  pinHistoryItem,
+  unpinHistoryItem,
+  favoriteHistoryItem,
+  clearCurrentView,
+  toggleFavoritesView,
+} = clipboardStore;
 
-const history = ref([]);
-const historyLimit = ref(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
-const lastSeenClipboard = ref("");
-const isClearConfirming = ref(false);
-const showFavorites = ref(false);
 const AUTO_REFRESH_INTERVAL_MS = 500;
 let autoRefreshTimer = null;
 
-const favoriteItems = computed(() =>
-  history.value.filter((item) => item?.pinned === true),
-);
-const currentItems = computed(() =>
-  showFavorites.value ? favoriteItems.value : history.value,
-);
 const currentEmptyText = computed(() =>
   showFavorites.value ? t("clipboard.noFavorites") : t("clipboard.noHistory"),
 );
-
-function normalizeText(text) {
-  if (typeof text !== "string") return "";
-  return text.trim();
-}
-
-function normalizeHistoryItem(item) {
-  const text = normalizeText(item?.text);
-  if (!text) return null;
-  const id = typeof item?.id === "string" ? item.id : "";
-  if (!id) return null;
-  const createdAt =
-    typeof item?.createdAt === "number" && Number.isFinite(item.createdAt)
-      ? item.createdAt
-      : Date.now();
-  return {
-    id,
-    text,
-    createdAt,
-    pinned: item?.pinned === true,
-  };
-}
-
-function dedupeByTextKeepOrder(list) {
-  const seen = new Set();
-  const next = [];
-  for (const item of list) {
-    const key = normalizeText(item?.text);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    next.push(item);
-  }
-  return next;
-}
-
-function applyHistoryRules(list, limit) {
-  const normalized = list
-    .map((item) => normalizeHistoryItem(item))
-    .filter(Boolean);
-  const deduped = dedupeByTextKeepOrder(normalized);
-  const pinned = deduped
-    .filter((item) => item.pinned)
-    .map((item) => ({
-      ...item,
-      pinned: true,
-    }));
-  const unpinned = deduped
-    .filter((item) => !item.pinned)
-    .map((item) => ({
-      ...item,
-      pinned: false,
-    }));
-  const ordered = [...pinned, ...unpinned];
-  return ordered.slice(0, limit);
-}
-
-function sortByCreatedAtDesc(list) {
-  return [...list].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-}
-
-function readHistoryFromStorage() {
-  return new Promise((resolve) => {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) {
-      resolve([]);
-      return;
-    }
-    chrome.storage.local.get([CLIPBOARD_HISTORY_STORAGE_KEY], (result) => {
-      const list = Array.isArray(result?.[CLIPBOARD_HISTORY_STORAGE_KEY])
-        ? result[CLIPBOARD_HISTORY_STORAGE_KEY]
-        : [];
-      resolve(list);
-    });
-  });
-}
-
-function saveHistoryToStorage(list) {
-  return new Promise((resolve) => {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) {
-      resolve();
-      return;
-    }
-    chrome.storage.local.set({ [CLIPBOARD_HISTORY_STORAGE_KEY]: list }, () =>
-      resolve(),
-    );
-  });
-}
-
-async function loadHistory() {
-  const list = await readHistoryFromStorage();
-  const next = applyHistoryRules(list, historyLimit.value);
-  history.value = next;
-}
-
-function readHistoryLimitFromStorage() {
-  return new Promise((resolve) => {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) {
-      resolve(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
-      return;
-    }
-    chrome.storage.local.get(
-      [CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY],
-      (result) => {
-        resolve(
-          normalizeHistoryLimit(result?.[CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY]),
-        );
-      },
-    );
-  });
-}
-
-async function loadHistoryLimit() {
-  historyLimit.value = await readHistoryLimitFromStorage();
-}
-
-async function appendHistory(text) {
-  const value = normalizeText(text);
-  if (!value) return;
-  const list = applyHistoryRules(
-    await readHistoryFromStorage(),
-    historyLimit.value,
-  );
-  const samePinned = list.find(
-    (item) => item.pinned && normalizeText(item?.text) === value,
-  );
-  const now = Date.now();
-
-  let next = [];
-  if (samePinned) {
-    next = list.map((item) =>
-      item.id === samePinned.id
-        ? { ...item, text: value, createdAt: now, pinned: true }
-        : item,
-    );
-  } else {
-    const withoutSameText = list.filter(
-      (item) => normalizeText(item?.text) !== value,
-    );
-    const pinnedItems = withoutSameText.filter((item) => item.pinned);
-    const unpinnedItems = withoutSameText.filter((item) => !item.pinned);
-    const newItem = {
-      id: `${now}-${Math.random().toString(16).slice(2)}`,
-      text: value,
-      createdAt: now,
-      pinned: false,
-    };
-    next = [...pinnedItems, newItem, ...unpinnedItems];
-  }
-  next = applyHistoryRules(next, historyLimit.value);
-  await saveHistoryToStorage(next);
-  history.value = next;
-}
 
 async function readClipboardAndCapture(options = {}) {
   const { force = false } = options;
@@ -351,69 +206,18 @@ async function copyHistoryItemAndPaste(item) {
   }
 }
 
-async function deleteHistoryItem(id) {
-  const list = await readHistoryFromStorage();
-  const next = applyHistoryRules(
-    list.filter((item) => item?.id !== id),
-    historyLimit.value,
-  );
-  await saveHistoryToStorage(next);
-  history.value = next;
-}
-
 async function confirmClearHistory() {
-  await saveHistoryToStorage([]);
-  history.value = [];
-  lastSeenClipboard.value = "";
-  isClearConfirming.value = false;
-  showFavorites.value = false;
-  ElMessage.success(t("clipboard.statusHistoryCleared"));
-}
-
-function toggleFavoritesView() {
-  isClearConfirming.value = false;
-  if (showFavorites.value) {
-    showFavorites.value = false;
-    return;
+  const cleared = await clearCurrentView();
+  if (cleared === "favorites") {
+    ElMessage.success(t("clipboard.statusFavoritesCleared"));
+  } else {
+    ElMessage.success(t("clipboard.statusHistoryCleared"));
   }
-  showFavorites.value = true;
 }
 
-async function pinHistoryItem(id) {
-  const list = applyHistoryRules(
-    await readHistoryFromStorage(),
-    historyLimit.value,
-  );
-  const target = list.find((item) => item.id === id);
-  if (!target) return;
-  const rest = list.filter((item) => item.id !== id);
-  const next = applyHistoryRules(
-    [{ ...target, pinned: true }, ...rest],
-    historyLimit.value,
-  );
-  await saveHistoryToStorage(next);
-  history.value = next;
-  ElMessage.success(t("clipboard.statusPinned"));
-}
-
-async function unpinHistoryItem(id) {
-  const list = applyHistoryRules(
-    await readHistoryFromStorage(),
-    historyLimit.value,
-  );
-  const target = list.find((item) => item.id === id);
-  if (!target) return;
-  const pinnedItems = list.filter((item) => item.pinned && item.id !== id);
-  const unpinnedItems = [
-    { ...target, pinned: false },
-    ...list.filter((item) => !item.pinned && item.id !== id),
-  ];
-  const next = applyHistoryRules(
-    [...pinnedItems, ...unpinnedItems],
-    historyLimit.value,
-  );
-  await saveHistoryToStorage(next);
-  history.value = next;
+async function handlePin(id) {
+  const pinnedOk = await pinHistoryItem(id);
+  if (pinnedOk) ElMessage.success(t("clipboard.statusPinned"));
 }
 
 onMounted(async () => {
