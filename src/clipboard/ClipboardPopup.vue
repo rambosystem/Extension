@@ -12,6 +12,38 @@
     <div class="clipboard_view">
       <div class="clipboard_header">
         <div class="clipboard_title">{{ t("clipboard.historyTitle") }}</div>
+        <div class="header_button_group">
+          <button
+            v-if="!isClearConfirming"
+            type="button"
+            class="header_action_btn"
+            :disabled="!history.length"
+            @click="isClearConfirming = true"
+          >
+            <img
+              :src="cleanIcon"
+              class="header_action_img"
+              alt=""
+              draggable="false"
+            />
+          </button>
+          <template v-else>
+            <button
+              type="button"
+              class="header_action_btn"
+              @click="confirmClearHistory"
+            >
+              <el-icon><Check /></el-icon>
+            </button>
+            <button
+              type="button"
+              class="header_action_btn"
+              @click="isClearConfirming = false"
+            >
+              <el-icon><Close /></el-icon>
+            </button>
+          </template>
+        </div>
       </div>
 
       <el-scrollbar
@@ -27,10 +59,11 @@
           >
             <HistoryCard
               :item="item"
-              :is-top="index === 0"
+              :is-top="!!item.pinned"
               @copy="copyHistoryItem"
               @copy-and-paste="copyHistoryItemAndPaste"
               @pin="pinHistoryItem"
+              @unpin="unpinHistoryItem"
               @delete="deleteHistoryItem"
             />
           </div>
@@ -44,10 +77,12 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
+import { Check, Close } from "@element-plus/icons-vue";
 import PopupFrame from "@/components/PopupFrame.vue";
 import HistoryCard from "./Components/HistoryCard.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
+import cleanIcon from "@/assets/clean.svg";
 import {
   CLIPBOARD_HISTORY_STORAGE_KEY,
   CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY,
@@ -67,12 +102,67 @@ const { t } = useI18n();
 const history = ref([]);
 const historyLimit = ref(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
 const lastSeenClipboard = ref("");
+const isClearConfirming = ref(false);
 const AUTO_REFRESH_INTERVAL_MS = 500;
 let autoRefreshTimer = null;
 
 function normalizeText(text) {
   if (typeof text !== "string") return "";
   return text.trim();
+}
+
+function normalizeHistoryItem(item) {
+  const text = normalizeText(item?.text);
+  if (!text) return null;
+  const id = typeof item?.id === "string" ? item.id : "";
+  if (!id) return null;
+  const createdAt =
+    typeof item?.createdAt === "number" && Number.isFinite(item.createdAt)
+      ? item.createdAt
+      : Date.now();
+  return {
+    id,
+    text,
+    createdAt,
+    pinned: item?.pinned === true,
+  };
+}
+
+function dedupeByTextKeepOrder(list) {
+  const seen = new Set();
+  const next = [];
+  for (const item of list) {
+    const key = normalizeText(item?.text);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    next.push(item);
+  }
+  return next;
+}
+
+function applyHistoryRules(list, limit) {
+  const normalized = list
+    .map((item) => normalizeHistoryItem(item))
+    .filter(Boolean);
+  const deduped = dedupeByTextKeepOrder(normalized);
+  const pinned = deduped
+    .filter((item) => item.pinned)
+    .map((item) => ({
+      ...item,
+      pinned: true,
+    }));
+  const unpinned = deduped
+    .filter((item) => !item.pinned)
+    .map((item) => ({
+      ...item,
+      pinned: false,
+    }));
+  const ordered = [...pinned, ...unpinned];
+  return ordered.slice(0, limit);
+}
+
+function sortByCreatedAtDesc(list) {
+  return [...list].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 }
 
 function readHistoryFromStorage() {
@@ -104,7 +194,8 @@ function saveHistoryToStorage(list) {
 
 async function loadHistory() {
   const list = await readHistoryFromStorage();
-  history.value = list.slice(0, historyLimit.value);
+  const next = applyHistoryRules(list, historyLimit.value);
+  history.value = next;
 }
 
 function readHistoryLimitFromStorage() {
@@ -131,16 +222,37 @@ async function loadHistoryLimit() {
 async function appendHistory(text) {
   const value = normalizeText(text);
   if (!value) return;
-  const list = await readHistoryFromStorage();
-  const deduped = list.filter((item) => normalizeText(item?.text) !== value);
-  const next = [
-    {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  const list = applyHistoryRules(
+    await readHistoryFromStorage(),
+    historyLimit.value,
+  );
+  const samePinned = list.find(
+    (item) => item.pinned && normalizeText(item?.text) === value,
+  );
+  const now = Date.now();
+
+  let next = [];
+  if (samePinned) {
+    next = list.map((item) =>
+      item.id === samePinned.id
+        ? { ...item, text: value, createdAt: now, pinned: true }
+        : item,
+    );
+  } else {
+    const withoutSameText = list.filter(
+      (item) => normalizeText(item?.text) !== value,
+    );
+    const pinnedItems = withoutSameText.filter((item) => item.pinned);
+    const unpinnedItems = withoutSameText.filter((item) => !item.pinned);
+    const newItem = {
+      id: `${now}-${Math.random().toString(16).slice(2)}`,
       text: value,
-      createdAt: Date.now(),
-    },
-    ...deduped,
-  ].slice(0, historyLimit.value);
+      createdAt: now,
+      pinned: false,
+    };
+    next = [...pinnedItems, newItem, ...unpinnedItems];
+  }
+  next = applyHistoryRules(next, historyLimit.value);
   await saveHistoryToStorage(next);
   history.value = next;
 }
@@ -231,18 +343,58 @@ async function copyHistoryItemAndPaste(item) {
 }
 
 async function deleteHistoryItem(id) {
-  const next = history.value.filter((item) => item.id !== id);
+  const list = await readHistoryFromStorage();
+  const next = applyHistoryRules(
+    list.filter((item) => item?.id !== id),
+    historyLimit.value,
+  );
   await saveHistoryToStorage(next);
   history.value = next;
 }
 
+async function confirmClearHistory() {
+  await saveHistoryToStorage([]);
+  history.value = [];
+  lastSeenClipboard.value = "";
+  isClearConfirming.value = false;
+  ElMessage.success(t("clipboard.statusHistoryCleared"));
+}
+
 async function pinHistoryItem(id) {
-  const target = history.value.find((item) => item.id === id);
+  const list = applyHistoryRules(
+    await readHistoryFromStorage(),
+    historyLimit.value,
+  );
+  const target = list.find((item) => item.id === id);
   if (!target) return;
-  const next = [target, ...history.value.filter((item) => item.id !== id)];
+  const rest = list.filter((item) => item.id !== id);
+  const next = applyHistoryRules(
+    [{ ...target, pinned: true }, ...rest],
+    historyLimit.value,
+  );
   await saveHistoryToStorage(next);
   history.value = next;
   ElMessage.success(t("clipboard.statusPinned"));
+}
+
+async function unpinHistoryItem(id) {
+  const list = applyHistoryRules(
+    await readHistoryFromStorage(),
+    historyLimit.value,
+  );
+  const target = list.find((item) => item.id === id);
+  if (!target) return;
+  const pinnedItems = list.filter((item) => item.pinned && item.id !== id);
+  const unpinnedItems = [
+    { ...target, pinned: false },
+    ...list.filter((item) => !item.pinned && item.id !== id),
+  ];
+  const next = applyHistoryRules(
+    [...pinnedItems, ...unpinnedItems],
+    historyLimit.value,
+  );
+  await saveHistoryToStorage(next);
+  history.value = next;
 }
 
 onMounted(async () => {
@@ -280,6 +432,43 @@ function handleWindowFocus() {
   justify-content: space-between;
 }
 
+.header_button_group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 10px;
+}
+
+.header_action_btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #4b5563;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.header_action_btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.header_action_btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.header_action_img {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
 .clipboard_title {
   font-size: 15px;
   line-height: 1;
@@ -306,7 +495,7 @@ function handleWindowFocus() {
 }
 
 .clipboard_placeholder {
-  margin: 0;
+  margin-left: 10px;
   font-size: 13px;
   color: #6b7280;
 }

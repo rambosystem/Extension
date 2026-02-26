@@ -8,19 +8,23 @@
         </p>
       </el-tooltip>
       <div class="history_actions" :class="{ is_open: showMoreActions }">
+        <!-- 已固定：Pin 常显，点击取消固定；样式与 PopupFrame 头部 Pin 一致 -->
+        <button v-if="isTop" type="button" class="action_btn pin_btn is_pinned" @click.stop="handlePinClick">
+          <img :src="pinIconFixed" class="action_icon_img" alt="" draggable="false" />
+        </button>
+        <!-- 未固定：Pin / 删除 / 复制 在折叠里，点击 Pin 固定 -->
         <div class="more_actions">
-          <button type="button" class="action_btn" :title="t('clipboard.pinButton')" @click.stop="handlePinClick">
-            <img :src="isTop ? pinIconFixed : pinIconUnfixed" class="action_icon_img" alt="" draggable="false" />
+          <button v-if="!isTop" type="button" class="action_btn pin_btn" @click.stop="handlePinClick">
+            <img :src="pinIconUnfixed" class="action_icon_img" alt="" draggable="false" />
           </button>
-          <button type="button" class="action_btn" :title="t('common.delete')" @click.stop="handleDeleteClick">
+          <button type="button" class="action_btn" @click.stop="handleDeleteClick">
             <img :src="deleteIcon" class="action_icon_img" alt="" draggable="false" />
           </button>
+          <button type="button" class="action_btn" @click.stop="emit('copy', item)">
+            <img :src="copyIcon" class="action_icon_img" alt="" draggable="false" />
+          </button>
         </div>
-        <button type="button" class="action_btn" :title="t('clipboard.copyButton')" @click.stop="emit('copy', item)">
-          <img :src="copyIcon" class="action_icon_img" alt="" draggable="false" />
-        </button>
-        <button type="button" class="action_btn" :title="t('clipboard.moreButton')"
-          @click.stop="showMoreActions = !showMoreActions">
+        <button type="button" class="action_btn more_btn" @click.stop="showMoreActions = !showMoreActions">
           <img :src="moreIcon" class="action_icon_img" alt="" draggable="false" />
         </button>
       </div>
@@ -57,6 +61,7 @@ const emit = defineEmits({
   copy: (item) => item != null,
   copyAndPaste: (item) => item != null,
   pin: (id) => typeof id === "string",
+  unpin: (id) => typeof id === "string",
   delete: (id) => typeof id === "string",
 });
 
@@ -123,7 +128,11 @@ function handleCardClick(event) {
 
 function handlePinClick() {
   showMoreActions.value = false;
-  emit("pin", props.item.id);
+  if (props.isTop) {
+    emit("unpin", props.item.id);
+  } else {
+    emit("pin", props.item.id);
+  }
 }
 
 function handleDeleteClick() {
@@ -136,7 +145,9 @@ function handleDeleteClick() {
 .history_card {
   border-radius: 10px;
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
+
 
 .history_row {
   display: flex;
@@ -203,6 +214,11 @@ function handleDeleteClick() {
 }
 
 .action_btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.action_btn.pin_btn.is_pinned {
   background: #e5e7eb;
   color: #374151;
 }
