@@ -11,8 +11,22 @@
   >
     <div class="clipboard_view">
       <div class="clipboard_header">
-        <div class="clipboard_title">{{ t("clipboard.historyTitle") }}</div>
+        <div class="clipboard_title">
+          {{
+            showFavorites
+              ? t("clipboard.favoriteTitle")
+              : t("clipboard.historyTitle")
+          }}
+        </div>
         <div class="header_button_group">
+          <button
+            type="button"
+            class="header_action_btn"
+            :class="{ is_pinned: showFavorites }"
+            @click="toggleFavoritesView"
+          >
+            <el-icon><StarFilled v-if="showFavorites" /><Star v-else /></el-icon>
+          </button>
           <button
             v-if="!isClearConfirming"
             type="button"
@@ -45,41 +59,25 @@
           </template>
         </div>
       </div>
-
-      <el-scrollbar
-        v-if="history.length"
-        height="320px"
-        class="history_scrollbar"
-      >
-        <div class="history_list">
-          <div
-            v-for="(item, index) in history"
-            :key="item.id"
-            class="history_item_row"
-          >
-            <HistoryCard
-              :item="item"
-              :is-top="!!item.pinned"
-              @copy="copyHistoryItem"
-              @copy-and-paste="copyHistoryItemAndPaste"
-              @pin="pinHistoryItem"
-              @unpin="unpinHistoryItem"
-              @delete="deleteHistoryItem"
-            />
-          </div>
-        </div>
-      </el-scrollbar>
-      <p v-else class="clipboard_placeholder">{{ t("clipboard.noHistory") }}</p>
+      <HistoryPanel
+        :items="currentItems"
+        :empty-text="currentEmptyText"
+        @copy="copyHistoryItem"
+        @copy-and-paste="copyHistoryItemAndPaste"
+        @pin="pinHistoryItem"
+        @unpin="unpinHistoryItem"
+        @delete="deleteHistoryItem"
+      />
     </div>
   </PopupFrame>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
-import { Check, Close } from "@element-plus/icons-vue";
+import { Check, Close, Star, StarFilled } from "@element-plus/icons-vue";
 import PopupFrame from "@/components/PopupFrame.vue";
-import HistoryCard from "./Components/HistoryCard.vue";
+import HistoryPanel from "./Components/HistoryPanel.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import cleanIcon from "@/assets/clean.svg";
@@ -103,8 +101,19 @@ const history = ref([]);
 const historyLimit = ref(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
 const lastSeenClipboard = ref("");
 const isClearConfirming = ref(false);
+const showFavorites = ref(false);
 const AUTO_REFRESH_INTERVAL_MS = 500;
 let autoRefreshTimer = null;
+
+const favoriteItems = computed(() =>
+  history.value.filter((item) => item?.pinned === true),
+);
+const currentItems = computed(() =>
+  showFavorites.value ? favoriteItems.value : history.value,
+);
+const currentEmptyText = computed(() =>
+  showFavorites.value ? t("clipboard.noFavorites") : t("clipboard.noHistory"),
+);
 
 function normalizeText(text) {
   if (typeof text !== "string") return "";
@@ -357,7 +366,17 @@ async function confirmClearHistory() {
   history.value = [];
   lastSeenClipboard.value = "";
   isClearConfirming.value = false;
+  showFavorites.value = false;
   ElMessage.success(t("clipboard.statusHistoryCleared"));
+}
+
+function toggleFavoritesView() {
+  isClearConfirming.value = false;
+  if (showFavorites.value) {
+    showFavorites.value = false;
+    return;
+  }
+  showFavorites.value = true;
 }
 
 async function pinHistoryItem(id) {
@@ -458,6 +477,11 @@ function handleWindowFocus() {
   color: #111827;
 }
 
+.header_action_btn.is_pinned {
+  background: #e5e7eb;
+  color: #111827;
+}
+
 .header_action_btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -469,34 +493,17 @@ function handleWindowFocus() {
   display: block;
 }
 
+.header_action_btn :deep(.el-icon) {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
 .clipboard_title {
   font-size: 15px;
   line-height: 1;
   font-weight: 600;
   color: #1d1d1f;
   margin-left: 10px;
-}
-
-.history_list {
-  padding-right: 2px;
-}
-
-.history_item_row {
-  margin: 10px;
-}
-
-.history_scrollbar {
-  max-height: 320px;
-  overscroll-behavior: contain;
-
-  :deep(.el-scrollbar__wrap) {
-    overscroll-behavior: contain;
-  }
-}
-
-.clipboard_placeholder {
-  margin-left: 10px;
-  font-size: 13px;
-  color: #6b7280;
 }
 </style>
