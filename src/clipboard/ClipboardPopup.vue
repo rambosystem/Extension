@@ -132,7 +132,7 @@ async function appendHistory(text) {
   const value = normalizeText(text);
   if (!value) return;
   const list = await readHistoryFromStorage();
-  const deduped = list.filter((item) => item?.text !== value);
+  const deduped = list.filter((item) => normalizeText(item?.text) !== value);
   const next = [
     {
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -188,7 +188,9 @@ async function copyHistoryItemAndPaste(item) {
           lastFocusedWindow: true,
         });
         if (!tab?.id && chrome.windows) {
-          const windows = await chrome.windows.getAll({ windowTypes: ["normal"] });
+          const windows = await chrome.windows.getAll({
+            windowTypes: ["normal"],
+          });
           for (const win of windows) {
             const [t] = await chrome.tabs.query({
               active: true,
@@ -216,7 +218,9 @@ async function copyHistoryItemAndPaste(item) {
       }
     } else {
       document.dispatchEvent(
-        new CustomEvent("clipboard-paste-to-focused", { detail: { text: value } }),
+        new CustomEvent("clipboard-paste-to-focused", {
+          detail: { text: value },
+        }),
       );
     }
 
