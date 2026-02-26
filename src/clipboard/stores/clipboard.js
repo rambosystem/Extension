@@ -17,9 +17,16 @@ export const useClipboardStore = defineStore("clipboard", () => {
   const favoriteItems = computed(() =>
     history.value.filter((item) => item?.favorite === true),
   );
-  const currentItems = computed(() =>
-    showFavorites.value ? favoriteItems.value : history.value,
-  );
+  const currentItems = computed(() => {
+    if (!showFavorites.value) return history.value;
+    const pinnedFavorites = favoriteItems.value.filter(
+      (item) => item?.favoritePinned === true,
+    );
+    const normalFavorites = favoriteItems.value.filter(
+      (item) => item?.favoritePinned !== true,
+    );
+    return [...pinnedFavorites, ...normalFavorites];
+  });
 
   function normalizeText(text) {
     if (typeof text !== "string") return "";
@@ -41,6 +48,7 @@ export const useClipboardStore = defineStore("clipboard", () => {
       createdAt,
       pinned: item?.pinned === true,
       favorite: item?.favorite === true,
+      favoritePinned: item?.favoritePinned === true,
     };
   }
 
@@ -167,6 +175,7 @@ export const useClipboardStore = defineStore("clipboard", () => {
         createdAt: now,
         pinned: false,
         favorite: sameItem.favorite === true,
+        favoritePinned: sameItem.favoritePinned === true,
       };
       next = [...pinnedItems, refreshedItem, ...unpinnedItems];
     } else {
@@ -181,6 +190,7 @@ export const useClipboardStore = defineStore("clipboard", () => {
         createdAt: now,
         pinned: false,
         favorite: false,
+        favoritePinned: false,
       };
       next = [...pinnedItems, newItem, ...unpinnedItems];
     }
@@ -203,6 +213,17 @@ export const useClipboardStore = defineStore("clipboard", () => {
     const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
     const target = list.find((item) => item.id === id);
     if (!target) return false;
+    if (showFavorites.value) {
+      const next = applyHistoryRules(
+        list.map((item) =>
+          item.id === id ? { ...item, favoritePinned: true } : item,
+        ),
+        historyLimit.value,
+      );
+      await saveHistoryToStorage(next);
+      history.value = next;
+      return true;
+    }
     const rest = list.filter((item) => item.id !== id);
     const next = applyHistoryRules(
       [{ ...target, pinned: true }, ...rest],
@@ -217,6 +238,17 @@ export const useClipboardStore = defineStore("clipboard", () => {
     const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
     const target = list.find((item) => item.id === id);
     if (!target) return;
+    if (showFavorites.value) {
+      const next = applyHistoryRules(
+        list.map((item) =>
+          item.id === id ? { ...item, favoritePinned: false } : item,
+        ),
+        historyLimit.value,
+      );
+      await saveHistoryToStorage(next);
+      history.value = next;
+      return;
+    }
     const pinnedItems = list.filter((item) => item.pinned && item.id !== id);
     const unpinnedItems = [
       { ...target, pinned: false },
@@ -233,7 +265,9 @@ export const useClipboardStore = defineStore("clipboard", () => {
   async function favoriteHistoryItem(id) {
     const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
     const next = applyHistoryRules(
-      list.map((item) => (item.id === id ? { ...item, favorite: true } : item)),
+      list.map((item) =>
+        item.id === id ? { ...item, favorite: true, favoritePinned: false } : item,
+      ),
       historyLimit.value,
     );
     await saveHistoryToStorage(next);
@@ -245,7 +279,9 @@ export const useClipboardStore = defineStore("clipboard", () => {
   async function unfavoriteHistoryItem(id) {
     const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
     const next = applyHistoryRules(
-      list.map((item) => (item.id === id ? { ...item, favorite: false } : item)),
+      list.map((item) =>
+        item.id === id ? { ...item, favorite: false, favoritePinned: false } : item,
+      ),
       historyLimit.value,
     );
     await saveHistoryToStorage(next);
@@ -257,7 +293,7 @@ export const useClipboardStore = defineStore("clipboard", () => {
     if (showFavorites.value) {
       const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
       const next = applyHistoryRules(
-        list.map((item) => ({ ...item, favorite: false })),
+        list.map((item) => ({ ...item, favorite: false, favoritePinned: false })),
         historyLimit.value,
       );
       await saveHistoryToStorage(next);

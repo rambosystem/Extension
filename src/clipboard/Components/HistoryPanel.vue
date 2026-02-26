@@ -12,7 +12,7 @@
       >
         <HistoryCard
           :item="item"
-          :is-top="!!item.pinned"
+          :is-top="isFavoritesView ? !!item.favoritePinned : !!item.pinned"
           :is-favorites-view="isFavoritesView"
           @copy="emit('copy', $event)"
           @copy-and-paste="emit('copyAndPaste', $event)"
