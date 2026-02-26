@@ -100,7 +100,9 @@ export const useApiStore = defineStore("api", {
         const normalizedApiKey = apiKey.trim();
         setLocalItem(STORAGE_KEYS.DEEPSEEK_API_KEY, normalizedApiKey);
         this.apiKey = normalizedApiKey;
-        await setChromeLocal({ [STORAGE_KEYS.DEEPSEEK_API_KEY]: normalizedApiKey });
+        await setChromeLocal({
+          [STORAGE_KEYS.DEEPSEEK_API_KEY]: normalizedApiKey,
+        });
       });
 
       ElMessage.success(t("messages.apiKeySavedSuccessfully"));

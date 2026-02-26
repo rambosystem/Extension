@@ -19,7 +19,8 @@
           </button>
           <button type="button" class="action_btn" @click.stop="handleFavoriteClick">
             <el-icon class="action_icon_el">
-              <Star />
+              <StarFilled v-if="isFavoritesView" />
+              <Star v-else />
             </el-icon>
           </button>
           <button type="button" class="action_btn" @click.stop="handleDeleteClick">
@@ -39,7 +40,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
-import { Star } from "@element-plus/icons-vue";
+import { Star, StarFilled } from "@element-plus/icons-vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import pinIconUnfixed from "@/assets/unfixed.svg";
 import pinIconFixed from "@/assets/fixed.svg";
@@ -61,6 +62,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isFavoritesView: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits({
@@ -69,6 +74,7 @@ const emit = defineEmits({
   pin: (id) => typeof id === "string",
   unpin: (id) => typeof id === "string",
   favorite: (id) => typeof id === "string",
+  unfavorite: (id) => typeof id === "string",
   delete: (id) => typeof id === "string",
 });
 
@@ -149,6 +155,10 @@ function handleDeleteClick() {
 
 function handleFavoriteClick() {
   showMoreActions.value = false;
+  if (props.isFavoritesView) {
+    emit("unfavorite", props.item.id);
+    return;
+  }
   emit("favorite", props.item.id);
 }
 </script>

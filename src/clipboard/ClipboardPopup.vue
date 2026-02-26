@@ -62,11 +62,13 @@
       <HistoryPanel
         :items="currentItems"
         :empty-text="currentEmptyText"
+        :is-favorites-view="showFavorites"
         @copy="copyHistoryItem"
         @copy-and-paste="copyHistoryItemAndPaste"
         @pin="handlePin"
         @unpin="unpinHistoryItem"
         @favorite="favoriteHistoryItem"
+        @unfavorite="unfavoriteHistoryItem"
         @delete="deleteHistoryItem"
       />
     </div>
@@ -110,6 +112,7 @@ const {
   pinHistoryItem,
   unpinHistoryItem,
   favoriteHistoryItem,
+  unfavoriteHistoryItem,
   clearCurrentView,
   toggleFavoritesView,
 } = clipboardStore;

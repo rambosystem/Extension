@@ -20,7 +20,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     if (typeof window !== "undefined" && window.localStorage) {
       try {
         const storedValue = getLocalItem(
-          STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED
+          STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED,
         );
         if (storedValue !== null) {
           autoDeduplication = storedValue === "true";
@@ -28,7 +28,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       } catch (error) {
         console.error(
           "Failed to read autoDeduplication from localStorage:",
-          error
+          error,
         );
       }
     }
@@ -37,7 +37,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     if (typeof window !== "undefined" && window.localStorage) {
       try {
         const storedValue = getLocalItem(
-          STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED
+          STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED,
         );
         if (storedValue !== null) {
           wordSelectionTranslate = storedValue === "true";
@@ -45,7 +45,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       } catch (error) {
         console.error(
           "Failed to read wordSelectionTranslate from localStorage:",
-          error
+          error,
         );
       }
     }
@@ -162,7 +162,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         // 加载自动去重设置（如果 state 初始化时已经读取过，这里可以跳过）
         // 但为了确保一致性，仍然从 localStorage 读取
         const autoDeduplication = getLocalItem(
-          STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED
+          STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED,
         );
         if (autoDeduplication !== null) {
           this.autoDeduplication = autoDeduplication === "true";
@@ -170,7 +170,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
 
         // 加载划词翻译设置
         const wordSelectionTranslate = getLocalItem(
-          STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED
+          STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED,
         );
         if (wordSelectionTranslate !== null) {
           this.wordSelectionTranslate = wordSelectionTranslate === "true";
@@ -184,7 +184,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
 
         // 加载去重项目选择
         const deduplicateProject = getLocalItem(
-          STORAGE_KEYS.DEDUPLICATE_PROJECT_SELECTION
+          STORAGE_KEYS.DEDUPLICATE_PROJECT_SELECTION,
         );
         if (deduplicateProject) {
           this.deduplicateProject = deduplicateProject;
@@ -299,7 +299,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         // 只记录调试信息，不显示用户消息
         debugLog(
           "Auto validation completed:",
-          result.success ? "PASSED" : "FAILED"
+          result.success ? "PASSED" : "FAILED",
         );
         if (!result.success) {
           debugLog("Validation issues:", result.errors);

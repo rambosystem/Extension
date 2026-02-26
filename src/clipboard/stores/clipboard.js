@@ -242,6 +242,17 @@ export const useClipboardStore = defineStore("clipboard", () => {
     showFavorites.value = true;
   }
 
+  async function unfavoriteHistoryItem(id) {
+    const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
+    const next = applyHistoryRules(
+      list.map((item) => (item.id === id ? { ...item, favorite: false } : item)),
+      historyLimit.value,
+    );
+    await saveHistoryToStorage(next);
+    history.value = next;
+    isClearConfirming.value = false;
+  }
+
   async function clearCurrentView() {
     if (showFavorites.value) {
       const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
@@ -282,6 +293,7 @@ export const useClipboardStore = defineStore("clipboard", () => {
     pinHistoryItem,
     unpinHistoryItem,
     favoriteHistoryItem,
+    unfavoriteHistoryItem,
     clearCurrentView,
     toggleFavoritesView,
   };

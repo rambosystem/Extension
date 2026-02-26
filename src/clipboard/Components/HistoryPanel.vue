@@ -13,11 +13,13 @@
         <HistoryCard
           :item="item"
           :is-top="!!item.pinned"
+          :is-favorites-view="isFavoritesView"
           @copy="emit('copy', $event)"
           @copy-and-paste="emit('copyAndPaste', $event)"
           @pin="emit('pin', $event)"
           @unpin="emit('unpin', $event)"
           @favorite="emit('favorite', $event)"
+          @unfavorite="emit('unfavorite', $event)"
           @delete="emit('delete', $event)"
         />
       </div>
@@ -38,6 +40,10 @@ defineProps({
     type: String,
     default: "",
   },
+  isFavoritesView: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits({
@@ -46,6 +52,7 @@ const emit = defineEmits({
   pin: (id) => typeof id === "string",
   unpin: (id) => typeof id === "string",
   favorite: (id) => typeof id === "string",
+  unfavorite: (id) => typeof id === "string",
   delete: (id) => typeof id === "string",
 });
 </script>
