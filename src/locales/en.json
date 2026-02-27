@@ -125,7 +125,6 @@
   },
   "clipboard": {
     "title": "Clipboard Setting",
-    "historyLimitLabel": "History Limit",
     "shortcutLabel": "Shortcut",
     "openClipboardPopup": "Open Clipboard Popup",
     "clearShortcutButton": "Clear Shortcut",
@@ -134,7 +133,6 @@
     "shortcutClearManual": "Please clear the shortcut from the shortcut settings page.",
     "shortcutDescription": "Use a system shortcut to open Clipboard popup quickly.",
     "openShortcutButton": "Open Shortcut Settings",
-    "historyLimitHelp": "Store up to {min}-{max} recent clipboard records.",
     "saveSuccess": "Clipboard settings saved successfully",
     "saveFailed": "Failed to save clipboard settings",
     "popupTitle": "Clipboard",
@@ -155,6 +153,7 @@
     "statusEmpty": "Clipboard is empty.",
     "statusLoaded": "Clipboard content loaded.",
     "statusReadFailed": "Unable to read clipboard. Please grant permission and try again.",
+    "statusFavoriteAdded": "Added to favorites.",
     "statusNoText": "No text to copy.",
     "statusCopied": "Copied to clipboard.",
     "statusPinned": "Pinned to top.",

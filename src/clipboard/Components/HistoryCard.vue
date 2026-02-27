@@ -17,12 +17,6 @@
           <button v-if="!isTop" type="button" class="action_btn pin_btn" @click.stop="handlePinClick">
             <img :src="pinIconUnfixed" class="action_icon_img" alt="" draggable="false" />
           </button>
-          <button type="button" class="action_btn" @click.stop="handleFavoriteClick">
-            <el-icon class="action_icon_el">
-              <StarFilled v-if="isFavoritesView" />
-              <Star v-else />
-            </el-icon>
-          </button>
           <button type="button" class="action_btn" @click.stop="handleDeleteClick">
             <img :src="deleteIcon" class="action_icon_img" alt="" draggable="false" />
           </button>
@@ -40,8 +34,6 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
-import { Star, StarFilled } from "@element-plus/icons-vue";
-import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import pinIconUnfixed from "@/assets/unfixed.svg";
 import pinIconFixed from "@/assets/fixed.svg";
 import copyIcon from "@/assets/copy.svg";
@@ -62,10 +54,6 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  isFavoritesView: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 const emit = defineEmits({
@@ -73,12 +61,9 @@ const emit = defineEmits({
   copyAndPaste: (item) => item != null,
   pin: (id) => typeof id === "string",
   unpin: (id) => typeof id === "string",
-  favorite: (id) => typeof id === "string",
-  unfavorite: (id) => typeof id === "string",
   delete: (id) => typeof id === "string",
 });
 
-const { t } = useI18n();
 const textRef = ref(null);
 const isOverflow = ref(false);
 const showMoreActions = ref(false);
@@ -153,14 +138,6 @@ function handleDeleteClick() {
   emit("delete", props.item.id);
 }
 
-function handleFavoriteClick() {
-  showMoreActions.value = false;
-  if (props.isFavoritesView) {
-    emit("unfavorite", props.item.id);
-    return;
-  }
-  emit("favorite", props.item.id);
-}
 </script>
 
 <style scoped lang="scss">
@@ -243,20 +220,6 @@ function handleFavoriteClick() {
 .action_btn.pin_btn.is_pinned {
   background: #e5e7eb;
   color: #374151;
-}
-
-.action_icon_el {
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.action_icon_el :deep(svg) {
-  width: 16px;
-  height: 16px;
 }
 
 :deep(.history_card .el-card__body) {

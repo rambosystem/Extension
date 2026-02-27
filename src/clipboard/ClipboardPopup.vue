@@ -12,20 +12,15 @@
     <div class="clipboard_view">
       <div class="clipboard_header">
         <div class="clipboard_title">
-          {{
-            showFavorites
-              ? t("clipboard.favoriteTitle")
-              : t("clipboard.historyTitle")
-          }}
+          {{ t("clipboard.favoriteTitle") }}
         </div>
         <div class="header_button_group">
           <button
             type="button"
             class="header_action_btn"
-            :class="{ is_pinned: showFavorites }"
-            @click="toggleFavoritesView"
+            @click="captureClipboardToFavorites"
           >
-            <el-icon><StarFilled v-if="showFavorites" /><Star v-else /></el-icon>
+            <el-icon><Star /></el-icon>
           </button>
           <button
             v-if="!isClearConfirming"
@@ -62,13 +57,10 @@
       <HistoryPanel
         :items="currentItems"
         :empty-text="currentEmptyText"
-        :is-favorites-view="showFavorites"
         @copy="copyHistoryItem"
         @copy-and-paste="copyHistoryItemAndPaste"
         @pin="handlePin"
         @unpin="unpinHistoryItem"
-        @favorite="favoriteHistoryItem"
-        @unfavorite="unfavoriteHistoryItem"
         @delete="deleteHistoryItem"
       />
     </div>
@@ -76,10 +68,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
-import { Check, Close, Star, StarFilled } from "@element-plus/icons-vue";
+import { Check, Close, Star } from "@element-plus/icons-vue";
 import PopupFrame from "@/components/PopupFrame.vue";
 import HistoryPanel from "./Components/HistoryPanel.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
@@ -97,45 +89,30 @@ const { onClose, pinned } = defineProps({
 const { t } = useI18n();
 const clipboardStore = useClipboardStore();
 const {
-  history,
-  lastSeenClipboard,
   isClearConfirming,
-  showFavorites,
   currentItems,
 } = storeToRefs(clipboardStore);
 const {
   normalizeText,
-  loadHistoryLimit,
   loadHistory,
   appendHistory,
   deleteHistoryItem,
   pinHistoryItem,
   unpinHistoryItem,
-  favoriteHistoryItem,
-  unfavoriteHistoryItem,
   clearCurrentView,
-  toggleFavoritesView,
 } = clipboardStore;
 
-const AUTO_REFRESH_INTERVAL_MS = 500;
-let autoRefreshTimer = null;
+const currentEmptyText = computed(() => t("clipboard.noFavorites"));
 
-const currentEmptyText = computed(() =>
-  showFavorites.value ? t("clipboard.noFavorites") : t("clipboard.noHistory"),
-);
-
-async function readClipboardAndCapture(options = {}) {
-  const { force = false } = options;
-  if (!force && document.hidden) return;
+async function captureClipboardToFavorites() {
   try {
     const text = await navigator.clipboard.readText();
     const normalized = normalizeText(text);
     if (!normalized) return;
-    if (normalized === lastSeenClipboard.value) return;
-    lastSeenClipboard.value = normalized;
     await appendHistory(text);
+    ElMessage.success(t("clipboard.statusFavoriteAdded"));
   } catch (_) {
-    // Ignore silent polling errors from browser permission/focus rules
+    ElMessage.error(t("clipboard.statusReadFailed"));
   }
 }
 
@@ -145,7 +122,6 @@ async function copyHistoryItem(item) {
   try {
     await navigator.clipboard.writeText(value);
     await appendHistory(value);
-    lastSeenClipboard.value = value;
     ElMessage.success(t("clipboard.statusCopied"));
   } catch (_) {
     ElMessage.error(t("clipboard.statusCopyFailed"));
@@ -158,7 +134,6 @@ async function copyHistoryItemAndPaste(item) {
   try {
     await navigator.clipboard.writeText(value);
     await appendHistory(value);
-    lastSeenClipboard.value = value;
     const hasChromeTabs = typeof chrome !== "undefined" && chrome?.tabs;
     if (hasChromeTabs) {
       try {
@@ -210,12 +185,8 @@ async function copyHistoryItemAndPaste(item) {
 }
 
 async function confirmClearHistory() {
-  const cleared = await clearCurrentView();
-  if (cleared === "favorites") {
-    ElMessage.success(t("clipboard.statusFavoritesCleared"));
-  } else {
-    ElMessage.success(t("clipboard.statusHistoryCleared"));
-  }
+  await clearCurrentView();
+  ElMessage.success(t("clipboard.statusFavoritesCleared"));
 }
 
 async function handlePin(id) {
@@ -224,26 +195,8 @@ async function handlePin(id) {
 }
 
 onMounted(async () => {
-  await loadHistoryLimit();
   await loadHistory();
-  void readClipboardAndCapture({ force: true });
-  autoRefreshTimer = window.setInterval(() => {
-    void readClipboardAndCapture();
-  }, AUTO_REFRESH_INTERVAL_MS);
-  window.addEventListener("focus", handleWindowFocus);
 });
-
-onUnmounted(() => {
-  if (autoRefreshTimer != null) {
-    window.clearInterval(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
-  window.removeEventListener("focus", handleWindowFocus);
-});
-
-function handleWindowFocus() {
-  void readClipboardAndCapture({ force: true });
-}
 </script>
 
 <style scoped lang="scss">

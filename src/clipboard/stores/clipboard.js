@@ -1,32 +1,11 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import {
-  CLIPBOARD_HISTORY_STORAGE_KEY,
-  CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY,
-  CLIPBOARD_HISTORY_DEFAULT_LIMIT,
-  normalizeHistoryLimit,
-} from "../storage.js";
+import { CLIPBOARD_HISTORY_STORAGE_KEY } from "../storage.js";
 
 export const useClipboardStore = defineStore("clipboard", () => {
   const history = ref([]);
-  const historyLimit = ref(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
-  const lastSeenClipboard = ref("");
   const isClearConfirming = ref(false);
-  const showFavorites = ref(false);
-
-  const favoriteItems = computed(() =>
-    history.value.filter((item) => item?.favorite === true),
-  );
-  const currentItems = computed(() => {
-    if (!showFavorites.value) return history.value;
-    const pinnedFavorites = favoriteItems.value.filter(
-      (item) => item?.favoritePinned === true,
-    );
-    const normalFavorites = favoriteItems.value.filter(
-      (item) => item?.favoritePinned !== true,
-    );
-    return [...pinnedFavorites, ...normalFavorites];
-  });
+  const currentItems = computed(() => history.value);
 
   function normalizeText(text) {
     if (typeof text !== "string") return "";
@@ -46,9 +25,9 @@ export const useClipboardStore = defineStore("clipboard", () => {
       id,
       text,
       createdAt,
-      pinned: item?.pinned === true,
+      pinned: item?.pinned === true || item?.favoritePinned === true,
       favorite: item?.favorite === true,
-      favoritePinned: item?.favoritePinned === true,
+      favoritePinned: false,
     };
   }
 
@@ -64,33 +43,19 @@ export const useClipboardStore = defineStore("clipboard", () => {
     return next;
   }
 
-  function applyHistoryRules(list, limit) {
+  function applyHistoryRules(list) {
     const normalized = list
       .map((item) => normalizeHistoryItem(item))
       .filter(Boolean);
-    const deduped = dedupeByTextKeepOrder(normalized);
+    const favoritesOnly = normalized.filter((item) => item.favorite === true);
+    const deduped = dedupeByTextKeepOrder(favoritesOnly);
     const pinned = deduped
       .filter((item) => item.pinned)
       .map((item) => ({ ...item, pinned: true }));
     const unpinned = deduped
       .filter((item) => !item.pinned)
       .map((item) => ({ ...item, pinned: false }));
-    const ordered = [...pinned, ...unpinned];
-
-    // Favorites are never capped by history limit.
-    const next = [];
-    let nonFavoriteCount = 0;
-    for (const item of ordered) {
-      if (item.favorite) {
-        next.push(item);
-        continue;
-      }
-      if (nonFavoriteCount < limit) {
-        next.push(item);
-        nonFavoriteCount += 1;
-      }
-    }
-    return next;
+    return [...pinned, ...unpinned];
   }
 
   function readHistoryFromStorage() {
@@ -120,55 +85,20 @@ export const useClipboardStore = defineStore("clipboard", () => {
     });
   }
 
-  function readHistoryLimitFromStorage() {
-    return new Promise((resolve) => {
-      if (typeof chrome === "undefined" || !chrome.storage?.local) {
-        resolve(CLIPBOARD_HISTORY_DEFAULT_LIMIT);
-        return;
-      }
-      chrome.storage.local.get(
-        [CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY],
-        (result) => {
-          resolve(
-            normalizeHistoryLimit(result?.[CLIPBOARD_HISTORY_LIMIT_STORAGE_KEY]),
-          );
-        },
-      );
-    });
-  }
-
-  async function loadHistoryLimit() {
-    historyLimit.value = await readHistoryLimitFromStorage();
-  }
-
   async function loadHistory() {
     const list = await readHistoryFromStorage();
-    history.value = applyHistoryRules(list, historyLimit.value);
+    history.value = applyHistoryRules(list);
   }
 
   async function appendHistory(text) {
     const value = normalizeText(text);
     if (!value) return;
-    const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
+    const list = applyHistoryRules(await readHistoryFromStorage());
     const sameItem = list.find((item) => normalizeText(item?.text) === value);
-    const samePinned = list.find(
-      (item) => item.pinned && normalizeText(item?.text) === value,
-    );
     const now = Date.now();
 
     let next = [];
-    if (samePinned) {
-      const rest = list.filter((item) => normalizeText(item?.text) !== value);
-      next = [
-        {
-          ...samePinned,
-          text: value,
-          createdAt: now,
-          pinned: true,
-        },
-        ...rest,
-      ];
-    } else if (sameItem) {
+    if (sameItem) {
       const withoutSameText = list.filter(
         (item) => normalizeText(item?.text) !== value,
       );
@@ -179,8 +109,8 @@ export const useClipboardStore = defineStore("clipboard", () => {
         text: value,
         createdAt: now,
         pinned: sameItem.pinned === true,
-        favorite: sameItem.favorite === true,
-        favoritePinned: sameItem.favoritePinned === true,
+        favorite: true,
+        favoritePinned: false,
       };
       next = [...pinnedItems, refreshedItem, ...unpinnedItems];
     } else {
@@ -194,148 +124,65 @@ export const useClipboardStore = defineStore("clipboard", () => {
         text: value,
         createdAt: now,
         pinned: false,
-        favorite: false,
+        favorite: true,
         favoritePinned: false,
       };
       next = [...pinnedItems, newItem, ...unpinnedItems];
     }
-    next = applyHistoryRules(next, historyLimit.value);
+    next = applyHistoryRules(next);
     await saveHistoryToStorage(next);
     history.value = next;
   }
 
   async function deleteHistoryItem(id) {
     const list = await readHistoryFromStorage();
-    const next = applyHistoryRules(
-      list.filter((item) => item?.id !== id),
-      historyLimit.value,
-    );
+    const next = applyHistoryRules(list.filter((item) => item?.id !== id));
     await saveHistoryToStorage(next);
     history.value = next;
   }
 
   async function pinHistoryItem(id) {
-    const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
+    const list = applyHistoryRules(await readHistoryFromStorage());
     const target = list.find((item) => item.id === id);
     if (!target) return false;
-    if (showFavorites.value) {
-      const next = applyHistoryRules(
-        list.map((item) =>
-          item.id === id ? { ...item, favoritePinned: true } : item,
-        ),
-        historyLimit.value,
-      );
-      await saveHistoryToStorage(next);
-      history.value = next;
-      return true;
-    }
     const rest = list.filter((item) => item.id !== id);
-    const next = applyHistoryRules(
-      [{ ...target, pinned: true }, ...rest],
-      historyLimit.value,
-    );
+    const next = applyHistoryRules([{ ...target, pinned: true }, ...rest]);
     await saveHistoryToStorage(next);
     history.value = next;
     return true;
   }
 
   async function unpinHistoryItem(id) {
-    const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
+    const list = applyHistoryRules(await readHistoryFromStorage());
     const target = list.find((item) => item.id === id);
     if (!target) return;
-    if (showFavorites.value) {
-      const next = applyHistoryRules(
-        list.map((item) =>
-          item.id === id ? { ...item, favoritePinned: false } : item,
-        ),
-        historyLimit.value,
-      );
-      await saveHistoryToStorage(next);
-      history.value = next;
-      return;
-    }
     const pinnedItems = list.filter((item) => item.pinned && item.id !== id);
     const unpinnedItems = [
       { ...target, pinned: false },
       ...list.filter((item) => !item.pinned && item.id !== id),
     ];
-    const next = applyHistoryRules(
-      [...pinnedItems, ...unpinnedItems],
-      historyLimit.value,
-    );
+    const next = applyHistoryRules([...pinnedItems, ...unpinnedItems]);
     await saveHistoryToStorage(next);
     history.value = next;
-  }
-
-  async function favoriteHistoryItem(id) {
-    const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
-    const next = applyHistoryRules(
-      list.map((item) =>
-        item.id === id ? { ...item, favorite: true, favoritePinned: false } : item,
-      ),
-      historyLimit.value,
-    );
-    await saveHistoryToStorage(next);
-    history.value = next;
-    isClearConfirming.value = false;
-    showFavorites.value = true;
-  }
-
-  async function unfavoriteHistoryItem(id) {
-    const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
-    const next = applyHistoryRules(
-      list.map((item) =>
-        item.id === id ? { ...item, favorite: false, favoritePinned: false } : item,
-      ),
-      historyLimit.value,
-    );
-    await saveHistoryToStorage(next);
-    history.value = next;
-    isClearConfirming.value = false;
   }
 
   async function clearCurrentView() {
-    if (showFavorites.value) {
-      const list = applyHistoryRules(await readHistoryFromStorage(), historyLimit.value);
-      const next = applyHistoryRules(
-        list.map((item) => ({ ...item, favorite: false, favoritePinned: false })),
-        historyLimit.value,
-      );
-      await saveHistoryToStorage(next);
-      history.value = next;
-      isClearConfirming.value = false;
-      return "favorites";
-    }
     await saveHistoryToStorage([]);
     history.value = [];
-    lastSeenClipboard.value = "";
     isClearConfirming.value = false;
-    return "history";
-  }
-
-  function toggleFavoritesView() {
-    isClearConfirming.value = false;
-    showFavorites.value = !showFavorites.value;
+    return "favorites";
   }
 
   return {
     history,
-    historyLimit,
-    lastSeenClipboard,
     isClearConfirming,
-    showFavorites,
-    favoriteItems,
     currentItems,
     normalizeText,
-    loadHistoryLimit,
     loadHistory,
     appendHistory,
     deleteHistoryItem,
     pinHistoryItem,
     unpinHistoryItem,
-    favoriteHistoryItem,
-    unfavoriteHistoryItem,
     clearCurrentView,
-    toggleFavoritesView,
   };
 });
