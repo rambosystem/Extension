@@ -1,6 +1,6 @@
 import type { CellPosition, SelectionRange } from "../types";
 
-export interface ClipboardCopyContext {
+export interface FavoritesCopyContext {
   isEditing: boolean;
   activeCell: CellPosition | null;
   normalizedSelection: SelectionRange | null;
@@ -8,7 +8,7 @@ export interface ClipboardCopyContext {
   tableData: string[][];
 }
 
-export const getCopyText = (context: ClipboardCopyContext): string | null => {
+export const getCopyText = (context: FavoritesCopyContext): string | null => {
   if (context.isEditing) {
     return null;
   }
@@ -28,7 +28,7 @@ export const getCopyText = (context: ClipboardCopyContext): string | null => {
   return null;
 };
 
-export const parseClipboardText = (clipboardText: string): string[][] => {
+export const parseFavoritesText = (clipboardText: string): string[][] => {
   if (!clipboardText || typeof clipboardText !== "string") {
     return [];
   }
@@ -42,10 +42,7 @@ export const parseClipboardText = (clipboardText: string): string[][] => {
       return row.split("\t");
     });
 
-    const maxCols = Math.max(
-      ...parsedRows.map((row) => row.length),
-      1
-    );
+    const maxCols = Math.max(...parsedRows.map((row) => row.length), 1);
 
     return parsedRows.map((row) => {
       if (row.length === 0) {
@@ -59,14 +56,16 @@ export const parseClipboardText = (clipboardText: string): string[][] => {
   }
 };
 
-const formatRectangularSelection = (
-  context: ClipboardCopyContext
-): string => {
+const formatRectangularSelection = (context: FavoritesCopyContext): string => {
   const { normalizedSelection, tableData } = context;
   if (!normalizedSelection) return "";
 
   const rows: string[] = [];
-  for (let r = normalizedSelection.minRow; r <= normalizedSelection.maxRow; r++) {
+  for (
+    let r = normalizedSelection.minRow;
+    r <= normalizedSelection.maxRow;
+    r++
+  ) {
     const cells: string[] = [];
     for (
       let c = normalizedSelection.minCol;
@@ -80,9 +79,7 @@ const formatRectangularSelection = (
   return rows.join("\n");
 };
 
-const formatMultipleSelections = (
-  context: ClipboardCopyContext
-): string => {
+const formatMultipleSelections = (context: FavoritesCopyContext): string => {
   const { multiSelections, tableData } = context;
 
   const minRow = Math.min(...multiSelections.map((s) => s.minRow));
@@ -99,17 +96,17 @@ const formatMultipleSelections = (
           r >= sel.minRow &&
           r <= sel.maxRow &&
           c >= sel.minCol &&
-          c <= sel.maxCol
+          c <= sel.maxCol,
       );
 
-      cells.push(isInSelection ? tableData[r]?.[c] ?? "" : "");
+      cells.push(isInSelection ? (tableData[r]?.[c] ?? "") : "");
     }
     rows.push(cells.join("\t"));
   }
   return rows.join("\n");
 };
 
-const formatSingleCell = (context: ClipboardCopyContext): string => {
+const formatSingleCell = (context: FavoritesCopyContext): string => {
   const { activeCell, tableData } = context;
   if (!activeCell) return "";
 

@@ -3,7 +3,7 @@ import { createPinia } from "pinia";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import { POPUP_ID } from "./constants.js";
-import ClipboardPopup from "./ClipboardPopup.vue";
+import FavoritesPopup from "./FavoritesPopup.vue";
 
 let mountedApp = null;
 let popupRoot = null;
@@ -16,7 +16,7 @@ function parsePx(value) {
   return Number.isNaN(n) ? 0 : n;
 }
 
-export function closeExistingClipboardPopup() {
+export function closeExistingFavoritesPopup() {
   if (outsideClickHandler) {
     document.removeEventListener("click", outsideClickHandler, true);
     outsideClickHandler = null;
@@ -60,8 +60,8 @@ function getCenterPosition() {
   };
 }
 
-export function showClipboardPopup() {
-  closeExistingClipboardPopup();
+export function showFavoritesPopup() {
+  closeExistingFavoritesPopup();
   injectPopupContainerStyles();
 
   const position = getCenterPosition();
@@ -91,10 +91,10 @@ export function showClipboardPopup() {
   }
 
   function onClose() {
-    closeExistingClipboardPopup();
+    closeExistingFavoritesPopup();
   }
 
-  mountedApp = createApp(ClipboardPopup, {
+  mountedApp = createApp(FavoritesPopup, {
     onClose,
     pinned: isPinnedRef,
     setPinned,
@@ -108,7 +108,7 @@ export function showClipboardPopup() {
     if (isPinnedRef.value) return;
     if (e.target.closest?.(".pin_btn")) return;
     if (popupRoot && popupRoot.contains(e.target)) return;
-    closeExistingClipboardPopup();
+    closeExistingFavoritesPopup();
   };
   document.addEventListener("click", outsideClickHandler, true);
 }

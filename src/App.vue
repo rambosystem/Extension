@@ -33,7 +33,7 @@
                 />
               </div>
             </el-col>
-            <el-col :span="6" @click="handleClipboardClick">
+            <el-col :span="6" @click="handleFavoritesClick">
               <div class="grid-content">
                 <WeightItem :title="t('app.clipboard')" :url="clipboardSvg" />
               </div>
@@ -114,14 +114,14 @@ const handleTranslationClick = () => {
   );
 };
 
-const handleClipboardClick = () => {
+const handleFavoritesClick = () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]?.id) {
       window.close();
       return;
     }
     chrome.tabs
-      .sendMessage(tabs[0].id, { action: "showClipboardPopup" })
+      .sendMessage(tabs[0].id, { action: "showFavoritesPopup" })
       .then(() => {
         window.close();
       })

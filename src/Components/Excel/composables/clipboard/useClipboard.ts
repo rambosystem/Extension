@@ -5,7 +5,7 @@ import {
   type SaveHistoryOptions,
 } from "../history/useHistory";
 import type { ExcelState } from "../useExcelState";
-import { getCopyText, parseClipboardText } from "./clipboardParser";
+import { getCopyText, parseFavoritesText } from "./clipboardParser";
 import type { SelectionService } from "../selection/selectionService";
 
 /**
@@ -52,19 +52,19 @@ export interface PasteResult {
 /**
  * 剪贴板操作接口（抽象层）
  */
-export interface ClipboardOperations {
-  copyToClipboard(text: string): Promise<void>;
-  readFromClipboard(): Promise<string>;
-  hasClipboardContent(): Promise<boolean>;
+export interface FavoritesOperations {
+  copyToFavorites(text: string): Promise<void>;
+  readFromFavorites(): Promise<string>;
+  hasFavoritesContent(): Promise<boolean>;
 }
 
 /**
  * 浏览器剪贴板操作实现
  */
-export class BrowserClipboardOperations implements ClipboardOperations {
-  async copyToClipboard(text: string): Promise<void> {
+export class BrowserFavoritesOperations implements FavoritesOperations {
+  async copyToFavorites(text: string): Promise<void> {
     try {
-      // 优先使用 Clipboard API
+      // 优先使用 Favorites API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
         return;
@@ -91,23 +91,23 @@ export class BrowserClipboardOperations implements ClipboardOperations {
     }
   }
 
-  async readFromClipboard(): Promise<string> {
+  async readFromFavorites(): Promise<string> {
     try {
-      // 优先使用 Clipboard API
+      // 优先使用 Favorites API
       if (navigator.clipboard && navigator.clipboard.readText) {
         return await navigator.clipboard.readText();
       }
 
       // 无降级方案，抛出错误
-      throw new Error("Clipboard API not available");
+      throw new Error("Favorites API not available");
     } catch (error) {
       throw new Error(`Failed to read from clipboard: ${error}`);
     }
   }
 
-  async hasClipboardContent(): Promise<boolean> {
+  async hasFavoritesContent(): Promise<boolean> {
     try {
-      const text = await this.readFromClipboard();
+      const text = await this.readFromFavorites();
       return text.length > 0;
     } catch {
       return false;
@@ -134,7 +134,7 @@ class PasteStrategyManager {
       emitSync?: () => void;
       skipHistorySave?: boolean; // 跳过历史记录保存（用于剪切-粘贴原子操作）
       sourceRange?: SelectionRange | null; // 复制/剪切源区域（用于撤回时恢复选区）
-    }
+    },
   ): PasteResult {
     // 1. 编辑模式：不处理（让浏览器原生处理输入框的粘贴）
     if (context.isEditing) {
@@ -148,7 +148,7 @@ class PasteStrategyManager {
     }
 
     // 2. 解析粘贴数据
-    const pasteData = parseClipboardText(context.clipboardText);
+    const pasteData = parseFavoritesText(context.clipboardText);
     if (pasteData.length === 0) {
       return {
         success: false,
@@ -172,7 +172,7 @@ class PasteStrategyManager {
       startRow,
       startCol,
       context.tableData,
-      options
+      options,
     );
 
     // 6. 检测粘贴引起的变化并保存历史记录（在粘贴完成后，使用修改后的状态）
@@ -243,12 +243,12 @@ class PasteStrategyManager {
       // 从粘贴区域的左上角开始选择
       options.selectionService.startSingleSelection(
         result.affectedRange.minRow,
-        result.affectedRange.minCol
+        result.affectedRange.minCol,
       );
       // 扩展到粘贴区域的右下角，选中整个粘贴区域
       options.selectionService.updateSingleSelectionEnd(
         result.affectedRange.maxRow,
-        result.affectedRange.maxCol
+        result.affectedRange.maxCol,
       );
 
       // 触发数据同步
@@ -268,7 +268,7 @@ class PasteStrategyManager {
       columns: Ref<string[]>;
       generateColumnLabel: (index: number) => string;
       isCellEditable?: (row: number, col: number) => boolean;
-    }
+    },
   ): PasteResult {
     let rowsAdded = 0;
     let colsAdded = 0;
@@ -283,7 +283,7 @@ class PasteStrategyManager {
       for (let i = currentLength; i <= endRow; i++) {
         options.rows.value.push(i);
         tableData.push(
-          Array.from({ length: options.columns.value.length }, () => "")
+          Array.from({ length: options.columns.value.length }, () => ""),
         );
         rowsAdded++;
       }
@@ -344,9 +344,9 @@ class PasteStrategyManager {
 }
 
 /**
- * useClipboard 选项
+ * useFavorites 选项
  */
-export interface UseClipboardOptions {
+export interface UseFavoritesOptions {
   /**
    * 统一状态管理（必需）
    * 使用统一状态管理，不再使用独立参数
@@ -359,15 +359,15 @@ export interface UseClipboardOptions {
 }
 
 /**
- * useClipboard 返回值
+ * useFavorites 返回值
  */
-export interface UseClipboardReturn {
-  handleCopy: (event: ClipboardEvent) => void;
-  handlePaste: (event: ClipboardEvent) => void;
-  copyToClipboard: () => Promise<boolean>;
-  cutToClipboard: () => Promise<boolean>;
-  pasteFromClipboard: () => Promise<boolean>;
-  hasClipboardContent: () => Promise<boolean>;
+export interface UseFavoritesReturn {
+  handleCopy: (event: FavoritesEvent) => void;
+  handlePaste: (event: FavoritesEvent) => void;
+  copyToFavorites: () => Promise<boolean>;
+  cutToFavorites: () => Promise<boolean>;
+  pasteFromFavorites: () => Promise<boolean>;
+  hasFavoritesContent: () => Promise<boolean>;
   copiedRange: Ref<SelectionRange | null>;
   exitCopyMode: () => void;
 }
@@ -380,7 +380,7 @@ export interface UseClipboardReturn {
  * 使用方式：
  * ```typescript
  * const excelState = useExcelState();
- * const clipboard = useClipboard({
+ * const clipboard = useFavorites({
  *   state: excelState,
  *   saveHistory,
  *   selectionService,
@@ -389,13 +389,13 @@ export interface UseClipboardReturn {
  * });
  * ```
  */
-export function useClipboard({
+export function useFavorites({
   state,
   saveHistory,
   selectionService,
   isCellEditable,
   emitSync,
-}: UseClipboardOptions): UseClipboardReturn {
+}: UseFavoritesOptions): UseFavoritesReturn {
   const {
     editing: { editingCell: actualEditingCell },
     selection: {
@@ -411,7 +411,7 @@ export function useClipboard({
   } = state;
 
   // 初始化操作适配器和策略管理器
-  const clipboardOps = new BrowserClipboardOperations();
+  const clipboardOps = new BrowserFavoritesOperations();
   const pasteStrategy = new PasteStrategyManager();
 
   // 复制状态管理：保存复制时的选区范围（复制源区域）
@@ -456,7 +456,7 @@ export function useClipboard({
   };
 
   const clearRange = (
-    range: SelectionRange
+    range: SelectionRange,
   ): Array<{
     row: number;
     col: number;
@@ -494,7 +494,7 @@ export function useClipboard({
 
   const isRangeOverlap = (
     source: SelectionRange,
-    target: SelectionRange
+    target: SelectionRange,
   ): boolean => {
     const rowOverlap =
       source.minRow <= target.maxRow && source.maxRow >= target.minRow;
@@ -510,7 +510,7 @@ export function useClipboard({
       col: number;
       oldValue: string;
       newValue: string;
-    }>
+    }>,
   ): void => {
     if (!cutRange.value) {
       return;
@@ -554,7 +554,7 @@ export function useClipboard({
     copiedRange.value = null;
   };
 
-  const cutToClipboard = async (): Promise<boolean> => {
+  const cutToFavorites = async (): Promise<boolean> => {
     const context: CopyContext = {
       isEditing: !!actualEditingCell.value,
       editingCell: actualEditingCell.value,
@@ -571,7 +571,7 @@ export function useClipboard({
     }
 
     try {
-      await clipboardOps.copyToClipboard(textToCopy);
+      await clipboardOps.copyToFavorites(textToCopy);
       recordCutRange(context);
       return true;
     } catch (error) {
@@ -583,7 +583,7 @@ export function useClipboard({
   /**
    * 处理复制操作（事件驱动）
    */
-  const handleCopy = (event: ClipboardEvent): void => {
+  const handleCopy = (event: FavoritesEvent): void => {
     const context: CopyContext = {
       isEditing: !!actualEditingCell.value,
       editingCell: actualEditingCell.value,
@@ -608,7 +608,7 @@ export function useClipboard({
         event.clipboardData.setData("text/plain", textToCopy);
       } else {
         // 降级方案：异步复制
-        clipboardOps.copyToClipboard(textToCopy).catch((error) => {
+        clipboardOps.copyToFavorites(textToCopy).catch((error) => {
           console.error("Failed to copy to clipboard:", error);
         });
       }
@@ -632,7 +632,7 @@ export function useClipboard({
   /**
    * 程序化复制（菜单、快捷键触发）
    */
-  const copyToClipboard = async (): Promise<boolean> => {
+  const copyToFavorites = async (): Promise<boolean> => {
     const context: CopyContext = {
       isEditing: !!actualEditingCell.value,
       editingCell: actualEditingCell.value,
@@ -649,7 +649,7 @@ export function useClipboard({
     }
 
     try {
-      await clipboardOps.copyToClipboard(textToCopy);
+      await clipboardOps.copyToFavorites(textToCopy);
       // 保存复制时的选区范围（复制源区域）
       if (context.normalizedSelection) {
         copiedRange.value = { ...context.normalizedSelection };
@@ -673,7 +673,7 @@ export function useClipboard({
   /**
    * 处理粘贴操作（事件驱动）
    */
-  const handlePaste = (event: ClipboardEvent): void => {
+  const handlePaste = (event: FavoritesEvent): void => {
     const context: PasteContext = {
       isEditing: !!actualEditingCell.value,
       editingCell: actualEditingCell.value,
@@ -719,9 +719,9 @@ export function useClipboard({
   /**
    * 程序化粘贴（菜单、快捷键触发）
    */
-  const pasteFromClipboard = async (): Promise<boolean> => {
+  const pasteFromFavorites = async (): Promise<boolean> => {
     try {
-      const clipboardText = await clipboardOps.readFromClipboard();
+      const clipboardText = await clipboardOps.readFromFavorites();
 
       const context: PasteContext = {
         isEditing: !!actualEditingCell.value,
@@ -765,17 +765,17 @@ export function useClipboard({
   /**
    * 检查剪贴板是否有内容
    */
-  const hasClipboardContent = async (): Promise<boolean> => {
-    return await clipboardOps.hasClipboardContent();
+  const hasFavoritesContent = async (): Promise<boolean> => {
+    return await clipboardOps.hasFavoritesContent();
   };
 
   return {
     handleCopy,
     handlePaste,
-    copyToClipboard,
-    cutToClipboard,
-    pasteFromClipboard,
-    hasClipboardContent,
+    copyToFavorites,
+    cutToFavorites,
+    pasteFromFavorites,
+    hasFavoritesContent,
     copiedRange,
     exitCopyMode,
   };

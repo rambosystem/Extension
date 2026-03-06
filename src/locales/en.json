@@ -21,7 +21,7 @@
     "library": "Library",
     "settings": "Settings",
     "translate": "Translate",
-    "clipboard": "Clipboard",
+    "clipboard": "Favorites",
     "about": "About"
   },
   "translation": {
@@ -124,22 +124,22 @@
     "termsStoreMissingWithData": "Quick validation failed: terms-store is missing but terms data exists"
   },
   "clipboard": {
-    "title": "Clipboard Setting",
+    "title": "Favorites Setting",
     "shortcutLabel": "Shortcut",
-    "openClipboardPopup": "Open Clipboard Popup",
+    "openFavoritesPopup": "Open Favorites Popup",
     "clearShortcutButton": "Clear Shortcut",
     "shortcutEmpty": "Not Set",
     "shortcutCleared": "Shortcut cleared.",
     "shortcutClearManual": "Please clear the shortcut from the shortcut settings page.",
-    "shortcutDescription": "Use a system shortcut to open Clipboard popup quickly.",
+    "shortcutDescription": "Use a system shortcut to open Favorites popup quickly.",
     "openShortcutButton": "Open Shortcut Settings",
-    "saveSuccess": "Clipboard settings saved successfully",
+    "saveSuccess": "Favorites settings saved successfully",
     "saveFailed": "Failed to save clipboard settings",
-    "popupTitle": "Clipboard",
+    "popupTitle": "Favorites",
     "readButton": "Read",
     "copyButton": "Copy",
-    "inputPlaceholder": "Clipboard text",
-    "historyTitle": " Clipboard History",
+    "inputPlaceholder": "Favorites text",
+    "historyTitle": " Favorites History",
     "favoriteTitle": "Favorites",
     "moreButton": "More",
     "pinButton": "Pin",
@@ -150,8 +150,8 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "statusReady": "Click Read to load clipboard content.",
-    "statusEmpty": "Clipboard is empty.",
-    "statusLoaded": "Clipboard content loaded.",
+    "statusEmpty": "Favorites is empty.",
+    "statusLoaded": "Favorites content loaded.",
     "statusReadFailed": "Unable to read clipboard. Please grant permission and try again.",
     "statusFavoriteAdded": "Added to favorites.",
     "statusNoText": "No text to copy.",
@@ -259,7 +259,7 @@
   "app": {
     "lokalise": "Lokalise",
     "translation": "Translate",
-    "clipboard": "Clipboard",
+    "clipboard": "Favorites",
     "copyright": "© Rambo Systems Software"
   },
   "Translate": {

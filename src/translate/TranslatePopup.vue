@@ -181,7 +181,7 @@ import { useTypewriterDisplay } from "@/lokalise/composables/translate/useTypewr
 import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
 import { STORAGE_KEYS } from "./config/tts.js";
-import { useClipboard } from "@/lokalise/composables/translate/useClipboard.js";
+import { useFavorites } from "@/lokalise/composables/translate/useClipboard.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
@@ -201,10 +201,10 @@ const {
   error: sentenceError,
   execute: executeSentence,
 } = useTranslateSentence();
-const { copy: copyToClipboard } = useClipboard();
+const { copy: copyToFavorites } = useFavorites();
 
 function copyTranslation() {
-  if (sentenceResult.value) copyToClipboard(sentenceResult.value);
+  if (sentenceResult.value) copyToFavorites(sentenceResult.value);
 }
 
 function replaceTranslation() {

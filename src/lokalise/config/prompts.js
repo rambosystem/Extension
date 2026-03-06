@@ -1,19 +1,20 @@
-// prompts.js - 存储各种 AI 提示词配置
+// prompts.js - AI prompt configuration for Lokalise translation
 
 export const DEFAULT_TRANSLATION_PROMPT = `<System>
-  <role>Pacvue 专业广告文案翻译师</role>
+  <role>Expert Ad Copy Translator and Transcreator at Pacvue</role>
   <goals>
-    <goal>校正英文拼写</goal>
-    <goal>生成中文与日文广告文案</goal>
+    <goal>Proofread and correct English spelling</goal>
+    <goal>Generate Chinese (Simplified) and Japanese ad copy</goal>
   </goals>
   <rules>
-    <rule>严格输出 JSON 格式，必须是有效的 JSON 数组</rule>
-    <rule>每个数组元素是一个对象，包含字段：en（修正后的英文）、chinese（中文）、japanese（日文）</rule>
-    <rule>保留原文特殊字符（",",".","?","\\n","\\t","{0}","{1}" 等）</rule>
-    <rule>去除 {n} 占位符前后的空格</rule>
-    <rule>若发现英文拼写错误，先在英文中修正后再翻译</rule>
-    <rule>不要输出示例、解释以及标题，仅输出 JSON 数组</rule>
-    <rule>术语库将由系统动态插入，如果匹配到术语请根据术语库翻译文本</rule>
+    <rule>Output strictly in valid JSON format as a JSON array</rule>
+    <rule>Each array element is an object with fields: en (corrected English), chinese (Simplified Chinese 简体中文), japanese (Japanese)</rule>
+    <rule>Preserve special characters exactly: ",", ".", "?", "\\n", "\\t", "{0}", "{1}", etc.</rule>
+    <rule>Remove spaces around {n} placeholders when appropriate</rule>
+    <rule>If English spelling errors are found, correct them in the en field before translating</rule>
+    <rule>Do not output examples, explanations, or titles; output only the JSON array</rule>
+    <rule>Glossary will be dynamically inserted by the system; use glossary terms when matched</rule>
+    <rule>Chinese output MUST be in Simplified Chinese (简体中文), not Traditional Chinese</rule>
   </rules>
   <output_format>
     <type>JSON</type>
@@ -21,28 +22,28 @@ export const DEFAULT_TRANSLATION_PROMPT = `<System>
       <array>
         <object>
           <field name="en">Corrected English text</field>
-          <field name="chinese">Chinese translation</field>
+          <field name="chinese">Simplified Chinese translation (简体中文)</field>
           <field name="japanese">Japanese translation</field>
         </object>
       </array>
     </structure>
   </output_format>
-  <final_instruction>仅输出有效的 JSON 数组，不要包含 markdown 代码块、XML 或任何解释</final_instruction>
+  <final_instruction>Output ONLY the valid JSON array. No markdown code blocks, XML, or explanations.</final_instruction>
 </System>`;
 
 /**
- * 根据目标语言生成 JSON 格式的翻译 Prompt
- * @param {Array<string>} targetLanguages - 目标语言数组
- * @returns {string} 生成的 Prompt
+ * Generate translation prompt in JSON format based on target languages
+ * @param {Array<string>} targetLanguages - Target language array
+ * @returns {string} Generated prompt
  */
 export function generateTranslationPrompt(targetLanguages = []) {
-  // 0. 兜底处理
+  // Fallback when no target languages
   if (!targetLanguages || targetLanguages.length === 0) {
     return DEFAULT_TRANSLATION_PROMPT;
   }
 
-  // 1. 构建 JSON 字段名（规范化 Key：小写 + 下划线）
-  // 例：["Japanese", "Spanish (Latam)"] -> ["japanese", "spanish_(latam)"]
+  // Build JSON field names (normalized: lowercase + underscore)
+  // e.g. ["Japanese", "Spanish (Latam)"] -> ["japanese", "spanish_(latam)"]
   const jsonFields = targetLanguages.map((lang) => {
     return lang
       .toLowerCase()
@@ -50,16 +51,20 @@ export function generateTranslationPrompt(targetLanguages = []) {
       .replace(/^_+|_+$/g, "");
   });
 
-  // 2. 生成目标语言的自然语言描述 (用于 System 指令)
+  // Natural language description of target languages for System instruction
   const targetLanguagesText = targetLanguages.join(", ");
 
-  // 3. 动态构建 Schema 示例字符串 (提升 LLM 理解力)
-  // 生成类似: "japanese": "translation in japanese",
+  // Check if Chinese is in target languages to add Simplified Chinese requirement
+  const hasChinese = targetLanguages.some(
+    (l) => /chinese|中文|zh/i.test(l) || l.toLowerCase() === "zh_cn" || l.toLowerCase() === "zh-cn"
+  );
+
+  // Dynamic schema example string for better LLM understanding
+  // e.g. "japanese": "translation in japanese",
   const schemaFields = jsonFields
     .map((f) => `"${f}": "String, translation in ${f.replace(/_/g, " ")}"`)
     .join(",\n          ");
 
-  // 4. 生成优化后的 Prompt
   const prompt = `<System>
   <role>You are an expert Ad Copy Translator and Transcreator at Pacvue.</role>
   
@@ -87,6 +92,7 @@ export function generateTranslationPrompt(targetLanguages = []) {
       - For Western languages: Keep standard spacing around placeholders.
     </rule_content>
     <rule_content>Use the provided Glossary if specific terms match.</rule_content>
+    ${hasChinese ? '<rule_content>Chinese output MUST be in Simplified Chinese (简体中文), not Traditional Chinese.</rule_content>' : ""}
   </rules>
 
   <output_structure>

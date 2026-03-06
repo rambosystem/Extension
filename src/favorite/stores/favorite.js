@@ -2,7 +2,7 @@ import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { CLIPBOARD_HISTORY_STORAGE_KEY } from "../storage.js";
 
-export const useClipboardStore = defineStore("clipboard", () => {
+export const useFavoritesStore = defineStore("clipboard", () => {
   const history = ref([]);
   const isClearConfirming = ref(false);
   const currentItems = computed(() => history.value);

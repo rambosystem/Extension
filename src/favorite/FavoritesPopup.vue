@@ -18,7 +18,7 @@
           <button
             type="button"
             class="header_action_btn"
-            @click="captureClipboardToFavorites"
+            @click="captureFavoritesToFavorites"
           >
             <el-icon><Star /></el-icon>
           </button>
@@ -77,7 +77,7 @@ import HistoryPanel from "./Components/HistoryPanel.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import cleanIcon from "@/assets/clean.svg";
-import { useClipboardStore } from "./stores/clipboard.js";
+import { useFavoritesStore } from "./stores/favorite.js";
 
 const { onClose, pinned } = defineProps({
   onClose: { type: Function, required: true },
@@ -87,11 +87,8 @@ const { onClose, pinned } = defineProps({
 });
 
 const { t } = useI18n();
-const clipboardStore = useClipboardStore();
-const {
-  isClearConfirming,
-  currentItems,
-} = storeToRefs(clipboardStore);
+const clipboardStore = useFavoritesStore();
+const { isClearConfirming, currentItems } = storeToRefs(clipboardStore);
 const {
   normalizeText,
   loadHistory,
@@ -104,7 +101,7 @@ const {
 
 const currentEmptyText = computed(() => t("clipboard.noFavorites"));
 
-async function captureClipboardToFavorites() {
+async function captureFavoritesToFavorites() {
   try {
     const text = await navigator.clipboard.readText();
     const normalized = normalizeText(text);

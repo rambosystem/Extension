@@ -50,7 +50,7 @@ export interface UseKeyboardOptions {
     cOffset: number,
     maxRows: number,
     maxCols: number,
-    extendSelection?: boolean
+    extendSelection?: boolean,
   ) => void;
   saveHistory: (state: any, options?: SaveHistoryOptions) => void;
   undoHistory: () => HistoryRestoreResult | null;
@@ -60,7 +60,7 @@ export interface UseKeyboardOptions {
     row: number,
     col: number,
     selectAll?: boolean,
-    initialValue?: string
+    initialValue?: string,
   ) => void;
   deleteSelection: (range: SelectionRange) => void;
   tableData: Ref<string[][]>;
@@ -76,9 +76,9 @@ export interface UseKeyboardOptions {
   customMenuItems?: CustomMenuItem[];
   handleCustomAction?: (payload: { id: string; context: MenuContext }) => void;
   createMenuContext?: (rowIndex: number) => MenuContext;
-  copyToClipboard?: () => Promise<boolean>;
-  cutToClipboard?: () => Promise<boolean>;
-  pasteFromClipboard?: () => Promise<boolean>;
+  copyToFavorites?: () => Promise<boolean>;
+  cutToFavorites?: () => Promise<boolean>;
+  pasteFromFavorites?: () => Promise<boolean>;
   emitSync?: () => void;
   exitCopyMode?: () => void;
   copiedRange?: Ref<SelectionRange | null>;
@@ -149,7 +149,7 @@ const normalizeKeySymbol = (key: string): string => {
  */
 export const buildShortcut = (
   key: string,
-  options: { alt?: boolean; shift?: boolean } = {}
+  options: { alt?: boolean; shift?: boolean } = {},
 ): string => {
   const parts: string[] = [];
 
@@ -260,7 +260,7 @@ export const normalizeShortcutForPlatform = (shortcut: string): string => {
  */
 const matchShortcut = (
   event: KeyboardEvent,
-  shortcutConfig: ParsedShortcut
+  shortcutConfig: ParsedShortcut,
 ): boolean => {
   if (!shortcutConfig) return false;
 
@@ -320,9 +320,9 @@ export function useKeyboard({
   customMenuItems = [],
   handleCustomAction,
   createMenuContext,
-  copyToClipboard,
-  cutToClipboard,
-  pasteFromClipboard,
+  copyToFavorites,
+  cutToFavorites,
+  pasteFromFavorites,
   isUndoRedoInProgress,
   emitSync,
   exitCopyMode,
@@ -360,8 +360,8 @@ export function useKeyboard({
     event.preventDefault();
 
     // 调用程序化复制
-    if (copyToClipboard) {
-      copyToClipboard().catch((error) => {
+    if (copyToFavorites) {
+      copyToFavorites().catch((error) => {
         // 错误处理：复制快捷键失败
         if (import.meta.env.DEV) {
           console.error("[Keyboard] Copy shortcut failed:", error);
@@ -390,8 +390,8 @@ export function useKeyboard({
 
     event.preventDefault();
 
-    if (cutToClipboard) {
-      cutToClipboard().catch((error) => {
+    if (cutToFavorites) {
+      cutToFavorites().catch((error) => {
         if (import.meta.env.DEV) {
           console.error("[Keyboard] Cut shortcut failed:", error);
         }
@@ -420,8 +420,8 @@ export function useKeyboard({
     event.preventDefault();
 
     // 调用程序化粘贴
-    if (pasteFromClipboard) {
-      pasteFromClipboard().catch((error) => {
+    if (pasteFromFavorites) {
+      pasteFromFavorites().catch((error) => {
         // 错误处理：粘贴快捷键失败
         if (import.meta.env.DEV) {
           console.error("[Keyboard] Paste shortcut failed:", error);
@@ -517,7 +517,7 @@ export function useKeyboard({
       cOff,
       getMaxRows(),
       getMaxCols(),
-      event.shiftKey && isArrow
+      event.shiftKey && isArrow,
     );
 
     return true;
@@ -661,7 +661,7 @@ export function useKeyboard({
         // 错误处理：快捷键解析失败
         if (import.meta.env.DEV) {
           console.warn(
-            `[Keyboard] Failed to parse shortcut "${item.shortcut}" for menu item "${item.id}"`
+            `[Keyboard] Failed to parse shortcut "${item.shortcut}" for menu item "${item.id}"`,
           );
         }
         continue;
@@ -680,7 +680,7 @@ export function useKeyboard({
             if (import.meta.env.DEV) {
               console.warn(
                 `[Keyboard] validate function error for menu item "${item.id}":`,
-                error
+                error,
               );
             }
             continue;

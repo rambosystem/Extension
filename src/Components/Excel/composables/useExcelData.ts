@@ -27,9 +27,9 @@ interface Dimensions {
  */
 export interface UseExcelDataReturn {
   getSmartValue: (value: string, step: number) => string;
-  generateClipboardText: (
+  generateFavoritesText: (
     range: { minRow: number; maxRow: number; minCol: number; maxCol: number },
-    data: string[][]
+    data: string[][],
   ) => string;
   parsePasteData: (clipboardText: string) => string[][];
   setData: (data: string[][]) => void;
@@ -70,7 +70,7 @@ export function useExcelData({
   // 根据实际数据动态计算行列数
   const calculateDimensions = (
     data: string[][] | null | undefined,
-    allowEmpty = false
+    allowEmpty = false,
   ): Dimensions => {
     if (!data || !Array.isArray(data) || data.length === 0) {
       return allowEmpty
@@ -141,9 +141,9 @@ export function useExcelData({
    * 生成剪贴板文本
    * 将选中的单元格数据转换为制表符分隔的文本格式
    */
-  const generateClipboardText = (
+  const generateFavoritesText = (
     range: { minRow: number; maxRow: number; minCol: number; maxCol: number },
-    data: string[][]
+    data: string[][],
   ): string => {
     if (!range || !data) return "";
 
@@ -261,7 +261,7 @@ export function useExcelData({
     if (row < 0 || col < 0 || !tableData.value[row]) {
       if (import.meta.env.DEV) {
         console.warn(
-          `[ExcelData] updateCell: Invalid position row=${row}, col=${col}`
+          `[ExcelData] updateCell: Invalid position row=${row}, col=${col}`,
         );
       }
       return;
@@ -277,7 +277,7 @@ export function useExcelData({
     const currentRows = rows.value.length;
     const currentCols = columns.value.length;
     tableData.value = Array.from({ length: currentRows }, () =>
-      Array.from({ length: currentCols }, () => "")
+      Array.from({ length: currentCols }, () => ""),
     );
   };
 
@@ -314,7 +314,7 @@ export function useExcelData({
     if (rowIndex < -1 || rowIndex >= rows.value.length) {
       if (import.meta.env.DEV) {
         console.warn(
-          `[ExcelData] insertRowBelow: Invalid row index ${rowIndex}`
+          `[ExcelData] insertRowBelow: Invalid row index ${rowIndex}`,
         );
       }
       return;
@@ -332,7 +332,7 @@ export function useExcelData({
 
   return {
     getSmartValue,
-    generateClipboardText,
+    generateFavoritesText,
     parsePasteData,
     setData,
     getData,

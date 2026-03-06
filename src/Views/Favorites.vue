@@ -2,7 +2,10 @@
   <div class="setting_group">
     <h2 class="title">{{ title }}</h2>
     <el-form label-position="top" class="settings-form">
-      <el-form-item :label="t('clipboard.openClipboardPopup')" label-position="left">
+      <el-form-item
+        :label="t('clipboard.openFavoritesPopup')"
+        label-position="left"
+      >
         <div class="shortcut-setting-row" @click="openShortcutSettings">
           <span class="shortcut-key-chip">{{ shortcutDisplay }}</span>
         </div>

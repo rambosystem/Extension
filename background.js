@@ -3,7 +3,8 @@ const TRANSLATE_MENU_ID = "penrose-translate-selection";
 const CLIPBOARD_MENU_INDEX = "3";
 
 // 豆包 TTS 配置（主配置见 src/translate/config/tts.js，此处为 background 用副本，修改配置请同步两处）
-const TTS_API_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
+const TTS_API_URL =
+  "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
 const TTS_DEFAULT_APP_ID = "9475898476";
 const TTS_DEFAULT_ACCESS_TOKEN = "pvrswIGZenbzLPfDB2jlDD4pAVf2CeNT";
 const TTS_STORAGE_APP_ID = "doubao_tts_app_id";
@@ -27,14 +28,19 @@ function getB64FromJson(json) {
 /** 解析 V3 流式响应：整段读取后按行解析 NDJSON，或单条 JSON */
 async function readV3Stream(res, encoding) {
   const text = await res.text();
-  const lines = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  const lines = text
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
   const chunks = [];
   for (const line of lines) {
     try {
       const json = JSON.parse(line);
       if (json.code === 20000000) {
         const b64 = chunks.join("");
-        return b64 ? { ok: true, audioBase64: b64, encoding } : { ok: false, error: "no audio in stream" };
+        return b64
+          ? { ok: true, audioBase64: b64, encoding }
+          : { ok: false, error: "no audio in stream" };
       }
       if (json.code != null && json.code !== 0 && json.code !== 20000000) {
         return { ok: false, error: json.message || `code ${json.code}` };
@@ -49,7 +55,8 @@ async function readV3Stream(res, encoding) {
     const single = JSON.parse(text.trim());
     const one = getB64FromJson(single);
     if (one) return { ok: true, audioBase64: one, encoding };
-    if (single.code && single.code !== 0) return { ok: false, error: single.message || `code ${single.code}` };
+    if (single.code && single.code !== 0)
+      return { ok: false, error: single.message || `code ${single.code}` };
   } catch (_) {}
   return { ok: false, error: "no audio in stream" };
 }
@@ -83,10 +90,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         TTS_STORAGE_VOICE_TYPE,
       ]);
       const appId = out[TTS_STORAGE_APP_ID]?.trim() || TTS_DEFAULT_APP_ID;
-      const token = out[TTS_STORAGE_ACCESS_TOKEN]?.trim() || TTS_DEFAULT_ACCESS_TOKEN;
+      const token =
+        out[TTS_STORAGE_ACCESS_TOKEN]?.trim() || TTS_DEFAULT_ACCESS_TOKEN;
       if (!appId || !token) return { ok: false, error: "missing credentials" };
       const payload = msg.payload || {};
-      const voiceType = payload.voiceType?.trim() || out[TTS_STORAGE_VOICE_TYPE]?.trim() || TTS_DEFAULT_VOICE_TYPE;
+      const voiceType =
+        payload.voiceType?.trim() ||
+        out[TTS_STORAGE_VOICE_TYPE]?.trim() ||
+        TTS_DEFAULT_VOICE_TYPE;
       const { text, speedRatio, encoding = "mp3" } = payload;
       if (!text?.trim()) {
         return { ok: false, error: "missing text" };
@@ -139,29 +150,34 @@ chrome.runtime.onInstalled.addListener(async () => {
     },
     () => {
       if (chrome.runtime.lastError) {
-        console.error("[Penrose] contextMenus.create:", chrome.runtime.lastError.message);
+        console.error(
+          "[Penrose] contextMenus.create:",
+          chrome.runtime.lastError.message,
+        );
       }
-    }
+    },
   );
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === TRANSLATE_MENU_ID && info.selectionText) {
-    chrome.tabs.sendMessage(tab.id, {
-      action: "showTranslatePopup",
-      selectionText: info.selectionText,
-    }).catch((err) => {
-      console.error("[Penrose] sendMessage to content:", err.message);
-    });
+    chrome.tabs
+      .sendMessage(tab.id, {
+        action: "showTranslatePopup",
+        selectionText: info.selectionText,
+      })
+      .catch((err) => {
+        console.error("[Penrose] sendMessage to content:", err.message);
+      });
   }
 });
 
-function openClipboardPopupFromActiveTab() {
+function openFavoritesPopupFromActiveTab() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const activeTabId = tabs?.[0]?.id;
     if (!activeTabId) return;
     chrome.tabs
-      .sendMessage(activeTabId, { action: "showClipboardPopup" })
+      .sendMessage(activeTabId, { action: "showFavoritesPopup" })
       .catch(() => {
         chrome.storage.local.set(
           {
@@ -178,6 +194,6 @@ function openClipboardPopupFromActiveTab() {
 
 chrome.commands?.onCommand.addListener((command) => {
   if (command === "open-clipboard-popup") {
-    openClipboardPopupFromActiveTab();
+    openFavoritesPopupFromActiveTab();
   }
 });

@@ -21,8 +21,8 @@ export interface CellMenuCommand {
  * useCellMenu 选项
  */
 export interface UseCellMenuOptions {
-  copyToClipboard: () => Promise<boolean>;
-  pasteFromClipboard: () => Promise<boolean>;
+  copyToFavorites: () => Promise<boolean>;
+  pasteFromFavorites: () => Promise<boolean>;
   undoHistory: () => any | null;
   redoHistory: () => any | null;
   tableData: Ref<string[][]>;
@@ -52,8 +52,8 @@ export interface UseCellMenuReturn {
  * 使用统一的程序化复制粘贴接口和行操作工具函数
  */
 export function useCellMenu({
-  copyToClipboard,
-  pasteFromClipboard,
+  copyToFavorites,
+  pasteFromFavorites,
   undoHistory,
   redoHistory,
   tableData,
@@ -109,12 +109,12 @@ export function useCellMenu({
       handleInsertRowOperation(rowOperationOptions, rowIndex);
     } else if (action === "copy") {
       // 使用程序化复制
-      copyToClipboard().catch((error) => {
+      copyToFavorites().catch((error) => {
         console.error("Menu copy failed:", error);
       });
     } else if (action === "paste") {
       // 使用程序化粘贴
-      pasteFromClipboard().catch((error) => {
+      pasteFromFavorites().catch((error) => {
         console.error("Menu paste failed:", error);
       });
     } else if (action === "undo") {

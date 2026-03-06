@@ -1,4 +1,4 @@
-import { showClipboardPopup } from "./popup.js";
+import { showFavoritesPopup } from "./popup.js";
 
 let lastFocusedEditable = null;
 
@@ -26,13 +26,18 @@ function insertTextAtCursor(el, text) {
 function getPasteTarget() {
   const active = document.activeElement;
   if (active && isEditable(active)) return active;
-  if (lastFocusedEditable?.isConnected && isEditable(lastFocusedEditable)) return lastFocusedEditable;
+  if (lastFocusedEditable?.isConnected && isEditable(lastFocusedEditable))
+    return lastFocusedEditable;
   return null;
 }
 
-document.addEventListener("focusin", (e) => {
-  if (isEditable(e.target)) lastFocusedEditable = e.target;
-}, true);
+document.addEventListener(
+  "focusin",
+  (e) => {
+    if (isEditable(e.target)) lastFocusedEditable = e.target;
+  },
+  true,
+);
 
 document.addEventListener("clipboard-paste-to-focused", (e) => {
   const text = e.detail?.text;
@@ -42,12 +47,15 @@ document.addEventListener("clipboard-paste-to-focused", (e) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "showClipboardPopup") {
-    showClipboardPopup();
+  if (request.action === "showFavoritesPopup") {
+    showFavoritesPopup();
     sendResponse({ ok: true });
     return true;
   }
-  if (request.action === "pasteToLastFocused" && typeof request.text === "string") {
+  if (
+    request.action === "pasteToLastFocused" &&
+    typeof request.text === "string"
+  ) {
     const el = getPasteTarget();
     if (el) {
       insertTextAtCursor(el, request.text);

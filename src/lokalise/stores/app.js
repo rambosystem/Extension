@@ -23,7 +23,7 @@ import {
 const MENU_NAME_BY_INDEX = {
   [ROUTE_INDEX.LOKALISE]: "Lokalise",
   [ROUTE_INDEX.TRANSLATE]: "Translate",
-  [ROUTE_INDEX.CLIPBOARD]: "Clipboard",
+  [ROUTE_INDEX.CLIPBOARD]: "Favorites",
   [ROUTE_INDEX.SETTINGS]: "Settings",
   [ROUTE_INDEX.ABOUT]: "About",
 };
@@ -52,7 +52,8 @@ export const useAppStore = defineStore("app", {
   }),
 
   getters: {
-    currentMenuName: (state) => MENU_NAME_BY_INDEX[state.currentMenu] || "Unknown",
+    currentMenuName: (state) =>
+      MENU_NAME_BY_INDEX[state.currentMenu] || "Unknown",
     isCurrentMenu: (state) => (menuIndex) => state.currentMenu === menuIndex,
   },
 
@@ -117,8 +118,13 @@ export const useAppStore = defineStore("app", {
         if (initialMenu != null && VALID_MENU_INDEX.has(String(initialMenu))) {
           this.currentMenu = String(initialMenu);
           await removeChromeLocal(STORAGE_KEYS.INITIAL_MENU);
-          await setChromeLocal({ [STORAGE_KEYS.CURRENT_MENU]: this.currentMenu });
-        } else if (currentMenu != null && VALID_MENU_INDEX.has(String(currentMenu))) {
+          await setChromeLocal({
+            [STORAGE_KEYS.CURRENT_MENU]: this.currentMenu,
+          });
+        } else if (
+          currentMenu != null &&
+          VALID_MENU_INDEX.has(String(currentMenu))
+        ) {
           this.currentMenu = String(currentMenu);
         }
 
