@@ -259,3 +259,20 @@ export async function* translateToEnglishStream(text) {
   const response = await callDeepSeekAPI(config.apiKey, requestBody);
   yield* streamDeepSeekContent(response);
 }
+
+export async function translateToEnglish(text) {
+  const config = await getTranslateConfig();
+  if (!config?.apiKey?.trim()) {
+    throw new Error("DeepSeek API key not found. Please set it in extension options.");
+  }
+  const requestBody = buildRequestBody(
+    TRANSLATE_TO_ENGLISH_PROMPT,
+    text,
+    config.temperature ?? 0.1,
+    config.maxTokens ?? 8192,
+    false
+  );
+  const response = await callDeepSeekAPI(config.apiKey, requestBody);
+  const content = await parseNonStreamResponse(response);
+  return (content || "").trim();
+}

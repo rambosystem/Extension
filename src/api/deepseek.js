@@ -63,31 +63,65 @@ export async function* streamDeepSeekContent(response) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let raw = "";
+  let yielded = false;
+
+  const extractContent = (data) => {
+    const deltaContent = data?.choices?.[0]?.delta?.content;
+    if (typeof deltaContent === "string") return deltaContent;
+    const messageContent = data?.choices?.[0]?.message?.content;
+    if (typeof messageContent === "string") return messageContent;
+    return "";
+  };
+
+  const parseDataLine = (line) => {
+    const s = line.trim();
+    if (!s || s === "data: [DONE]") return "";
+    if (!s.startsWith("data:")) return "";
+    const payload = s.slice(5).trim();
+    if (!payload || payload === "[DONE]") return "";
+    try {
+      const data = JSON.parse(payload);
+      return extractContent(data);
+    } catch (_) {
+      return "";
+    }
+  };
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+    const chunk = decoder.decode(value, { stream: true });
+    raw += chunk;
+    buffer += chunk;
     const lines = buffer.split(/\r?\n/);
     buffer = lines.pop() ?? "";
     for (const line of lines) {
-      const s = line.trim();
-      if (!s || s === "data: [DONE]") continue;
-      if (!s.startsWith("data: ")) continue;
-      try {
-        const data = JSON.parse(s.slice(6));
-        const content = data.choices?.[0]?.delta?.content;
-        if (typeof content === "string" && content) yield content;
-      } catch (_) {}
+      const content = parseDataLine(line);
+      if (content) {
+        yielded = true;
+        yield content;
+      }
     }
   }
   if (buffer.trim()) {
-    const s = buffer.trim();
-    if (s.startsWith("data: ") && s !== "data: [DONE]") {
-      try {
-        const data = JSON.parse(s.slice(6));
-        const content = data.choices?.[0]?.delta?.content;
-        if (typeof content === "string" && content) yield content;
-      } catch (_) {}
+    const content = parseDataLine(buffer);
+    if (content) {
+      yielded = true;
+      yield content;
     }
   }
+  if (yielded) return;
+
+  const fallbackRaw = (raw || "").trim();
+  if (!fallbackRaw) return;
+  try {
+    const data = JSON.parse(fallbackRaw);
+    const content = extractContent(data);
+    if (content) yield content;
+    return;
+  } catch (_) {}
+
+  // Some proxies may return plain text body even when stream=true.
+  yield fallbackRaw;
 }

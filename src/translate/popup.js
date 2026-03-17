@@ -88,8 +88,14 @@ export function showTranslatePopup(
 
   document.body.appendChild(popupRoot);
 
-  const isPinnedRef = ref(false);
+  const isComposerMode = !selectionText?.trim();
+  const showPin = !isComposerMode;
+  const isPinnedRef = ref(isComposerMode);
   function setPinned(pinned) {
+    if (!showPin) {
+      isPinnedRef.value = true;
+      return;
+    }
     isPinnedRef.value = !!pinned;
   }
 
@@ -122,6 +128,7 @@ export function showTranslatePopup(
     onClose,
     onReplace,
     lastFocusedEditable,
+    showPin,
     pinned: isPinnedRef,
     setPinned,
     onMoveBy,

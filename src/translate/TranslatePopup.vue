@@ -1,7 +1,7 @@
 <template>
   <PopupFrame
     :on-close="onClose"
-    show-pin
+    :show-pin="showPin"
     show-settings
     setting-title="Translate settings"
     :setting-route="ROUTE_INDEX.TRANSLATE"
@@ -225,12 +225,15 @@ import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
 import { STORAGE_KEYS } from "./config/tts.js";
 import { useFavorites } from "@/lokalise/composables/translate/useClipboard.js";
-import { translateToEnglishStream } from "./services/translate/translateService.js";
+import {
+  translateToEnglish as translateToEnglishOnce,
+} from "./services/translate/translateService.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
   selectionText: { type: String, default: "" },
   lastFocusedEditable: { type: Object, default: null },
+  showPin: { type: Boolean, default: true },
   pinned: { type: [Object, Boolean], default: null },
   setPinned: { type: Function, default: null },
   onMoveBy: { type: Function, default: null },
@@ -279,11 +282,8 @@ async function runTranslateToEnglish() {
   composerLoading.value = true;
   composerError.value = "";
   try {
-    let full = "";
-    for await (const chunk of translateToEnglishStream(text)) {
-      full += chunk;
-      editorText.value = full;
-    }
+    const full = await translateToEnglishOnce(text);
+    editorText.value = full;
     return full.trim();
   } catch (e) {
     composerError.value = e?.message || "Translation failed";
@@ -609,7 +609,7 @@ onBeforeUnmount(() => {
 }
 
 .composer_icon_btn {
-  width: 28x;
+  width: 28px;
   height: 28px;
   border: none;
   border-radius: 6px;
