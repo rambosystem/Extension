@@ -38,6 +38,13 @@
     "service_worker": "background.js"
   },
   "commands": {
+    "open-translate-popup": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+U",
+        "mac": "Command+Shift+U"
+      },
+      "description": "Open Translate Popup"
+    },
     "open-clipboard-popup": {
       "suggested_key": {
         "default": "Ctrl+Shift+V",

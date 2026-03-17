@@ -2,6 +2,15 @@
   <div class="setting_group">
     <h2 class="title">{{ title }}</h2>
     <el-form label-position="top" class="settings-form">
+      <el-form-item
+        :label="t('Translate.openTranslatePopup')"
+        label-position="left"
+      >
+        <div class="shortcut-setting-row" @click="openShortcutSettings">
+          <span class="shortcut-key-chip">{{ shortcutDisplay }}</span>
+        </div>
+      </el-form-item>
+
       <el-form-item :label="t('Translate.selectToTranslate')" label-position="left">
         <div class="select-to-translate-setting">
           <el-switch :model-value="translationSettingsStore.wordSelectionTranslate"
@@ -24,7 +33,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";
 import {
@@ -37,6 +46,11 @@ const { t } = useI18n();
 const translationSettingsStore = useTranslationSettingsStore();
 const ttsVoices = ref([]);
 const ttsVoiceType = ref(DEFAULT_VOICE_TYPE);
+const shortcutValue = ref("");
+const shortcutDisplay = computed(() => {
+  if (!shortcutValue.value) return t("Translate.shortcutEmpty");
+  return shortcutValue.value;
+});
 
 onMounted(() => {
   ttsVoices.value = TTS_VOICE_TYPES;
@@ -46,6 +60,22 @@ onMounted(() => {
     });
   }
 });
+
+function loadShortcutState() {
+  return new Promise((resolve) => {
+    if (typeof chrome === "undefined" || !chrome.commands?.getAll) {
+      resolve();
+      return;
+    }
+    chrome.commands.getAll((commands) => {
+      const cmd = Array.isArray(commands)
+        ? commands.find((item) => item?.name === "open-translate-popup")
+        : null;
+      shortcutValue.value = cmd?.shortcut || "";
+      resolve();
+    });
+  });
+}
 
 function saveTtsVoiceType(value) {
   if (typeof chrome !== "undefined" && chrome.storage?.local?.set) {
@@ -60,6 +90,15 @@ const handleSelectToTranslateChange = (value) => {
 onMounted(() => {
   translationSettingsStore.initializeTranslationSettings();
 });
+
+onMounted(async () => {
+  await loadShortcutState();
+});
+
+function openShortcutSettings() {
+  if (typeof chrome === "undefined" || !chrome.tabs?.create) return;
+  chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+}
 
 defineProps({
   title: {
@@ -81,6 +120,39 @@ defineProps({
 
 .settings-form {
   width: 100%;
+}
+
+.shortcut-setting-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+  user-select: none;
+}
+
+.shortcut-key-chip {
+  min-width: 200px;
+  height: 32px;
+  padding: 0 14px;
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.shortcut-key-chip:hover {
+  border-color: #c0c4cc;
+  background: #f5f7fa;
 }
 
 :deep(.el-form-item__label) {

@@ -264,6 +264,8 @@
   },
   "Translate": {
     "title": "Translate Setting",
+    "openTranslatePopup": "Open Translate Popup",
+    "shortcutEmpty": "Not Set",
     "selectToTranslate": "Select to Translate",
     "selectTTS": "Voice Timbre",
     "selectTTSPlaceholder": "Select Voice"
