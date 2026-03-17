@@ -9,8 +9,54 @@
     :set-pinned="setPinned"
     :on-move-by="onMoveBy"
   >
-    <!-- 单词查词 -->
-    <div v-if="isWord" class="word_view">
+    <div v-if="isComposerMode" class="composer_view">
+      <div class="composer_editor allow_text_input">
+        <textarea
+          v-model="editorText"
+          class="composer_textarea"
+          placeholder="输入 Markdown 内容..."
+        />
+      </div>
+      <div v-if="composerError" class="composer_error">
+        {{ composerError }}
+      </div>
+      <div class="composer_actions">
+        <button
+          type="button"
+          class="composer_primary_btn"
+          :disabled="!canOperate || composerLoading"
+          @click="translateAndInsert"
+        >
+          <el-icon v-if="composerLoading" class="is-loading">
+            <Loading />
+          </el-icon>
+          <span v-else>✦</span>
+          <span>翻译并插入</span>
+        </button>
+        <div class="composer_secondary_actions">
+          <button
+            type="button"
+            class="composer_secondary_btn"
+            :disabled="!canOperate || composerLoading"
+            @click="translateToEnglish"
+          >
+            <span class="btn_icon btn_icon_blue">文A</span>
+            <span>翻译为英文</span>
+          </button>
+          <button
+            type="button"
+            class="composer_secondary_btn"
+            :disabled="!canInsertText"
+            @click="insertCurrentText"
+          >
+            <span class="btn_icon btn_icon_green">→|</span>
+            <span>插入</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="isWord" class="word_view">
       <div v-if="error" class="word_error">
         <span>{{ error.message || "Query failed" }}</span>
       </div>
@@ -21,7 +67,6 @@
         <span>Querying...</span>
       </div>
       <template v-else-if="displayData">
-        <!-- 第一行：单词 + 音标（打字机逐字） -->
         <div class="word_header">
           <span class="word_title">{{ selectionText }}</span>
           <span v-if="displayData.pronunciation" class="word_pronunciation">{{
@@ -54,7 +99,6 @@
             </svg>
           </button>
         </div>
-        <!-- 词条：每行打字机逐字展示；例句播放按钮等例句有内容后再显示 -->
         <div class="word_entries">
           <div
             v-for="(entry, index) in displayEntries"
@@ -116,7 +160,7 @@
         </div>
       </template>
     </div>
-    <!-- 句子/非单词 -->
+
     <div v-else class="sentence_view">
       <div v-if="sentenceError" class="sentence_error">
         <span>{{ sentenceError.message || "Translation failed" }}</span>
@@ -136,7 +180,7 @@
           <div class="sentence_button_group">
             <button
               type="button"
-              class="action_btn replace_btn"
+              class="action_btn"
               aria-label="Replace with translation"
               :disabled="!sentenceResult"
               @click="replaceTranslation"
@@ -150,7 +194,7 @@
             </button>
             <button
               type="button"
-              class="action_btn copy_btn"
+              class="action_btn"
               aria-label="Copy translation"
               :disabled="!sentenceResult"
               @click="copyTranslation"
@@ -171,7 +215,7 @@
 
 <script setup>
 import { Loading } from "@element-plus/icons-vue";
-import { watch, computed, ref, onBeforeUnmount } from "vue";
+import { watch, computed, ref, onBeforeUnmount, isRef, unref } from "vue";
 import PopupFrame from "@/components/PopupFrame.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { checkIsWord } from "./domUtils.js";
@@ -182,17 +226,24 @@ import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
 import { STORAGE_KEYS } from "./config/tts.js";
 import { useFavorites } from "@/lokalise/composables/translate/useClipboard.js";
+import { translateToEnglishStream } from "./services/translate/translateService.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
-  selectionText: { type: String, required: true },
+  selectionText: { type: String, default: "" },
+  lastFocusedEditable: { type: Object, default: null },
   pinned: { type: [Object, Boolean], default: null },
   setPinned: { type: Function, default: null },
   onMoveBy: { type: Function, default: null },
   onReplace: { type: Function, default: null },
 });
 
+const isComposerMode = computed(() => !props.selectionText?.trim());
 const isWord = computed(() => checkIsWord(props.selectionText));
+
+const editorText = ref("");
+const composerLoading = ref(false);
+const composerError = ref("");
 
 const { loading, partialResult, result, error, execute } = useTranslateWord();
 const {
@@ -203,6 +254,14 @@ const {
 } = useTranslateSentence();
 const { copy: copyToFavorites } = useFavorites();
 
+const canOperate = computed(() => !!editorText.value.trim());
+const canInsertText = computed(() => !!editorText.value.trim());
+
+function isPinnedActive() {
+  if (isRef(props.pinned)) return !!props.pinned.value;
+  return !!unref(props.pinned);
+}
+
 function copyTranslation() {
   if (sentenceResult.value) copyToFavorites(sentenceResult.value);
 }
@@ -210,6 +269,64 @@ function copyTranslation() {
 function replaceTranslation() {
   if (!sentenceResult.value) return;
   props.onReplace?.(sentenceResult.value);
+}
+
+async function runTranslateToEnglish() {
+  const text = editorText.value.trim();
+  if (!text) return "";
+  composerLoading.value = true;
+  composerError.value = "";
+  try {
+    let full = "";
+    for await (const chunk of translateToEnglishStream(text)) {
+      full += chunk;
+      editorText.value = full;
+    }
+    return full.trim();
+  } catch (e) {
+    composerError.value = e?.message || "Translation failed";
+    throw e;
+  } finally {
+    composerLoading.value = false;
+  }
+}
+
+async function translateToEnglish() {
+  if (!canOperate.value) return;
+  try {
+    await runTranslateToEnglish();
+  } catch (_) {}
+}
+
+function insertIntoFocused(text) {
+  if (!text) return false;
+  document.dispatchEvent(
+    new CustomEvent("clipboard-paste-to-focused", {
+      detail: { text },
+    }),
+  );
+  return true;
+}
+
+function insertCurrentText() {
+  const text = editorText.value.trim();
+  if (!text) return;
+  insertIntoFocused(text);
+  if (!isPinnedActive()) {
+    props.onClose?.();
+  }
+}
+
+async function translateAndInsert() {
+  if (!canOperate.value) return;
+  try {
+    const translated = await runTranslateToEnglish();
+    if (!translated) return;
+    insertIntoFocused(translated);
+    if (!isPinnedActive()) {
+      props.onClose?.();
+    }
+  } catch (_) {}
 }
 
 const displayData = computed(() => {
@@ -226,7 +343,6 @@ const displayData = computed(() => {
   return null;
 });
 
-/** 用于逐行展示：完整 entries + 当前未闭合的 partialEntry（若有） */
 const displayEntries = computed(() => {
   const data = displayData.value;
   if (!data || !data.entries) return [];
@@ -236,7 +352,6 @@ const displayEntries = computed(() => {
   return list;
 });
 
-/** 打字机展示：pronunciation 与每条 entry 各字段逐字输出 */
 const { displayedPronunciation, displayedEntries } = useTypewriterDisplay(
   () => ({
     pronunciation: displayData.value?.pronunciation ?? "",
@@ -246,21 +361,20 @@ const { displayedPronunciation, displayedEntries } = useTypewriterDisplay(
   { charsPerMs: 15 },
 );
 
-/** 用于渲染：每条 entry 的展示文案为打字机输出（displayedEntries 与 displayEntries 同序） */
 const viewEntries = computed(() =>
   displayEntries.value.map((_, i) => displayedEntries.value[i] ?? {}),
 );
 
 watch(
-  () => [props.selectionText, isWord.value],
-  ([text, word]) => {
+  () => [props.selectionText, isWord.value, isComposerMode.value],
+  ([text, word, composerMode]) => {
+    if (composerMode) return;
     if (word && text) execute(text);
     else if (!word && text) executeSentence(text);
   },
   { immediate: true },
 );
 
-/** 例句高亮：按预处理得到的高亮区间渲染（打字机输出已是纯文本，不再含 **） */
 function renderExampleWithHighlights(displayedExample, ranges) {
   if (!displayedExample || typeof displayedExample !== "string") return "";
   const escapeHtml = (s) =>
@@ -276,8 +390,9 @@ function renderExampleWithHighlights(displayedExample, ranges) {
         })[c],
     );
   const len = displayedExample.length;
-  if (!Array.isArray(ranges) || ranges.length === 0)
+  if (!Array.isArray(ranges) || ranges.length === 0) {
     return escapeHtml(displayedExample);
+  }
   const sorted = [...ranges].sort((a, b) => a.start - b.start);
   let out = "";
   let last = 0;
@@ -295,11 +410,10 @@ function renderExampleWithHighlights(displayedExample, ranges) {
   return out;
 }
 
-// 发音用 AbortController，再次点击或组件卸载时中断
 const pronunciationController = ref(null);
 const exampleController = ref(null);
 const pronunciationLoading = ref(false);
-const exampleLoadingIndex = ref(null); // 当前正在请求的例句下标，null 表示无
+const exampleLoadingIndex = ref(null);
 
 function playPronunciation() {
   const word = props.selectionText?.trim();
@@ -433,6 +547,120 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+.composer_view {
+  display: grid;
+  gap: 12px;
+  min-height: 360px;
+}
+
+.composer_editor {
+  min-height: 272px;
+  border: 1px solid #eef1f4;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.composer_textarea {
+  width: 100%;
+  min-height: 272px;
+  padding: 18px 16px;
+  border: none;
+  outline: none;
+  resize: none;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #1f2937;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.composer_textarea::placeholder {
+  color: #cbd5e1;
+}
+
+.composer_error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff1f2;
+  color: #dc2626;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.composer_actions {
+  display: grid;
+  gap: 12px;
+}
+
+.composer_primary_btn,
+.composer_secondary_btn {
+  border: 1px solid #d9dde5;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.composer_primary_btn {
+  width: 100%;
+  min-height: 52px;
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.composer_secondary_actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.composer_secondary_btn {
+  min-height: 50px;
+  background: #fff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.composer_primary_btn:hover:not(:disabled),
+.composer_secondary_btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.composer_primary_btn:disabled,
+.composer_secondary_btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn_icon {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.btn_icon_blue {
+  color: #5b6df6;
+}
+
+.btn_icon_green {
+  color: #4bb46a;
+}
+
 .word_view {
   .word_loading,
   .word_error {
@@ -536,7 +764,6 @@ onBeforeUnmount(() => {
         font-weight: 600;
       }
 
-      /* 按钮与第一行文本等高、顶对齐，不超出首行 */
       .example_pronunciation_btn {
         flex-shrink: 0;
         display: inline-flex;
@@ -573,7 +800,6 @@ onBeforeUnmount(() => {
 
     .entry_example_translation {
       margin: 0;
-      /* 与 entry_example 内文字左对齐：按钮宽 + 间距 */
       padding-left: calc(1.5em + 6px);
       color: #6b7280;
       font-size: 12px;
@@ -624,7 +850,6 @@ onBeforeUnmount(() => {
     gap: 4px;
   }
 
-  /* 与 pronunciation_btn 播放样式一致 */
   .sentence_actions .action_btn {
     display: inline-flex;
     align-items: center;

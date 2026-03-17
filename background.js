@@ -1,5 +1,6 @@
 // 划词翻译 - 右键菜单
 const TRANSLATE_MENU_ID = "penrose-translate-selection";
+const WORD_SELECTION_TRANSLATE_ENABLED = "word_selection_translate_enabled";
 const CLIPBOARD_MENU_INDEX = "3";
 
 // 豆包 TTS 配置（主配置见 src/translate/config/tts.js，此处为 background 用副本，修改配置请同步两处）
@@ -136,12 +137,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true;
 });
 
-chrome.runtime.onInstalled.addListener(async () => {
-  try {
-    await chrome.contextMenus.remove(TRANSLATE_MENU_ID);
-  } catch (_) {
-    // 不存在则忽略
-  }
+function createTranslateContextMenu() {
   chrome.contextMenus.create(
     {
       id: TRANSLATE_MENU_ID,
@@ -157,6 +153,28 @@ chrome.runtime.onInstalled.addListener(async () => {
       }
     },
   );
+}
+
+function removeTranslateContextMenu() {
+  return chrome.contextMenus.remove(TRANSLATE_MENU_ID).catch(() => {});
+}
+
+function updateTranslateMenuVisibility(enabled) {
+  removeTranslateContextMenu().then(() => {
+    if (enabled) createTranslateContextMenu();
+  });
+}
+
+chrome.runtime.onInstalled.addListener(async () => {
+  const prefs = await chrome.storage.local.get([WORD_SELECTION_TRANSLATE_ENABLED]);
+  const enabled = prefs[WORD_SELECTION_TRANSLATE_ENABLED] === "true";
+  if (enabled) createTranslateContextMenu();
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local" || !changes[WORD_SELECTION_TRANSLATE_ENABLED]) return;
+  const newVal = changes[WORD_SELECTION_TRANSLATE_ENABLED].newValue;
+  updateTranslateMenuVisibility(newVal === "true");
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {

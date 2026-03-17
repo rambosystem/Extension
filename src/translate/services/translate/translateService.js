@@ -6,7 +6,11 @@
 
 import { callDeepSeekAPI, parseNonStreamResponse, streamDeepSeekContent } from "@/api/deepseek.js";
 import { buildRequestBody } from "@/lokalise/services/translation/requestBuilder.js";
-import { TRANSLATE_WORD_PROMPT, TRANSLATE_SENTENCE_PROMPT } from "@/translate/config/prompts.js";
+import {
+  TRANSLATE_WORD_PROMPT,
+  TRANSLATE_SENTENCE_PROMPT,
+  TRANSLATE_TO_ENGLISH_PROMPT,
+} from "@/translate/config/prompts.js";
 
 /**
  * 从 chrome.storage.local 读取划词翻译所需配置（content script 环境）
@@ -231,6 +235,22 @@ export async function* translateSentenceStream(text) {
   }
   const requestBody = buildRequestBody(
     TRANSLATE_SENTENCE_PROMPT,
+    text,
+    config.temperature ?? 0.1,
+    config.maxTokens ?? 8192,
+    true
+  );
+  const response = await callDeepSeekAPI(config.apiKey, requestBody);
+  yield* streamDeepSeekContent(response);
+}
+
+export async function* translateToEnglishStream(text) {
+  const config = await getTranslateConfig();
+  if (!config?.apiKey?.trim()) {
+    throw new Error("DeepSeek API key not found. Please set it in extension options.");
+  }
+  const requestBody = buildRequestBody(
+    TRANSLATE_TO_ENGLISH_PROMPT,
     text,
     config.temperature ?? 0.1,
     config.maxTokens ?? 8192,

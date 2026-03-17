@@ -2,7 +2,7 @@
   <el-container
     class="popup_frame_container"
     direction="vertical"
-    @mousedown.prevent
+    @mousedown="onContainerMouseDown"
   >
     <el-header
       class="popup_header"
@@ -142,6 +142,17 @@ function onHeaderMouseDown(e) {
   };
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);
+}
+
+function onContainerMouseDown(e) {
+  if (
+    e.target.closest(
+      'input, textarea, select, [contenteditable=""], [contenteditable="true"], .allow_text_input',
+    )
+  ) {
+    return;
+  }
+  e.preventDefault();
 }
 </script>
 

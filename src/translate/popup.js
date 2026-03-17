@@ -7,8 +7,13 @@ import TranslatePopup from "./TranslatePopup.vue";
 
 let mountedApp = null;
 let popupRoot = null;
+let outsideClickHandler = null;
 
 export function closeExistingPopup() {
+  if (outsideClickHandler) {
+    document.removeEventListener("click", outsideClickHandler, true);
+    outsideClickHandler = null;
+  }
   if (mountedApp && popupRoot) {
     mountedApp.unmount();
     mountedApp = null;
@@ -40,7 +45,11 @@ function injectPopupContainerStyles() {
  * @param {string} selectionText
  * @param {Range|null} [savedRange] 划词时保存的选区，用于“替换”；不传则尝试用当前选区
  */
-export function showTranslatePopup(selectionText, savedRange = null) {
+export function showTranslatePopup(
+  selectionText = "",
+  savedRange = null,
+  lastFocusedEditable = null,
+) {
   console.log("[Penrose translate] selection:", selectionText);
   closeExistingPopup();
 
@@ -106,13 +115,13 @@ export function showTranslatePopup(selectionText, savedRange = null) {
 
   function onClose() {
     closeExistingPopup();
-    document.removeEventListener("click", onOutsideClick);
   }
 
   mountedApp = createApp(TranslatePopup, {
     selectionText,
     onClose,
     onReplace,
+    lastFocusedEditable,
     pinned: isPinnedRef,
     setPinned,
     onMoveBy,
@@ -120,12 +129,11 @@ export function showTranslatePopup(selectionText, savedRange = null) {
   mountedApp.use(ElementPlus);
   mountedApp.mount(popupRoot);
 
-  function onOutsideClick(e) {
+  outsideClickHandler = (e) => {
     if (isPinnedRef.value) return;
     if (e.target.closest?.(".pin_btn")) return;
     if (popupRoot && popupRoot.contains(e.target)) return;
-    document.removeEventListener("click", onOutsideClick);
     closeExistingPopup();
-  }
-  document.addEventListener("click", onOutsideClick, true);
+  };
+  document.addEventListener("click", outsideClickHandler, true);
 }

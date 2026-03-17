@@ -35,6 +35,20 @@ export const TRANSLATE_WORD_PROMPT = `<System>
   <final_instruction>Output ONE JSON object with pronunciation and entries. Each entry MUST contain part_of_speech, meaning (Simplified Chinese), example (English), and example_translation (Simplified Chinese). No markdown, no extra text.</final_instruction>
 </System>`;
 
+export const TRANSLATE_TO_ENGLISH_PROMPT = `<System>
+  <role>Professional Chinese→English translator</role>
+  <goals>
+    <goal>Translate the user's Chinese or mixed-language markdown content into natural, fluent English.</goal>
+  </goals>
+  <rules>
+    <rule>Output the translated English text ONLY. Do not include explanations, titles, quotes, or prefixes.</rule>
+    <rule>Preserve markdown structure, line breaks, lists, emphasis, code fences, links, and headings whenever they are present.</rule>
+    <rule>If parts are already in clear English, keep them natural and consistent instead of translating them again mechanically.</rule>
+    <rule>Do not wrap the response in markdown code fences and do not add extra formatting.</rule>
+  </rules>
+  <final_instruction>Output ONLY the final English markdown/text content, nothing else.</final_instruction>
+</System>`;
+
 /** 句子翻译：将用户选中的句子/段落译为中文，仅输出译文正文 */
 export const TRANSLATE_SENTENCE_PROMPT = `<System>
   <role>Professional English→Chinese translator</role>

@@ -106,12 +106,28 @@ const handleTranslationClick = () => {
   //     });
   //   }
   // });
-  chrome.storage.local.set(
-    { initialMenu: ROUTE_INDEX.TRANSLATE, currentMenu: ROUTE_INDEX.TRANSLATE },
-    () => {
-      chrome.runtime.openOptionsPage(() => window.close());
-    },
-  );
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]?.id) {
+      window.close();
+      return;
+    }
+    chrome.tabs
+      .sendMessage(tabs[0].id, { action: "showTranslatePopup" })
+      .then(() => {
+        window.close();
+      })
+      .catch(() => {
+        chrome.storage.local.set(
+          {
+            initialMenu: ROUTE_INDEX.TRANSLATE,
+            currentMenu: ROUTE_INDEX.TRANSLATE,
+          },
+          () => {
+            chrome.runtime.openOptionsPage(() => window.close());
+          },
+        );
+      });
+  });
 };
 
 const handleFavoritesClick = () => {
