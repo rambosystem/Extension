@@ -305,7 +305,10 @@ function insertIntoFocused(text) {
   if (!text) return false;
   document.dispatchEvent(
     new CustomEvent("clipboard-paste-to-focused", {
-      detail: { text },
+      detail: {
+        text,
+        target: props.lastFocusedEditable || null,
+      },
     }),
   );
   return true;

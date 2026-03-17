@@ -8,8 +8,23 @@ function isEditable(el) {
   return el.isContentEditable === true;
 }
 
+function isInsidePenrosePopup(el) {
+  if (!el?.closest) return false;
+  return !!el.closest("#penrose-translate-popup, #penrose-clipboard-popup");
+}
+
+function focusEditable(el) {
+  if (!el || typeof el.focus !== "function") return;
+  try {
+    el.focus({ preventScroll: true });
+  } catch (_) {
+    el.focus();
+  }
+}
+
 function insertTextAtCursor(el, text) {
   if (!el || !text) return;
+  focusEditable(el);
   if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
     const start = el.selectionStart ?? el.value.length;
     const end = el.selectionEnd ?? el.value.length;
@@ -31,10 +46,18 @@ function getPasteTarget() {
   return null;
 }
 
+function getExplicitTarget(target) {
+  if (!target?.isConnected) return null;
+  if (!isEditable(target)) return null;
+  return target;
+}
+
 document.addEventListener(
   "focusin",
   (e) => {
-    if (isEditable(e.target)) lastFocusedEditable = e.target;
+    if (isEditable(e.target) && !isInsidePenrosePopup(e.target)) {
+      lastFocusedEditable = e.target;
+    }
   },
   true,
 );
@@ -42,7 +65,8 @@ document.addEventListener(
 document.addEventListener("clipboard-paste-to-focused", (e) => {
   const text = e.detail?.text;
   if (typeof text !== "string") return;
-  const el = getPasteTarget();
+  const explicitTarget = getExplicitTarget(e.detail?.target);
+  const el = explicitTarget || getPasteTarget();
   if (el) insertTextAtCursor(el, text);
 });
 
