@@ -4,6 +4,23 @@ import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
 /** 最近一次划词对应的选区（用于“替换”时修改页面） */
 let lastSelectionRange = null;
 let lastFocusedEditable = null;
+let lastPointer = null;
+let lastPointerAt = 0;
+
+function rememberPointerFromEvent(event) {
+  if (!event) return;
+  const x = Number(event.clientX);
+  const y = Number(event.clientY);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  lastPointer = { x, y };
+  lastPointerAt = Date.now();
+}
+
+function getRecentPointer() {
+  if (!lastPointer) return null;
+  if (Date.now() - lastPointerAt > 5000) return null;
+  return { ...lastPointer };
+}
 
 function isEditable(el) {
   if (!el || !el.tagName) return false;
@@ -26,6 +43,16 @@ document.addEventListener("mouseup", () => {
   }
 });
 
+document.addEventListener("mousemove", rememberPointerFromEvent, {
+  passive: true,
+});
+document.addEventListener("mousedown", rememberPointerFromEvent, {
+  passive: true,
+});
+document.addEventListener("mouseup", rememberPointerFromEvent, {
+  passive: true,
+});
+
 document.addEventListener(
   "focusin",
   (e) => {
@@ -42,7 +69,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const enabled =
           result[STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED] === "true";
         if (enabled) {
-          showTranslatePopup(request.selectionText, lastSelectionRange);
+          showTranslatePopup(
+            request.selectionText,
+            lastSelectionRange,
+            lastFocusedEditable,
+            getRecentPointer(),
+          );
           sendResponse({ ok: true });
         } else {
           sendResponse({ ok: false, reason: "word_selection_translate_disabled" });
@@ -52,7 +84,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   if (request.action === "showTranslatePopup") {
-    showTranslatePopup("", null, lastFocusedEditable);
+    showTranslatePopup("", null, lastFocusedEditable, getRecentPointer());
     sendResponse({ ok: true });
     return true;
   }

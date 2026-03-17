@@ -49,6 +49,7 @@ export function showTranslatePopup(
   selectionText = "",
   savedRange = null,
   lastFocusedEditable = null,
+  anchorPoint = null,
 ) {
   console.log("[Penrose translate] selection:", selectionText);
   closeExistingPopup();
@@ -80,7 +81,7 @@ export function showTranslatePopup(
 
   injectPopupContainerStyles();
 
-  const position = usePopupPosition();
+  const position = usePopupPosition(anchorPoint);
   popupRoot = document.createElement("div");
   popupRoot.id = POPUP_ID;
   popupRoot.style.top = position.top;

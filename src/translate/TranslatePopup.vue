@@ -16,6 +16,7 @@
           v-model="editorText"
           class="composer_textarea"
           placeholder="Enter content..."
+          @keydown="handleComposerKeydown"
         />
       </div>
       <div v-if="composerError" class="composer_error">
@@ -308,6 +309,14 @@ async function translateToEnglish() {
   try {
     await runTranslateToEnglish();
   } catch (_) {}
+}
+
+function handleComposerKeydown(event) {
+  if (event.key !== "Enter") return;
+  if (event.shiftKey || event.isComposing) return;
+  if (!editorText.value.trim()) return;
+  event.preventDefault();
+  translateToEnglish();
 }
 
 function insertIntoFocused(text) {
