@@ -14,7 +14,7 @@
         <textarea
           v-model="editorText"
           class="composer_textarea"
-          placeholder="输入 Markdown 内容..."
+          placeholder="Enter markdown content..."
         />
       </div>
       <div v-if="composerError" class="composer_error">
@@ -23,36 +23,34 @@
       <div class="composer_actions">
         <button
           type="button"
-          class="composer_primary_btn"
-          :disabled="!canOperate || composerLoading"
-          @click="translateAndInsert"
+          class="composer_icon_btn"
+          title="Translate to English"
+          @click="translateToEnglish"
         >
           <el-icon v-if="composerLoading" class="is-loading">
             <Loading />
           </el-icon>
-          <span v-else>✦</span>
-          <span>翻译并插入</span>
+          <img
+            v-else
+            src="@/assets/translate_icon.svg"
+            class="composer_btn_icon"
+            alt=""
+            draggable="false"
+          />
         </button>
-        <div class="composer_secondary_actions">
-          <button
-            type="button"
-            class="composer_secondary_btn"
-            :disabled="!canOperate || composerLoading"
-            @click="translateToEnglish"
-          >
-            <span class="btn_icon btn_icon_blue">文A</span>
-            <span>翻译为英文</span>
-          </button>
-          <button
-            type="button"
-            class="composer_secondary_btn"
-            :disabled="!canInsertText"
-            @click="insertCurrentText"
-          >
-            <span class="btn_icon btn_icon_green">→|</span>
-            <span>插入</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          class="composer_icon_btn"
+          title="Replace"
+          @click="insertCurrentText"
+        >
+          <img
+            src="@/assets/replace.svg"
+            class="composer_btn_icon"
+            alt=""
+            draggable="false"
+          />
+        </button>
       </div>
     </div>
 
@@ -214,6 +212,7 @@
 </template>
 
 <script setup>
+import { ElMessage } from "element-plus";
 import { Loading } from "@element-plus/icons-vue";
 import { watch, computed, ref, onBeforeUnmount, isRef, unref } from "vue";
 import PopupFrame from "@/components/PopupFrame.vue";
@@ -254,12 +253,15 @@ const {
 } = useTranslateSentence();
 const { copy: copyToFavorites } = useFavorites();
 
-const canOperate = computed(() => !!editorText.value.trim());
-const canInsertText = computed(() => !!editorText.value.trim());
-
 function isPinnedActive() {
   if (isRef(props.pinned)) return !!props.pinned.value;
   return !!unref(props.pinned);
+}
+
+function ensureEditorText() {
+  if (editorText.value.trim()) return true;
+  ElMessage.warning("Please enter markdown content first.");
+  return false;
 }
 
 function copyTranslation() {
@@ -292,7 +294,8 @@ async function runTranslateToEnglish() {
 }
 
 async function translateToEnglish() {
-  if (!canOperate.value) return;
+  if (composerLoading.value) return;
+  if (!ensureEditorText()) return;
   try {
     await runTranslateToEnglish();
   } catch (_) {}
@@ -310,7 +313,10 @@ function insertIntoFocused(text) {
 
 function insertCurrentText() {
   const text = editorText.value.trim();
-  if (!text) return;
+  if (!text) {
+    ensureEditorText();
+    return;
+  }
   insertIntoFocused(text);
   if (!isPinnedActive()) {
     props.onClose?.();
@@ -318,7 +324,8 @@ function insertCurrentText() {
 }
 
 async function translateAndInsert() {
-  if (!canOperate.value) return;
+  if (composerLoading.value) return;
+  if (!ensureEditorText()) return;
   try {
     const translated = await runTranslateToEnglish();
     if (!translated) return;
@@ -549,21 +556,25 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .composer_view {
   display: grid;
+  grid-template-rows: 1fr auto;
   gap: 12px;
-  min-height: 360px;
+  min-height: 200px;
 }
 
 .composer_editor {
-  min-height: 272px;
+  min-height: 200px;
   border: 1px solid #eef1f4;
-  border-radius: 14px;
+  border-radius: 8px;
   background: #fff;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .composer_textarea {
   width: 100%;
-  min-height: 272px;
+  flex: 1;
+  min-height: 200px;
   padding: 18px 16px;
   border: none;
   outline: none;
@@ -590,75 +601,42 @@ onBeforeUnmount(() => {
 }
 
 .composer_actions {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
 }
 
-.composer_primary_btn,
-.composer_secondary_btn {
-  border: 1px solid #d9dde5;
-  border-radius: 16px;
+.composer_icon_btn {
+  width: 28x;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  background: #e5e7eb;
+  color: #6b7280;
   cursor: pointer;
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease,
-    background-color 0.18s ease;
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
-.composer_primary_btn {
-  width: 100%;
-  min-height: 52px;
-  border-color: #111827;
-  background: #111827;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
+.composer_icon_btn:hover:not(:disabled) {
+  background: #d1d5db;
+  color: #374151;
 }
 
-.composer_secondary_actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.composer_secondary_btn {
-  min-height: 50px;
-  background: #fff;
-  color: #334155;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.composer_primary_btn:hover:not(:disabled),
-.composer_secondary_btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
-}
-
-.composer_primary_btn:disabled,
-.composer_secondary_btn:disabled {
+.composer_icon_btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-.btn_icon {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.btn_icon_blue {
-  color: #5b6df6;
-}
-
-.btn_icon_green {
-  color: #4bb46a;
+.composer_btn_icon {
+  width: 18px;
+  height: 18px;
 }
 
 .word_view {
