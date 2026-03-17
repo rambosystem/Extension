@@ -12,9 +12,10 @@
     <div v-if="isComposerMode" class="composer_view">
       <div class="composer_editor allow_text_input">
         <textarea
+          ref="composerTextareaRef"
           v-model="editorText"
           class="composer_textarea"
-          placeholder="Enter markdown content..."
+          placeholder="Enter content..."
         />
       </div>
       <div v-if="composerError" class="composer_error">
@@ -214,7 +215,16 @@
 <script setup>
 import { ElMessage } from "element-plus";
 import { Loading } from "@element-plus/icons-vue";
-import { watch, computed, ref, onBeforeUnmount, isRef, unref } from "vue";
+import {
+  watch,
+  computed,
+  ref,
+  onBeforeUnmount,
+  onMounted,
+  nextTick,
+  isRef,
+  unref,
+} from "vue";
 import PopupFrame from "@/components/PopupFrame.vue";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import { checkIsWord } from "./domUtils.js";
@@ -225,9 +235,7 @@ import { speak } from "./speechSynthesis.js";
 import { playWithDoubao } from "./doubaoTts.js";
 import { STORAGE_KEYS } from "./config/tts.js";
 import { useFavorites } from "@/lokalise/composables/translate/useClipboard.js";
-import {
-  translateToEnglish as translateToEnglishOnce,
-} from "./services/translate/translateService.js";
+import { translateToEnglish as translateToEnglishOnce } from "./services/translate/translateService.js";
 
 const props = defineProps({
   onClose: { type: Function, required: true },
@@ -242,6 +250,7 @@ const props = defineProps({
 
 const isComposerMode = computed(() => !props.selectionText?.trim());
 const isWord = computed(() => checkIsWord(props.selectionText));
+const composerTextareaRef = ref(null);
 
 const editorText = ref("");
 const composerLoading = ref(false);
@@ -312,6 +321,22 @@ function insertIntoFocused(text) {
     }),
   );
   return true;
+}
+
+async function focusComposerInput() {
+  if (!isComposerMode.value) return;
+  await nextTick();
+  const el = composerTextareaRef.value;
+  if (!el || typeof el.focus !== "function") return;
+  try {
+    el.focus({ preventScroll: true });
+  } catch (_) {
+    el.focus();
+  }
+  if (typeof el.setSelectionRange === "function") {
+    const len = (el.value || "").length;
+    el.setSelectionRange(len, len);
+  }
 }
 
 function insertCurrentText() {
@@ -553,6 +578,10 @@ onBeforeUnmount(() => {
   if (exampleController.value) {
     exampleController.value.abort();
   }
+});
+
+onMounted(() => {
+  focusComposerInput();
 });
 </script>
 
