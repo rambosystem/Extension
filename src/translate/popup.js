@@ -4,6 +4,7 @@ import "element-plus/dist/index.css";
 import { POPUP_ID } from "./constants.js";
 import { usePopupPosition } from "@/lokalise/composables/translate/usePopupPosition.js";
 import TranslatePopup from "./TranslatePopup.vue";
+import { debugLog } from "@/utils/debug.js";
 
 let mountedApp = null;
 let popupRoot = null;
@@ -51,7 +52,7 @@ export function showTranslatePopup(
   lastFocusedEditable = null,
   anchorPoint = null,
 ) {
-  console.log("[Penrose translate] selection:", selectionText);
+  debugLog("[Penrose translate] selection:", selectionText);
   closeExistingPopup();
 
   let rangeToReplace = savedRange;

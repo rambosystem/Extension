@@ -11,6 +11,7 @@ import { useTranslationCoreStore } from "./translation/core.js";
 import { t } from "@/utils/i18n.js";
 import { debugLog, debugError } from "@/utils/debug.js";
 import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
+import { parseKey } from "@/utils/keyGenerator.js";
 import {
   getLocalItem,
   piniaLocalStorage,
@@ -58,7 +59,7 @@ export const useUploadStore = defineStore("upload", {
      * @param {boolean} loading - 加载状态
      */
     setLoading(key, loading) {
-      if (this.loadingStates.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(this.loadingStates, key)) {
         this.loadingStates[key] = loading;
       }
     },
@@ -497,21 +498,6 @@ export const useUploadStore = defineStore("upload", {
     },
 
     /**
-     * 解析 key 格式（如 "key1", "item5"）
-     * @param {string} key - key 字符串
-     * @returns {Object|null} { prefix: string, number: number } 或 null
-     */
-    parseKey(key) {
-      if (!key || typeof key !== "string") return null;
-      const match = key.trim().match(/^([a-zA-Z]+)(\d+)$/);
-      if (!match) return null;
-      return {
-        prefix: match[1],
-        number: parseInt(match[2], 10),
-      };
-    },
-
-    /**
      * 计算下一个 baseline key
      * 基于 translationResult 中使用的最大 key 值
      * @param {Array} translationResult - 翻译结果数组
@@ -540,7 +526,7 @@ export const useUploadStore = defineStore("upload", {
       }
 
       // 解析当前的 baseline key
-      const parsed = this.parseKey(currentBaselineKey.trim());
+      const parsed = parseKey(currentBaselineKey.trim());
       if (!parsed) {
         debugError(
           "[UploadStore] Invalid baseline key format:",
@@ -556,7 +542,7 @@ export const useUploadStore = defineStore("upload", {
       translationResult.forEach((row) => {
         const key = row?.key;
         if (key && typeof key === "string" && key.trim()) {
-          const keyParsed = this.parseKey(key.trim());
+          const keyParsed = parseKey(key.trim());
           if (
             keyParsed &&
             keyParsed.prefix.toLowerCase() === prefix.toLowerCase()

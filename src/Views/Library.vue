@@ -48,6 +48,7 @@ import LibraryFilter from "@/components/library/LibraryFilter.vue";
 import LibraryTable from "@/components/library/LibraryTable.vue";
 import LibraryTableConfig from "@/components/library/LibraryTableConfig.vue";
 import { useLibraryStore } from "@/lokalise/stores/library.js";
+import { debugLog } from "@/utils/debug.js";
 
 const { t } = useI18n();
 const libraryStore = useLibraryStore();
@@ -87,7 +88,7 @@ const handleSearch = async () => {
  */
 const handleOperation = (row) => {
   // 操作功能待实现
-  console.log("Operation clicked for row:", row);
+  debugLog("Operation clicked for row:", row);
 };
 
 /**

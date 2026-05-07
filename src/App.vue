@@ -87,22 +87,6 @@ const handleLokaliseClick = () => {
 };
 
 const handleTranslationClick = () => {
-  // 注掉侧边栏，直接跳转�?Translate Setting
-  // chrome.windows.getCurrent((win) => {
-  //   if (win?.id != null && chrome.sidePanel?.open) {
-  //     chrome.sidePanel.open({ windowId: win.id }).then(() => {
-  //       window.close();
-  //     }).catch(() => {
-  //       chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-  //         chrome.runtime.openOptionsPage(() => window.close());
-  //       });
-  //     });
-  //   } else {
-  //     chrome.storage.local.set({ initialMenu: "2", currentMenu: "2" }, () => {
-  //       chrome.runtime.openOptionsPage(() => window.close());
-  //     });
-  //   }
-  // });
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]?.id) {
       window.close();

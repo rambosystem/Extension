@@ -97,7 +97,7 @@ export const useTranslationCoreStore = defineStore("translationCore", {
      * @param {boolean} loading - 是否加载中
      */
     setLoading(key, loading) {
-      if (this.loadingStates.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(this.loadingStates, key)) {
         this.loadingStates[key] = loading;
       }
     },

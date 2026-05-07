@@ -30,21 +30,3 @@ export async function validateDeepSeekApiKey(apiKey) {
     return false;
   }
 }
-
-/**
- * 验证URL格式是否正确
- * @param {string} url - 待验证的URL
- * @returns {boolean} - 验证结果
- */
-export function validateUrl(url) {
-  if (!url?.trim()) {
-    return false;
-  }
-
-  try {
-    new URL(url.trim());
-    return true;
-  } catch {
-    return false;
-  }
-}

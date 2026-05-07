@@ -4,8 +4,8 @@
  */
 
 import { debugLog } from "@/utils/debug.js";
-
-const DEEPSEEK_API_BASE_URL = "https://api.deepseek.com/v1/chat/completions";
+import { DEEPSEEK_API_BASE as DEEPSEEK_API_BASE_URL } from "@/lokalise/config/endpoints.js";
+import { parseSSELine } from "./sseLineParser.js";
 
 /**
  * 发送 DeepSeek API 请求
@@ -74,20 +74,6 @@ export async function* streamDeepSeekContent(response) {
     return "";
   };
 
-  const parseDataLine = (line) => {
-    const s = line.trim();
-    if (!s || s === "data: [DONE]") return "";
-    if (!s.startsWith("data:")) return "";
-    const payload = s.slice(5).trim();
-    if (!payload || payload === "[DONE]") return "";
-    try {
-      const data = JSON.parse(payload);
-      return extractContent(data);
-    } catch (_) {
-      return "";
-    }
-  };
-
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -97,18 +83,19 @@ export async function* streamDeepSeekContent(response) {
     const lines = buffer.split(/\r?\n/);
     buffer = lines.pop() ?? "";
     for (const line of lines) {
-      const content = parseDataLine(line);
-      if (content) {
+      const parsed = parseSSELine(line);
+      if (parsed.done) continue;
+      if (parsed.content) {
         yielded = true;
-        yield content;
+        yield parsed.content;
       }
     }
   }
   if (buffer.trim()) {
-    const content = parseDataLine(buffer);
-    if (content) {
+    const parsed = parseSSELine(buffer);
+    if (!parsed.done && parsed.content) {
       yielded = true;
-      yield content;
+      yield parsed.content;
     }
   }
   if (yielded) return;

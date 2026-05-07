@@ -3,8 +3,10 @@
  * 纯 HTTP 通信层，只负责网络请求，不包含业务逻辑
  */
 
-const API_BASE_URL = "http://43.142.250.179:8000";
-const Public_Account_ID = "1";
+import {
+  TERMS_API_BASE as API_BASE_URL,
+  PUBLIC_ACCOUNT_ID as Public_Account_ID,
+} from "@/lokalise/config/endpoints.js";
 
 /**
  * 获取用户terms状态信息

@@ -356,7 +356,7 @@ export function useTranslation() {
     return translationResult.map((row) => {
       const data = {};
       columns.forEach((col) => {
-        if (row.hasOwnProperty(col)) {
+        if (Object.prototype.hasOwnProperty.call(row, col)) {
           data[col] = row[col];
         }
       });

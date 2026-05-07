@@ -4,12 +4,10 @@
  */
 
 import {
-  TTS_API_URL,
-  X_API_RESOURCE_ID,
-  DEFAULT_APP_ID,
-  DEFAULT_ACCESS_TOKEN,
   DEFAULT_VOICE_TYPE,
   STORAGE_KEYS,
+  DEFAULT_APP_ID,
+  DEFAULT_ACCESS_TOKEN,
 } from "./config/tts.js";
 
 const MAX_TTS_CACHE_SIZE = 50;
@@ -117,19 +115,15 @@ function fetchTtsViaBackground({
 }
 
 /**
- * 请求豆包 TTS，返回可播放的 blob URL；无有效凭证时返回 null
- * 在 content script 环境下走 background 代理以绕过 CORS
+ * 请求豆包 TTS，返回可播放的 blob URL；无法通过 background 获取时返回 null。
+ * 扩展环境下始终通过 background service worker 代理以绕过 content script 的 CORS。
  */
 async function fetchTtsAudioUrl({
   text,
-  appId,
-  accessToken,
   voiceType,
   speedRatio,
   encoding = "mp3",
-  signal,
 }) {
-  // 走 background 代理，避免 content script 下 CORS
   if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
     const blobUrl = await fetchTtsViaBackground({
       text,
@@ -139,85 +133,7 @@ async function fetchTtsAudioUrl({
     });
     return blobUrl;
   }
-
-  const cred =
-    appId != null && accessToken != null
-      ? { appId: String(appId).trim(), accessToken: String(accessToken).trim() }
-      : await getCredentials();
-  const appIdVal = cred.appId || DEFAULT_APP_ID;
-  const token = cred.accessToken || DEFAULT_ACCESS_TOKEN;
-  if (!appIdVal || !token) return null;
-
-  const speechRate = Math.max(
-    -50,
-    Math.min(100, Math.round((speedRatio - 1) * 100)),
-  );
-  const body = {
-    user: { uid: "penrose-tts" },
-    req_params: {
-      text: text.trim(),
-      speaker: voiceType || DEFAULT_VOICE_TYPE,
-      audio_params: { format: encoding, sample_rate: 24000 },
-      speech_rate: speechRate,
-    },
-  };
-
-  const res = await fetch(TTS_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Api-App-Id": appIdVal,
-      "X-Api-Access-Key": token,
-      "X-Api-Resource-Id": X_API_RESOURCE_ID,
-    },
-    body: JSON.stringify(body),
-    signal,
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`TTS request failed: ${res.status} ${errText}`);
-  }
-
-  const chunks = [];
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let streamDone = false;
-  while (!streamDone) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-    for (const line of lines) {
-      const s = line.trim();
-      if (!s) continue;
-      try {
-        const json = JSON.parse(s);
-        if (json.code === 20000000) {
-          streamDone = true;
-          break;
-        }
-        if (json.data) chunks.push(json.data);
-        if (json.code && json.code !== 0)
-          throw new Error(json.message || `code ${json.code}`);
-      } catch (e) {
-        if (e instanceof Error && e.message.startsWith("code")) throw e;
-      }
-    }
-  }
-  if (!streamDone && buffer.trim()) {
-    try {
-      const json = JSON.parse(buffer.trim());
-      if (json.data) chunks.push(json.data);
-    } catch (_) {}
-  }
-  const b64 = chunks.join("");
-  if (!b64) throw new Error("TTS response has no audio data");
-  const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  const blob = new Blob([bin], { type: `audio/${encoding}` });
-  return URL.createObjectURL(blob);
+  return null;
 }
 
 function playViaExtensionIframe({
@@ -428,11 +344,8 @@ export async function playWithDoubao({
     try {
       blobUrl = await fetchTtsAudioUrl({
         text: text.trim(),
-        appId,
-        accessToken,
         voiceType,
         speedRatio: playbackRate,
-        signal,
       });
       if (blobUrl) setTtsCache(cacheKey, blobUrl);
     } catch (e) {

@@ -6,7 +6,6 @@ import { STORAGE_KEYS } from "../../config/storageKeys.js";
 import {
   getLocalItem,
   piniaLocalStorage,
-  setChromeLocal,
   setLocalItem,
 } from "../../infrastructure/storage.js";
 
@@ -99,7 +98,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
      * @param {boolean} loading - 加载状态
      */
     setLoading(key, loading) {
-      if (this.loadingStates.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(this.loadingStates, key)) {
         this.loadingStates[key] = loading;
       }
     },
@@ -125,7 +124,7 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
      * @param {any} value - 设置值
      */
     updateSetting(key, value) {
-      if (this.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(this, key)) {
         this[key] = value;
 
         // 保存到localStorage
@@ -152,9 +151,6 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
     toggleWordSelectionTranslate(enabled) {
       this.wordSelectionTranslate = enabled;
       setLocalItem(STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED, enabled);
-      setChromeLocal({
-        [STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED]: String(enabled),
-      });
     },
 
     /**
@@ -179,12 +175,6 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
         if (wordSelectionTranslate !== null) {
           this.wordSelectionTranslate = wordSelectionTranslate === "true";
         }
-        // 同步到 chrome.storage 供 content script 读取
-        setChromeLocal({
-          [STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED]: String(
-            this.wordSelectionTranslate,
-          ),
-        });
 
         // 术语匹配参数与翻译温度使用 config，不从 localStorage 读取
         this.similarityThreshold = TRANSLATION_CONFIG.similarityThreshold;
@@ -238,9 +228,6 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
       // 同步重置的设置到localStorage（术语匹配与翻译温度来自 config，不写入 localStorage）
       setLocalItem(STORAGE_KEYS.AUTO_DEDUPLICATION_ENABLED, false);
       setLocalItem(STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED, false);
-      setChromeLocal({
-        [STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED]: "false",
-      });
       setLocalItem(STORAGE_KEYS.DEDUPLICATE_PROJECT_SELECTION, "Common");
 
       // 注意：不重置 adTerms 与 debugLogging

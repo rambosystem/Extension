@@ -98,6 +98,7 @@ import { useUploadStore } from "@/lokalise/stores/upload.js";
 import { Loading } from "@element-plus/icons-vue";
 import { computed, ref, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { ElMessage } from "element-plus";
+import { parseKey } from "@/utils/keyGenerator.js";
 
 const { t } = useI18n();
 
@@ -316,7 +317,7 @@ const getFieldValue = (item, fieldName) => {
   if (fieldName.startsWith("editing_")) return "";
 
   // 精确匹配
-  if (item.hasOwnProperty(fieldName)) {
+  if (Object.prototype.hasOwnProperty.call(item, fieldName)) {
     return item[fieldName] || "";
   }
 
@@ -515,18 +516,8 @@ const customMenuItems = computed(() => {
  * @param {string} key - key 字符串（�?"key1", "a5"�?
  * @returns {Object|null} { prefix: string, number: number } �?null
  */
-const parseKey = (key) => {
-  if (!key || typeof key !== "string") return null;
-  const match = key.trim().match(/^([a-zA-Z]+)(\d+)$/);
-  if (!match) return null;
-  return {
-    prefix: match[1],
-    number: parseInt(match[2], 10),
-  };
-};
-
 /**
- * 获取所有已使用�?key 列表
+ * 获取所有已使用的 key 列表
  * @returns {Set<string>} 已使用的 key 集合
  */
 const getUsedKeys = () => {

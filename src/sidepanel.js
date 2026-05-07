@@ -4,8 +4,14 @@ import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import Sidepanel from "@/views/Sidepanel.vue";
 import pinia from "@/lokalise/stores";
+import { hydrateFromChromeStorage } from "@/lokalise/infrastructure/storage.js";
 
-const app = createApp(Sidepanel);
-app.use(ElementPlus);
-app.use(pinia);
-app.mount("#app");
+async function bootstrap() {
+  await hydrateFromChromeStorage();
+  const app = createApp(Sidepanel);
+  app.use(ElementPlus);
+  app.use(pinia);
+  app.mount("#app");
+}
+
+bootstrap();

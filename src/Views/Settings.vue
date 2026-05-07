@@ -96,10 +96,10 @@ watch(
 
 const formRef = ref();
 
-// 添加缺失的事件处理函�?
+// 添加缺失的事件处理函数
 const handleSaveAPIKey = async (saveData) => {
   await apiStore.saveApiKey(saveData);
-  // 保存成功后，本地变量会自动通过watch同步，但为了确保一致性，也更新一�?
+  // 保存成功后，本地变量会自动通过 watch 同步，但为了确保一致性，也更新一次
   localApiKey.value = apiStore.apiKey || "";
 };
 
@@ -156,7 +156,7 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-/* 按钮容器样式 - 右对�?*/
+/* 按钮容器样式 - 右对齐 */
 .button-container {
   width: 100%;
   display: flex;

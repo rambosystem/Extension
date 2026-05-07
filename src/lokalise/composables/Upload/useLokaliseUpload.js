@@ -1,4 +1,4 @@
-import { ElMessage } from "element-plus";
+﻿import { ElMessage } from "element-plus";
 import { t } from "@/utils/i18n.js";
 import { useApiStore } from "@/lokalise/stores/settings/api.js";
 import { useUploadStore } from "@/lokalise/stores/upload.js";
@@ -11,6 +11,8 @@ import { ref, reactive } from "vue";
 import { uploadTranslationKeys } from "@/lokalise/services/translation/index.js";
 import { searchKeysByNames } from "@/lokalise/services/deduplicate/deduplicateService.js";
 import { STORAGE_KEYS } from "@/lokalise/config/storageKeys.js";
+import { debugLog } from "@/utils/debug.js";
+import { parseKey } from "@/utils/keyGenerator.js";
 import {
   getLocalItem,
   setLocalItem,
@@ -129,21 +131,6 @@ export function useLokaliseUpload() {
   };
 
   /**
-   * 解析 key 格式（如 "key1", "item5"）
-   * @param {string} key - key 字符串
-   * @returns {Object|null} { prefix: string, number: number } 或 null
-   */
-  const parseKey = (key) => {
-    if (!key || typeof key !== "string") return null;
-    const match = key.trim().match(/^([a-zA-Z]+)(\d+)$/);
-    if (!match) return null;
-    return {
-      prefix: match[1],
-      number: parseInt(match[2], 10),
-    };
-  };
-
-  /**
    * 计算下一个 baseline key
    * 基于 translationResult 中使用的最大 key 值
    * @param {Array} translationResult - 翻译结果数组
@@ -151,7 +138,7 @@ export function useLokaliseUpload() {
    */
   const calculateNextBaselineKey = (translationResult) => {
     if (!translationResult || translationResult.length === 0) {
-      console.log(
+      debugLog(
         "[useLokaliseUpload] No translation result provided for baseline key calculation"
       );
       return null;
@@ -165,7 +152,7 @@ export function useLokaliseUpload() {
 
     // 如果没有当前的 baseline key，无法计算下一个
     if (!currentBaselineKey || !currentBaselineKey.trim()) {
-      console.log(
+      debugLog(
         "[useLokaliseUpload] No current baseline key found, cannot calculate next"
       );
       return null;
@@ -198,7 +185,7 @@ export function useLokaliseUpload() {
       }
     });
 
-    console.log("[useLokaliseUpload] Baseline key calculation:", {
+    debugLog("[useLokaliseUpload] Baseline key calculation:", {
       currentBaselineKey,
       prefix,
       baselineNumber,
@@ -208,7 +195,7 @@ export function useLokaliseUpload() {
 
     // 如果没有找到已使用的 key，保持当前的 baseline key
     if (usedNumbers.size === 0) {
-      console.log(
+      debugLog(
         "[useLokaliseUpload] No matching keys found, keeping current baseline key"
       );
       return currentBaselineKey;
@@ -222,7 +209,7 @@ export function useLokaliseUpload() {
     const nextNumber = Math.max(maxUsedNumber + 1, baselineNumber);
     const nextBaselineKey = `${prefix}${nextNumber}`;
 
-    console.log("[useLokaliseUpload] Calculated next baseline key:", {
+    debugLog("[useLokaliseUpload] Calculated next baseline key:", {
       maxUsedNumber,
       nextNumber,
       nextBaselineKey,
@@ -235,13 +222,13 @@ export function useLokaliseUpload() {
    * 清空baseline key
    */
   const clearBaselineKey = async () => {
-    console.log("[useLokaliseUpload] clearBaselineKey called");
+    debugLog("[useLokaliseUpload] clearBaselineKey called");
     try {
       // 使用 store 的方法清空 baseline key
       const exportStore = useExportStore();
-      console.log("[useLokaliseUpload] Clearing baseline key...");
+      debugLog("[useLokaliseUpload] Clearing baseline key...");
       await exportStore.saveExcelBaselineKey("");
-      console.log("[useLokaliseUpload] Baseline key cleared successfully");
+      debugLog("[useLokaliseUpload] Baseline key cleared successfully");
 
       // 触发事件通知其他组件baseline key已被清空
       if (typeof window !== "undefined") {
@@ -257,7 +244,7 @@ export function useLokaliseUpload() {
    * @param {Array} translationResult - 翻译结果数组
    */
   const updateBaselineKey = async (translationResult) => {
-    console.log("[useLokaliseUpload] updateBaselineKey called", {
+    debugLog("[useLokaliseUpload] updateBaselineKey called", {
       translationResult,
       translationResultLength: translationResult?.length,
       translationResultType: typeof translationResult,
@@ -268,7 +255,7 @@ export function useLokaliseUpload() {
       const exportStore = useExportStore();
       const nextBaselineKey = calculateNextBaselineKey(translationResult);
 
-      console.log("[useLokaliseUpload] Calculating next baseline key:", {
+      debugLog("[useLokaliseUpload] Calculating next baseline key:", {
         translationResultLength: translationResult?.length,
         nextBaselineKey,
         currentBaselineKey:
@@ -281,7 +268,7 @@ export function useLokaliseUpload() {
         const success = await exportStore.saveExcelBaselineKey(nextBaselineKey);
 
         if (success) {
-          console.log(
+          debugLog(
             "[useLokaliseUpload] Baseline key updated successfully:",
             nextBaselineKey
           );
@@ -311,7 +298,7 @@ export function useLokaliseUpload() {
                 attemptKey
               );
               if (attemptSuccess) {
-                console.log(
+                debugLog(
                   "[useLokaliseUpload] Baseline key updated to alternative:",
                   attemptKey
                 );
@@ -335,7 +322,7 @@ export function useLokaliseUpload() {
           );
         }
       } else {
-        console.log(
+        debugLog(
           "[useLokaliseUpload] Cannot calculate next baseline key, clearing it"
         );
         // 如果无法计算下一个值，则清空
@@ -526,7 +513,7 @@ export function useLokaliseUpload() {
       isUploadSuccess.value = true;
 
       // 上传完成后更新baseline key为下一个可用值
-      console.log(
+      debugLog(
         "[useLokaliseUpload] Upload successful, updating baseline key...",
         {
           filteredResultLength: filteredResult?.length,
@@ -534,7 +521,7 @@ export function useLokaliseUpload() {
         }
       );
       await updateBaselineKey(filteredResult);
-      console.log("[useLokaliseUpload] Baseline key update completed");
+      debugLog("[useLokaliseUpload] Baseline key update completed");
     } catch (error) {
       // 显示详细的错误信息
       const errorMessage =

@@ -3,7 +3,7 @@
  * 纯 HTTP 通信层，只负责网络请求，不包含业务逻辑
  */
 
-const API_BASE_URL = "http://43.142.250.179:8000";
+import { TERMS_API_BASE as API_BASE_URL } from "@/lokalise/config/endpoints.js";
 
 /**
  * 自动补全查询接口
@@ -13,7 +13,7 @@ const API_BASE_URL = "http://43.142.250.179:8000";
  * @returns {Promise<Response>} Fetch Response 对象
  */
 export async function fetchAutocompleteKeys(projectId, query, limit = 5) {
-  const url = `${API_BASE_URL}/lokalise/autocomplete/keys?project_id=${projectId}&query=${query}&limit=${limit}`;
+  const url = `${API_BASE_URL}/lokalise/autocomplete/keys?project_id=${encodeURIComponent(projectId)}&query=${encodeURIComponent(query)}&limit=${limit}`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -31,7 +31,7 @@ export async function fetchAutocompleteKeys(projectId, query, limit = 5) {
  * @returns {Promise<Response>} Fetch Response 对象
  */
 export async function fetchAutocompleteTags(projectId, query, limit = 5) {
-  const url = `${API_BASE_URL}/lokalise/autocomplete/tags?project_id=${projectId}&query=${query}&limit=${limit}`;
+  const url = `${API_BASE_URL}/lokalise/autocomplete/tags?project_id=${encodeURIComponent(projectId)}&query=${encodeURIComponent(query)}&limit=${limit}`;
   const response = await fetch(url);
 
   if (!response.ok) {

@@ -16,7 +16,6 @@ import {
   getChromeLocal,
   piniaLocalStorage,
   removeChromeLocal,
-  setChromeLocal,
   setLocalItem,
 } from "../infrastructure/storage.js";
 
@@ -64,7 +63,7 @@ export const useAppStore = defineStore("app", {
     setCurrentMenu(menuIndex) {
       const normalizedMenu = normalizeMenuIndex(menuIndex);
       this.currentMenu = normalizedMenu;
-      setChromeLocal({ [STORAGE_KEYS.CURRENT_MENU]: normalizedMenu });
+      setLocalItem(STORAGE_KEYS.CURRENT_MENU, normalizedMenu);
     },
 
     /** 设置全局加载状态 */
@@ -117,9 +116,7 @@ export const useAppStore = defineStore("app", {
         if (initialMenu != null && VALID_MENU_INDEX.has(String(initialMenu))) {
           this.currentMenu = String(initialMenu);
           await removeChromeLocal(STORAGE_KEYS.INITIAL_MENU);
-          await setChromeLocal({
-            [STORAGE_KEYS.CURRENT_MENU]: this.currentMenu,
-          });
+          setLocalItem(STORAGE_KEYS.CURRENT_MENU, this.currentMenu);
         } else if (
           currentMenu != null &&
           VALID_MENU_INDEX.has(String(currentMenu))

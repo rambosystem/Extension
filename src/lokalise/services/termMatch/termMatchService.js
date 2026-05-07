@@ -7,8 +7,7 @@ import {
   fetchTermMatch,
   fetchRebuildAllUserEmbeddings,
 } from "../../api/termMatch.js";
-
-const API_BASE_URL = "http://43.142.250.179:8000";
+import { TERMS_API_BASE as API_BASE_URL } from "@/lokalise/config/endpoints.js";
 
 /**
  * 验证术语匹配参数

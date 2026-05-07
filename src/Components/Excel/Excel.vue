@@ -182,13 +182,13 @@ const emit = defineEmits<{
   "custom-action": [payload: { id: string; context: MenuContext }];
 }>();
 
-// --- 1. 统一状态管�?---
-// 创建统一状态管理，整合核心状�?
+// --- 1. 统一状态管理 ---
+// 创建统一状态管理，整合核心状态
 const excelState = useExcelState({
   initialData: props.modelValue,
 });
 
-// 从统一状态获取数据引�?
+// 从统一状态获取数据引用
 const { tableData, columns: internalColumns, rows } = excelState.data;
 
 // 滚动步进控制：确保每次滚动对齐整行高度

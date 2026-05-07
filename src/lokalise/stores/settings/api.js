@@ -8,12 +8,11 @@ import { ElMessage } from "element-plus";
 import { t } from "@/utils/i18n.js";
 import { validateDeepSeekApiKey } from "@/utils/apiValidation.js";
 import { STORAGE_KEYS } from "../../config/storageKeys.js";
+import { validateApiToken } from "@/lokalise/api/lokalise.js";
 import {
   getLocalItem,
   piniaLocalStorage,
-  removeChromeLocal,
   removeLocalItem,
-  setChromeLocal,
   setLocalItem,
 } from "../../infrastructure/storage.js";
 
@@ -73,11 +72,10 @@ export const useApiStore = defineStore("api", {
             throw new Error("Failed to save API Key");
           }
 
-          this.apiKey = apiKey;
-          await setChromeLocal({ [STORAGE_KEYS.DEEPSEEK_API_KEY]: apiKey });
-        });
+        this.apiKey = apiKey;
+      });
 
-        onSuccess();
+      onSuccess();
       } catch (error) {
         console.error("API Key validation failed:", error);
         onError(error.message || "API Key validation failed");
@@ -100,9 +98,6 @@ export const useApiStore = defineStore("api", {
         const normalizedApiKey = apiKey.trim();
         setLocalItem(STORAGE_KEYS.DEEPSEEK_API_KEY, normalizedApiKey);
         this.apiKey = normalizedApiKey;
-        await setChromeLocal({
-          [STORAGE_KEYS.DEEPSEEK_API_KEY]: normalizedApiKey,
-        });
       });
 
       ElMessage.success(t("messages.apiKeySavedSuccessfully"));
@@ -118,20 +113,12 @@ export const useApiStore = defineStore("api", {
         throw new Error("Lokalise API token cannot be empty");
       }
 
-      const response = await fetch("https://api.lokalise.com/api2/projects", {
-        method: "GET",
-        headers: {
-          "X-Api-Token": token.trim(),
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      let response;
+      try {
+        response = await validateApiToken(token.trim());
+      } catch (err) {
         throw new Error(
-          `Failed to validate token: ${response.status} ${response.statusText}. ${
-            errorData.error?.message || "Please check your token permissions"
-          }`,
+          `Failed to validate token: ${err?.message || "Please check your token permissions"}`,
         );
       }
 
@@ -222,13 +209,12 @@ export const useApiStore = defineStore("api", {
       }
     },
 
-    /** 从 storage 加载 API Key、Token 到 state（含同步到 chrome.storage） */
+    /** 从 storage 加载 API Key、Token 到 state */
     initializeApiSettings() {
       try {
         const apiKey = getLocalItem(STORAGE_KEYS.DEEPSEEK_API_KEY, "");
         if (apiKey) {
           this.apiKey = apiKey;
-          setChromeLocal({ [STORAGE_KEYS.DEEPSEEK_API_KEY]: apiKey });
         }
 
         const lokaliseToken = getLocalItem(STORAGE_KEYS.LOKALISE_API_TOKEN, "");
@@ -245,7 +231,6 @@ export const useApiStore = defineStore("api", {
         removeLocalItem(STORAGE_KEYS.LOKALISE_API_TOKEN);
         removeLocalItem(STORAGE_KEYS.LOKALISE_PROJECTS);
         removeLocalItem("api-store");
-        removeChromeLocal([STORAGE_KEYS.DEEPSEEK_API_KEY]);
       } catch (error) {
         console.error("Failed to clear API settings from localStorage:", error);
       }

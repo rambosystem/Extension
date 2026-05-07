@@ -3,7 +3,7 @@
  * 纯 HTTP 通信层，只负责网络请求，不包含业务逻辑
  */
 
-const LOKALISE_API_BASE_URL = "https://api.lokalise.com/api2";
+import { LOKALISE_API_BASE as LOKALISE_API_BASE_URL } from "@/lokalise/config/endpoints.js";
 
 /**
  * 获取用户项目列表

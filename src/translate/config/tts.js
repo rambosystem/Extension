@@ -3,7 +3,6 @@
  * https://www.volcengine.com/docs/6561/1598757
  *
  * 覆盖方式：chrome.storage.local 中设置 doubao_tts_app_id / doubao_tts_access_token
- * 注意：根目录 background.js 内有一份副本，修改此处后请同步 background.js 中的 TTS_* 常量。
  */
 
 export const TTS_API_URL =
