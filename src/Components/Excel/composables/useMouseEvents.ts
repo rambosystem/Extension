@@ -41,6 +41,11 @@ export interface UseMouseEventsOptions {
   fillHandleComposable: UseFillHandleReturn | null;
   columnWidthComposable: UseColumnWidthReturn | null;
   rowHeightComposable: UseRowHeightReturn | null;
+  /**
+   * 鼠标抬起前的回调（在内部状态重置之前调用）
+   * 用于在外层收集 mouseup 事件信息（如鼠标位置）
+   */
+  onBeforeMouseUp?: (event: MouseEvent) => void;
 }
 
 /**
@@ -84,6 +89,7 @@ export function useMouseEvents({
   fillHandleComposable,
   columnWidthComposable,
   rowHeightComposable,
+  onBeforeMouseUp,
 }: UseMouseEventsOptions): UseMouseEventsReturn {
   let isMultipleMode = false;
   let multipleStartCell: CellPosition | null = null;
@@ -94,6 +100,8 @@ export function useMouseEvents({
    * 处理鼠标抬起事件
    */
   const handleMouseUp = (event: MouseEvent): void => {
+    onBeforeMouseUp?.(event);
+
     if (isSelecting.value && isMultipleMode && multipleStartCell) {
       const isClick =
         !hasMultipleDragged ||

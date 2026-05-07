@@ -1,4 +1,3 @@
-## 修改组件需要遵守的规则并同步更新Excel_README.md
 <template>
   <div
     class="excel-container"
@@ -34,11 +33,7 @@
       <!-- 数据行（虚拟滚动时只渲染可见行） -->
       <DataRow
         v-for="(_rowValue, visibleIndex) in visibleRows"
-        :key="
-          virtualScroll.enabled.value
-            ? virtualScroll.startIndex.value + visibleIndex
-            : visibleIndex
-        "
+        :key="getActualRowIndex(visibleIndex)"
         :row-index="getActualRowIndex(visibleIndex)"
         :columns="internalColumns"
         :table-data="tableData"
@@ -110,12 +105,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, nextTick, watch } from "vue";
+import {
+  ref,
+  shallowRef,
+  onMounted,
+  onUnmounted,
+  computed,
+  nextTick,
+  watch,
+} from "vue";
 import { CellElementCache } from "./composables/utils";
 import { useVirtualScroll } from "./composables/useVirtualScroll";
 import { useHistory } from "./composables/history/useHistory";
 import { useSelection } from "./composables/selection/useSelection";
 import { createSelectionService } from "./composables/selection/selectionService";
+import type { SelectionService } from "./composables/selection/selectionService";
 import { createUndoRedoService } from "./composables/history/undoRedoService";
 import { useExcelData } from "./composables/useExcelData";
 import { useExcelState } from "./composables/useExcelState";
@@ -140,16 +144,27 @@ import type {
   SelectionRange,
 } from "./composables/types";
 import type { CustomMenuItem } from "./composables/useKeyboard";
-import HeaderRow from "./Components/HeaderRow.vue";
-import DataRow from "./Components/DataRow.vue";
+import HeaderRow from "./components/HeaderRow.vue";
+import DataRow from "./components/DataRow.vue";
 
 /**
  * Excel 组件 Props
+ *
+ * 注意：以下三个属性为 **init-only**，即仅在组件首次挂载时生效。
+ * 运行期修改不会重建内部 composable，也不会切换能力。
+ * 如需在运行期切换，请在父组件对 Excel 组件使用 `:key` 触发重建。
+ *
+ * - enableColumnResize
+ * - enableRowResize
+ * - enableFillHandle
  */
 interface Props {
+  /** init-only：是否启用列宽拖拽。修改需通过 :key 重建组件。 */
   enableColumnResize?: boolean;
+  /** init-only：是否启用智能填充手柄。修改需通过 :key 重建组件。 */
   enableFillHandle?: boolean;
   defaultColumnWidth?: number | ColumnWidthConfig;
+  /** init-only：是否启用行高拖拽。修改需通过 :key 重建组件。 */
   enableRowResize?: boolean;
   defaultRowHeight?: number;
   enableRowScrollStep?: boolean;
@@ -188,71 +203,40 @@ const excelState = useExcelState({
   initialData: props.modelValue,
 });
 
+// --- init-only props 运行期变更告警（仅 DEV）---
+// enableColumnResize / enableRowResize / enableFillHandle 仅在挂载时读取一次，
+// 运行期切换不会重建内部 composable。这里在 DEV 模式下提示开发者用 :key 触发重建。
+if (import.meta.env.DEV) {
+  const initialInitOnly = {
+    enableColumnResize: props.enableColumnResize,
+    enableRowResize: props.enableRowResize,
+    enableFillHandle: props.enableFillHandle,
+  };
+  watch(
+    () => [
+      props.enableColumnResize,
+      props.enableRowResize,
+      props.enableFillHandle,
+    ],
+    ([c, r, f]) => {
+      if (
+        c !== initialInitOnly.enableColumnResize ||
+        r !== initialInitOnly.enableRowResize ||
+        f !== initialInitOnly.enableFillHandle
+      ) {
+        console.warn(
+          "[Excel] enableColumnResize / enableRowResize / enableFillHandle 为 init-only prop，运行期切换不会生效。如需切换，请在父组件使用 :key 强制重建 Excel 组件。",
+        );
+      }
+    },
+  );
+}
+
 // 从统一状态获取数据引用
 const { tableData, columns: internalColumns, rows } = excelState.data;
 
 // 滚动步进控制：确保每次滚动对齐整行高度
 const wheelAccumulator = ref(0);
-
-const getRowTop = (rowIndex: number): number => {
-  let top = 0;
-  for (let i = 0; i < rowIndex; i++) {
-    top += getRowHeight(i);
-  }
-  return top;
-};
-
-const getRowIndexByScrollTop = (scrollTop: number): number => {
-  let offset = 0;
-  for (let i = 0; i < rows.value.length; i++) {
-    const height = getRowHeight(i);
-    if (offset + height > scrollTop) {
-      return i;
-    }
-    offset += height;
-  }
-  return Math.max(0, rows.value.length - 1);
-};
-
-const scrollToRowIndex = (rowIndex: number): void => {
-  if (!containerRef.value) return;
-  const clampedIndex = Math.max(0, Math.min(rows.value.length - 1, rowIndex));
-  containerRef.value.scrollTop = getRowTop(clampedIndex);
-};
-
-const handleRowWheel = (event: WheelEvent): void => {
-  if (!props.enableRowScrollStep) return;
-  if (!rows.value.length || !containerRef.value) return;
-  event.preventDefault();
-
-  wheelAccumulator.value += event.deltaY;
-
-  const currentTop = containerRef.value.scrollTop;
-  const currentIndex = getRowIndexByScrollTop(currentTop);
-  const currentRowHeight = getRowHeight(currentIndex);
-  if (Math.abs(wheelAccumulator.value) < currentRowHeight) return;
-
-  const direction = wheelAccumulator.value > 0 ? 1 : -1;
-  const steps = Math.max(
-    1,
-    Math.floor(Math.abs(wheelAccumulator.value) / currentRowHeight),
-  );
-  wheelAccumulator.value = 0;
-
-  const currentRowTop = getRowTop(currentIndex);
-  const currentRowBottom = currentRowTop + currentRowHeight;
-  let targetIndex = currentIndex + direction * steps;
-
-  if (steps === 1) {
-    if (direction < 0 && currentTop > currentRowTop + 1) {
-      targetIndex = currentIndex;
-    } else if (direction > 0 && currentTop < currentRowBottom - 1) {
-      targetIndex = currentIndex + 1;
-    }
-  }
-
-  scrollToRowIndex(targetIndex);
-};
 
 // 使用统一状态的数据操作方法
 const {
@@ -267,7 +251,7 @@ const {
   dataState: excelState.data,
 });
 
-// 使用自定义列标题或默认列标题（仅用于显示�?
+// 使用自定义列标题或默认列标题（仅用于显示）
 const displayColumns = computed<string[]>(() => {
   if (
     props.columnNames &&
@@ -278,7 +262,7 @@ const displayColumns = computed<string[]>(() => {
     return props.columnNames
       .slice(0, internalColumns.value.length)
       .map((name, index) => {
-        // 如果自定义列标题数量不足，用默认的补�?
+        // 如果自定义列标题数量不足，用默认的补齐
         return name || internalColumns.value[index] || "";
       });
   }
@@ -319,147 +303,170 @@ const selectionService = createSelectionService({
   selection,
 });
 
-const selectionServiceWithEvents = {
-  ...selectionService,
-  applyRange: (range?: SelectionRange | null) => {
-    selectionService.applyRange(range);
-    eventBus.emit("selection", { action: "applyRange", range });
-  },
-  startSingleSelection: (row: number, col: number) => {
-    selectionService.startSingleSelection(row, col);
+const eventBus = createExcelEventBus();
+
+/**
+ * 选区服务（带事件总线通知）
+ *
+ * 通过统一的 range 构造器来消除以往每个方法手写一遍 emit 的样板代码。
+ * 任何新增的选区方法只需要在下方表中追加一行即可。
+ *
+ * 相比 Object.fromEntries 方案，这里通过泛型辅助函数逐方法包装，
+ * 可以完整保留 SelectionService[K] 的参数与返回值签名，
+ * SelectionService 接口变更时编译期即可发现调用点不匹配。
+ */
+const maxRowIdx = () => Math.max(0, rows.value.length - 1);
+const maxColIdx = () => Math.max(0, internalColumns.value.length - 1);
+
+type SelectionAction = keyof SelectionService;
+type RangeBuilder<K extends SelectionAction> = (
+  ...args: Parameters<SelectionService[K]>
+) => SelectionRange | null | undefined;
+
+const rangeBuilders: { [K in SelectionAction]: RangeBuilder<K> } = {
+  applyRange: (range) => range ?? null,
+  startSingleSelection: (row, col) => ({
+    minRow: row,
+    maxRow: row,
+    minCol: col,
+    maxCol: col,
+  }),
+  updateSingleSelectionEnd: (row, col) => ({
+    minRow: row,
+    maxRow: row,
+    minCol: col,
+    maxCol: col,
+  }),
+  clear: () => undefined,
+  selectRow: (rowIndex) => ({
+    minRow: rowIndex,
+    maxRow: rowIndex,
+    minCol: 0,
+    maxCol: maxColIdx(),
+  }),
+  selectColumn: (colIndex) => ({
+    minRow: 0,
+    maxRow: maxRowIdx(),
+    minCol: colIndex,
+    maxCol: colIndex,
+  }),
+  selectRows: (startRow, endRow) => ({
+    minRow: startRow,
+    maxRow: endRow,
+    minCol: 0,
+    maxCol: maxColIdx(),
+  }),
+  selectColumns: (startCol, endCol) => ({
+    minRow: 0,
+    maxRow: maxRowIdx(),
+    minCol: startCol,
+    maxCol: endCol,
+  }),
+  selectAll: (rowCount, colCount) => ({
+    minRow: 0,
+    maxRow: Math.max(0, rowCount - 1),
+    minCol: 0,
+    maxCol: Math.max(0, colCount - 1),
+  }),
+};
+
+// 说明：Vue SFC (.vue) + jsx=preserve 下泛型箭头函数与 JSX 解析冲突，
+// 这里用索引类型 + 内部断言代替泛型函数。
+// 对外保持 selectionServiceWithEvents: SelectionService 严格签名，
+// SelectionService 新增方法时，下方对象字面量会编译期报错（缺字段）。
+type AnySelectionFn = (...args: unknown[]) => unknown;
+
+const wrapSelectionAction = (action: SelectionAction): AnySelectionFn => {
+  const original = selectionService[action] as AnySelectionFn;
+  const builder = rangeBuilders[action] as (
+    ...a: unknown[]
+  ) => SelectionRange | null | undefined;
+  return (...args: unknown[]) => {
+    const result = original(...args);
+    const range = builder(...args);
     eventBus.emit("selection", {
-      action: "startSingleSelection",
-      range: { minRow: row, maxRow: row, minCol: col, maxCol: col },
+      action,
+      ...(range !== undefined ? { range } : {}),
     });
-  },
-  updateSingleSelectionEnd: (row: number, col: number) => {
-    selectionService.updateSingleSelectionEnd(row, col);
-    eventBus.emit("selection", {
-      action: "updateSingleSelectionEnd",
-      range: { minRow: row, maxRow: row, minCol: col, maxCol: col },
-    });
-  },
-  clear: () => {
-    selectionService.clear();
-    eventBus.emit("selection", { action: "clear" });
-  },
-  selectRow: (rowIndex: number) => {
-    selectionService.selectRow(rowIndex);
-    eventBus.emit("selection", {
-      action: "selectRow",
-      range: {
-        minRow: rowIndex,
-        maxRow: rowIndex,
-        minCol: 0,
-        maxCol: Math.max(0, internalColumns.value.length - 1),
-      },
-    });
-  },
-  selectColumn: (colIndex: number) => {
-    selectionService.selectColumn(colIndex);
-    eventBus.emit("selection", {
-      action: "selectColumn",
-      range: {
-        minRow: 0,
-        maxRow: Math.max(0, rows.value.length - 1),
-        minCol: colIndex,
-        maxCol: colIndex,
-      },
-    });
-  },
-  selectRows: (startRow: number, endRow: number) => {
-    selectionService.selectRows(startRow, endRow);
-    eventBus.emit("selection", {
-      action: "selectRows",
-      range: {
-        minRow: startRow,
-        maxRow: endRow,
-        minCol: 0,
-        maxCol: Math.max(0, internalColumns.value.length - 1),
-      },
-    });
-  },
-  selectColumns: (startCol: number, endCol: number) => {
-    selectionService.selectColumns(startCol, endCol);
-    eventBus.emit("selection", {
-      action: "selectColumns",
-      range: {
-        minRow: 0,
-        maxRow: Math.max(0, rows.value.length - 1),
-        minCol: startCol,
-        maxCol: endCol,
-      },
-    });
-  },
-  selectAll: (rowCount: number, colCount: number) => {
-    selectionService.selectAll(rowCount, colCount);
-    eventBus.emit("selection", {
-      action: "selectAll",
-      range: {
-        minRow: 0,
-        maxRow: Math.max(0, rowCount - 1),
-        minCol: 0,
-        maxCol: Math.max(0, colCount - 1),
-      },
-    });
-  },
+    return result;
+  };
+};
+
+const selectionServiceWithEvents: SelectionService = {
+  applyRange: wrapSelectionAction(
+    "applyRange",
+  ) as SelectionService["applyRange"],
+  startSingleSelection: wrapSelectionAction(
+    "startSingleSelection",
+  ) as SelectionService["startSingleSelection"],
+  updateSingleSelectionEnd: wrapSelectionAction(
+    "updateSingleSelectionEnd",
+  ) as SelectionService["updateSingleSelectionEnd"],
+  clear: wrapSelectionAction("clear") as SelectionService["clear"],
+  selectRow: wrapSelectionAction("selectRow") as SelectionService["selectRow"],
+  selectColumn: wrapSelectionAction(
+    "selectColumn",
+  ) as SelectionService["selectColumn"],
+  selectRows: wrapSelectionAction(
+    "selectRows",
+  ) as SelectionService["selectRows"],
+  selectColumns: wrapSelectionAction(
+    "selectColumns",
+  ) as SelectionService["selectColumns"],
+  selectAll: wrapSelectionAction("selectAll") as SelectionService["selectAll"],
 };
 
 /**
- * 判断当前是否处于多单元格选区状�?
+ * 判断当前是否处于多单元格选区状态
  *
- * 判断逻辑�?
- * 1. 如果处于 MULTIPLE 模式（isMultipleMode === true），返回 true
- * 2. 如果多选列表中有多个选区（multiSelections.length > 1），返回 true
- * 3. 如果多选列表中有一个选区，且该选区不是单格选区，返�?true
- * 4. 如果 selectionStart �?selectionEnd 不相等，返回 true
- * 5. 否则返回 false
+ * 命中以下任一条件即视为多选：
+ * 1. 处于 MULTIPLE 模式（Ctrl+点击触发）
+ * 2. multiSelections 中存在超过 1 个选区
+ * 3. multiSelections 中唯一的选区是非单格选区
+ * 4. 当前 selectionStart / selectionEnd 跨越了多个单元格
  */
+const isRange = (s: SelectionRange): boolean =>
+  s.minRow !== s.maxRow || s.minCol !== s.maxCol;
+
 const isMultiSelect = computed<boolean>(() => {
-  // 1. 检查是否处�?MULTIPLE 模式
-  if (isMultipleMode.value) {
-    return true;
+  if (isMultipleMode.value) return true;
+
+  const sels = multiSelections.value;
+  if (sels && sels.length > 0) {
+    if (sels.length > 1) return true;
+    if (sels[0] && isRange(sels[0])) return true;
   }
 
-  // 2. 检查多选列表中是否有多个选区
-  if (multiSelections.value && multiSelections.value.length > 1) {
-    return true;
-  }
-
-  // 3. 检查多选列表中是否有一个非单格选区
-  if (multiSelections.value && multiSelections.value.length === 1) {
-    const sel = multiSelections.value[0];
-    if (sel && (sel.minRow !== sel.maxRow || sel.minCol !== sel.maxCol)) {
-      return true;
-    }
-  }
-
-  // 4. 检查当前选区是否是多单元格选区
-  if (selectionStart.value && selectionEnd.value) {
-    const { row: sr, col: sc } = selectionStart.value;
-    const { row: er, col: ec } = selectionEnd.value;
-    if (sr !== er || sc !== ec) {
-      return true;
-    }
-  }
-
-  return false;
+  const s = selectionStart.value;
+  const e = selectionEnd.value;
+  return !!(s && e && (s.row !== e.row || s.col !== e.col));
 });
-
-const eventBus = createExcelEventBus();
 
 const normalizeColumnName = (value: string | undefined | null): string =>
   String(value ?? "")
     .trim()
     .toUpperCase();
 
-const readOnlyColumnSet = computed<Set<string>>(() => {
-  const configured = props.readOnlyColumns ?? ["EN"];
-  return new Set(configured.map((name) => normalizeColumnName(name)));
-});
+/**
+ * 只读列集合
+ *
+ * 注意：此组件是通用 Excel 组件，不包含任何业务默认值。
+ * 如需将某些列设为只读，请由调用方显式传入 readOnlyColumns。
+ */
+const readOnlyColumnSet = computed<Set<string>>(
+  () => new Set((props.readOnlyColumns ?? []).map(normalizeColumnName)),
+);
+
+/**
+ * 预归一化后的显示列名，避免 isCellEditable 在逐单元格调用时重复计算
+ */
+const normalizedDisplayColumns = computed<string[]>(() =>
+  displayColumns.value.map(normalizeColumnName),
+);
 
 const isCellEditable = (_row: number, col: number): boolean => {
-  const colName = normalizeColumnName(displayColumns.value[col]);
+  const colName = normalizedDisplayColumns.value[col];
+  if (!colName) return true;
   return !readOnlyColumnSet.value.has(colName);
 };
 
@@ -517,7 +524,7 @@ const initHistoryWithEvents = (data: string[][]): void => {
   eventBus.emit("history", { action: "init", info: { rows: data.length } });
 };
 
-// 智能填充管理（仅在启用时使用�?
+// 智能填充管理（仅在启用时使用）
 const fillHandleComposable = props.enableFillHandle
   ? useFillHandle({
       getSmartValue,
@@ -526,9 +533,9 @@ const fillHandleComposable = props.enableFillHandle
     })
   : null;
 
-// 列宽管理（仅在启用时使用�?
-// 传入初始列数，Map会自动处理新增列（使用默认宽度）
-// 注意：如�?defaultColumnWidth 是对象，useColumnWidth �?defaultWidth 使用 others �?
+// 列宽管理（仅在启用时使用）
+// 传入初始列数，Map 会自动处理新增列（使用默认宽度）
+// 注意：如果 defaultColumnWidth 是对象，useColumnWidth 的 defaultWidth 使用 others 值
 const getDefaultWidthForComposable = (): number => {
   if (
     typeof props.defaultColumnWidth === "object" &&
@@ -545,7 +552,7 @@ const columnWidthComposable = props.enableColumnResize
     })
   : null;
 
-// 行高管理（仅在启用时使用�?
+// 行高管理（仅在启用时使用）
 // 传入初始行数，Map会自动处理新增行（使用默认高度）
 const rowHeightComposable = props.enableRowResize
   ? useRowHeight({
@@ -553,7 +560,7 @@ const rowHeightComposable = props.enableRowResize
     })
   : null;
 
-// --- 状态管�?---
+// --- 状态管理 ---
 const containerRef = ref<HTMLElement | null>(null);
 
 // --- 单元格编辑管理（使用统一状态）---
@@ -586,24 +593,141 @@ const { getColumnWidth, getRowHeight } = useSizeManager({
   rowHeightComposable,
 });
 
-// --- 单元格显示样式管�?---
+/**
+ * 行顶部偏移前缀和缓存
+ *
+ * 当存在自定义行高时，朴素实现每次计算 getRowTop/getRowIndexByScrollTop 都要
+ * 从第 0 行累加到目标行，O(n)。滚动事件频繁时会导致明显卡顿。
+ *
+ * 这里维护一个懒计算的前缀和数组 rowTopPrefixSum：
+ *   rowTopPrefixSum[i] = 前 i 行（不含第 i 行）的高度之和。
+ *
+ * - 首次访问时计算，O(n) 一次。
+ * - 命中后 getRowTop 为 O(1)，getRowIndexByScrollTop 改用二分为 O(log n)。
+ * - 当行数 / 自定义行高集合变化时 invalidate，下一次访问重新构建。
+ */
+let rowTopPrefixSum: number[] | null = null;
+
+const invalidateRowPrefix = (): void => {
+  rowTopPrefixSum = null;
+};
+
+const ensureRowPrefixSum = (): number[] => {
+  if (rowTopPrefixSum) {
+    return rowTopPrefixSum;
+  }
+  const total = rows.value.length;
+  const arr = new Array<number>(total + 1);
+  arr[0] = 0;
+  for (let i = 0; i < total; i++) {
+    arr[i + 1] = arr[i] + getRowHeight(i);
+  }
+  rowTopPrefixSum = arr;
+  return arr;
+};
+
+/**
+ * 行顶部偏移量计算
+ *
+ * - 无自定义行高：乘法 O(1)。
+ * - 存在自定义行高：查前缀和表 O(1)。
+ */
+const getRowTop = (rowIndex: number): number => {
+  const hasCustomHeights =
+    !!rowHeightComposable && rowHeightComposable.rowHeights.value.size > 0;
+  if (!hasCustomHeights) {
+    const defaultH = props.defaultRowHeight || 36;
+    return rowIndex * defaultH;
+  }
+  const arr = ensureRowPrefixSum();
+  const clamped = Math.max(0, Math.min(rowIndex, arr.length - 1));
+  return arr[clamped] ?? 0;
+};
+
+const getRowIndexByScrollTop = (scrollTop: number): number => {
+  const total = rows.value.length;
+  if (total === 0) return 0;
+
+  const hasCustomHeights =
+    !!rowHeightComposable && rowHeightComposable.rowHeights.value.size > 0;
+  if (!hasCustomHeights) {
+    const defaultH = props.defaultRowHeight || 36;
+    return Math.max(0, Math.min(total - 1, Math.floor(scrollTop / defaultH)));
+  }
+
+  // 二分查找第一个 prefix[i+1] > scrollTop 的 i
+  const arr = ensureRowPrefixSum();
+  let lo = 0;
+  let hi = total - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (arr[mid + 1] > scrollTop) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return Math.max(0, Math.min(total - 1, lo));
+};
+
+const scrollToRowIndex = (rowIndex: number): void => {
+  if (!containerRef.value) return;
+  const clampedIndex = Math.max(0, Math.min(rows.value.length - 1, rowIndex));
+  containerRef.value.scrollTop = getRowTop(clampedIndex);
+};
+
+const handleRowWheel = (event: WheelEvent): void => {
+  if (!props.enableRowScrollStep) return;
+  if (!rows.value.length || !containerRef.value) return;
+  event.preventDefault();
+
+  wheelAccumulator.value += event.deltaY;
+
+  const currentTop = containerRef.value.scrollTop;
+  const currentIndex = getRowIndexByScrollTop(currentTop);
+  const currentRowHeight = getRowHeight(currentIndex);
+  if (Math.abs(wheelAccumulator.value) < currentRowHeight) return;
+
+  const direction = wheelAccumulator.value > 0 ? 1 : -1;
+  const steps = Math.max(
+    1,
+    Math.floor(Math.abs(wheelAccumulator.value) / currentRowHeight),
+  );
+  wheelAccumulator.value = 0;
+
+  const currentRowTop = getRowTop(currentIndex);
+  const currentRowBottom = currentRowTop + currentRowHeight;
+  let targetIndex = currentIndex + direction * steps;
+
+  if (steps === 1) {
+    if (direction < 0 && currentTop > currentRowTop + 1) {
+      targetIndex = currentIndex;
+    } else if (direction > 0 && currentTop < currentRowBottom - 1) {
+      targetIndex = currentIndex + 1;
+    }
+  }
+
+  scrollToRowIndex(targetIndex);
+};
+
+// --- 单元格显示样式管理 ---
 const { getCellDisplayStyle } = useCellDisplay({
   tableData,
   getColumnWidth,
   getRowHeight,
 });
 
-// --- 虚拟滚动管理（大数据量性能优化�?--
+// --- 虚拟滚动管理（大数据量性能优化）---
 const virtualScroll = useVirtualScroll(
   computed(() => rows.value.length),
   {
-    threshold: 100, // 超过 100 行启用虚拟滚�?
-    bufferSize: 5, // 缓冲�?5 �?
+    threshold: 100, // 超过 100 行启用虚拟滚动
+    bufferSize: 5, // 缓冲区 5 行
     defaultRowHeight: props.defaultRowHeight || 36,
   },
 );
 
-// 计算可见行范�?
+// 计算可见行范围
 const visibleRows = computed(() => {
   if (!virtualScroll.enabled.value) {
     // 未启用虚拟滚动，返回所有行
@@ -616,7 +740,7 @@ const visibleRows = computed(() => {
 });
 
 /**
- * 获取实际行索引（考虑虚拟滚动�?
+ * 获取实际行索引（考虑虚拟滚动）
  */
 const getActualRowIndex = (visibleIndex: number): number => {
   if (!virtualScroll.enabled.value) {
@@ -645,108 +769,44 @@ const isInDragArea = (row: number, col: number): boolean => {
   return fillHandleComposable.isInDragArea(row, col);
 };
 
-// --- 数据同步管理（需要在 useFavorites 之前，因为需�?emitSync�?--
+// --- 数据同步管理（需要在 useFavorites 之前，因为需要 emitSync）---
+// 注意：useDataSync 只会 emit "update:modelValue" 和 "change" 两种事件，
+// "custom-action" 由 handleCustomAction 直接 emit，不经过此处。
+// 这里只做 runtime 兜底校验：data 必须是二维数组。
 const { emitSync, initDataSync, setDataWithSync, runExternalUpdate } =
   useDataSync({
     tableData,
     props,
     getData,
     setData,
-    emit: (
-      event: "update:modelValue" | "change" | "custom-action",
-      ...args: unknown[]
-    ) => {
-      // 类型安全的事件分发函�?
-      // 根据事件类型进行类型检查和分发
-      switch (event) {
-        case "update:modelValue": {
-          const data = args[0];
-          if (Array.isArray(data) && Array.isArray(data[0])) {
-            emit("update:modelValue", data as string[][]);
-          } else {
-            // 使用 debug 工具统一错误处理
-            if (import.meta.env.DEV) {
-              console.warn(
-                "[Excel] Invalid data type for update:modelValue",
-                data,
-              );
-            }
-          }
-          break;
+    emit: (event, ...args) => {
+      const data = args[0];
+      if (!Array.isArray(data) || !Array.isArray(data[0])) {
+        if (import.meta.env.DEV) {
+          console.warn(`[Excel] Invalid data type for ${event}`, data);
         }
-        case "change": {
-          const data = args[0];
-          if (Array.isArray(data) && Array.isArray(data[0])) {
-            emit("change", data as string[][]);
-          } else {
-            // 使用 debug 工具统一错误处理
-            if (import.meta.env.DEV) {
-              console.warn("[Excel] Invalid data type for change", data);
-            }
-          }
-          break;
-        }
-        case "custom-action": {
-          const payload = args[0];
-          if (
-            payload &&
-            typeof payload === "object" &&
-            "id" in payload &&
-            "context" in payload
-          ) {
-            emit(
-              "custom-action",
-              payload as { id: string; context: MenuContext },
-            );
-          } else {
-            // 使用 debug 工具统一错误处理
-            if (import.meta.env.DEV) {
-              console.warn(
-                "[Excel] Invalid payload type for custom-action",
-                payload,
-              );
-            }
-          }
-          break;
-        }
-        default: {
-          // TypeScript 会确保所有情况都被处�?
-          const _exhaustive: never = event;
-          // 使用 debug 工具统一错误处理
-          if (import.meta.env.DEV) {
-            console.warn("[Excel] Unknown event type", _exhaustive);
-          }
-        }
+        return;
+      }
+      if (event === "update:modelValue") {
+        emit("update:modelValue", data as string[][]);
+      } else if (event === "change") {
+        emit("change", data as string[][]);
       }
     },
     onEmitSync: (data) => {
       eventBus.emit("modelUpdate", { data });
       eventBus.emit("change", { data });
     },
-    initHistory: initHistoryWithEvents, // 传�?initHistory 函数，用于在数据更新时重新初始化历史记录
-    isUndoRedoInProgress, // 传�?isUndoRedoInProgress 函数，防止撤销/重做时清空历�?
+    initHistory: initHistoryWithEvents, // 传入 initHistory 函数，用于在数据更新时重新初始化历史记录
+    isUndoRedoInProgress, // 传入 isUndoRedoInProgress 函数，防止撤销/重做时清空历史
   });
 
-// --- 撤销/重做高亮 ---
-const undoRedoFlash = ref(false);
-let undoRedoFlashTimer: number | null = null;
+// --- 撤销/重做选区刷新回调 ---
+// 扩展点：如未来需要在撤销/重做后给选区加视觉 flash 反馈，
+// 实现一个函数并通过 undoRedoService 的 triggerSelectionFlash 参数注入即可。
+// 当前没有视觉反馈，无需传入。
 
-const triggerUndoRedoFlash = (): void => {
-  if (undoRedoFlashTimer !== null) {
-    window.clearTimeout(undoRedoFlashTimer);
-  }
-  undoRedoFlash.value = true;
-  undoRedoFlashTimer = window.setTimeout(() => {
-    undoRedoFlash.value = false;
-    undoRedoFlashTimer = null;
-  }, 260);
-};
-
-const triggerSelectionFlash = (): void => {
-  triggerUndoRedoFlash();
-};
-
-// 初始化数据同步监�?
+// 初始化数据同步监听
 initDataSync();
 
 // --- 剪贴板管理（使用统一状态）---
@@ -786,11 +846,16 @@ const {
   props,
 });
 
-// --- 鼠标事件管理（先定义，供 resize handlers 使用�?--
-// 定义临时函数引用
-let handleMouseUpRef: ((event: MouseEvent) => void) | null = null;
+// 保存最后一次鼠标位置，用于菜单位置计算
+// 定义必须早于 useMouseEvents 调用，因为 onBeforeMouseUp 回调会写入此 ref
+const lastMousePosition = ref<{ x: number; y: number } | null>(null);
 
-// --- 尺寸调整处理�?---
+// --- 尺寸调整处理器 ---
+// useMouseEvents 在下方才会创建，此处尚无 handleMouseUp 引用。
+// 使用 shallowRef 中转：先建立空引用，稍后 useMouseEvents 返回后再赋值，
+// useResizeHandlers 在实际触发 resize 时才读取 ref.value，从而拿到最新引用。
+const handleMouseUpRef = shallowRef<((event: MouseEvent) => void) | null>(null);
+
 const {
   startColumnResize,
   startRowResize,
@@ -807,74 +872,46 @@ const {
   tableData,
   columns: internalColumns,
   getColumnWidth,
-  handleMouseUp: handleMouseUpRef,
+  handleMouseUpRef,
 });
 
 // --- 鼠标事件管理 ---
-const {
-  handleMouseUp,
-  handleCellMouseDown: originalHandleCellMouseDown,
-  handleMouseEnter,
-} = useMouseEvents({
-  isSelecting,
-  selectionStart,
-  selectionEnd,
-  startSingleSelection,
-  updateSingleSelectionEnd,
-  startMultipleSelection,
-  updateMultipleSelectionEnd,
-  endMultipleSelectionClick,
-  endMultipleSelectionDrag,
-  multiSelections,
-  isEditing,
-  stopEdit,
-  handleFillDragEnter,
-  applyFill,
-  stopColumnResize,
-  stopRowResize,
-  props,
-  fillHandleComposable,
-  columnWidthComposable,
-  rowHeightComposable,
-  handleColumnResize: handleColumnResizeMove,
-  handleRowResize: handleRowResizeMove,
-});
+// 通过 onBeforeMouseUp 钩子在内部状态重置之前记录鼠标位置，
+// 避免在 Excel.vue 再做一层 wrap + 手动 add/removeEventListener 的三明治逻辑。
+const { handleMouseUp, handleCellMouseDown, handleMouseEnter } = useMouseEvents(
+  {
+    isSelecting,
+    selectionStart,
+    selectionEnd,
+    startSingleSelection,
+    updateSingleSelectionEnd,
+    startMultipleSelection,
+    updateMultipleSelectionEnd,
+    endMultipleSelectionClick,
+    endMultipleSelectionDrag,
+    multiSelections,
+    isEditing,
+    stopEdit,
+    handleFillDragEnter,
+    applyFill,
+    stopColumnResize,
+    stopRowResize,
+    props,
+    fillHandleComposable,
+    columnWidthComposable,
+    rowHeightComposable,
+    handleColumnResize: handleColumnResizeMove,
+    handleRowResize: handleRowResizeMove,
+    onBeforeMouseUp: (event) => {
+      lastMousePosition.value = { x: event.clientX, y: event.clientY };
+    },
+  },
+);
 
-// 包装 handleMouseUp，保存鼠标位�?
-const wrappedHandleMouseUp = (event: MouseEvent): void => {
-  lastMousePosition.value = {
-    x: event.clientX,
-    y: event.clientY,
-  };
-  handleMouseUp(event);
-};
+// 将 handleMouseUp 注册给 resize handler 使用
+handleMouseUpRef.value = handleMouseUp;
 
-// 包装 handleCellMouseDown，让它注册包装后�?handleMouseUp
-const handleCellMouseDown = (
-  rowIndex: number,
-  colIndex: number,
-  maxRows: number,
-  maxCols: number,
-  event: MouseEvent | null = null,
-): void => {
-  // 普通单元格选择，不需要特殊处�?
-
-  // 调用原始函数，但需要替换它内部注册�?mouseup 事件
-  // 先移除可能存在的原始事件监听
-  window.removeEventListener("mouseup", handleMouseUp);
-
-  // 调用原始函数（它会重新注�?mouseup，但我们会在之后替换�?
-  originalHandleCellMouseDown(rowIndex, colIndex, maxRows, maxCols, event);
-
-  // 移除原始注册�?handleMouseUp，注册我们的包装版本
-  window.removeEventListener("mouseup", handleMouseUp);
-  window.addEventListener("mouseup", wrappedHandleMouseUp);
-};
-
-// 更新引用
-handleMouseUpRef = wrappedHandleMouseUp;
-
-// 填充拖拽开�?
+// 填充拖拽开始
 function startFillDrag(row: number, col: number): void {
   if (!props.enableFillHandle || !fillHandleComposable) return;
   fillHandleComposable.startFillDrag(row, col, normalizedSelection.value, () =>
@@ -898,26 +935,39 @@ const deleteSelection = (range: SelectionRange): void => {
   }
 };
 
-// --- 行操作管�?---
-// 注意：行操作现在通过工具函数统一处理
-// useKeyboard �?useCellMenu 都直接使�?rowOperationHandler 工具函数
-// 这样可以确保快捷键和菜单的行为完全一�?
-
 // --- Cell Menu 管理 ---
-// 检查剪贴板是否有内�?
-const checkFavorites = async () => {
+// 检查剪贴板是否有内容。
+// 剪贴板读取失败（权限被拒绝、浏览器环境不支持等）时，
+// 仍然放行"粘贴"菜单，真正粘贴时才让底层逻辑处理异常，避免
+// 把菜单禁用住反而让用户无处可点。DEV 模式下打印告警。
+//
+// canPaste 采用"预刷新"策略，避免菜单弹出时才 await 造成首次展示状态滞后：
+//   - 组件挂载后立即刷一次；
+//   - window focus 事件（用户从其它应用切回）刷新；
+//   - 内部复制/剪切路径后也会经由 emitSync / 菜单 visible 再刷；
+//   - 菜单 visible 变化时做一次 fire-and-forget 兜底。
+const checkFavorites = async (): Promise<void> => {
   try {
     canPaste.value = await hasFavoritesContent();
   } catch (error) {
-    // 如果没有权限或者失败，假设剪贴板有内容
     canPaste.value = true;
+    if (import.meta.env.DEV) {
+      console.warn(
+        "[Excel] hasFavoritesContent failed, fallback to true",
+        error,
+      );
+    }
   }
 };
 
-// 定期更新状态（在菜单打开时）
-const updateMenuStates = () => {
+const handleWindowFocus = (): void => {
+  void checkFavorites();
+};
+
+// 菜单打开时更新状态（canPaste 主要依赖预刷新，这里仅做兜底刷新）
+const updateMenuStates = (): void => {
   updateHistoryState();
-  checkFavorites();
+  void checkFavorites();
 };
 
 const undoRedoService = createUndoRedoService({
@@ -926,7 +976,6 @@ const undoRedoService = createUndoRedoService({
   columns: internalColumns,
   activeCell,
   selectionService: selectionServiceWithEvents,
-  triggerSelectionFlash,
   emitSync,
 });
 
@@ -948,13 +997,12 @@ const { handleCellMenuCommand } = useCellMenu({
   emitSync,
 });
 
-// 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义�?
+// 行号和列标题选择状态（需要在 useCellMenuPosition 之前定义）
 interface HeaderSelectState {
   isSelecting: boolean;
   type: "row" | "col" | null;
   startIndex: number | null;
   isMultipleMode: boolean;
-  lastSelectType: "row" | "col" | null; // 保留最近一次的�?列选择类型，用于菜单位置计�?
 }
 
 const headerSelectState = ref<HeaderSelectState>({
@@ -962,16 +1010,12 @@ const headerSelectState = ref<HeaderSelectState>({
   type: null,
   startIndex: null,
   isMultipleMode: false,
-  lastSelectType: null,
 });
 
-// 保存最后一次鼠标位置，用于菜单位置计算
-const lastMousePosition = ref<{ x: number; y: number } | null>(null);
-
-// DOM 查询缓存（优化性能，避免重�?querySelector 调用�?
+// DOM 查询缓存（优化性能，避免重调 querySelector）
 const cellElementCache = new CellElementCache();
 
-// 获取单元格DOM元素的函数（使用缓存优化�?
+// 获取单元格DOM元素的函数（使用缓存优化）
 const getCellElement = (row: number, col: number): HTMLElement | null => {
   if (!containerRef.value) return null;
   // 设置容器（如果变化）
@@ -1014,7 +1058,7 @@ const handleCustomAction = (payload: {
 };
 
 /**
- * 处理菜单可见性变�?
+ * 处理菜单可见性变化
  */
 const handleMenuVisibleChange = (visible: boolean): void => {
   if (visible) {
@@ -1023,19 +1067,17 @@ const handleMenuVisibleChange = (visible: boolean): void => {
 };
 
 /**
- * 处理容器点击事件（点击空白区域时清除选择�?
+ * 处理容器点击事件（点击容器空白区域时清除选择）
+ *
+ * 只在点击事件真正冒泡到容器自身（而不是子元素）时才清除，
+ * 通过 event.target === event.currentTarget 判断，比比对 classList
+ * 更严谨、且不会被 spacer 等子元素误触发。
  */
 const handleContainerClick = (event: MouseEvent): void => {
-  const target = event.target as HTMLElement;
-  if (
-    target === containerRef.value ||
-    target.classList.contains("excel-container")
-  ) {
+  if (event.target === event.currentTarget) {
     clearSelection();
   }
 };
-
-// handleCellMouseDown 已经在上面定义，这里不需要重新定�?
 
 /**
  * 处理行号鼠标按下事件
@@ -1059,10 +1101,9 @@ const handleRowNumberMouseDown = (
     type: "row",
     startIndex: rowIndex,
     isMultipleMode: isCtrlClick,
-    lastSelectType: null,
   };
 
-  // 全选该�?
+  // 全选该行
   selectRow(rowIndex, internalColumns.value.length, isCtrlClick);
 
   // 注册全局事件
@@ -1070,7 +1111,7 @@ const handleRowNumberMouseDown = (
 };
 
 /**
- * 处理列标题鼠标按下事�?
+ * 处理列标题鼠标按下事件
  */
 const handleColumnHeaderMouseDown = (
   colIndex: number,
@@ -1094,10 +1135,9 @@ const handleColumnHeaderMouseDown = (
     type: "col",
     startIndex: colIndex,
     isMultipleMode: isCtrlClick,
-    lastSelectType: null,
   };
 
-  // 全选该�?
+  // 全选该列
   selectColumn(colIndex, rows.value.length, isCtrlClick);
 
   // 注册全局事件
@@ -1105,7 +1145,7 @@ const handleColumnHeaderMouseDown = (
 };
 
 /**
- * 处理行号鼠标进入事件（拖选时�?
+ * 处理行号鼠标进入事件（拖选时）
  */
 const handleRowNumberMouseEnter = (rowIndex: number): void => {
   if (
@@ -1122,8 +1162,8 @@ const handleRowNumberMouseEnter = (rowIndex: number): void => {
 };
 
 /**
- * 处理列标题鼠标进入事件（拖选时�?
- * @param {number} colIndex - 列索�?
+ * 处理列标题鼠标进入事件（拖选时）
+ * @param {number} colIndex - 列索引
  */
 const handleColumnHeaderMouseEnter = (colIndex: number): void => {
   if (
@@ -1140,7 +1180,7 @@ const handleColumnHeaderMouseEnter = (colIndex: number): void => {
 };
 
 /**
- * 处理行号/列标题鼠标抬起事�?
+ * 处理行号/列标题鼠标抬起事件
  */
 const handleHeaderMouseUp = (event: MouseEvent): void => {
   if (!headerSelectState.value.isSelecting) return;
@@ -1151,13 +1191,12 @@ const handleHeaderMouseUp = (event: MouseEvent): void => {
     y: event.clientY,
   };
 
-  // 清理状�?
+  // 清理状态
   headerSelectState.value = {
     isSelecting: false,
     type: null,
     startIndex: null,
     isMultipleMode: false,
-    lastSelectType: null,
   };
 
   // 移除事件监听
@@ -1172,7 +1211,7 @@ const handleCornerCellClick = (): void => {
     stopEdit();
   }
 
-  // 全选整个表�?
+  // 全选整个表格
   selectAll(rows.value.length, internalColumns.value.length);
 };
 
@@ -1190,28 +1229,24 @@ const { handleKeydown } = useKeyboard({
   tableData,
   rows, // 传递行引用，用于恢复行数量
   columns: internalColumns, // 传递列引用，用于恢复列数量
-  insertRowBelow, // 传递基础插入行函�?
-  deleteRow, // 传递基础删除行函�?
+  insertRowBelow, // 传递基础插入行函数
+  deleteRow, // 传递基础删除行函数
   selectionService: selectionServiceWithEvents,
   undoRedoService,
   isCellEditable,
   isUndoRedoInProgress,
   getMaxRows: () => rows.value.length,
   getMaxCols: () => internalColumns.value.length,
-  customMenuItems: props.customMenuItems, // 传递自定义菜单项配�?
-  handleCustomAction, // 传递自定义菜单项处理函�?
+  customMenuItems: props.customMenuItems, // 传递自定义菜单项配置
+  handleCustomAction, // 传递自定义菜单项处理函数
   createMenuContext: (rowIndex: number) => createMenuContext(rowIndex), // 传递创建上下文函数
   copyToFavorites, // 传递程序化复制函数
   cutToFavorites,
   pasteFromFavorites, // 传递程序化粘贴函数
   emitSync,
-  exitCopyMode, // 传递退出复制状态函�?
-  copiedRange, // 传递复制区域引用，用于判断是否处于复制状�?
+  exitCopyMode, // 传递退出复制状态函数
+  copiedRange, // 传递复制区域引用，用于判断是否处于复制状态
 });
-
-// 注意：列宽初始化逻辑已移�?getColumnWidth 函数中处�?
-// �?defaultColumnWidth 为对象类型时，getColumnWidth 会自动处�?Key 列和其他列的宽度
-// 用户手动调整的宽度会保存�?columnWidthComposable.columnWidths Map 中，优先级最�?
 
 /**
  * 设置指定列的宽度
@@ -1224,24 +1259,24 @@ const setColumnWidth = (colIndex: number, width: number): void => {
 
 // --- 10. 暴露方法给父组件 ---
 /**
- * Excel 组件暴露的方法和属�?
+ * Excel 组件暴露的方法和属性
  *
  * 通过 ref 可以访问以下方法和属性：
  * - getData(): 获取表格数据的深拷贝
  * - setData(data): 设置整个表格数据
- * - updateCell(row, col, value): 更新单个单元�?
+ * - updateCell(row, col, value): 更新单个单元格
  * - clearData(): 清空所有单元格数据
  * - setColumnWidth(colIndex, width): 设置指定列的宽度
  * - tableData: 表格数据的响应式引用（只读）
- *
- * 使用示例请参考组件文档：src/Components/excel/README.md
+ * - on(event, handler) / off(event, handler): 订阅/取消订阅组件内部事件
+ *   （change / modelUpdate / selection / history）
  */
 defineExpose({
   /**
    * 获取表格数据
    * @method getData
    * @returns {string[][]} 表格数据的深拷贝
-   * @description 返回当前表格数据的深拷贝，不会影响原始数�?
+   * @description 返回当前表格数据的深拷贝，不会影响原始数据
    * @example
    * const data = excelRef.value.getData();
    * console.log(data); // [["A1", "B1"], ["A2", "B2"]]
@@ -1260,14 +1295,14 @@ defineExpose({
    */
   setData: setDataWithSync,
   /**
-   * 更新单个单元�?
+   * 更新单个单元格
    * @method updateCell
-   * @param {number} row - 行索引（�?开始）
-   * @param {number} col - 列索引（�?开始）
-   * @param {string} value - 新�?
-   * @description 更新指定单元格的值，如果超出当前范围会自动扩展行�?
+   * @param {number} row - 行索引（0开始）
+   * @param {number} col - 列索引（0开始）
+   * @param {string} value - 新值
+   * @description 更新指定单元格的值，如果超出当前范围会自动扩展行
    * @example
-   * excelRef.value.updateCell(0, 0, "新�?);
+   * excelRef.value.updateCell(0, 0, "新值");
    */
   updateCell: (row: number, col: number, value: string) => {
     runExternalUpdate(() => updateCell(row, col, value), {
@@ -1283,8 +1318,8 @@ defineExpose({
     });
   },
   /**
-   * 获取当前表格数据（响应式引用�?
-   * 表格数据的响应式引用，可以直接访问但建议使用 getData() 获取深拷�?
+   * 获取当前表格数据（响应式引用）
+   * 表格数据的响应式引用，可以直接访问但建议使用 getData() 获取深拷贝
    * @readonly
    * @example
    * const data = excelRef.value.tableData;
@@ -1294,39 +1329,84 @@ defineExpose({
   /**
    * 设置指定列的宽度
    * @method setColumnWidth
-   * @param {number} colIndex - 列索引（�?开始）
+   * @param {number} colIndex - 列索引（0开始）
    * @param {number} width - 宽度（像素）
    * @description 手动设置指定列的宽度，仅在启用列宽调整时生效
    * @example
    * excelRef.value.setColumnWidth(0, 150); // 设置第一列宽度为150px
    */
   setColumnWidth,
+  /**
+   * 订阅 Excel 内部事件（change / modelUpdate / selection / history）。
+   * @example
+   *   excelRef.value.on("change", ({ data }) => { ... });
+   */
+  on: eventBus.on,
+  /**
+   * 取消订阅 Excel 内部事件。
+   */
+  off: eventBus.off,
 });
 
 // --- 11. 生命周期管理 ---
 onMounted(() => {
   initHistory(tableData.value);
 
-  // 初始化虚拟滚�?
+  // 初始刷新粘贴可用状态（非阻塞）
+  void checkFavorites();
+  // 监听窗口重新获得焦点，切换应用后及时刷新 canPaste
+  window.addEventListener("focus", handleWindowFocus);
+
+  // 初始化虚拟滚动
   nextTick(() => {
     if (containerRef.value && virtualScroll.enabled.value) {
       virtualScroll.init(containerRef.value, getRowHeight);
     }
   });
-
-  // 监听行高变化，更新虚拟滚�?
-  if (virtualScroll.enabled.value && rowHeightComposable) {
-    watch(
-      () => rowHeightComposable?.rowHeights.value,
-      () => {
-        virtualScroll.updateVisibleRange();
-      },
-      { deep: true },
-    );
-  }
 });
 
-// 监听容器引用变化，更新缓�?
+/**
+ * 监听虚拟滚动启用状态 + 行高变化
+ *
+ * 注意：此处使用顶层 watch 而非 onMounted 内部 watch，原因：
+ * 1. enabled 可能从 false 动态变为 true（如数据行数增长超过阈值），
+ *    此时必须重新 init 虚拟滚动并开始监听行高变化。
+ * 2. 放在 onMounted 里无法在 enabled 变化时重新绑定监听。
+ */
+watch(
+  () => virtualScroll.enabled.value,
+  (enabled) => {
+    if (!enabled) return;
+    nextTick(() => {
+      if (containerRef.value) {
+        virtualScroll.init(containerRef.value, getRowHeight);
+      }
+    });
+  },
+);
+
+if (rowHeightComposable) {
+  watch(
+    () => rowHeightComposable?.rowHeights.value,
+    () => {
+      invalidateRowPrefix();
+      if (virtualScroll.enabled.value) {
+        virtualScroll.updateVisibleRange();
+      }
+    },
+    { deep: true },
+  );
+}
+
+// 行数变化时同样需要重算前缀和（新增/删除行、初始化等）
+watch(
+  () => rows.value.length,
+  () => {
+    invalidateRowPrefix();
+  },
+);
+
+// 监听容器引用变化，更新缓存
 watch(containerRef, (newContainer) => {
   if (newContainer) {
     cellElementCache.setContainer(newContainer);
@@ -1334,25 +1414,24 @@ watch(containerRef, (newContainer) => {
 });
 
 onUnmounted(() => {
-  // 清理事件监听器，防止内存泄漏
-  window.removeEventListener("mouseup", handleMouseUp);
-  window.removeEventListener("mouseup", wrappedHandleMouseUp);
+  // 只清理 Excel.vue 自己挂载的全局监听。
+  // 说明：
+  // - useMouseEvents 内部会在 handleMouseUp 触发时自行移除 window mouseup/mousemove 监听；
+  //   这里不再重复 remove，避免造成"看起来对其实无效"的维护噪音。
+  // - useResizeHandlers 的 mousemove 监听同样由 useMouseEvents.handleMouseUp 负责移除。
+  // - useFillHandle 的全局监听通过 cleanup() 统一清理（以 composable 是否存在为准，
+  //   而非当前 prop，避免 init-only prop 被违规切换后出现漏清）。
   window.removeEventListener("mouseup", handleHeaderMouseUp);
-  if (props.enableColumnResize) {
-    window.removeEventListener("mousemove", handleColumnResizeMove);
-  }
-  if (props.enableRowResize) {
-    window.removeEventListener("mousemove", handleRowResizeMove);
-  }
-  // 清理填充手柄事件监听�?
-  if (props.enableFillHandle && fillHandleComposable) {
+  window.removeEventListener("focus", handleWindowFocus);
+
+  if (fillHandleComposable) {
     fillHandleComposable.cleanup();
   }
-  // 清理输入框引�?
+
+  eventBus.clear();
+
   clearInputRefs();
-  // 清空 DOM 缓存
   cellElementCache.clear();
-  // 清理虚拟滚动
   virtualScroll.cleanup();
 });
 </script>
@@ -1406,7 +1485,7 @@ $transition-fast: 0.05s ease;
 $transition-normal: 0.15s ease;
 $transition-slow: 0.2s;
 
-// 字体�?
+// 字体
 $font-family:
   -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
   Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",

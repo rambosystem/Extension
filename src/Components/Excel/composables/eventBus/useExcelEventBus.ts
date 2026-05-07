@@ -30,6 +30,10 @@ export interface ExcelEventBus {
     event: T,
     payload: ExcelEventPayloads[T]
   ) => void;
+  /**
+   * 清空所有事件订阅。组件卸载时调用，确保订阅方不会持有对已卸载组件内部函数的引用。
+   */
+  clear: () => void;
 }
 
 export const createExcelEventBus = (): ExcelEventBus => {
@@ -68,9 +72,14 @@ export const createExcelEventBus = (): ExcelEventBus => {
     });
   };
 
+  const clear = (): void => {
+    listeners.clear();
+  };
+
   return {
     on,
     off,
     emit,
+    clear,
   };
 };

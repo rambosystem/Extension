@@ -1,4 +1,4 @@
-import type { Ref } from "vue";
+import type { Ref, ShallowRef } from "vue";
 import type { UseColumnWidthReturn } from "./useColumnWidth";
 import type { UseRowHeightReturn } from "./useRowHeight";
 
@@ -15,7 +15,14 @@ export interface UseResizeHandlersOptions {
   tableData: Ref<string[][]>;
   columns: Ref<string[]>;
   getColumnWidth: (colIndex: number) => number;
-  handleMouseUp: ((event: MouseEvent) => void) | null;
+  /**
+   * 鼠标抬起处理函数的 ShallowRef。
+   *
+   * 使用 Ref 而非值传递，避免在 composable 初始化时
+   * 捕获到 null 的闭包（此时外层的 handleMouseUp 可能尚未定义）。
+   * 消费者侧可在 useMouseEvents 返回后写入。
+   */
+  handleMouseUpRef?: ShallowRef<((event: MouseEvent) => void) | null>;
 }
 
 /**
@@ -42,7 +49,7 @@ export function useResizeHandlers({
   tableData,
   columns,
   getColumnWidth,
-  handleMouseUp,
+  handleMouseUpRef,
 }: UseResizeHandlersOptions): UseResizeHandlersReturn {
   /**
    * 处理列宽调整（事件处理）
@@ -71,6 +78,7 @@ export function useResizeHandlers({
       columnWidthComposable.startColumnResize(colIndex, event);
     }
     window.addEventListener("mousemove", handleColumnResizeMove);
+    const handleMouseUp = handleMouseUpRef?.value ?? null;
     if (handleMouseUp) {
       window.addEventListener("mouseup", handleMouseUp);
     }
@@ -85,6 +93,7 @@ export function useResizeHandlers({
       rowHeightComposable.startRowResize(rowIndex, event);
     }
     window.addEventListener("mousemove", handleRowResizeMove);
+    const handleMouseUp = handleMouseUpRef?.value ?? null;
     if (handleMouseUp) {
       window.addEventListener("mouseup", handleMouseUp);
     }
