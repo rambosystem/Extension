@@ -26,6 +26,19 @@
         <button
           type="button"
           class="composer_icon_btn"
+          title="Copy"
+          @click="copyEditorText"
+        >
+          <img
+            src="@/assets/copy.svg"
+            class="composer_btn_icon"
+            alt=""
+            draggable="false"
+          />
+        </button>
+        <button
+          type="button"
+          class="composer_icon_btn"
           title="Translate to English"
           @click="translateToEnglish"
         >
@@ -279,6 +292,15 @@ function ensureEditorText() {
 
 function copyTranslation() {
   if (sentenceResult.value) copyToFavorites(sentenceResult.value);
+}
+
+function copyEditorText() {
+  const text = editorText.value.trim();
+  if (!text) {
+    ensureEditorText();
+    return;
+  }
+  copyToFavorites(text);
 }
 
 function replaceTranslation() {

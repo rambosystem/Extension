@@ -23,7 +23,6 @@ import {
 const MENU_NAME_BY_INDEX = {
   [ROUTE_INDEX.LOKALISE]: "Lokalise",
   [ROUTE_INDEX.TRANSLATE]: "Translate",
-  [ROUTE_INDEX.CLIPBOARD]: "Favorites",
   [ROUTE_INDEX.SETTINGS]: "Settings",
   [ROUTE_INDEX.ABOUT]: "About",
 };

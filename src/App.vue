@@ -33,10 +33,8 @@
                 />
               </div>
             </el-col>
-            <el-col :span="6" @click="handleFavoritesClick">
-              <div class="grid-content">
-                <WeightItem :title="t('app.clipboard')" :url="clipboardSvg" />
-              </div>
+            <el-col :span="6">
+              <div class="grid-content" />
             </el-col>
             <el-col :span="6">
               <div class="grid-content" />
@@ -57,7 +55,6 @@ import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { ROUTE_INDEX } from "@/routes/constants.js";
 import WeightItem from "@/components/terms/Weight-Item.vue";
 import translationSvg from "@/assets/translation.svg";
-import clipboardSvg from "@/assets/clipboard.svg";
 
 const { t } = useI18n();
 
@@ -121,31 +118,6 @@ const handleTranslationClick = () => {
           {
             initialMenu: ROUTE_INDEX.TRANSLATE,
             currentMenu: ROUTE_INDEX.TRANSLATE,
-          },
-          () => {
-            chrome.runtime.openOptionsPage(() => window.close());
-          },
-        );
-      });
-  });
-};
-
-const handleFavoritesClick = () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (!tabs[0]?.id) {
-      window.close();
-      return;
-    }
-    chrome.tabs
-      .sendMessage(tabs[0].id, { action: "showFavoritesPopup" })
-      .then(() => {
-        window.close();
-      })
-      .catch(() => {
-        chrome.storage.local.set(
-          {
-            initialMenu: ROUTE_INDEX.CLIPBOARD,
-            currentMenu: ROUTE_INDEX.CLIPBOARD,
           },
           () => {
             chrome.runtime.openOptionsPage(() => window.close());

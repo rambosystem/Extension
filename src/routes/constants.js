@@ -5,7 +5,6 @@
 export const MENU_ORDER = [
   "LOKALISE",
   "TRANSLATE",
-  "CLIPBOARD",
   "SETTINGS",
   "ABOUT",
 ];

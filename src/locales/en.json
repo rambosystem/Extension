@@ -21,7 +21,6 @@
     "library": "Library",
     "settings": "Settings",
     "translate": "Translate",
-    "clipboard": "Favorites",
     "about": "About"
   },
   "translation": {
@@ -123,44 +122,6 @@
     "termsStoreNeverInitialized": "terms-store not found, but no terms data exists - likely never initialized",
     "termsStoreMissingWithData": "Quick validation failed: terms-store is missing but terms data exists"
   },
-  "clipboard": {
-    "title": "Favorites Setting",
-    "shortcutLabel": "Shortcut",
-    "openFavoritesPopup": "Open Favorites Popup",
-    "clearShortcutButton": "Clear Shortcut",
-    "shortcutEmpty": "Not Set",
-    "shortcutCleared": "Shortcut cleared.",
-    "shortcutClearManual": "Please clear the shortcut from the shortcut settings page.",
-    "shortcutDescription": "Use a system shortcut to open Favorites popup quickly.",
-    "openShortcutButton": "Open Shortcut Settings",
-    "saveSuccess": "Favorites settings saved successfully",
-    "saveFailed": "Failed to save clipboard settings",
-    "popupTitle": "Favorites",
-    "readButton": "Read",
-    "copyButton": "Copy",
-    "inputPlaceholder": "Favorites text",
-    "historyTitle": " Favorites History",
-    "favoriteTitle": "Favorites",
-    "moreButton": "More",
-    "pinButton": "Pin",
-    "unpinButton": "Unpin",
-    "clearHistory": "Clear",
-    "noHistory": "Empty Log",
-    "noFavorites": "No favorites yet.",
-    "expand": "Expand",
-    "collapse": "Collapse",
-    "statusReady": "Click Read to load clipboard content.",
-    "statusEmpty": "Favorites is empty.",
-    "statusLoaded": "Favorites content loaded.",
-    "statusReadFailed": "Unable to read clipboard. Please grant permission and try again.",
-    "statusFavoriteAdded": "Added to favorites.",
-    "statusNoText": "No text to copy.",
-    "statusCopied": "Copied to clipboard.",
-    "statusPinned": "Pinned to top.",
-    "statusCopyFailed": "Copy failed. Please try again.",
-    "statusHistoryCleared": "History cleared.",
-    "statusFavoritesCleared": "Favorites cleared."
-  },
   "about": {
     "title": "About",
     "content": "About page content"
@@ -259,7 +220,6 @@
   "app": {
     "lokalise": "Lokalise",
     "translation": "Translate",
-    "clipboard": "Favorites",
     "copyright": "© Rambo Systems Software"
   },
   "Translate": {

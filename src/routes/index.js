@@ -8,7 +8,6 @@ export { ROUTE_INDEX } from "./constants.js";
 import Settings from "@/views/Settings.vue";
 import Lokalise from "@/views/Lokalise.vue";
 import Translate from "@/views/Translate.vue";
-import Favorites from "@/views/Favorites.vue";
 
 /** About 页为内联模板，依赖 t，通过 factory 在 Options 中注入 */
 export function getAboutComponent(t) {
@@ -35,11 +34,6 @@ const ROUTE_CONFIG = {
     labelKey: "menu.translate",
     titleKey: "Translate.title",
     component: Translate,
-  },
-  CLIPBOARD: {
-    labelKey: "menu.clipboard",
-    titleKey: "clipboard.title",
-    component: Favorites,
   },
   SETTINGS: {
     labelKey: "menu.settings",

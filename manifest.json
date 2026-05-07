@@ -44,13 +44,6 @@
         "mac": "Command+Shift+U"
       },
       "description": "Open Translate Popup"
-    },
-    "open-clipboard-popup": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+V",
-        "mac": "Command+Shift+V"
-      },
-      "description": "Open Favorites Popup"
     }
   },
   "options_ui": {

@@ -2,7 +2,6 @@
 const TRANSLATE_MENU_ID = "penrose-translate-selection";
 const WORD_SELECTION_TRANSLATE_ENABLED = "word_selection_translate_enabled";
 const TRANSLATE_MENU_INDEX = "2";
-const CLIPBOARD_MENU_INDEX = "3";
 
 // 豆包 TTS 配置（主配置见 src/translate/config/tts.js，此处为 background 用副本，修改配置请同步两处）
 const TTS_API_URL =
@@ -191,26 +190,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-function openFavoritesPopupFromActiveTab() {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const activeTabId = tabs?.[0]?.id;
-    if (!activeTabId) return;
-    chrome.tabs
-      .sendMessage(activeTabId, { action: "showFavoritesPopup" })
-      .catch(() => {
-        chrome.storage.local.set(
-          {
-            initialMenu: CLIPBOARD_MENU_INDEX,
-            currentMenu: CLIPBOARD_MENU_INDEX,
-          },
-          () => {
-            chrome.runtime.openOptionsPage();
-          },
-        );
-      });
-  });
-}
-
 function openTranslatePopupFromActiveTab() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const activeTabId = tabs?.[0]?.id;
@@ -234,9 +213,5 @@ function openTranslatePopupFromActiveTab() {
 chrome.commands?.onCommand.addListener((command) => {
   if (command === "open-translate-popup") {
     openTranslatePopupFromActiveTab();
-    return;
-  }
-  if (command === "open-clipboard-popup") {
-    openFavoritesPopupFromActiveTab();
   }
 });
