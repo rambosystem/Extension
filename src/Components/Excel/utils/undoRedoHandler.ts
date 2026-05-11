@@ -139,7 +139,7 @@ export function handleUndoRedoOperation(
         const safeMaxRow = Math.max(0, Math.min(range.maxRow, maxRows - 1));
         const safeMinCol = Math.max(0, Math.min(range.minCol, maxCols - 1));
         const safeMaxCol = Math.max(0, Math.min(range.maxCol, maxCols - 1));
-        if (activeCell?.value) {
+        if (activeCell) {
           activeCell.value = { row: safeMinRow, col: safeMinCol };
         }
         selectionService.applyRange({
@@ -190,7 +190,7 @@ export function handleUndoRedoOperation(
     const safeMinCol = Math.max(0, Math.min(minCol, maxCols - 1));
     const safeMaxCol = Math.max(0, Math.min(maxCol, maxCols - 1));
 
-    if (activeCell?.value) {
+    if (activeCell) {
       activeCell.value = {
         row: safeMinRow,
         col: safeMinCol,
@@ -230,8 +230,6 @@ export function handleUndoRedoOperation(
           activeCell.value.row,
           activeCell.value.col
         );
-      } else {
-        selectionService?.clear();
       }
     } else {
       // 如果没有 activeCell，清除选择状态

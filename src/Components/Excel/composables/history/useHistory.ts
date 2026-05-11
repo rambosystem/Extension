@@ -276,7 +276,8 @@ export function useHistory(
     if (lastEntry.snapshot) {
       lastEntry.timestamp = newTimestamp;
       if (lastEntry.metadata) {
-        lastEntry.metadata.affectedCells = changes.length;
+        // 使用合并后的总 changes 数量，而不是仅本次 changes 数量
+        lastEntry.metadata.affectedCells = lastEntry.changes?.length ?? changes.length;
       }
     }
 
@@ -833,7 +834,7 @@ export function useHistory(
     if (historyEntries.value.length > MAX_HISTORY_ENTRIES) {
       const removeCount = historyEntries.value.length - MAX_HISTORY_ENTRIES;
       const removedEntries = historyEntries.value.splice(0, removeCount);
-      historyIndex.value -= removeCount; // 更新索引
+      historyIndex.value = Math.max(0, historyIndex.value - removeCount); // 更新索引，确保不低于 0
       debugLog(
         "[History] saveHistory: history size limit reached, removed oldest entries",
         {
@@ -895,7 +896,9 @@ export function useHistory(
         debugError("[History] undo: invalid result from getCurrentFullState");
         // 恢复索引和状态
         historyIndex.value = previousIndex;
-        historyState.setUndoRedoInProgress(false);
+        setTimeout(() => {
+          historyState.setUndoRedoInProgress(false);
+        }, 10);
         return null;
       }
 
@@ -996,7 +999,9 @@ export function useHistory(
         );
         // 恢复索引和状态
         historyIndex.value = previousIndex;
-        historyState.setUndoRedoInProgress(false);
+        setTimeout(() => {
+          historyState.setUndoRedoInProgress(false);
+        }, 10);
         return null;
       }
 
