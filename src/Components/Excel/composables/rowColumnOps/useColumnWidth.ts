@@ -33,7 +33,11 @@ export interface UseColumnWidthReturn {
   isResizingColumn: Ref<boolean>;
   resizingColumnIndex: Ref<number | null>;
   getColumnWidth: (colIndex: number) => number;
-  startColumnResize: (colIndex: number, event: MouseEvent) => void;
+  startColumnResize: (
+    colIndex: number,
+    event: MouseEvent,
+    getCurrentWidth?: (colIndex: number) => number
+  ) => void;
   handleColumnResize: (event: MouseEvent) => void;
   stopColumnResize: () => void;
   handleDoubleClickResize: (
@@ -106,13 +110,22 @@ export function useColumnWidth({
    * 开始调整
    * 注意：mousemove / mouseup 的全局监听由调用方（useResizeHandlers）统一注册，
    * 此处只做状态初始化，不自行绑定全局事件，避免重复触发。
+   *
+   * @param colIndex 列索引
+   * @param event 鼠标事件
+   * @param getCurrentWidth 可选的获取当前实际宽度的函数，用于覆盖内部 getColumnWidth
    */
-  const startColumnResize = (colIndex: number, event: MouseEvent): void => {
+  const startColumnResize = (
+    colIndex: number,
+    event: MouseEvent,
+    getCurrentWidth?: (colIndex: number) => number
+  ): void => {
     event.preventDefault();
     isResizingColumn.value = true;
     resizingColumnIndex.value = colIndex;
     resizeStartX = event.clientX;
-    resizeStartWidth = getColumnWidth(colIndex);
+    // 优先使用外部传入的获取宽度函数，确保获取的是实际显示的宽度
+    resizeStartWidth = getCurrentWidth ? getCurrentWidth(colIndex) : getColumnWidth(colIndex);
     document.body.style.cursor = "col-resize";
   };
 

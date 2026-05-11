@@ -9,6 +9,7 @@ export interface UseResizeHandlersOptions {
   props: {
     enableColumnResize?: boolean;
     enableRowResize?: boolean;
+    defaultColumnWidth?: number | { key?: number; others?: number };
   };
   columnWidthComposable: UseColumnWidthReturn | null;
   rowHeightComposable: UseRowHeightReturn | null;
@@ -75,7 +76,9 @@ export function useResizeHandlers({
   const startColumnResize = (colIndex: number, event: MouseEvent): void => {
     if (!props.enableColumnResize) return;
     if (columnWidthComposable) {
-      columnWidthComposable.startColumnResize(colIndex, event);
+      // 传递 getColumnWidth 以确保获取实际的显示宽度
+      // 这样在第一列（key 列）有特殊宽度时不会出现抖动
+      columnWidthComposable.startColumnResize(colIndex, event, getColumnWidth);
     }
     window.addEventListener("mousemove", handleColumnResizeMove);
     const handleMouseUp = handleMouseUpRef?.value ?? null;
