@@ -215,36 +215,46 @@ export function useSelectionStyle({
       isMultipleMode?.value === true ||
       (multiSelections?.value?.length ?? 0) > 0;
 
-    if (!isInMultipleMode || !isSelecting?.value) {
+    if (!isInMultipleMode) {
       return classes;
     }
 
-    const selection = normalizedSelection.value;
-    if (!selection) {
-      return classes;
+    // 静态多选（已完成的 multiSelections）：渲染每个已确认选区的边框
+    const sels = multiSelections?.value ?? [];
+    for (const sel of sels) {
+      const inSel =
+        row >= sel.minRow &&
+        row <= sel.maxRow &&
+        col >= sel.minCol &&
+        col <= sel.maxCol;
+      if (!inSel) continue;
+      if (row === sel.minRow) classes.push("selection-top");
+      if (row === sel.maxRow) classes.push("selection-bottom");
+      if (col === sel.minCol) classes.push("selection-left");
+      if (col === sel.maxCol) classes.push("selection-right");
     }
 
-    const inCurrentDragSelection =
-      row >= selection.minRow &&
-      row <= selection.maxRow &&
-      col >= selection.minCol &&
-      col <= selection.maxCol;
+    // 拖拽进行中：额外渲染当前拖选范围的边框
+    if (isSelecting?.value) {
+      const selection = normalizedSelection.value;
+      if (selection) {
+        const inCurrentDragSelection =
+          row >= selection.minRow &&
+          row <= selection.maxRow &&
+          col >= selection.minCol &&
+          col <= selection.maxCol;
 
-    if (!inCurrentDragSelection) {
-      return classes;
+        if (inCurrentDragSelection) {
+          if (row === selection.minRow) classes.push("selection-top");
+          if (row === selection.maxRow) classes.push("selection-bottom");
+          if (col === selection.minCol) classes.push("selection-left");
+          if (col === selection.maxCol) classes.push("selection-right");
+        }
+      }
     }
 
-    const isTop = row === selection.minRow;
-    const isBottom = row === selection.maxRow;
-    const isLeft = col === selection.minCol;
-    const isRight = col === selection.maxCol;
-
-    if (isTop) classes.push("selection-top");
-    if (isBottom) classes.push("selection-bottom");
-    if (isLeft) classes.push("selection-left");
-    if (isRight) classes.push("selection-right");
-
-    return classes;
+    // 去重（同一方向可能由多个选区重复添加）
+    return [...new Set(classes)];
   };
 
   /**

@@ -1,11 +1,6 @@
 import type { Ref } from "vue";
 import { DEFAULT_CONFIG } from "../constants";
-import {
-  debugLog,
-  debugInfo,
-  debugWarn,
-  debugError,
-} from "@/utils/debug.js";
+import { debugLog, debugInfo, debugWarn, debugError } from "@/utils/debug.js";
 import { optimizedDeepCopy } from "./historySerialize";
 import { buildSelectionRangeFromChanges } from "./historySelectionRange";
 import { createHistoryState } from "./historyState";
@@ -113,18 +108,10 @@ export interface HistoryInfo {
 }
 
 /**
- * Excel 历史记录 Composable (重构版)
- *
- * 改进点：
- * 1. 使用增量快照 + 完整快照混合模式
- * 2. 优化的深拷贝实现（结构化克隆优先）
- * 3. 修复索引管理缺陷
- * 4. 操作合并机制
- * 5. 优化的状态比较
- * 6. 检查点机制
+ * Excel 历史记录 Composable
  */
 export function useHistory(
-  maxHistorySize: number = DEFAULT_CONFIG.MAX_HISTORY_SIZE
+  maxHistorySize: number = DEFAULT_CONFIG.MAX_HISTORY_SIZE,
 ): UseHistoryReturn {
   const historyState = createHistoryState(maxHistorySize);
   const historyEntries = historyState.historyEntries as Ref<HistoryEntry[]>;
@@ -132,13 +119,12 @@ export function useHistory(
   const { MERGE_TIME_WINDOW, CHECKPOINT_INTERVAL, MAX_HISTORY_ENTRIES } =
     historyState.config;
 
-
   /**
    * 检测数据变化（如果未提供变化列表）
    */
   const detectChanges = (
     oldState: string[][],
-    newState: string[][]
+    newState: string[][],
   ): CellChange[] => {
     const changes: CellChange[] = [];
     const maxRows = Math.max(oldState.length, newState.length);
@@ -173,14 +159,13 @@ export function useHistory(
     return incrementalCount >= CHECKPOINT_INTERVAL;
   };
 
-
   /**
    * 判断是否可以合并操作
    */
   const canMergeOperation = (
     lastEntry: HistoryEntry | undefined,
     newType: HistoryActionType,
-    newTimestamp: number
+    newTimestamp: number,
   ): boolean => {
     if (!lastEntry) return false;
 
@@ -201,16 +186,16 @@ export function useHistory(
   const mergeOperation = (
     lastEntry: HistoryEntry,
     changes: CellChange[],
-    newTimestamp: number
+    newTimestamp: number,
   ): void => {
     const mergeChanges = (
       baseChanges: CellChange[] = [],
-      nextChanges: CellChange[]
+      nextChanges: CellChange[],
     ): CellChange[] => {
       const merged = [...baseChanges];
       nextChanges.forEach((change) => {
         const existingIndex = merged.findIndex(
-          (c) => c.row === change.row && c.col === change.col
+          (c) => c.row === change.row && c.col === change.col,
         );
         if (existingIndex >= 0) {
           merged[existingIndex].newValue = change.newValue;
@@ -238,7 +223,7 @@ export function useHistory(
       // 合并变化：相同单元格的变化合并，不同单元格的变化追加
       changes.forEach((change) => {
         const existingIndex = lastEntry.delta!.changes.findIndex(
-          (c) => c.row === change.row && c.col === change.col
+          (c) => c.row === change.row && c.col === change.col,
         );
 
         if (existingIndex >= 0) {
@@ -277,13 +262,14 @@ export function useHistory(
       lastEntry.timestamp = newTimestamp;
       if (lastEntry.metadata) {
         // 使用合并后的总 changes 数量，而不是仅本次 changes 数量
-        lastEntry.metadata.affectedCells = lastEntry.changes?.length ?? changes.length;
+        lastEntry.metadata.affectedCells =
+          lastEntry.changes?.length ?? changes.length;
       }
     }
 
     if (lastEntry.metadata && lastEntry.type === HistoryActionType.CELL_EDIT) {
       const selectionRange = buildSelectionRangeFromChanges(
-        lastEntry.changes || []
+        lastEntry.changes || [],
       );
       if (selectionRange) {
         lastEntry.metadata.selectionRange = selectionRange;
@@ -296,7 +282,7 @@ export function useHistory(
    */
   const applyDelta = (
     state: string[][],
-    delta: { changes: CellChange[] }
+    delta: { changes: CellChange[] },
   ): string[][] => {
     if (!state || !Array.isArray(state)) {
       debugError("[History] applyDelta: invalid state", state);
@@ -390,7 +376,7 @@ export function useHistory(
               {
                 checkpointIndex: i,
                 entryId: entry.id,
-              }
+              },
             );
             return null;
           }
@@ -401,7 +387,7 @@ export function useHistory(
               checkpointIndex: i,
               entryId: entry.id,
               error,
-            }
+            },
           );
           return null;
         }
@@ -416,7 +402,7 @@ export function useHistory(
         {
           historyIndex: historyIndex.value,
           entriesLength: historyEntries.value.length,
-        }
+        },
       );
 
       // 尝试从第一个条目开始重建
@@ -429,14 +415,14 @@ export function useHistory(
           checkpointIndex = 0;
           if (!checkpointState || !Array.isArray(checkpointState)) {
             debugError(
-              "[History] getCurrentFullState: first entry snapshot is invalid"
+              "[History] getCurrentFullState: first entry snapshot is invalid",
             );
             return null;
           }
         } catch (error) {
           debugError(
             "[History] getCurrentFullState: failed to copy first entry snapshot",
-            error
+            error,
           );
           return null;
         }
@@ -446,7 +432,7 @@ export function useHistory(
           {
             historyIndex: historyIndex.value,
             entriesLength: historyEntries.value.length,
-          }
+          },
         );
         return null;
       }
@@ -475,7 +461,7 @@ export function useHistory(
               {
                 entryIndex: i,
                 entryId: entry.id,
-              }
+              },
             );
             return null;
           }
@@ -486,7 +472,7 @@ export function useHistory(
               entryIndex: i,
               entryId: entry.id,
               error,
-            }
+            },
           );
           return null;
         }
@@ -501,7 +487,7 @@ export function useHistory(
                 checkpointIndex,
                 entryIndex: i,
                 entryId: entry.id,
-              }
+              },
             );
             return null;
           }
@@ -523,7 +509,7 @@ export function useHistory(
             entryIndex: i,
             entryId: entry.id,
             entryType: entry.type,
-          }
+          },
         );
       }
     }
@@ -547,7 +533,7 @@ export function useHistory(
           "[History] getCurrentFullState: row is null/undefined, creating empty row",
           {
             rowIndex: i,
-          }
+          },
         );
         validatedState.push([]);
       } else if (Array.isArray(row)) {
@@ -561,7 +547,7 @@ export function useHistory(
             rowIndex: i,
             row,
             rowType: typeof row,
-          }
+          },
         );
         validatedState.push([]);
       }
@@ -570,7 +556,7 @@ export function useHistory(
     // 最终验证：确保至少有一行
     if (validatedState.length === 0) {
       debugWarn(
-        "[History] getCurrentFullState: validated state is empty, adding empty row"
+        "[History] getCurrentFullState: validated state is empty, adding empty row",
       );
       validatedState.push([]);
     }
@@ -619,7 +605,7 @@ export function useHistory(
    */
   const saveHistory = (
     currentState: any,
-    options: SaveHistoryOptions = {}
+    options: SaveHistoryOptions = {},
   ): void => {
     // 获取调用栈信息（仅用于调试）
     const stackTrace = new Error().stack;
@@ -730,7 +716,7 @@ export function useHistory(
       });
       historyEntries.value = historyEntries.value.slice(
         0,
-        historyIndex.value + 1
+        historyIndex.value + 1,
       );
     }
 
@@ -842,7 +828,7 @@ export function useHistory(
           removedEntryIds: removedEntries.map((e) => e.id),
           currentSize: historyEntries.value.length,
           maxSize: MAX_HISTORY_ENTRIES,
-        }
+        },
       );
     }
   };
@@ -880,8 +866,8 @@ export function useHistory(
         previousEntry?.changes && previousEntry.changes.length > 0
           ? previousEntry.changes
           : currentState && result
-          ? detectChanges(currentState, result)
-          : undefined;
+            ? detectChanges(currentState, result)
+            : undefined;
 
       debugLog("[History] undo: executed", {
         fromIndex: previousIndex,
@@ -974,8 +960,8 @@ export function useHistory(
         currentEntry?.changes && currentEntry.changes.length > 0
           ? currentEntry.changes
           : currentState && result
-          ? detectChanges(currentState, result)
-          : undefined;
+            ? detectChanges(currentState, result)
+            : undefined;
 
       debugLog("[History] redo: executed", {
         fromIndex: previousIndex,
@@ -995,7 +981,7 @@ export function useHistory(
             result,
             historyIndex: historyIndex.value,
             entriesLength: historyEntries.value.length,
-          }
+          },
         );
         // 恢复索引和状态
         historyIndex.value = previousIndex;
@@ -1008,7 +994,7 @@ export function useHistory(
       // 验证结果的有效性
       if (result.length === 0) {
         debugWarn(
-          "[History] redo: result is empty array, returning empty state"
+          "[History] redo: result is empty array, returning empty state",
         );
         // 使用 setTimeout 确保 emitModelUpdate/emitChange 先执行完毕后再重置标志
         setTimeout(() => {
@@ -1099,7 +1085,7 @@ export function useHistory(
 
       if (curr.timestamp < prev.timestamp) {
         issues.push(
-          `Timestamp not monotonic at index ${i}: ${prev.timestamp} -> ${curr.timestamp}`
+          `Timestamp not monotonic at index ${i}: ${prev.timestamp} -> ${curr.timestamp}`,
         );
       }
     }
@@ -1110,7 +1096,7 @@ export function useHistory(
       historyIndex.value >= historyEntries.value.length
     ) {
       issues.push(
-        `History index out of bounds: ${historyIndex.value} (entries: ${historyEntries.value.length})`
+        `History index out of bounds: ${historyIndex.value} (entries: ${historyEntries.value.length})`,
       );
     }
 

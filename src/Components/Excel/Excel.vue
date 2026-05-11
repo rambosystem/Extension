@@ -465,7 +465,10 @@ const normalizedDisplayColumns = computed<string[]>(() =>
 );
 
 const isCellEditable = (_row: number, col: number): boolean => {
-  const colName = normalizedDisplayColumns.value[col];
+  const cols = normalizedDisplayColumns.value;
+  // 越界列不可编辑
+  if (col < 0 || col >= cols.length) return false;
+  const colName = cols[col];
   if (!colName) return true;
   return !readOnlyColumnSet.value.has(colName);
 };
@@ -711,7 +714,7 @@ const handleRowWheel = (event: WheelEvent): void => {
 };
 
 // --- 单元格显示样式管理 ---
-const { getCellDisplayStyle } = useCellDisplay({
+const { getCellDisplayStyle, clearStyleCache: clearCellDisplayCache } = useCellDisplay({
   tableData,
   getColumnWidth,
   getRowHeight,
@@ -1390,9 +1393,20 @@ if (rowHeightComposable) {
     () => rowHeightComposable?.rowHeights.value,
     () => {
       invalidateRowPrefix();
+      clearCellDisplayCache();
       if (virtualScroll.enabled.value) {
         virtualScroll.updateVisibleRange();
       }
+    },
+    { deep: true },
+  );
+}
+
+if (columnWidthComposable) {
+  watch(
+    () => columnWidthComposable.columnWidths.value,
+    () => {
+      clearCellDisplayCache();
     },
     { deep: true },
   );
