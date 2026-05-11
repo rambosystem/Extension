@@ -43,12 +43,14 @@ export interface UseColumnWidthReturn {
   handleDoubleClickResize: (
     colIndex: number,
     columns: string[],
-    tableData: string[][]
+    tableData: string[][],
+    getCurrentWidth?: (colIndex: number) => number
   ) => void;
   autoFitColumn: (
     colIndex: number,
     columns: string[],
-    tableData: string[][]
+    tableData: string[][],
+    getCurrentWidth?: (colIndex: number) => number
   ) => void;
 }
 
@@ -129,18 +131,31 @@ export function useColumnWidth({
     document.body.style.cursor = "col-resize";
   };
 
+  /**
+   * 自适应列宽
+   *
+   * @param colIndex 列索引
+   * @param columns 列标题数组
+   * @param tableData 表格数据
+   * @param getDefaultWidth 可选的获取默认宽度的函数（注意：不应返回已设置的宽度）
+   */
   const autoFitColumn = (
     colIndex: number,
     columns: string[],
-    tableData: string[][]
+    tableData: string[][],
+    getDefaultWidth?: (colIndex: number) => number
   ): void => {
-    let maxContentWidth = defaultWidth;
+    // 初始宽度从 0 开始计算，让内容决定宽度
+    // 如果没有任何内容，再使用默认宽度
+    let maxContentWidth = 0;
 
+    // 计算列标题宽度（左右 padding 各 11px = 22px）
     if (columns && columns[colIndex]) {
       const headerWidth = getTextWidth(String(columns[colIndex]), fontStyle);
-      maxContentWidth = Math.max(maxContentWidth, headerWidth + 24);
+      maxContentWidth = Math.max(maxContentWidth, headerWidth + 22);
     }
 
+    // 计算单元格内容宽度（左右 padding 各 11px = 22px）
     if (tableData && tableData.length > 0) {
       const sampleLimit = Math.min(tableData.length, 100);
       for (let r = 0; r < sampleLimit; r++) {
@@ -150,11 +165,17 @@ export function useColumnWidth({
           const strVal = String(cellValue);
           if (strVal.length > 0) {
             const width = getTextWidth(strVal, fontStyle);
-            maxContentWidth = Math.max(maxContentWidth, width + 20);
+            maxContentWidth = Math.max(maxContentWidth, width + 22);
           }
         }
       }
     }
+
+    // 如果没有任何内容，使用默认宽度
+    if (maxContentWidth === 0) {
+      maxContentWidth = getDefaultWidth ? getDefaultWidth(colIndex) : defaultWidth;
+    }
+
     const finalWidth = Math.max(minWidth, Math.min(maxWidth, maxContentWidth));
     columnWidths.value.set(colIndex, finalWidth);
   };
@@ -162,9 +183,10 @@ export function useColumnWidth({
   const handleDoubleClickResize = (
     colIndex: number,
     columns: string[],
-    tableData: string[][]
+    tableData: string[][],
+    getCurrentWidth?: (colIndex: number) => number
   ): void => {
-    autoFitColumn(colIndex, columns, tableData);
+    autoFitColumn(colIndex, columns, tableData, getCurrentWidth);
   };
 
   onUnmounted(() => {

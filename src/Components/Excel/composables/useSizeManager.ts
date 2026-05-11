@@ -20,7 +20,10 @@ export interface UseSizeManagerOptions {
  * useSizeManager 返回值
  */
 export interface UseSizeManagerReturn {
+  /** 获取列宽（包括用户已设置的宽度） */
   getColumnWidth: (colIndex: number) => number;
+  /** 获取默认列宽（不考虑用户已设置的宽度） */
+  getDefaultColumnWidth: (colIndex: number) => number;
   getRowHeight: (rowIndex: number) => number;
 }
 
@@ -33,29 +36,10 @@ export function useSizeManager({
   rowHeightComposable,
 }: UseSizeManagerOptions): UseSizeManagerReturn {
   /**
-   * 获取列宽
+   * 获取默认列宽（不考虑用户已设置的宽度）
+   * 用于自适应列宽时确定基准宽度
    */
-  const getColumnWidth = (colIndex: number): number => {
-    if (props.enableColumnResize && columnWidthComposable) {
-      const storedWidth =
-        columnWidthComposable.columnWidths.value.get(colIndex);
-      if (storedWidth !== undefined) {
-        return storedWidth;
-      }
-
-      if (
-        typeof props.defaultColumnWidth === "object" &&
-        props.defaultColumnWidth !== null
-      ) {
-        if (colIndex === 0) {
-          return props.defaultColumnWidth.key || 120;
-        }
-        return props.defaultColumnWidth.others || 100;
-      }
-
-      return columnWidthComposable.getColumnWidth(colIndex);
-    }
-
+  const getDefaultColumnWidth = (colIndex: number): number => {
     if (
       typeof props.defaultColumnWidth === "object" &&
       props.defaultColumnWidth !== null
@@ -65,6 +49,23 @@ export function useSizeManager({
         : props.defaultColumnWidth.others || 100;
     }
     return (props.defaultColumnWidth as number) || 100;
+  };
+
+  /**
+   * 获取列宽（包括用户已设置的宽度）
+   */
+  const getColumnWidth = (colIndex: number): number => {
+    if (props.enableColumnResize && columnWidthComposable) {
+      const storedWidth =
+        columnWidthComposable.columnWidths.value.get(colIndex);
+      if (storedWidth !== undefined) {
+        return storedWidth;
+      }
+
+      return getDefaultColumnWidth(colIndex);
+    }
+
+    return getDefaultColumnWidth(colIndex);
   };
 
   /**
@@ -79,6 +80,7 @@ export function useSizeManager({
 
   return {
     getColumnWidth,
+    getDefaultColumnWidth,
     getRowHeight,
   };
 }

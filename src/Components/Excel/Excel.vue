@@ -590,7 +590,7 @@ const {
 });
 
 // --- 尺寸管理 ---
-const { getColumnWidth, getRowHeight } = useSizeManager({
+const { getColumnWidth, getDefaultColumnWidth, getRowHeight } = useSizeManager({
   props,
   columnWidthComposable,
   rowHeightComposable,
@@ -875,6 +875,7 @@ const {
   tableData,
   columns: internalColumns,
   getColumnWidth,
+  getDefaultColumnWidth,
   handleMouseUpRef,
 });
 

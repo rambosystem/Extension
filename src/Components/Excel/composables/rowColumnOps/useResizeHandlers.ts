@@ -16,6 +16,8 @@ export interface UseResizeHandlersOptions {
   tableData: Ref<string[][]>;
   columns: Ref<string[]>;
   getColumnWidth: (colIndex: number) => number;
+  /** 获取默认列宽（不考虑用户已设置的宽度），用于自适应列宽 */
+  getDefaultColumnWidth: (colIndex: number) => number;
   /**
    * 鼠标抬起处理函数的 ShallowRef。
    *
@@ -50,6 +52,7 @@ export function useResizeHandlers({
   tableData,
   columns,
   getColumnWidth,
+  getDefaultColumnWidth,
   handleMouseUpRef,
 }: UseResizeHandlersOptions): UseResizeHandlersReturn {
   /**
@@ -129,7 +132,10 @@ export function useResizeHandlers({
       columnWidthComposable.handleDoubleClickResize(
         colIndex,
         columns.value,
-        tableData.value
+        tableData.value,
+        // 使用 getDefaultColumnWidth 以确保自适应时从默认宽度开始计算
+        // 而不是从已设置的宽度开始，这样当内容变少时可以正确缩小
+        getDefaultColumnWidth
       );
     }
   };
