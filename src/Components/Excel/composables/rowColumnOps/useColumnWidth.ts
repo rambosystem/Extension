@@ -87,6 +87,8 @@ export function useColumnWidth({
 
   /**
    * 停止拖拽
+   * 注意：mousemove / mouseup 的全局监听由 useResizeHandlers 统一移除，
+   * 此处只重置内部状态。
    */
   const stopColumnResize = (): void => {
     isResizingColumn.value = false;
@@ -97,13 +99,13 @@ export function useColumnWidth({
       animationFrameId = null;
     }
 
-    window.removeEventListener("mousemove", handleColumnResize);
-    window.removeEventListener("mouseup", stopColumnResize);
     document.body.style.cursor = "";
   };
 
   /**
    * 开始调整
+   * 注意：mousemove / mouseup 的全局监听由调用方（useResizeHandlers）统一注册，
+   * 此处只做状态初始化，不自行绑定全局事件，避免重复触发。
    */
   const startColumnResize = (colIndex: number, event: MouseEvent): void => {
     event.preventDefault();
@@ -111,9 +113,6 @@ export function useColumnWidth({
     resizingColumnIndex.value = colIndex;
     resizeStartX = event.clientX;
     resizeStartWidth = getColumnWidth(colIndex);
-
-    window.addEventListener("mousemove", handleColumnResize);
-    window.addEventListener("mouseup", stopColumnResize);
     document.body.style.cursor = "col-resize";
   };
 
@@ -156,8 +155,9 @@ export function useColumnWidth({
   };
 
   onUnmounted(() => {
-    window.removeEventListener("mousemove", handleColumnResize);
-    window.removeEventListener("mouseup", stopColumnResize);
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+    }
   });
 
   return {
