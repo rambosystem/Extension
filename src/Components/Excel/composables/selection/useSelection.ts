@@ -775,6 +775,9 @@ export function useSelection({
     maxCols: number,
     addToMultiSelect = false,
   ): void => {
+    // 边界检查：如果没有列，直接返回
+    if (maxCols <= 0) return;
+
     if (addToMultiSelect) {
       isMultipleMode.value = true;
       const newSelection: SelectionRange = {
@@ -829,6 +832,9 @@ export function useSelection({
     maxRows: number,
     addToMultiSelect = false,
   ): void => {
+    // 边界检查：如果没有行，直接返回
+    if (maxRows <= 0) return;
+
     if (addToMultiSelect) {
       isMultipleMode.value = true;
       const newSelection: SelectionRange = {
