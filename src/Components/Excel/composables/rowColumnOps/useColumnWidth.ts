@@ -58,7 +58,7 @@ export function useColumnWidth({
   defaultWidth = 100,
   minWidth = 50,
   maxWidth = 500,
-  fontStyle = "13px sans-serif",
+  fontStyle = "14px -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
 }: UseColumnWidthOptions = {}): UseColumnWidthReturn {
   const columnWidths = ref<Map<number, number>>(new Map());
   const isResizingColumn = ref<boolean>(false);
@@ -66,6 +66,7 @@ export function useColumnWidth({
 
   let resizeStartX = 0;
   let resizeStartWidth = 0;
+  let nextColumnStartWidth = 0;
   let animationFrameId: number | null = null;
 
   const getColumnWidth = (colIndex: number): number => {
@@ -74,6 +75,7 @@ export function useColumnWidth({
 
   /**
    * 处理拖拽逻辑（已使用 requestAnimationFrame 优化，无需额外节流）
+   * 同时调整当前列和下一列的宽度，保持总宽度不变
    */
   const handleColumnResize = (event: MouseEvent): void => {
     if (!isResizingColumn.value) return;
@@ -81,13 +83,33 @@ export function useColumnWidth({
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
     animationFrameId = requestAnimationFrame(() => {
+      const currentColIndex = resizingColumnIndex.value;
+      if (currentColIndex === null) return;
+
       const deltaX = event.clientX - resizeStartX;
-      const newWidth = Math.max(
+
+      // 计算当前列的新宽度
+      const newCurrentWidth = Math.max(
         minWidth,
         Math.min(maxWidth, resizeStartWidth + deltaX)
       );
 
-      columnWidths.value.set(resizingColumnIndex.value!, newWidth);
+      // 计算实际的宽度变化量
+      const actualDelta = newCurrentWidth - resizeStartWidth;
+
+      // 计算下一列的新宽度（反向变化）
+      const newNextWidth = Math.max(
+        minWidth,
+        nextColumnStartWidth - actualDelta
+      );
+
+      // 如果下一列达到最小宽度限制，需要重新计算当前列的宽度
+      const actualNextDelta = nextColumnStartWidth - newNextWidth;
+      const adjustedCurrentWidth = resizeStartWidth + actualNextDelta;
+
+      // 设置两列的宽度
+      columnWidths.value.set(currentColIndex, adjustedCurrentWidth);
+      columnWidths.value.set(currentColIndex + 1, newNextWidth);
     });
   };
 
@@ -126,8 +148,16 @@ export function useColumnWidth({
     isResizingColumn.value = true;
     resizingColumnIndex.value = colIndex;
     resizeStartX = event.clientX;
+
+    // 保存外部获取宽度的函数
+    getExternalWidth = getCurrentWidth || null;
+
     // 优先使用外部传入的获取宽度函数，确保获取的是实际显示的宽度
     resizeStartWidth = getCurrentWidth ? getCurrentWidth(colIndex) : getColumnWidth(colIndex);
+
+    // 获取下一列的宽度
+    nextColumnStartWidth = getCurrentWidth ? getCurrentWidth(colIndex + 1) : getColumnWidth(colIndex + 1);
+
     document.body.style.cursor = "col-resize";
   };
 
@@ -149,13 +179,16 @@ export function useColumnWidth({
     // 如果没有任何内容，再使用默认宽度
     let maxContentWidth = 0;
 
-    // 计算列标题宽度（左右 padding 各 11px = 22px）
+    // padding: 左右各 11px = 22px，额外加 4px 缓冲空间处理亚像素渲染
+    const paddingAndBuffer = 26;
+
+    // 计算列标题宽度
     if (columns && columns[colIndex]) {
       const headerWidth = getTextWidth(String(columns[colIndex]), fontStyle);
-      maxContentWidth = Math.max(maxContentWidth, headerWidth + 22);
+      maxContentWidth = Math.max(maxContentWidth, headerWidth + paddingAndBuffer);
     }
 
-    // 计算单元格内容宽度（左右 padding 各 11px = 22px）
+    // 计算单元格内容宽度
     if (tableData && tableData.length > 0) {
       const sampleLimit = Math.min(tableData.length, 100);
       for (let r = 0; r < sampleLimit; r++) {
@@ -165,7 +198,7 @@ export function useColumnWidth({
           const strVal = String(cellValue);
           if (strVal.length > 0) {
             const width = getTextWidth(strVal, fontStyle);
-            maxContentWidth = Math.max(maxContentWidth, width + 22);
+            maxContentWidth = Math.max(maxContentWidth, width + paddingAndBuffer);
           }
         }
       }
