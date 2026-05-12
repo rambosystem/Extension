@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-dialog
     ref="dialogRef"
     :modelValue="translationCoreStore.dialogVisible"
@@ -919,22 +919,31 @@ const handleCustomAction = ({ id, context }) => {
 
 :deep(.excel-wrapper) {
   min-height: 0; // 强制 min-height �?0，防�?flex 布局下被内容撑开
-  max-height: calc(round(nearest, 56vh, 36px));
+  height: calc(round(nearest, 56vh, 36px));
   display: flex;
   flex-direction: column;
   position: relative;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
   margin: 0 10px;
+  --excel-container-height: 100%;
+  --excel-container-max-height: 100%;
 }
 
 :deep(.excel-container) {
   flex: 1;
   min-height: 0;
-  max-height: 100%;
-  height: 100%;
+  height: 0; // 强制高度从 flex 布局继承
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+// Ensure sticky header works correctly when scrolling
+:deep(.header-row-sticky) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f5f7fa;
 }
 
 .dialog-button-container {
@@ -979,6 +988,8 @@ const handleCustomAction = ({ id, context }) => {
 
 :deep(.el-dialog__body) {
   padding: 16px 20px;
+  overflow: visible; // 禁用滚动，让内部的 excel-container 成为滚动容器
+  max-height: calc(100vh - 200px); // 限制最大高度
 }
 
 /* 对话框标题样�?*/
@@ -1038,3 +1049,5 @@ const handleCustomAction = ({ id, context }) => {
   transition: background-color 0.05s ease;
 }
 </style>
+
+
