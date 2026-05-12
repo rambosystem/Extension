@@ -699,10 +699,17 @@ export const useTranslationCoreStore = defineStore("translationCore", {
     },
   },
 
-  /** 持久化：统一使用 storage 适配层 */
+  /** 持久化：只持久化必要的数据 */
   persist: {
     key: "translation-core-store",
     storage: piniaLocalStorage,
+    // 只持久化以下字段，排除临时 UI 状态
+    paths: [
+      "codeContent",
+      "translationTargetLanguages",
+      "hasLastTranslation",
+      "lastTranslation",
+    ],
   },
 });
 

@@ -217,6 +217,9 @@
     "success": "Success !",
     "processingDeduplication": "Processing deduplication..."
   },
+  "translationResult": {
+    "autoIncrement": "Auto Increment Key"
+  },
   "app": {
     "lokalise": "Lokalise",
     "translation": "Translate",

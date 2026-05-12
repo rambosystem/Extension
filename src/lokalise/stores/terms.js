@@ -525,7 +525,7 @@ export const useTermsStore = defineStore("terms", {
   persist: {
     key: "terms-store",
     storage: piniaLocalStorage,
-    // 只持久化部分状态
+    // 只持久化数据和关键状态，排除加载状态和临时编辑状态
     paths: [
       "termsData",
       "termsStatus",

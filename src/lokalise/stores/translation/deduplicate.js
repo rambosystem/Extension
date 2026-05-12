@@ -378,5 +378,8 @@ export const useDeduplicateStore = defineStore("deduplicate", {
   persist: {
     key: "deduplicate-store",
     storage: piniaLocalStorage,
+    // deduplicate store 全是临时 UI 状态，不需要持久化
+    // 设置为空数组表示不持久化任何字段
+    paths: [],
   },
 });

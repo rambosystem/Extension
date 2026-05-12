@@ -736,5 +736,7 @@ export const useUploadStore = defineStore("upload", {
   persist: {
     key: "upload-store",
     storage: piniaLocalStorage,
+    // 只持久化表单数据，排除临时 UI 状态
+    paths: ["uploadForm"],
   },
 });

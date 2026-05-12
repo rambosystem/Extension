@@ -149,5 +149,7 @@ export const useAppStore = defineStore("app", {
   persist: {
     key: "app-store",
     storage: piniaLocalStorage,
+    // 排除临时 UI 状态
+    paths: ["currentMenu", "language", "defaultProjectId"],
   },
 });

@@ -335,5 +335,13 @@ export const useTranslationSettingsStore = defineStore("translationSettings", {
   persist: {
     key: "translation-settings-store",
     storage: piniaLocalStorage,
+    // 只持久化设置项，排除临时 UI 状态
+    paths: [
+      "autoDeduplication",
+      "wordSelectionTranslate",
+      "deduplicateProject",
+      "adTerms",
+      "debugLogging",
+    ],
   },
 });

@@ -252,5 +252,7 @@ export const useApiStore = defineStore("api", {
   persist: {
     key: "api-store",
     storage: piniaLocalStorage,
+    // 只持久化 API 密钥，排除加载状态
+    paths: ["apiKey", "lokaliseApiToken"],
   },
 });

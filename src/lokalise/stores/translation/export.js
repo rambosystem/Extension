@@ -484,5 +484,12 @@ export const useExportStore = defineStore("export", {
   persist: {
     key: "export-store",
     storage: piniaLocalStorage,
+    // 只持久化配置项，排除加载状态
+    paths: [
+      "excelBaselineKey",
+      "excelOverwrite",
+      "autoIncrementKeyEnabled",
+      "targetLanguages",
+    ],
   },
 });

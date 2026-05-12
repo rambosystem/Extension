@@ -149,9 +149,6 @@ export function useColumnWidth({
     resizingColumnIndex.value = colIndex;
     resizeStartX = event.clientX;
 
-    // 保存外部获取宽度的函数
-    getExternalWidth = getCurrentWidth || null;
-
     // 优先使用外部传入的获取宽度函数，确保获取的是实际显示的宽度
     resizeStartWidth = getCurrentWidth ? getCurrentWidth(colIndex) : getColumnWidth(colIndex);
 
