@@ -736,11 +736,12 @@ const handleRowWheel = (event: WheelEvent): void => {
 };
 
 // --- 单元格显示样式管理 ---
-const { getCellDisplayStyle, clearStyleCache: clearCellDisplayCache } = useCellDisplay({
-  tableData,
-  getColumnWidth,
-  getRowHeight,
-});
+const { getCellDisplayStyle, clearStyleCache: clearCellDisplayCache } =
+  useCellDisplay({
+    tableData,
+    getColumnWidth,
+    getRowHeight,
+  });
 
 // --- 虚拟滚动管理（大数据量性能优化）---
 const virtualScroll = useVirtualScroll(
@@ -1509,13 +1510,13 @@ $font-weight-bold: 600;
 
 // Z-index 层级
 $z-index-base: 1;
-$z-index-header: 5;
 $z-index-active: 10;
 $z-index-selection: 11;
 $z-index-selection-overlay: 12;
 $z-index-drag-target: 13;
 $z-index-fill-handle: 15;
 $z-index-resizer: 20;
+$z-index-header: 25;
 
 // 过渡动画
 $transition-fast: 0.05s ease;
@@ -1606,8 +1607,8 @@ $font-family:
 // ==================== 固定表头样式 ====================
 .excel-header-fixed {
   display: block;
-  background: $header-bg;
   font-size: $font-size-base;
+  background: #ffffff;
   user-select: none;
   width: 100%;
   box-sizing: border-box;
