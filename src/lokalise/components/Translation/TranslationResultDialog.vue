@@ -938,14 +938,6 @@ const handleCustomAction = ({ id, context }) => {
   overflow-x: hidden;
 }
 
-// Ensure sticky header works correctly when scrolling
-:deep(.header-row-sticky) {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #f5f7fa;
-}
-
 .dialog-button-container {
   width: 100%;
   display: flex;

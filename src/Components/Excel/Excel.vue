@@ -9,13 +9,34 @@
     tabindex="0"
     ref="containerRef"
   >
-    <div class="excel-table" @mouseleave="handleMouseUp">
+    <!-- 表头行：独立于数据表，固定在顶部 -->
+    <div
+      v-if="enableHeaderSticky"
+      class="excel-header-fixed"
+      @mouseleave="handleMouseUp"
+    >
       <HeaderRow
         :display-columns="displayColumns"
         :get-column-width="getColumnWidth"
         :is-in-selection-header="isInSelectionHeader"
         :enable-column-resize="enableColumnResize"
-        :sticky-header="enableHeaderSticky"
+        @corner-click="() => handleCornerCellClick()"
+        @column-header-mousedown="handleColumnHeaderMouseDown"
+        @column-header-mouseenter="handleColumnHeaderMouseEnter"
+        @column-resize-start="startColumnResize"
+        @column-resize-dblclick="handleDoubleClickResize"
+      />
+    </div>
+
+    <!-- 数据表：包含数据行，可滚动 -->
+    <div class="excel-table" @mouseleave="handleMouseUp">
+      <!-- 非 sticky 模式下，表头仍在表格内 -->
+      <HeaderRow
+        v-if="!enableHeaderSticky"
+        :display-columns="displayColumns"
+        :get-column-width="getColumnWidth"
+        :is-in-selection-header="isInSelectionHeader"
+        :enable-column-resize="enableColumnResize"
         @corner-click="() => handleCornerCellClick()"
         @column-header-mousedown="handleColumnHeaderMouseDown"
         @column-header-mouseenter="handleColumnHeaderMouseEnter"
@@ -60,6 +81,7 @@
         :can-undo="canUndo"
         :can-redo="canRedo"
         :can-paste="canPaste"
+        :is-last-row="getActualRowIndex(visibleIndex) === rows.length - 1"
         @row-number-mousedown="handleRowNumberMouseDown"
         @row-number-mouseenter="handleRowNumberMouseEnter"
         @row-resize-start="startRowResize"
@@ -1552,8 +1574,6 @@ $font-family:
   display: block;
   background: transparent;
   font-size: $font-size-base;
-  // overflow: hidden 会破坏 position: sticky 的定位链
-  // 使用 overflow: visible 让 sticky 相对于 .excel-container 定位
   overflow: visible;
   user-select: none;
   width: 100%;
@@ -1562,110 +1582,9 @@ $font-family:
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: $border-radius;
 
-  // ==================== 第一行（sticky 表头）边框处理 ====================
-  // Sticky 表头需要完整的外边框（上、左、右）和圆角
-  .excel-row:first-child {
-    .excel-cell:first-child {
-      border-top: $border-width solid $border-color;
-      border-left: $border-width solid $border-color;
-      border-top-left-radius: $border-radius;
-
-      &.selection-top::after,
-      &.active::after {
-        top: 0;
-        left: 0;
-      }
-    }
-
-    .excel-cell:last-child {
-      border-top: $border-width solid $border-color;
-      border-right: $border-width solid $border-color;
-      border-top-right-radius: $border-radius;
-
-      &.selection-top::after,
-      &.active::after {
-        top: 0;
-        right: 0;
-      }
-    }
-
-    // 表头行的中间单元格（非第一个和最后一个）只需要上边框
-    .excel-cell:not(:first-child):not(:last-child) {
-      border-top: $border-width solid $border-color;
-
-      &.selection-top::after,
-      &.active::after {
-        top: 0;
-      }
-    }
-  }
-
-  // ==================== 最后一行边框处理 ====================
-  .excel-row:last-child {
-    .excel-cell:first-child {
-      border-bottom: $border-width solid $border-color;
-      border-left: $border-width solid $border-color;
-      border-bottom-left-radius: $border-radius;
-
-      &.selection-bottom::after,
-      &.active::after {
-        bottom: 0;
-        left: 0;
-      }
-    }
-
-    .excel-cell:last-child {
-      border-bottom: $border-width solid $border-color;
-      border-right: $border-width solid $border-color;
-      border-bottom-right-radius: $border-radius;
-
-      &.selection-bottom::after,
-      &.active::after {
-        bottom: 0;
-        right: 0;
-      }
-    }
-
-    // 最后一行的中间单元格只需要下边框
-    .excel-cell:not(:first-child):not(:last-child) {
-      border-bottom: $border-width solid $border-color;
-
-      &.selection-bottom::after,
-      &.active::after {
-        bottom: 0;
-      }
-    }
-  }
-
-  // ==================== 只有单行时的特殊处理 ====================
-  // 当只有一行时（既是第一行也是最后一行），需要完整边框和四个圆角
-  .excel-row:first-child:last-child {
-    .excel-cell:first-child {
-      border-top: $border-width solid $border-color;
-      border-left: $border-width solid $border-color;
-      border-bottom: $border-width solid $border-color;
-      border-top-left-radius: $border-radius;
-      border-bottom-left-radius: $border-radius;
-    }
-
-    .excel-cell:last-child {
-      border-top: $border-width solid $border-color;
-      border-right: $border-width solid $border-color;
-      border-bottom: $border-width solid $border-color;
-      border-top-right-radius: $border-radius;
-      border-bottom-right-radius: $border-radius;
-    }
-
-    .excel-cell:not(:first-child):not(:last-child) {
-      border-top: $border-width solid $border-color;
-      border-bottom: $border-width solid $border-color;
-    }
-  }
-
-  // ==================== 中间行（非第一行和非最后一行）左右边框 ====================
-  .excel-row:not(:first-child):not(:last-child) {
+  // ==================== 所有数据行：左右外边框 ====================
+  .excel-row {
     .excel-cell:first-child {
       border-left: $border-width solid $border-color;
 
@@ -1676,8 +1595,6 @@ $font-family:
     }
 
     .excel-cell:last-child {
-      border-right: $border-width solid $border-color;
-
       &.selection-right::after,
       &.active::after {
         right: 0;
@@ -1686,17 +1603,92 @@ $font-family:
   }
 }
 
+// ==================== 固定表头样式 ====================
+.excel-header-fixed {
+  display: block;
+  background: $header-bg;
+  font-size: $font-size-base;
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: $z-index-header;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+// ==================== 顶部边框（header-row 语义类，sticky / 非 sticky 通用）====================
+.header-row {
+  .excel-cell:first-child {
+    border-top: $border-width solid $border-color;
+    border-left: $border-width solid $border-color;
+    border-top-left-radius: $border-radius;
+
+    &.selection-top::after,
+    &.active::after {
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+  }
+
+  .excel-cell:last-child {
+    border-top: $border-width solid $border-color;
+    border-right: $border-width solid $border-color;
+    border-top-right-radius: $border-radius;
+
+    &.selection-top::after,
+    &.active::after {
+      top: 0;
+      right: 0;
+      left: 0;
+      bottom: 0;
+    }
+  }
+
+  .excel-cell:not(:first-child):not(:last-child) {
+    border-top: $border-width solid $border-color;
+
+    &.selection-top::after,
+    &.active::after {
+      top: 0;
+    }
+  }
+}
+
+// ==================== 末行：仅做 ::after 位置修正（不重声明 border-bottom）====================
+.excel-row--last {
+  .excel-cell:first-child {
+    &.selection-bottom::after,
+    &.active::after {
+      bottom: 0;
+      left: 0;
+    }
+  }
+
+  .excel-cell:last-child {
+    &.selection-bottom::after,
+    &.active::after {
+      bottom: 0;
+      right: 0;
+    }
+  }
+
+  .excel-cell:not(:first-child):not(:last-child) {
+    &.selection-bottom::after,
+    &.active::after {
+      bottom: 0;
+    }
+  }
+}
+
 .excel-row {
   display: flex;
   margin: 0;
   padding: 0;
-}
-
-.header-row-sticky {
-  position: sticky;
-  top: 0;
-  z-index: $z-index-header;
-  background: $header-bg;
 }
 
 // ==================== 单元格样式====================
@@ -1733,11 +1725,9 @@ $font-family:
   &::after {
     content: "";
     position: absolute;
-    top: -$border-width;
-    left: -$border-width;
-    right: -$border-width;
-    bottom: -$border-width;
+    inset: -$border-width;
     border: 0 solid $primary-color;
+    border-radius: inherit;
     pointer-events: none;
     z-index: $z-index-selection-overlay;
   }

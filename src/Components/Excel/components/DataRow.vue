@@ -1,5 +1,5 @@
 <template>
-  <div class="excel-row">
+  <div :class="['excel-row', { 'excel-row--last': isLastRow }]">
     <div
       class="excel-cell row-number"
       :class="{ 'active-header': isInSelectionHeader(rowIndex, 'row') }"
@@ -112,6 +112,7 @@ interface Props {
   canUndo: boolean;
   canRedo: boolean;
   canPaste: boolean;
+  isLastRow: boolean;
 }
 
 defineProps<Props>();
