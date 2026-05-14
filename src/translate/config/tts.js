@@ -10,9 +10,9 @@ export const TTS_API_URL =
 
 export const X_API_RESOURCE_ID = "seed-tts-1.0";
 
-/** 默认凭证；优先使用 storage 中的值 */
-export const DEFAULT_APP_ID = "9475898476";
-export const DEFAULT_ACCESS_TOKEN = "pvrswIGZenbzLPfDB2jlDD4pAVf2CeNT";
+/** 默认凭证（空字符串）；请在设置页面配置真实的 App ID 和 Access Token */
+export const DEFAULT_APP_ID = "";
+export const DEFAULT_ACCESS_TOKEN = "";
 
 /** 发音人（V3 为 speaker），默认 Glen */
 export const DEFAULT_VOICE_TYPE = "en_male_glen_emo_v2_mars_bigtts";

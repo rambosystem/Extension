@@ -18,21 +18,47 @@
         </div>
       </el-form-item>
 
-      <el-form-item :label="t('Translate.selectTTS')" label-position="left">
-        <div class="tts-voice-select">
-          <el-select v-model="ttsVoiceType" :placeholder="t('Translate.selectTTSPlaceholder')" filterable
-            @change="saveTtsVoiceType">
-            <el-option-group v-for="group in ttsVoices" :key="group.label" :label="group.label">
-              <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value" />
-            </el-option-group>
-          </el-select>
+      <el-form-item :label="t('Translate.customTtsVoice')" label-position="left">
+        <div class="switch-setting-row">
+          <el-switch v-model="customTtsEnabled" @change="handleCustomTtsChange" width="45px" />
         </div>
       </el-form-item>
+
+      <template v-if="customTtsEnabled">
+        <el-form-item :label="t('Translate.ttsAppId')" prop="ttsAppId">
+          <SaveableInput
+            type="password"
+            v-model="localTtsAppId"
+            :placeholder="t('Translate.ttsAppIdPlaceholder')"
+            @save="handleSaveTtsAppId"
+          />
+        </el-form-item>
+        <el-form-item :label="t('Translate.ttsAccessToken')" prop="ttsAccessToken">
+          <SaveableInput
+            type="password"
+            v-model="localTtsAccessToken"
+            :placeholder="t('Translate.ttsAccessTokenPlaceholder')"
+            @save="handleSaveTtsAccessToken"
+          />
+        </el-form-item>
+
+        <el-form-item :label="t('Translate.selectTTS')" label-position="left">
+          <div class="tts-voice-select">
+            <el-select v-model="ttsVoiceType" :placeholder="t('Translate.selectTTSPlaceholder')" filterable
+              @change="saveTtsVoiceType">
+              <el-option-group v-for="group in ttsVoices" :key="group.label" :label="group.label">
+                <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value" />
+              </el-option-group>
+            </el-select>
+          </div>
+        </el-form-item>
+      </template>
     </el-form>
   </div>
 </template>
 
 <script setup>
+import SaveableInput from "@/components/common/SaveableInput.vue";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "@/lokalise/composables/Core/useI18n.js";
 import { useTranslationSettingsStore } from "@/lokalise/stores/settings/translation.js";
@@ -47,6 +73,9 @@ const translationSettingsStore = useTranslationSettingsStore();
 const ttsVoices = ref([]);
 const ttsVoiceType = ref(DEFAULT_VOICE_TYPE);
 const shortcutValue = ref("");
+const localTtsAppId = ref("");
+const localTtsAccessToken = ref("");
+const customTtsEnabled = ref(false);
 const shortcutDisplay = computed(() => {
   if (!shortcutValue.value) return t("Translate.shortcutEmpty");
   return shortcutValue.value;
@@ -54,6 +83,26 @@ const shortcutDisplay = computed(() => {
 
 onMounted(() => {
   ttsVoices.value = TTS_VOICE_TYPES;
+
+  // 加载 Custom TTS Voice 开关
+  if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
+    chrome.storage.local.get([STORAGE_KEYS.PROVIDER], (out) => {
+      const stored = out[STORAGE_KEYS.PROVIDER];
+      customTtsEnabled.value = stored === true || stored === "true";
+    });
+  }
+
+  // 加载 TTS 凭证
+  if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
+    chrome.storage.local.get(
+      [STORAGE_KEYS.APP_ID, STORAGE_KEYS.ACCESS_TOKEN, STORAGE_KEYS.VOICE_TYPE],
+      (out) => {
+        if (out[STORAGE_KEYS.APP_ID]) localTtsAppId.value = out[STORAGE_KEYS.APP_ID];
+        if (out[STORAGE_KEYS.ACCESS_TOKEN]) localTtsAccessToken.value = out[STORAGE_KEYS.ACCESS_TOKEN];
+      },
+    );
+  }
+
   if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
     chrome.storage.local.get([STORAGE_KEYS.VOICE_TYPE], (out) => {
       if (out[STORAGE_KEYS.VOICE_TYPE]) ttsVoiceType.value = out[STORAGE_KEYS.VOICE_TYPE];
@@ -81,6 +130,48 @@ function saveTtsVoiceType(value) {
   if (typeof chrome !== "undefined" && chrome.storage?.local?.set) {
     chrome.storage.local.set({ [STORAGE_KEYS.VOICE_TYPE]: value });
   }
+}
+
+function handleCustomTtsChange(value) {
+  saveToChromeStorage(STORAGE_KEYS.PROVIDER, value, () => {}, () => {});
+}
+
+function saveToChromeStorage(key, value, onSuccess, onError) {
+  if (typeof chrome === "undefined" || !chrome.storage?.local?.set) {
+    onError?.(t("Translate.storageUnavailable"));
+    return;
+  }
+  chrome.storage.local.set({ [key]: value.trim() }, () => {
+    if (chrome.runtime.lastError) {
+      onError?.(chrome.runtime.lastError.message);
+      return;
+    }
+    onSuccess?.();
+  });
+}
+
+function handleSaveTtsAppId(saveData) {
+  const { value, onSuccess, onError } = saveData;
+  if (!value?.trim()) {
+    onError(t("Translate.ttsAppIdRequired"));
+    return;
+  }
+  saveToChromeStorage(STORAGE_KEYS.APP_ID, value, () => {
+    localTtsAppId.value = value.trim();
+    onSuccess();
+  }, onError);
+}
+
+function handleSaveTtsAccessToken(saveData) {
+  const { value, onSuccess, onError } = saveData;
+  if (!value?.trim()) {
+    onError(t("Translate.ttsAccessTokenRequired"));
+    return;
+  }
+  saveToChromeStorage(STORAGE_KEYS.ACCESS_TOKEN, value, () => {
+    localTtsAccessToken.value = value.trim();
+    onSuccess();
+  }, onError);
 }
 
 const handleSelectToTranslateChange = (value) => {
@@ -116,6 +207,13 @@ defineProps({
 .title {
   font-size: 24px;
   margin-bottom: 20px;
+}
+
+.switch-setting-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
 }
 
 .settings-form {
@@ -179,4 +277,3 @@ defineProps({
   }
 }
 </style>
-

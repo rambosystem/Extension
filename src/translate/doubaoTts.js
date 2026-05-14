@@ -325,6 +325,17 @@ export async function playWithDoubao({
 }) {
   if (!text?.trim()) return;
 
+  // 检查 Custom TTS 开关是否启用；关闭时降级到浏览器语音
+  if (typeof chrome !== "undefined" && chrome.storage?.local?.get) {
+    const out = await new Promise((resolve) =>
+      chrome.storage.local.get([STORAGE_KEYS.PROVIDER], resolve),
+    );
+    if (!out[STORAGE_KEYS.PROVIDER]) {
+      onFallback?.();
+      return;
+    }
+  }
+
   let voiceType = voiceTypeParam;
   if (
     !voiceType &&
