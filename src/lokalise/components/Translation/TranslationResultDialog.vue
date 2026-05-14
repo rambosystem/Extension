@@ -925,7 +925,8 @@ const handleCustomAction = ({ id, context }) => {
   position: relative;
   width: 100%;
   overflow: visible;
-  margin: 0;
+  margin-left: 10px;
+  padding-right: 10px;
   --excel-container-height: 100%;
   --excel-container-max-height: 100%;
 }
