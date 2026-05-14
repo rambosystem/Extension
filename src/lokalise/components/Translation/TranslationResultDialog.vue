@@ -925,7 +925,7 @@ const handleCustomAction = ({ id, context }) => {
   position: relative;
   width: 100%;
   overflow: visible;
-  margin: 0 10px;
+  margin: 0;
   --excel-container-height: 100%;
   --excel-container-max-height: 100%;
 }
@@ -1041,5 +1041,3 @@ const handleCustomAction = ({ id, context }) => {
   transition: background-color 0.05s ease;
 }
 </style>
-
-
