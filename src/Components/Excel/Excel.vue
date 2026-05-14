@@ -6,6 +6,7 @@
     @paste="handlePaste"
     @click="handleContainerClick"
     @wheel="handleRowWheel"
+    @scroll="handleScroll"
     tabindex="0"
     ref="containerRef"
   >
@@ -13,6 +14,7 @@
     <div
       v-if="enableHeaderSticky"
       class="excel-header-fixed"
+      :class="{ 'header-scrolled': scrolled }"
       @mouseleave="handleMouseUp"
     >
       <HeaderRow
@@ -259,6 +261,12 @@ const { tableData, columns: internalColumns, rows } = excelState.data;
 
 // 滚动步进控制：确保每次滚动对齐整行高度
 const wheelAccumulator = ref(0);
+
+// 滚动阴影控制：sticky 表头在内容滚动时显示下边框阴影
+const scrolled = ref(false);
+const handleScroll = (): void => {
+  scrolled.value = (containerRef.value?.scrollTop ?? 0) > 0;
+};
 
 // 使用统一状态的数据操作方法
 const {
@@ -1618,6 +1626,12 @@ $font-family:
   margin: 0;
   padding: 0;
   border: none;
+  transition: box-shadow 0.15s ease;
+
+  // 滚动时显示下边框阴影
+  &.header-scrolled {
+    box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.08);
+  }
 }
 
 // ==================== 顶部边框（header-row 语义类，sticky / 非 sticky 通用）====================
