@@ -56,7 +56,7 @@
         <button
           type="button"
           class="composer_icon_btn"
-          title="Replace"
+          title="Replace (Ctrl+Enter)"
           @click="insertCurrentText"
         >
           <img
@@ -338,7 +338,19 @@ function handleComposerKeydown(event) {
   if (event.shiftKey || event.isComposing) return;
   if (!editorText.value.trim()) return;
   event.preventDefault();
+  if (event.ctrlKey || event.metaKey) {
+    insertCurrentText();
+    return;
+  }
   translateToEnglish();
+}
+
+function handlePopupKeydown(event) {
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+  if (!(event.ctrlKey || event.metaKey)) return;
+  if (isComposerMode.value || isWord.value) return;
+  event.preventDefault();
+  replaceTranslation();
 }
 
 function insertIntoFocused(text) {
@@ -603,6 +615,7 @@ function playExample(exampleText, index) {
 }
 
 onBeforeUnmount(() => {
+  document.removeEventListener("keydown", handlePopupKeydown, true);
   if (pronunciationController.value) {
     pronunciationController.value.abort();
   }
@@ -612,6 +625,7 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
+  document.addEventListener("keydown", handlePopupKeydown, true);
   focusComposerInput();
 });
 </script>
