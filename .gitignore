@@ -5,7 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Progress
-*progress.md
+*.progress.md
 
 # Build outputs
 dist/
@@ -57,3 +57,4 @@ tmp/
 temp/ 
 GIT_SSH_PROXY_SETUP.md
 extension_package.zip
+Rambo19971009-progress.md

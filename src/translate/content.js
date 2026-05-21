@@ -5,6 +5,8 @@ import { debugLog } from "@/utils/debug.js";
 /** 最近一次划词对应的选区（用于“替换”时修改页面） */
 let lastSelectionRange = null;
 let lastFocusedEditable = null;
+/** 失焦前保存的光标/选区，避免弹窗抢焦点后插入到开头 */
+let lastEditableCaret = null;
 let lastPointer = null;
 let lastPointerAt = 0;
 
@@ -78,12 +80,71 @@ function getPreviousCharInContentEditable(root) {
   return "";
 }
 
+function captureEditableCaret(el) {
+  if (!el?.isConnected || !isEditable(el) || isInsidePenrosePopup(el)) return;
+  if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+    const len = el.value?.length ?? 0;
+    const start =
+      typeof el.selectionStart === "number" ? el.selectionStart : len;
+    const end = typeof el.selectionEnd === "number" ? el.selectionEnd : len;
+    lastEditableCaret = {
+      el,
+      start: Math.max(0, Math.min(start, len)),
+      end: Math.max(0, Math.min(end, len)),
+    };
+    return;
+  }
+  if (el.isContentEditable) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (!el.contains(range.startContainer)) return;
+    try {
+      lastEditableCaret = { el, range: range.cloneRange() };
+    } catch (_) {}
+  }
+}
+
+function getSavedInputCaret(el) {
+  const len = el.value?.length ?? 0;
+  if (
+    lastEditableCaret?.el === el &&
+    typeof lastEditableCaret.start === "number" &&
+    typeof lastEditableCaret.end === "number"
+  ) {
+    return {
+      start: Math.min(lastEditableCaret.start, len),
+      end: Math.min(lastEditableCaret.end, len),
+    };
+  }
+  if (document.activeElement === el) {
+    const start =
+      typeof el.selectionStart === "number" ? el.selectionStart : len;
+    const end = typeof el.selectionEnd === "number" ? el.selectionEnd : len;
+    return { start, end };
+  }
+  return { start: len, end: len };
+}
+
+function restoreContentEditableRange(el) {
+  if (lastEditableCaret?.el !== el || !lastEditableCaret.range) return false;
+  const sel = window.getSelection();
+  if (!sel) return false;
+  try {
+    sel.removeAllRanges();
+    sel.addRange(lastEditableCaret.range);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function insertTextAtCursor(el, text) {
   if (!el || !text) return;
-  focusEditable(el);
   if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
-    const start = el.selectionStart ?? el.value.length;
-    const end = el.selectionEnd ?? el.value.length;
+    const { start, end } = getSavedInputCaret(el);
+    focusEditable(el);
+    el.setSelectionRange(start, end);
     const before = el.value.slice(0, start);
     const after = el.value.slice(end);
     const textToInsert = addLeadingSpaceIfNeeded(
@@ -91,13 +152,20 @@ function insertTextAtCursor(el, text) {
       before.trim().length > 0,
       before.slice(-1),
     );
+    const nextPos = start + textToInsert.length;
     el.value = before + textToInsert + after;
-    el.selectionStart = el.selectionEnd = start + textToInsert.length;
+    el.setSelectionRange(nextPos, nextPos);
+    lastEditableCaret = { el, start: nextPos, end: nextPos };
     el.dispatchEvent(new Event("input", { bubbles: true }));
-  } else if (el.isContentEditable) {
+    return;
+  }
+  if (el.isContentEditable) {
+    focusEditable(el);
+    restoreContentEditableRange(el);
     const prevChar = getPreviousCharInContentEditable(el);
     const textToInsert = addLeadingSpaceIfNeeded(text, !!prevChar, prevChar);
     document.execCommand("insertText", false, textToInsert);
+    captureEditableCaret(el);
   }
 }
 
@@ -138,6 +206,11 @@ function isEditable(el) {
 }
 
 document.addEventListener("mouseup", () => {
+  const active = document.activeElement;
+  if (isEditable(active) && !isInsidePenrosePopup(active)) {
+    captureEditableCaret(active);
+  }
+
   const sel = window.getSelection();
   const text = sel.toString().trim();
   if (text) {
@@ -167,17 +240,50 @@ document.addEventListener(
   (e) => {
     if (isEditable(e.target) && !isInsidePenrosePopup(e.target)) {
       lastFocusedEditable = e.target;
+      captureEditableCaret(e.target);
     }
   },
   true,
 );
+
+document.addEventListener(
+  "focusout",
+  (e) => {
+    if (isEditable(e.target) && !isInsidePenrosePopup(e.target)) {
+      captureEditableCaret(e.target);
+    }
+  },
+  true,
+);
+
+document.addEventListener(
+  "keyup",
+  (e) => {
+    if (isEditable(e.target) && !isInsidePenrosePopup(e.target)) {
+      captureEditableCaret(e.target);
+    }
+  },
+  true,
+);
+
+function snapshotCaretBeforeTranslatePopup() {
+  const active = document.activeElement;
+  if (isEditable(active) && !isInsidePenrosePopup(active)) {
+    lastFocusedEditable = active;
+    captureEditableCaret(active);
+    return;
+  }
+  if (lastFocusedEditable?.isConnected) {
+    captureEditableCaret(lastFocusedEditable);
+  }
+}
 
 document.addEventListener("clipboard-paste-to-focused", (e) => {
   const text = e.detail?.text;
   if (typeof text !== "string") return;
   const currentTarget = getPasteTarget();
   const explicitTarget = getExplicitTarget(e.detail?.target);
-  const el = currentTarget || explicitTarget;
+  const el = explicitTarget || currentTarget;
   if (el) insertTextAtCursor(el, text);
 });
 
@@ -189,6 +295,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const enabled =
           result[STORAGE_KEYS.WORD_SELECTION_TRANSLATE_ENABLED] === "true";
         if (enabled) {
+          snapshotCaretBeforeTranslatePopup();
           showTranslatePopup(
             request.selectionText,
             lastSelectionRange,
@@ -204,6 +311,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   if (request.action === "showTranslatePopup") {
+    snapshotCaretBeforeTranslatePopup();
     showTranslatePopup("", null, lastFocusedEditable, getRecentPointer());
     sendResponse({ ok: true });
     return true;
