@@ -7,6 +7,8 @@ let lastSelectionRange = null;
 let lastFocusedEditable = null;
 /** 失焦前保存的光标/选区，避免弹窗抢焦点后插入到开头 */
 let lastEditableCaret = null;
+/** 在我们主动 focus/restore 期间临时停掉 caret 抓取，避免 focusin/keyup 把好不容易保存的快照覆盖掉 */
+let suppressCaretCapture = false;
 let lastPointer = null;
 let lastPointerAt = 0;
 
@@ -81,6 +83,7 @@ function getPreviousCharInContentEditable(root) {
 }
 
 function captureEditableCaret(el) {
+  if (suppressCaretCapture) return;
   if (!el?.isConnected || !isEditable(el) || isInsidePenrosePopup(el)) return;
   if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
     const len = el.value?.length ?? 0;
@@ -126,13 +129,13 @@ function getSavedInputCaret(el) {
   return { start: len, end: len };
 }
 
-function restoreContentEditableRange(el) {
-  if (lastEditableCaret?.el !== el || !lastEditableCaret.range) return false;
+function applyRange(range) {
+  if (!range) return false;
   const sel = window.getSelection();
   if (!sel) return false;
   try {
     sel.removeAllRanges();
-    sel.addRange(lastEditableCaret.range);
+    sel.addRange(range);
     return true;
   } catch (_) {
     return false;
@@ -143,28 +146,42 @@ function insertTextAtCursor(el, text) {
   if (!el || !text) return;
   if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
     const { start, end } = getSavedInputCaret(el);
-    focusEditable(el);
-    el.setSelectionRange(start, end);
-    const before = el.value.slice(0, start);
-    const after = el.value.slice(end);
-    const textToInsert = addLeadingSpaceIfNeeded(
-      text,
-      before.trim().length > 0,
-      before.slice(-1),
-    );
-    const nextPos = start + textToInsert.length;
-    el.value = before + textToInsert + after;
-    el.setSelectionRange(nextPos, nextPos);
-    lastEditableCaret = { el, start: nextPos, end: nextPos };
-    el.dispatchEvent(new Event("input", { bubbles: true }));
+    suppressCaretCapture = true;
+    try {
+      focusEditable(el);
+      el.setSelectionRange(start, end);
+      const before = el.value.slice(0, start);
+      const after = el.value.slice(end);
+      const textToInsert = addLeadingSpaceIfNeeded(
+        text,
+        before.trim().length > 0,
+        before.slice(-1),
+      );
+      const nextPos = start + textToInsert.length;
+      el.value = before + textToInsert + after;
+      el.setSelectionRange(nextPos, nextPos);
+      lastEditableCaret = { el, start: nextPos, end: nextPos };
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    } finally {
+      suppressCaretCapture = false;
+    }
     return;
   }
   if (el.isContentEditable) {
-    focusEditable(el);
-    restoreContentEditableRange(el);
-    const prevChar = getPreviousCharInContentEditable(el);
-    const textToInsert = addLeadingSpaceIfNeeded(text, !!prevChar, prevChar);
-    document.execCommand("insertText", false, textToInsert);
+    const savedRange =
+      lastEditableCaret?.el === el && lastEditableCaret.range
+        ? lastEditableCaret.range.cloneRange()
+        : null;
+    suppressCaretCapture = true;
+    try {
+      focusEditable(el);
+      applyRange(savedRange);
+      const prevChar = getPreviousCharInContentEditable(el);
+      const textToInsert = addLeadingSpaceIfNeeded(text, !!prevChar, prevChar);
+      document.execCommand("insertText", false, textToInsert);
+    } finally {
+      suppressCaretCapture = false;
+    }
     captureEditableCaret(el);
   }
 }

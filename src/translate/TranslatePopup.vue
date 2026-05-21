@@ -335,10 +335,13 @@ async function translateToEnglish() {
 
 function handleComposerKeydown(event) {
   if (event.key !== "Enter") return;
-  if (event.shiftKey || event.isComposing) return;
+  const withMod = event.ctrlKey || event.metaKey;
+  if (event.shiftKey) return;
+  if ((event.isComposing || event.keyCode === 229) && !withMod) return;
   if (!editorText.value.trim()) return;
   event.preventDefault();
-  if (event.ctrlKey || event.metaKey) {
+  event.stopPropagation();
+  if (withMod) {
     insertCurrentText();
     return;
   }
@@ -346,10 +349,20 @@ function handleComposerKeydown(event) {
 }
 
 function handlePopupKeydown(event) {
-  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+  if (event.key !== "Enter") return;
   if (!(event.ctrlKey || event.metaKey)) return;
-  if (isComposerMode.value || isWord.value) return;
+  if (event.shiftKey || event.isComposing) return;
+  if (isWord.value) return;
+  if (isComposerMode.value) {
+    if (event.target === composerTextareaRef.value) return;
+    if (!editorText.value.trim()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    insertCurrentText();
+    return;
+  }
   event.preventDefault();
+  event.stopPropagation();
   replaceTranslation();
 }
 
