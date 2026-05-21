@@ -333,6 +333,16 @@ async function translateToEnglish() {
   } catch (_) {}
 }
 
+function insertAndClose() {
+  const text = editorText.value.trim();
+  if (!text) {
+    ensureEditorText();
+    return;
+  }
+  insertIntoFocused(text);
+  props.onClose?.();
+}
+
 function handleComposerKeydown(event) {
   if (event.key !== "Enter") return;
   const withMod = event.ctrlKey || event.metaKey;
@@ -342,7 +352,7 @@ function handleComposerKeydown(event) {
   event.preventDefault();
   event.stopPropagation();
   if (withMod) {
-    insertCurrentText();
+    insertAndClose();
     return;
   }
   translateToEnglish();
@@ -358,7 +368,7 @@ function handlePopupKeydown(event) {
     if (!editorText.value.trim()) return;
     event.preventDefault();
     event.stopPropagation();
-    insertCurrentText();
+    insertAndClose();
     return;
   }
   event.preventDefault();
