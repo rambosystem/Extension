@@ -1,6 +1,6 @@
 # Penrose
 
-基于 Vue 3 + Pinia + Element Plus 的浏览器扩展（支持 Edge / Chrome），提供翻译管理、术语库、剪贴板等能力。
+基于 Vue 3 + Pinia + Element Plus 的浏览器扩展（支持 Edge / Chrome），提供翻译管理、能力。
 
 ## 功能概览
 
